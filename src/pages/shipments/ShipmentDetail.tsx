@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { shipments } from "@/data/mock";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const events = [
   { icon: CheckCircle2, label: "Booking confirmed", at: "2025-04-12 10:00", done: true },
@@ -19,6 +22,23 @@ export default function ShipmentDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const s = shipments.find((x) => x.id === id) ?? shipments[0];
+  
+  const [currentStatus, setCurrentStatus] = useState(s.status);
+  const [updating, setUpdating] = useState(false);
+
+  const handleStatusChange = (newStatus: string) => {
+    setUpdating(true);
+    // Simulate database update
+    setTimeout(() => {
+      setCurrentStatus(newStatus);
+      setUpdating(false);
+      toast.success(`Shipment status updated to ${newStatus}`);
+      
+      // Hack: update the mock array so it persists while navigating around
+      const index = shipments.findIndex(x => x.id === s.id);
+      if (index >= 0) shipments[index].status = newStatus;
+    }, 600);
+  };
   return (
     <div>
       <PageHeader title={s.id} description={`${s.customer} · ${s.carrier}`} breadcrumbs={[{ label: "Shipments", to: "/shipments" }, { label: s.id }]}
@@ -43,7 +63,29 @@ export default function ShipmentDetail() {
           </Section>
         </div>
         <div className="space-y-4">
-          <Section title="Status"><StatusBadge status={s.status} /></Section>
+          <Section title="Status">
+            <div className="flex flex-col gap-3">
+              <div>
+                <StatusBadge status={currentStatus} />
+              </div>
+              
+              <div className="pt-3 border-t border-border mt-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-2">Update Status</label>
+                <Select value={currentStatus} onValueChange={handleStatusChange} disabled={updating}>
+                  <SelectTrigger className="w-full text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Processing">Processing</SelectItem>
+                    <SelectItem value="In Transit">In Transit</SelectItem>
+                    <SelectItem value="Delivered">Delivered</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Section>
           <Section title="Route">
             <div className="flex items-center gap-2 text-sm"><MapPin className="h-4 w-4 text-muted-foreground" />{s.origin}</div>
             <div className="ml-2 my-1 h-6 border-l border-dashed border-muted-foreground" />

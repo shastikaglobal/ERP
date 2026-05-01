@@ -9,9 +9,9 @@ export function Section({ title, description, children, actions, className }: {
   className?: string;
 }) {
   return (
-    <section className={cn("erp-card", className)}>
+    <section className={cn("glass-panel", className)}>
       {(title || actions) && (
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/5 bg-white/5 rounded-t-2xl">
           <div>
             {title && <h2 className="text-sm font-semibold">{title}</h2>}
             {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}

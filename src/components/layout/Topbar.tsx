@@ -45,8 +45,12 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
-              <div className="text-sm font-medium">{profile?.full_name || "User"}</div>
-              <div className="text-xs text-muted-foreground font-normal truncate">{profile?.email}</div>
+              <div className="text-sm font-medium truncate">
+                {profile?.full_name && profile.full_name !== profile.email ? profile.full_name : "User"}
+              </div>
+              {profile?.email && (
+                <div className="text-xs text-muted-foreground font-normal truncate">{profile.email}</div>
+              )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => nav("/system/settings")}>

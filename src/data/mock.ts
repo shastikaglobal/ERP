@@ -39,12 +39,21 @@ export const shipments = [
 ];
 
 export const products = [
-  { id: "P-001", sku: "TEX-COT-001", name: "Premium Cotton Fabric", category: "Textiles", uom: "Meter", stock: 12450, reorder: 2000, price: 4.5, currency: "USD", status: "In Stock" },
-  { id: "P-002", sku: "ELC-LED-220", name: "LED Panel 220V", category: "Electronics", uom: "Piece", stock: 856, reorder: 200, price: 18.0, currency: "USD", status: "In Stock" },
-  { id: "P-003", sku: "SPC-CRD-050", name: "Cardamom Pods Grade A", category: "Spices", uom: "Kg", stock: 124, reorder: 100, price: 32.0, currency: "USD", status: "Low Stock" },
-  { id: "P-004", sku: "AUT-BRK-101", name: "Brake Pad Assembly", category: "Auto Parts", uom: "Set", stock: 0, reorder: 50, price: 95.0, currency: "USD", status: "Out of Stock" },
-  { id: "P-005", sku: "FOOD-RIC-100", name: "Basmati Rice 25kg", category: "Food", uom: "Bag", stock: 3200, reorder: 500, price: 38.0, currency: "USD", status: "In Stock" },
-  { id: "P-006", sku: "PHARM-VIT-D3", name: "Vitamin D3 Capsules", category: "Pharma", uom: "Bottle", stock: 720, reorder: 200, price: 12.0, currency: "USD", status: "In Stock" },
+  { id: "P-001", sku: "AGRI-CCN-HSK", name: "Husked Brown Coconut", category: "Coconuts", uom: "Piece", stock: 5000, reorder: 1000, price: 0.5, currency: "USD", status: "In Stock" },
+  { id: "P-002", sku: "AGRI-CCN-SHK", name: "Semi-Husked Brown Coconut", category: "Coconuts", uom: "Piece", stock: 3500, reorder: 500, price: 0.55, currency: "USD", status: "In Stock" },
+  { id: "P-003", sku: "AGRI-CCN-DHK", name: "Dehusked Brown Coconut", category: "Coconuts", uom: "Piece", stock: 2000, reorder: 500, price: 0.6, currency: "USD", status: "In Stock" },
+  { id: "P-004", sku: "AGRI-CCN-TND", name: "Tender Green Coconut", category: "Coconuts", uom: "Piece", stock: 1500, reorder: 300, price: 0.8, currency: "USD", status: "In Stock" },
+  { id: "P-005", sku: "AGRI-CCN-GRN", name: "Fresh Green Coconut", category: "Coconuts", uom: "Piece", stock: 1200, reorder: 300, price: 0.75, currency: "USD", status: "In Stock" },
+  { id: "P-006", sku: "AGRI-PMK-YEL", name: "Yellow Pumpkin", category: "Vegetables", uom: "Ton", stock: 85, reorder: 15, price: 320.0, currency: "USD", status: "In Stock" },
+  { id: "P-007", sku: "AGRI-PMK-WHT", name: "White Pumpkin", category: "Vegetables", uom: "Ton", stock: 60, reorder: 15, price: 340.0, currency: "USD", status: "In Stock" },
+  { id: "P-008", sku: "AGRI-WML-REG", name: "Watermelon", category: "Fruits", uom: "Ton", stock: 120, reorder: 20, price: 450.0, currency: "USD", status: "In Stock" },
+  { id: "P-009", sku: "AGRI-WML-BLK", name: "Black Diamond Watermelon", category: "Fruits", uom: "Ton", stock: 45, reorder: 10, price: 850.0, currency: "USD", status: "In Stock" },
+  { id: "P-010", sku: "AGRI-CUC-001", name: "Cucumber", category: "Vegetables", uom: "Ton", stock: 200, reorder: 50, price: 280.0, currency: "USD", status: "In Stock" },
+  { id: "P-011", sku: "AGRI-BAN-CAV", name: "Cavendish Banana", category: "Bananas", uom: "Ton", stock: 500, reorder: 100, price: 400.0, currency: "USD", status: "In Stock" },
+  { id: "P-012", sku: "AGRI-BAN-BBY", name: "Baby Banana", category: "Bananas", uom: "Ton", stock: 150, reorder: 30, price: 600.0, currency: "USD", status: "In Stock" },
+  { id: "P-013", sku: "AGRI-BAN-NEN", name: "Nendran Banana", category: "Bananas", uom: "Ton", stock: 200, reorder: 40, price: 550.0, currency: "USD", status: "In Stock" },
+  { id: "P-014", sku: "AGRI-BAN-RED", name: "Red Banana", category: "Bananas", uom: "Ton", stock: 180, reorder: 35, price: 750.0, currency: "USD", status: "In Stock" },
+  { id: "P-015", sku: "AGRI-TOM-001", name: "Tomatoes", category: "Vegetables", uom: "Ton", stock: 45, reorder: 10, price: 680.0, currency: "USD", status: "In Stock" },
 ];
 
 export const suppliers = [
@@ -77,12 +86,16 @@ export const payments = [
 ];
 
 export const employees = [
-  { id: "E-001", name: "John Doe", role: "Sales Manager", department: "Sales", email: "john@acme.com", phone: "+91 98765 43210", status: "Active", joinedAt: "2022-03-15" },
-  { id: "E-002", name: "Sara Kim", role: "Sales Executive", department: "Sales", email: "sara@acme.com", phone: "+91 98765 43211", status: "Active", joinedAt: "2023-01-08" },
-  { id: "E-003", name: "Maria Lopez", role: "Logistics Lead", department: "Logistics", email: "maria@acme.com", phone: "+91 98765 43212", status: "Active", joinedAt: "2021-08-22" },
-  { id: "E-004", name: "David Park", role: "Finance Manager", department: "Finance", email: "david@acme.com", phone: "+91 98765 43213", status: "Active", joinedAt: "2020-11-04" },
-  { id: "E-005", name: "Priya Iyer", role: "Procurement Officer", department: "Procurement", email: "priya@acme.com", phone: "+91 98765 43214", status: "Active", joinedAt: "2023-06-19" },
-  { id: "E-006", name: "Tom Reed", role: "Documentation Specialist", department: "Operations", email: "tom@acme.com", phone: "+91 98765 43215", status: "Inactive", joinedAt: "2022-09-30" },
+  { id: "E-001", name: "Preethi", role: "Manager", department: "Management", email: "preethi@acme.com", phone: "+91 98765 00001", status: "Active", joinedAt: "2020-01-15" },
+  { id: "E-002", name: "Madhumithi", role: "Secretary", department: "Admin", email: "madhumithamurugesan2005@gmail.com", phone: "+91 98765 00002", status: "Active", joinedAt: "2021-02-10" },
+  { id: "E-003", name: "Uma Parameshwari", role: "Networks and Security", department: "IT", email: "uma@acme.com", phone: "+91 98765 00003", status: "Active", joinedAt: "2021-03-22" },
+  { id: "E-004", name: "Karunya", role: "Software Developer", department: "IT", email: "karunyaahjothiprakash@gmail.com", phone: "+91 98765 00004", status: "Active", joinedAt: "2022-05-18" },
+  { id: "E-005", name: "Nethra", role: "Software Developer Intern", department: "IT", email: "sreenethra681@gmail.com", phone: "+91 98765 00005", status: "Active", joinedAt: "2024-01-10" },
+  { id: "E-006", name: "Swathi", role: "Software Developer Intern", department: "IT", email: "swathi@acme.com", phone: "+91 98765 00006", status: "Active", joinedAt: "2024-01-10" },
+  { id: "E-007", name: "Narmatha", role: "Software Developer Intern", department: "IT", email: "narmatha@acme.com", phone: "+91 98765 00007", status: "Active", joinedAt: "2024-01-10" },
+  { id: "E-008", name: "Jaya Sri", role: "Data Analyst", department: "Data", email: "jayasri@acme.com", phone: "+91 98765 00008", status: "Active", joinedAt: "2023-04-12" },
+  { id: "E-009", name: "Gayathri", role: "BDE", department: "Sales", email: "gayathrishanmugam813@gmail.com", phone: "+91 98765 00009", status: "Active", joinedAt: "2022-08-25" },
+  { id: "E-010", name: "Kaviya", role: "BDE", department: "Sales", email: "gkaviyagkaviya09@gmail.com", phone: "+91 98765 00010", status: "Active", joinedAt: "2022-09-30" },
 ];
 
 export const notifications = [

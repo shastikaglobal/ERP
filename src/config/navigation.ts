@@ -45,30 +45,18 @@ export const navGroups: NavGroup[] = [
     title: "Farmers",
     icon: Users,
     items: [
-      {
-        title: "Farmers List",
-        url: "/farmers",
-        icon: Users
-      },
-      {
-        title: "Create Farmer",
-        url: "/farmers/create",
-        icon: UserPlus
-        },
-        {
-          title: "Convert to Customer",
-          url: "/farmers/convert",
-          icon: UserCheck
-      }
+      { title: "Farmers List", url: "/farmers", icon: Users, permission: "farmers.view" },
+      { title: "Create Farmer", url: "/farmers/create", icon: UserPlus, permission: "farmers.create" },
+      { title: "Convert to Customer", url: "/farmers/convert", icon: UserCheck, permission: "farmers.manage" }
     ]
   },
   {
     title: "CRM",
     icon: Users,
     items: [
-      { title: "Activities", url: "/crm/activities", icon: CalendarCheck },
-      { title: "Leads", url: "/crm/leads", icon: UserCheck },
-      { title: "Pipeline", url: "/crm/pipeline", icon: GitBranch },
+      { title: "Activities", url: "/crm/activities", icon: CalendarCheck, permission: "farmers.view" },
+      { title: "Leads", url: "/crm/leads", icon: UserCheck, permission: "farmers.view" },
+      { title: "Pipeline", url: "/crm/pipeline", icon: GitBranch, permission: "farmers.view" },
     ],
   },
 
@@ -116,71 +104,71 @@ export const navGroups: NavGroup[] = [
     title: "Quotations",
     icon: FileText,
     items: [
-      { title: "Quotations", url: "/quotations", icon: FileText },
-      { title: "Create Quotation", url: "/quotations/create", icon: FilePlus },
-      { title: "Approvals", url: "/quotations/approvals", icon: FileCheck },
-      { title: "Convert to Order", url: "/quotations/convert", icon: ArrowRightLeft },
+      { title: "Quotations", url: "/quotations", icon: FileText, permission: "orders.view" },
+      { title: "Create Quotation", url: "/quotations/create", icon: FilePlus, permission: "orders.manage" },
+      { title: "Approvals", url: "/quotations/approvals", icon: FileCheck, permission: "orders.manage" },
+      { title: "Convert to Order", url: "/quotations/convert", icon: ArrowRightLeft, permission: "orders.manage" },
     ],
   },
   {
     title: "Export Orders",
     icon: ShoppingCart,
     items: [
-      { title: "Orders", url: "/orders", icon: ShoppingCart },
-      { title: "Create Order", url: "/orders/create", icon: ClipboardList },
-      { title: "Status Tracking", url: "/orders/status", icon: PackageCheck },
-      { title: "Fulfillment", url: "/orders/fulfillment", icon: Package2 },
+      { title: "Orders", url: "/orders", icon: ShoppingCart, permission: "orders.view" },
+      { title: "Create Order", url: "/orders/create", icon: ClipboardList, permission: "orders.manage" },
+      { title: "Status Tracking", url: "/orders/status", icon: PackageCheck, permission: "orders.view" },
+      { title: "Fulfillment", url: "/orders/fulfillment", icon: Package2, permission: "orders.manage" },
     ],
   },
   {
     title: "Shipments",
     icon: Ship,
     items: [
-      { title: "Shipment Register", url: "/shipments", icon: Ship },
-      { title: "Create Shipment", url: "/shipments/create", icon: FilePlus },
-      { title: "Container Tracking", url: "/shipments/containers", icon: Container },
-      { title: "Delivery Status", url: "/shipments/delivery", icon: Navigation },
+      { title: "Shipment Register", url: "/shipments", icon: Ship, permission: "shipments.view" },
+      { title: "Create Shipment", url: "/shipments/create", icon: FilePlus, permission: "shipments.manage" },
+      { title: "Container Tracking", url: "/shipments/containers", icon: Container, permission: "shipments.view" },
+      { title: "Delivery Status", url: "/shipments/delivery", icon: Navigation, permission: "shipments.view" },
     ],
   },
   {
     title: "Documents",
     icon: FileSpreadsheet,
     items: [
-      { title: "Invoices", url: "/documents/invoices", icon: FileSpreadsheet },
-      { title: "Packing Lists", url: "/documents/packing-lists", icon: FileBox },
-      { title: "Certificate of Origin", url: "/documents/certificates", icon: Award },
-      { title: "Bill of Lading", url: "/documents/bills-of-lading", icon: BookOpen },
-      { title: "Document Viewer", url: "/documents/viewer", icon: Eye },
+      { title: "Invoices", url: "/documents/invoices", icon: FileSpreadsheet, permission: "orders.view" },
+      { title: "Packing Lists", url: "/documents/packing-lists", icon: FileBox, permission: "shipments.view" },
+      { title: "Certificate of Origin", url: "/documents/certificates", icon: Award, permission: "orders.view" },
+      { title: "Bill of Lading", url: "/documents/bills-of-lading", icon: BookOpen, permission: "shipments.view" },
+      { title: "Document Viewer", url: "/documents/viewer", icon: Eye, permission: "orders.view" },
     ],
   },
   {
     title: "Finance",
     icon: Wallet,
     items: [
-      { title: "Payment Register", url: "/payments", icon: Receipt },
-      { title: "Overdue", url: "/payments/overdue", icon: AlertCircle },
-      { title: "Multi-Currency Ledger", url: "/payments/ledger", icon: Coins },
-      { title: "Financial Reports", url: "/payments/reports", icon: BarChart3 },
+      { title: "Payment Register", url: "/payments", icon: Receipt, permission: "finance.view" },
+      { title: "Overdue", url: "/payments/overdue", icon: AlertCircle, permission: "finance.view" },
+      { title: "Multi-Currency Ledger", url: "/payments/ledger", icon: Coins, permission: "finance.manage" },
+      { title: "Financial Reports", url: "/payments/reports", icon: BarChart3, permission: "finance.view" },
     ],
   },
   {
     title: "HR & Employees",
     icon: UsersRound,
     items: [
-      { title: "User Approvals", url: "/approvals", icon: ShieldCheck },
-      { title: "Directory", url: "/employees", icon: UsersRound },
-      { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck },
-      { title: "Roles & Permissions", url: "/employees/roles", icon: ShieldCheck },
+      { title: "User Approvals", url: "/approvals", icon: ShieldCheck, permission: "hr.manage" },
+      { title: "Directory", url: "/employees", icon: UsersRound, permission: "hr.view" },
+      { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck, permission: "hr.view" },
+      { title: "Roles & Permissions", url: "/employees/roles", icon: ShieldCheck, permission: "settings.manage" },
     ],
   },
   {
     title: "System",
     icon: Settings,
     items: [
-      { title: "Notifications", url: "/system/notifications", icon: Bell },
-      { title: "Activity Logs", url: "/system/logs", icon: ScrollText },
-      { title: "Subscriptions", url: "/system/subscriptions", icon: CreditCard },
-      { title: "Settings", url: "/system/settings", icon: Settings },
+      { title: "Notifications", url: "/system/notifications", icon: Bell, permission: "settings.view" },
+      { title: "Activity Logs", url: "/system/logs", icon: ScrollText, permission: "settings.view" },
+      { title: "Subscriptions", url: "/system/subscriptions", icon: CreditCard, permission: "settings.manage" },
+      { title: "Settings", url: "/system/settings", icon: Settings, permission: "settings.manage" },
     ],
   },
 ];

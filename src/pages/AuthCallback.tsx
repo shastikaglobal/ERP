@@ -22,9 +22,9 @@ export default function AuthCallback() {
 
         // ✅ ADMIN CHECK
         if (email === "kim.swathi.07@gmail.com") {
-          navigate("/admin");
+          navigate("/");
         } else {
-          navigate("/dashboard");
+          navigate("/");
         }
       } else {
         navigate("/auth");

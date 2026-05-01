@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdminOrManager } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 type ProfileRow = {
@@ -23,11 +23,18 @@ type ProfileRow = {
 };
 
 const ROLE_OPTIONS = [
-  "admin", "manager", "bd", "accounts", "operations", "qc", "procurement", "data_analyst", "marketing", "hr",
+  { slug: "admin", name: "Admin" },
+  { slug: "manager", name: "Manager" },
+  { slug: "bde", name: "BDE" },
+  { slug: "software_dev", name: "Software Dev" },
+  { slug: "net_security", name: "Net & Security" },
+  { slug: "data_analyst", name: "Data Analyst" },
+  { slug: "secretary", name: "Secretary" },
 ];
 
 export default function Approvals() {
   const isAdminOrManager = useIsAdminOrManager();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingRoleSel, setPendingRoleSel] = useState<Record<string, string>>({});
@@ -46,10 +53,27 @@ export default function Approvals() {
 
   useEffect(() => { load(); }, []);
 
-  if (!isAdminOrManager) return <Navigate to="/dashboards/executive" replace />;
+  if (!isAdminOrManager) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-5 animate-in fade-in zoom-in duration-500">
+        <div className="h-20 w-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center ring-8 ring-destructive/5">
+          <ShieldAlert className="h-10 w-10" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Access Denied</h2>
+          <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+            You do not have the required administrative permissions to view or manage user approvals. Please contact your system administrator if you believe this is an error.
+          </p>
+        </div>
+        <Button variant="default" onClick={() => navigate("/")} className="mt-4 shadow-md">
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   const approve = async (r: ProfileRow) => {
-    const role = pendingRoleSel[r.id] || r.requested_role || "bd";
+    const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
     const { error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
     setBusyId(null);
@@ -103,15 +127,15 @@ export default function Approvals() {
             {showActions && (
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Select
-                    value={pendingRoleSel[r.id] || r.requested_role || "bd"}
-                    onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
-                  >
-                    <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ROLE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                    <Select
+                      value={pendingRoleSel[r.id] || r.requested_role || "bde"}
+                      onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
+                    >
+                      <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   <Button size="sm" onClick={() => approve(r)} disabled={busyId === r.id}>
                     <Check className="h-3.5 w-3.5 mr-1" /> Approve
                   </Button>

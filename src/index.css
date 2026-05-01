@@ -136,10 +136,28 @@
 
 @layer components {
   .erp-card {
-    @apply bg-card border border-border rounded-lg;
-    box-shadow: var(--shadow-sm);
+    @apply bg-card/50 backdrop-blur-md border border-white/5 rounded-xl;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
   }
-  .erp-card-hover { @apply hover:bg-secondary transition-colors; }
+  .erp-card-hover { 
+    @apply hover:-translate-y-1 hover:border-primary/30 transition-all duration-300; 
+  }
+  .erp-card-hover:hover {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .glass-panel {
+    @apply bg-background/40 backdrop-blur-xl border border-white/5 rounded-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
   /* Gold primary button gradient */
   .btn-gold {

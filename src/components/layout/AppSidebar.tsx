@@ -8,7 +8,7 @@ import { useAuth, useCan } from "@/hooks/useAuth";
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
   const can = useCan();
-  const { profile } = useAuth();
+  const { profile, roleSlugs } = useAuth();
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
     const active = navGroups.find((g) => g.items.some((i) => location.pathname.startsWith(i.url)));
     return active ? [active.title] : [navGroups[0].title];
@@ -99,8 +99,12 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
               {(profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-foreground truncate">{profile?.full_name || profile?.email || "User"}</div>
-              <div className="text-[10px] text-sidebar-muted truncate">Approved user</div>
+              <div className="text-xs font-medium text-foreground truncate">
+                {profile?.full_name && profile.full_name !== profile.email ? profile.full_name : (profile?.email ? "User" : "User")}
+              </div>
+              <div className="text-[10px] text-sidebar-muted truncate capitalize">
+                {roleSlugs.size > 0 ? Array.from(roleSlugs).join(", ") : "Approved user"}
+              </div>
             </div>
           </div>
         </div>
