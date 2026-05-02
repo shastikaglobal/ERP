@@ -14,6 +14,7 @@ import LeadsList from "./pages/crm/LeadsList";
 import LeadPipeline from "./pages/crm/Pipeline";
 import CompleteProfile from "./pages/CompleteProfile";
 import WaitingApproval from "./pages/WaitingApproval";
+import Pending from "./pages/Pending";
 import Approvals from "./pages/Approvals";
 // (Quotations Approvals is imported below as QuotationApprovals to avoid name clash)
 
@@ -110,12 +111,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/pending" element={<Pending />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/waiting-approval" element={<WaitingApproval />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/" element={<Navigate to="/dashboards/executive" replace />} />
+              <Route path="/dashboard" element={<Navigate to="/dashboards/executive" replace />} />
               <Route path="/approvals" element={<Approvals />} />
 
               {/* Dashboards */}

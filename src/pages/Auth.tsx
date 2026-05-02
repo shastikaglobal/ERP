@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { signInWithGoogle } from "@/lib/googleAuth";
 
 export default function Auth() {
   const location = useLocation();
@@ -18,17 +19,13 @@ export default function Auth() {
 
   const handleGoogle = async () => {
     setBusyGoogle(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
+    try {
+      await signInWithGoogle();
+      // browser will redirect — no need to setBusy(false)
+    } catch (error: any) {
       setBusyGoogle(false);
       toast.error(error.message || "Could not sign in with Google");
     }
-    // browser will redirect — no need to setBusy(false)
   };
 
   const handleGithub = async () => {
