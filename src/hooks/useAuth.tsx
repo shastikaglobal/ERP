@@ -60,11 +60,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let userId: string | null = null;
+    let profileSub: ReturnType<typeof supabase.channel> | null = null;
+    let rolesSub: ReturnType<typeof supabase.channel> | null = null;
+
+    const subscribeRealtime = (uid: string) => {
+      // Unsubscribe from any previous channels
+      profileSub?.unsubscribe();
+      rolesSub?.unsubscribe();
+
+      // Listen to changes on this user's profile row
+      profileSub = supabase
+        .channel(`profile-${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "profiles", filter: `id=eq.${uid}` },
+          () => loadUserData(uid)
+        )
+        .subscribe();
+
+      // Listen to changes on this user's roles
+      rolesSub = supabase
+        .channel(`user-roles-${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "user_roles", filter: `user_id=eq.${uid}` },
+          () => loadUserData(uid)
+        )
+        .subscribe();
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, sess) => {
       setSession(sess);
       if (sess?.user) {
+        userId = sess.user.id;
         setTimeout(() => loadUserData(sess.user.id), 0);
+        subscribeRealtime(sess.user.id);
       } else {
+        userId = null;
+        profileSub?.unsubscribe();
+        rolesSub?.unsubscribe();
         setProfile(null);
         setPermissions(new Set());
         setRoleSlugs(new Set());
@@ -73,11 +108,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session: sess } }) => {
       setSession(sess);
-      if (sess?.user) loadUserData(sess.user.id).finally(() => setLoading(false));
-      else setLoading(false);
+      if (sess?.user) {
+        userId = sess.user.id;
+        loadUserData(sess.user.id).finally(() => setLoading(false));
+        subscribeRealtime(sess.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      profileSub?.unsubscribe();
+      rolesSub?.unsubscribe();
+    };
   }, []);
 
   const refresh = async () => {

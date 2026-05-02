@@ -75,9 +75,14 @@ export default function Approvals() {
   const approve = async (r: ProfileRow) => {
     const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
-    const { error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
+    const { data, error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
     setBusyId(null);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error("approve_user error:", error);
+      alert(`Approve failed: ${error.message}`);
+      toast.error(error.message);
+      return;
+    }
     toast.success(`${r.email} approved as ${role}`);
     load();
   };
@@ -96,6 +101,21 @@ export default function Approvals() {
   const pending = rows.filter((r) => r.status === "pending");
   const approved = rows.filter((r) => r.status === "approved");
   const rejected = rows.filter((r) => r.status === "rejected");
+
+  const changeRole = async (r: ProfileRow) => {
+    const role = pendingRoleSel[r.id] || r.requested_role || "bde";
+    setBusyId(r.id);
+    const { error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
+    setBusyId(null);
+    if (error) {
+      console.error("changeRole error:", error);
+      alert(`Change role failed: ${error.message}`);
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${r.email} role changed to ${role}`);
+    load();
+  };
 
   const renderTable = (list: ProfileRow[], showActions = false) => (
     <Table>
@@ -169,7 +189,48 @@ export default function Approvals() {
             <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="erp-card p-2">{renderTable(pending, true)}</TabsContent>
-          <TabsContent value="approved" className="erp-card p-2">{renderTable(approved)}</TabsContent>
+          <TabsContent value="approved" className="erp-card p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Change Role</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {approved.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">No records</TableCell></TableRow>
+                )}
+                {approved.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.full_name || "—"}</TableCell>
+                    <TableCell className="text-sm">{r.email}</TableCell>
+                    <TableCell className="text-sm">{r.phone || "—"}</TableCell>
+                    <TableCell><Badge variant="default">{r.status}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Select
+                          value={pendingRoleSel[r.id] || r.requested_role || "bde"}
+                          onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
+                        >
+                          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
+                          <Check className="h-3.5 w-3.5 mr-1" /> Change
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TabsContent>
           <TabsContent value="rejected" className="erp-card p-2">{renderTable(rejected)}</TabsContent>
         </Tabs>
       )}

@@ -2,9 +2,18 @@ import { Navigate } from "react-router-dom";
 import { Sprout, Clock, XCircle, RefreshCw, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 export default function WaitingApproval() {
   const { session, profile, loading, signOut, refresh } = useAuth();
+
+  // Auto-poll every 5 seconds — when admin approves, user is redirected automatically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!loading && !session) return <Navigate to="/auth" replace />;
   if (!loading && profile?.status === "approved") return <Navigate to="/dashboards/executive" replace />;

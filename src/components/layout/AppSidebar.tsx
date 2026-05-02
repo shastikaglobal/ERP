@@ -103,7 +103,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                 {profile?.full_name && profile.full_name !== profile.email ? profile.full_name : (profile?.email ? "User" : "User")}
               </div>
               <div className="text-[10px] text-sidebar-muted truncate capitalize">
-                {roleSlugs.size > 0 ? Array.from(roleSlugs).join(", ") : "Approved user"}
+                {roleSlugs.size > 0
+                ? Array.from(roleSlugs).map(s =>
+                    s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                  ).join(", ")
+                : "No role assigned"}
               </div>
             </div>
           </div>

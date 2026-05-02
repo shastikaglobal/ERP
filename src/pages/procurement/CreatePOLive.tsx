@@ -174,7 +174,10 @@ export default function CreatePOLive() {
                   </Select>
                 </div>
                 <div className="col-span-1 text-right text-sm tabular-nums">
-                  {((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toFixed(2)}
+                  {(() => {
+                    const val = (Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
+                    return val > 0 && val < 0.01 ? val.toFixed(4) : val.toFixed(2);
+                  })()}
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button type="button" size="icon" variant="ghost" onClick={() => removeRow(idx)} disabled={items.length === 1}>
@@ -186,7 +189,9 @@ export default function CreatePOLive() {
           </div>
           <div className="mt-4 pt-3 border-t border-border flex justify-end gap-8 text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-semibold tabular-nums">{currency} {subtotal.toFixed(2)}</span>
+            <span className="font-semibold tabular-nums">
+              {currency} {subtotal > 0 && subtotal < 0.01 ? subtotal.toFixed(4) : subtotal.toFixed(2)}
+            </span>
           </div>
         </Section>
 
