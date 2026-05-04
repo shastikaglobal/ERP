@@ -2,14 +2,15 @@ import { FileText, Download, Printer } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
+import { previewDocument } from "@/lib/utils";
 
 export default function DocumentViewer() {
   return (
     <div>
       <PageHeader title="Document Viewer" description="Preview any export document" breadcrumbs={[{ label: "Documents" }, { label: "Viewer" }]}
         actions={<>
-          <Button variant="outline" size="sm"><Printer className="h-4 w-4 mr-1.5" />Print</Button>
-          <Button size="sm"><Download className="h-4 w-4 mr-1.5" />Download</Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1.5" />Print</Button>
+          <Button size="sm" onClick={() => previewDocument('INV_2025_0156.pdf')}><FileText className="h-4 w-4 mr-1.5" />Preview</Button>
         </>} />
       <Section>
         <div className="bg-muted/40 border border-border rounded-md min-h-[600px] flex flex-col items-center justify-center p-8">

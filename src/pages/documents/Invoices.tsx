@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { invoices } from "@/data/mock";
+import { previewDocument } from "@/lib/utils";
 
 export default function Invoices() {
   const nav = useNavigate();
@@ -22,6 +23,13 @@ export default function Invoices() {
           { key: "amount", header: "Amount", render: (r) => <span className="font-medium tabular-nums">{r.currency} {r.amount.toLocaleString()}</span> },
           { key: "status", header: "Status", render: (r) => <StatusBadge status={r.status} /> },
           { key: "due", header: "Due", render: (r) => <span className="text-xs">{r.dueAt}</span> },
+          { key: "actions", header: "", render: (r) => (
+            <div className="flex justify-end">
+              <Button variant="ghost" size="icon" onClick={() => previewDocument(`Invoice_${r.id.replace(/-/g, '_')}.pdf`)}>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          ) },
         ]}
       />
     </div>

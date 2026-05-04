@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { shipments } from "@/data/mock";
+import { previewDocument } from "@/lib/utils";
 
 export default function BillsOfLading() {
   return (
@@ -19,7 +20,9 @@ export default function BillsOfLading() {
                 <div className="text-xs text-muted-foreground">{s.carrier} · {s.origin} → {s.destination}</div>
               </div>
               <StatusBadge status={s.status} />
-              <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1.5" />PDF</Button>
+              <Button variant="outline" size="sm" onClick={() => previewDocument(`BL_${s.id.replace(/-/g, '_')}.pdf`)}>
+                <Download className="h-3.5 w-3.5 mr-1.5" />Preview
+              </Button>
             </div>
           ))}
         </div>

@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { previewDocument } from "@/lib/utils";
 
 const certs = [
   { id: "COO-2025-0042", customer: "Mumbai Textiles Ltd", country: "India → Germany", status: "Approved", issued: "2025-04-15" },
@@ -24,7 +25,9 @@ export default function Certificates() {
                 <div className="text-xs text-muted-foreground">{c.customer} · {c.country} · Issued {c.issued}</div>
               </div>
               <StatusBadge status={c.status} />
-              <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1.5" />PDF</Button>
+              <Button variant="outline" size="sm" onClick={() => previewDocument(`${c.id.replace(/-/g, '_')}.pdf`)}>
+                <Download className="h-3.5 w-3.5 mr-1.5" />Preview
+              </Button>
             </div>
           ))}
         </div>

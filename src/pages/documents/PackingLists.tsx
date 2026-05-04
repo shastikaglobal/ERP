@@ -1,8 +1,9 @@
-import { FileBox, Download } from "lucide-react";
+import { FileBox, Download, FileText } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { shipments } from "@/data/mock";
+import { previewDocument } from "@/lib/utils";
 
 export default function PackingLists() {
   return (
@@ -13,7 +14,9 @@ export default function PackingLists() {
           <Section key={s.id}>
             <div className="flex items-start justify-between mb-3">
               <div className="h-10 w-10 rounded-md bg-info-muted text-info flex items-center justify-center"><FileBox className="h-5 w-5" /></div>
-              <Button variant="ghost" size="icon" className="h-7 w-7"><Download className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => previewDocument(`PL_${s.id.replace(/-/g, '_')}.pdf`)}>
+                <FileText className="h-3.5 w-3.5" />
+              </Button>
             </div>
             <div className="font-semibold text-sm">PL-{s.id.slice(3)}</div>
             <div className="text-xs text-muted-foreground mt-1">{s.customer}</div>

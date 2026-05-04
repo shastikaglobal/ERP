@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Loader2, Plus, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -41,6 +42,10 @@ export default function LeadActivities() {
   const [leadId, setLeadId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete Confirm state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -128,15 +133,23 @@ export default function LeadActivities() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this activity?")) return;
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteId) return;
     try {
-      const { error } = await supabase.from("activities").delete().eq("id", id);
+      const { error } = await supabase.from("activities").delete().eq("id", deleteId);
       if (error) throw error;
       toast.success("Activity deleted");
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete activity");
+    } finally {
+      setConfirmOpen(false);
+      setDeleteId(null);
     }
   };
 
@@ -255,7 +268,7 @@ export default function LeadActivities() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(activity.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => confirmDelete(activity.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -265,6 +278,17 @@ export default function LeadActivities() {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Activity"
+        description="Are you sure you want to delete this activity? This action cannot be undone."
+        onConfirm={executeDelete}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setDeleteId(null);
+        }}
+      />
     </div>
   );
 }

@@ -186,6 +186,7 @@ const App = () => (
               <Route path="/shipments/:id" element={<ShipmentDetail />} />
 
               {/* Documents */}
+              <Route path="/documents" element={<Navigate to="/documents/invoices" replace />} />
               <Route path="/documents/invoices" element={<Invoices />} />
               <Route path="/documents/packing-lists" element={<PackingLists />} />
               <Route path="/documents/certificates" element={<Certificates />} />
