@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ExportOS ERP Design System - Modern minimal SaaS (Linear/Notion-like) */
+
+/* Shastika Global Impex — Dark + Gold ERP design system
+   Page bg #141414 · Sidebar/Topbar #1c1c1c · Cards #222 · Hover #2a2a2a
+   Inputs #333 · Borders #303030 · Gold #c9961a / #e0b040 / #f2cc78 */
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 0 0% 8%;            /* #141414 page */
+    --foreground: 0 0% 94%;           /* #f0f0f0 primary text */
+
+    --card: 0 0% 13%;                 /* #222222 cards */
+    --card-foreground: 0 0% 94%;
+
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 94%;
+
+    /* Brand: gold */
+    --primary: 39 78% 45%;            /* #c9961a */
+    --primary-foreground: 0 0% 8%;    /* on gold = near-black */
+    --primary-muted: 39 78% 45%;      /* used at low alpha via /10 utility */
+    --primary-glow: 39 70% 57%;       /* #e0b040 */
+    --primary-light: 39 82% 71%;      /* #f2cc78 */
+
+    --secondary: 0 0% 17%;            /* #2a2a2a hover surface */
+    --secondary-foreground: 0 0% 94%;
+
+    --muted: 0 0% 20%;                /* #333333 input/tag bg */
+    --muted-foreground: 0 0% 60%;     /* #9a9a9a secondary text */
+
+    --accent: 39 78% 45%;             /* gold accent (use /10 for tint) */
+    --accent-foreground: 39 70% 57%;  /* #e0b040 */
+
+    --destructive: 0 67% 62%;         /* #e05c5c */
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 152 39% 48%;           /* #4caf7d */
+    --success-foreground: 0 0% 98%;
+    --success-muted: 152 39% 18%;
+
+    --warning: 39 78% 45%;            /* gold doubles as warning */
+    --warning-foreground: 0 0% 8%;
+    --warning-muted: 39 60% 18%;
+
+    --info: 213 63% 58%;              /* #5090d9 */
+    --info-foreground: 0 0% 98%;
+    --info-muted: 213 50% 20%;
+
+    --border: 0 0% 19%;               /* #303030 */
+    --input: 0 0% 20%;                /* #333333 */
+    --ring: 39 78% 45%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar / Topbar shell */
+    --sidebar-background: 0 0% 11%;   /* #1c1c1c */
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: 39 70% 57%;    /* #e0b040 active text */
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 17%;       /* hover #2a2a2a */
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 19%;
+    --sidebar-ring: 39 78% 45%;
+    --sidebar-muted: 0 0% 50%;
+
+    /* Charts on dark */
+    --chart-1: 39 78% 45%;
+    --chart-2: 152 39% 48%;
+    --chart-3: 39 82% 71%;
+    --chart-4: 213 63% 58%;
+    --chart-5: 0 67% 62%;
+
+    /* Brand gradients & elevation */
+    --gradient-gold: linear-gradient(135deg, hsl(39 70% 57%), hsl(33 75% 39%));
+    --gradient-gold-bar: linear-gradient(90deg, hsl(39 78% 45%), hsl(39 70% 57%));
+    --gradient-logo: linear-gradient(135deg, hsl(39 70% 57%), hsl(33 80% 33%));
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.5);
+    --shadow-gold: 0 8px 24px -8px hsl(39 78% 45% / 0.35);
+  }
+
+  /* Force dark by default; .dark mirrors :root for component libs that toggle it */
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 94%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 94%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 94%;
+    --primary: 39 78% 45%;
+    --primary-foreground: 0 0% 8%;
+    --primary-muted: 39 78% 45%;
+    --secondary: 0 0% 17%;
+    --secondary-foreground: 0 0% 94%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 39 78% 45%;
+    --accent-foreground: 39 70% 57%;
+    --destructive: 0 67% 62%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 152 39% 48%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 152 39% 18%;
+    --warning: 39 78% 45%;
+    --warning-foreground: 0 0% 8%;
+    --warning-muted: 39 60% 18%;
+    --info: 213 63% 58%;
+    --info-foreground: 0 0% 98%;
+    --info-muted: 213 50% 20%;
+    --border: 0 0% 19%;
+    --input: 0 0% 20%;
+    --ring: 39 78% 45%;
+  }
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3, h4 { @apply tracking-tight; }
+
+  /* Inputs/selects/textareas always use the dark muted surface */
+  input, textarea, select {
+    background-color: hsl(var(--input));
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  .erp-card {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-sm);
+  }
+  .erp-card-hover { @apply hover:bg-secondary transition-colors; }
+
+  /* Gold primary button gradient */
+  .btn-gold {
+    background: var(--gradient-gold);
+    color: hsl(var(--primary-foreground));
+    font-weight: 700;
+  }
+  .btn-gold:hover { filter: brightness(1.05); }
+
+  /* Active sidebar item: gold tint + left border */
+  .nav-active {
+    background-color: hsl(var(--primary) / 0.10);
+    border-left: 3px solid hsl(var(--primary));
+    color: hsl(var(--primary-glow));
+  }
+
+  /* Decorative gold gradient bar (progress / dividers) */
+  .gold-bar { background: var(--gradient-gold-bar); }
+
+  /* Logo mark */
+  .logo-mark { background: var(--gradient-logo); }
+}
