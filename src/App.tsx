@@ -1,0 +1,220 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import AppLayout from "./components/layout/AppLayout";
+import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
+import LeadActivities from "./pages/crm/Activities";
+import LeadsList from "./pages/crm/LeadsList";
+import LeadPipeline from "./pages/crm/Pipeline";
+import CustomersList from "./pages/crm/CustomersList";
+import CompleteProfile from "./pages/CompleteProfile";
+import WaitingApproval from "./pages/WaitingApproval";
+import Approvals from "./pages/Approvals";
+// (Quotations Approvals is imported below as QuotationApprovals to avoid name clash)
+
+// Dashboards
+import Executive from "./pages/dashboards/Executive";
+import SalesAnalytics from "./pages/dashboards/SalesAnalytics";
+import ShipmentAnalytics from "./pages/dashboards/ShipmentAnalytics";
+import FinancialOverview from "./pages/dashboards/FinancialOverview";
+import EmployeeProductivity from "./pages/dashboards/EmployeeProductivity";
+
+// Farmers
+import FarmersList from "./pages/farmers/FarmersList";
+import CreateFarmer from "./pages/farmers/CreateFarmer";
+import FarmerDetail from "./pages/farmers/FarmerDetail";
+import ConvertToCustomer from "./pages/farmers/ConvertToCustomer";
+
+// Procurement (live)
+import PurchaseOrdersListLive from "./pages/procurement/PurchaseOrdersListLive";
+import CreatePOLive from "./pages/procurement/CreatePOLive";
+import SuppliersList from "./pages/procurement/SuppliersList";
+import SupplierDetail from "./pages/procurement/SupplierDetail";
+import SupplierAnalytics from "./pages/procurement/SupplierAnalytics";
+
+// Quality Control (live)
+import InspectionsList from "./pages/qc/InspectionsList";
+import CreateInspection from "./pages/qc/CreateInspection";
+
+// Barcode & Tracking
+import BarcodesList from "./pages/barcodes/BarcodesList";
+import GenerateBarcode from "./pages/barcodes/GenerateBarcode";
+import ScanBarcode from "./pages/barcodes/ScanBarcode";
+import BarcodeDetail from "./pages/barcodes/BarcodeDetail";
+
+// Inventory (StockDashboard live; others mock)
+import ProductCatalog from "./pages/inventory/ProductCatalog";
+import CreateProduct from "./pages/inventory/CreateProduct";
+import StockDashboard from "./pages/inventory/StockDashboard";
+import StockMovements from "./pages/inventory/StockMovements";
+import Warehouses from "./pages/inventory/Warehouses";
+import LowStockAlerts from "./pages/inventory/LowStockAlerts";
+
+// Quotations
+import QuotationsList from "./pages/quotations/QuotationsList";
+import CreateQuotation from "./pages/quotations/CreateQuotation";
+import QuotationPreview from "./pages/quotations/QuotationPreview";
+import QuotationApprovals from "./pages/quotations/Approvals";
+import ConvertQuotation from "./pages/quotations/Convert";
+
+// Orders
+import OrdersList from "./pages/orders/OrdersList";
+import OrderDetail from "./pages/orders/OrderDetail";
+import CreateOrder from "./pages/orders/CreateOrder";
+import OrderStatus from "./pages/orders/OrderStatus";
+import Fulfillment from "./pages/orders/Fulfillment";
+
+// Shipments
+import ShipmentsList from "./pages/shipments/ShipmentsList";
+import CreateShipment from "./pages/shipments/CreateShipment";
+import ShipmentDetail from "./pages/shipments/ShipmentDetail";
+import ContainerTracking from "./pages/shipments/ContainerTracking";
+import DeliveryStatus from "./pages/shipments/DeliveryStatus";
+
+// Documents
+import Invoices from "./pages/documents/Invoices";
+import PackingLists from "./pages/documents/PackingLists";
+import Certificates from "./pages/documents/Certificates";
+import BillsOfLading from "./pages/documents/BillsOfLading";
+import DocumentViewer from "./pages/documents/DocumentViewer";
+
+// Payments
+import PaymentsRegister from "./pages/payments/PaymentsRegister";
+import OverduePayments from "./pages/payments/OverduePayments";
+import Ledger from "./pages/payments/Ledger";
+import FinancialReports from "./pages/payments/FinancialReports";
+
+// Employees
+import EmployeeDirectory from "./pages/employees/EmployeeDirectory";
+import Attendance from "./pages/employees/Attendance";
+import RolesPermissions from "./pages/employees/RolesPermissions";
+
+// System
+import Notifications from "./pages/system/Notifications";
+import ActivityLogs from "./pages/system/ActivityLogs";
+import Subscriptions from "./pages/system/Subscriptions";
+import Settings from "./pages/system/Settings";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route path="/waiting-approval" element={<WaitingApproval />} />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/" element={<Navigate to="/dashboards/executive" replace />} />
+              <Route path="/dashboard" element={<Navigate to="/dashboards/executive" replace />} />
+              <Route path="/approvals" element={<Approvals />} />
+
+              {/* Dashboards */}
+              <Route path="/dashboards/executive" element={<Executive />} />
+              <Route path="/dashboards/sales" element={<SalesAnalytics />} />
+              <Route path="/dashboards/shipments" element={<ShipmentAnalytics />} />
+              <Route path="/dashboards/financial" element={<FinancialOverview />} />
+              <Route path="/dashboards/employees" element={<EmployeeProductivity />} />
+
+              {/* Farmers */}
+              <Route path="/farmers" element={<FarmersList />} />
+              <Route path="/farmers/create" element={<CreateFarmer />} />
+              <Route path="/farmers/convert" element={<ConvertToCustomer />} />
+              <Route path="/farmers/:id" element={<FarmerDetail />} />
+
+              {/* Procurement (live) */}
+              <Route path="/procurement/orders" element={<PurchaseOrdersListLive />} />
+              <Route path="/procurement/orders/create" element={<CreatePOLive />} />
+              <Route path="/procurement/suppliers" element={<SuppliersList />} />
+              <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
+              <Route path="/procurement/analytics" element={<SupplierAnalytics />} />
+
+              {/* Quality Control (live) */}
+              <Route path="/qc/inspections" element={<InspectionsList />} />
+              <Route path="/qc/inspections/create" element={<CreateInspection />} />
+              <Route path="/qc/approvals" element={<InspectionsList />} />
+
+              {/* Barcode & Tracking */}
+              <Route path="/barcodes" element={<BarcodesList />} />
+              <Route path="/barcodes/generate" element={<GenerateBarcode />} />
+              <Route path="/barcodes/scan" element={<ScanBarcode />} />
+              <Route path="/barcodes/:id" element={<BarcodeDetail />} />
+
+              {/* Inventory */}
+              <Route path="/inventory/products" element={<ProductCatalog />} />
+              <Route path="/inventory/products/create" element={<CreateProduct />} />
+              <Route path="/inventory/stock" element={<StockDashboard />} />
+              <Route path="/inventory/movements" element={<StockMovements />} />
+              <Route path="/inventory/warehouses" element={<Warehouses />} />
+              <Route path="/inventory/alerts" element={<LowStockAlerts />} />
+
+              {/* Quotations */}
+              <Route path="/quotations" element={<QuotationsList />} />
+              <Route path="/quotations/create" element={<CreateQuotation />} />
+              <Route path="/quotations/approvals" element={<QuotationApprovals />} />
+              <Route path="/quotations/convert" element={<ConvertQuotation />} />
+              <Route path="/quotations/:id" element={<QuotationPreview />} />
+
+                {/* CRM */}
+                <Route path="/crm/activities" element={<LeadActivities />} />
+                <Route path="/crm/leads" element={<LeadsList />} />
+                <Route path="/crm/pipeline" element={<LeadPipeline />} />
+                <Route path="/customers" element={<CustomersList />} />
+              {/* Orders */}
+              <Route path="/orders" element={<OrdersList />} />
+              <Route path="/orders/create" element={<CreateOrder />} />
+              <Route path="/orders/status" element={<OrderStatus />} />
+              <Route path="/orders/fulfillment" element={<Fulfillment />} />
+              <Route path="/orders/:id" element={<OrderDetail />} />
+
+              {/* Shipments */}
+              <Route path="/shipments" element={<ShipmentsList />} />
+              <Route path="/shipments/create" element={<CreateShipment />} />
+              <Route path="/shipments/containers" element={<ContainerTracking />} />
+              <Route path="/shipments/delivery" element={<DeliveryStatus />} />
+              <Route path="/shipments/:id" element={<ShipmentDetail />} />
+
+              {/* Documents */}
+              <Route path="/documents/invoices" element={<Invoices />} />
+              <Route path="/documents/packing-lists" element={<PackingLists />} />
+              <Route path="/documents/certificates" element={<Certificates />} />
+              <Route path="/documents/bills-of-lading" element={<BillsOfLading />} />
+              <Route path="/documents/viewer" element={<DocumentViewer />} />
+
+              {/* Payments */}
+              <Route path="/payments" element={<PaymentsRegister />} />
+              <Route path="/payments/overdue" element={<OverduePayments />} />
+              <Route path="/payments/ledger" element={<Ledger />} />
+              <Route path="/payments/reports" element={<FinancialReports />} />
+
+              {/* Employees */}
+              <Route path="/employees" element={<EmployeeDirectory />} />
+              <Route path="/employees/attendance" element={<Attendance />} />
+              <Route path="/employees/roles" element={<RolesPermissions />} />
+
+              {/* System */}
+              <Route path="/system/notifications" element={<Notifications />} />
+              <Route path="/system/logs" element={<ActivityLogs />} />
+              <Route path="/system/subscriptions" element={<Subscriptions />} />
+              <Route path="/system/settings" element={<Settings />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
