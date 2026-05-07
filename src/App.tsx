@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -80,6 +80,7 @@ import DeliveryStatus from "./pages/shipments/DeliveryStatus";
 
 // Documents
 import Invoices from "./pages/documents/Invoices";
+import InvoicePreview from "./pages/documents/InvoicePreview";
 import PackingLists from "./pages/documents/PackingLists";
 import Certificates from "./pages/documents/Certificates";
 import BillsOfLading from "./pages/documents/BillsOfLading";
@@ -118,6 +119,11 @@ const App = () => (
             <Route path="/pending" element={<Pending />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/waiting-approval" element={<WaitingApproval />} />
+            
+            {/* Print Layout Routes (No Auth Required) */}
+            <Route path="/invoices/:id/preview" element={<InvoicePreview />} />
+
+            {/* Main App Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Navigate to="/dashboards/executive" replace />} />
               <Route path="/approvals" element={<Approvals />} />

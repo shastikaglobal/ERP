@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { ProformaInvoice } from "@/components/documents/ProformaInvoice";
 import { toast } from "sonner";
 
 export default function Invoices() {
   const nav = useNavigate();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedShipment, setSelectedShipment] = useState<any>(null);
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -43,13 +41,6 @@ export default function Invoices() {
     <div>
       <PageHeader title="Invoices" description="Generate and manage commercial invoices" breadcrumbs={[{ label: "Documents" }, { label: "Invoices" }]}
         actions={<Button size="sm" onClick={() => nav("/orders/create")}><Plus className="h-4 w-4 mr-1.5" />New Invoice</Button>} />
-      
-      {selectedShipment && (
-        <ProformaInvoice 
-          shipment={selectedShipment} 
-          onClose={() => setSelectedShipment(null)} 
-        />
-      )}
 
       {loading ? (
         <div className="flex justify-center p-12">
@@ -67,7 +58,7 @@ export default function Invoices() {
             { key: "status", header: "Status", render: (r) => <StatusBadge status={r.status} /> },
             { key: "actions", header: "", render: (r) => (
               <div className="flex justify-end">
-                <Button variant="ghost" size="icon" onClick={() => setSelectedShipment(r)}>
+                <Button variant="ghost" size="icon" onClick={() => window.open(`/invoices/${r.id}/preview`, '_blank')}>
                   <FileText className="h-4 w-4 text-primary" />
                 </Button>
               </div>
