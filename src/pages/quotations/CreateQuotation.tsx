@@ -76,9 +76,8 @@ export default function CreateQuotation() {
         company_id: profile.company_id,
         customer_id: customerId,
         quotation_number: quoteNumber,
-        amount: total,
+        total_amount: total,
         currency: currency.toUpperCase(),
-        items_count: validItems.length,
         valid_until: validUntil || null,
         status: "Draft"
       }).select("id").single();

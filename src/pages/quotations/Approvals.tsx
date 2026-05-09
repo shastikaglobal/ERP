@@ -10,11 +10,12 @@ import { toast } from "sonner";
 type Quotation = {
   id: string;
   quotation_number: string;
-  amount: number;
+  total_amount: number;
   currency: string;
   status: string;
-  items_count: number;
+  items_count?: number;
   customers: { name: string } | null;
+  quotation_items?: { id: string }[];
 };
 
 export default function QuotationApprovals() {
@@ -27,14 +28,19 @@ export default function QuotationApprovals() {
       const { data, error } = await supabase
         .from("quotations")
         .select(`
-          id, quotation_number, amount, currency, status, items_count,
-          customers (name)
+          id, quotation_number, total_amount, currency, status,
+          customers (name),
+          quotation_items (id)
         `)
         .in("status", ["Pending", "In Review"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPending(data as any);
+      const formatted = (data as any[]).map(q => ({
+        ...q,
+        items_count: q.quotation_items ? q.quotation_items.length : 0
+      }));
+      setPending(formatted);
     } catch (error: any) {
       toast.error("Failed to load pending approvals");
     } finally {
@@ -81,7 +87,7 @@ export default function QuotationApprovals() {
                   <div className="h-9 w-9 rounded-md bg-warning-muted text-warning flex items-center justify-center text-xs font-semibold">{q.currency}</div>
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{q.customers?.name || "Unknown Customer"}</div>
-                    <div className="text-xs text-muted-foreground">{q.quotation_number} · {q.items_count} items · {q.currency} {q.amount.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">{q.quotation_number} · {q.items_count} items · {q.currency} {Number(q.total_amount || 0).toLocaleString()}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

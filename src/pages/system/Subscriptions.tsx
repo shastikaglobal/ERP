@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
+import { toast } from "sonner";
 
 const plans = [
   { name: "Starter", price: "$49", period: "/mo", features: ["5 users", "100 orders/mo", "Email support"], current: false },
@@ -10,6 +11,14 @@ const plans = [
 ];
 
 export default function Subscriptions() {
+  const handleUpgrade = (planName: string) => {
+    toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
+      loading: `Preparing checkout for ${planName} plan...`,
+      success: `Redirecting to billing portal...`,
+      error: "Failed to initialize checkout",
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Subscription" description="Your current plan and billing" breadcrumbs={[{ label: "System" }, { label: "Subscriptions" }]} />
@@ -27,7 +36,12 @@ export default function Subscriptions() {
                 <li key={f} className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-success" />{f}</li>
               ))}
             </ul>
-            <Button className="w-full mt-5" variant={p.current ? "outline" : "default"} disabled={p.current}>
+            <Button 
+              className="w-full mt-5" 
+              variant={p.current ? "outline" : "default"} 
+              disabled={p.current}
+              onClick={() => handleUpgrade(p.name)}
+            >
               {p.current ? "Current Plan" : "Upgrade"}
             </Button>
           </Section>

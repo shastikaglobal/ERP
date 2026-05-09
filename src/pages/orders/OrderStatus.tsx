@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Loader2, Package, Clock, Truck, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +46,8 @@ export default function OrderStatus() {
       toast.error("Failed to update order status");
     }
   };
+
+  const getCount = (statuses: string[]) => orders.filter(o => statuses.includes(o.status)).length;
 
   return (
     <div className="p-6 space-y-6">
@@ -93,11 +96,11 @@ export default function OrderStatus() {
                 <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-lg text-center">No orders {status}</div>
               ) : (
                 groupOrders.map(order => (
-                  <Card key={order.id} className="shadow-sm border-l-4" style={{borderLeftColor: `var(--${STATUS_COLORS[order.status]?.split('-')[1]}-500)`}}>
+                  <Card key={order.id} className="shadow-sm border-l-4" style={{borderLeftColor: `var(--${(STATUS_COLORS[order.status?.toLowerCase()] || 'bg-gray-500').split('-')[1]}-500)`}}>
                     <CardHeader className="p-4 pb-2">
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-sm font-bold">{order.order_number}</CardTitle>
-                        <Badge className={`text-[10px] text-white ${STATUS_COLORS[order.status]}`}>{order.status}</Badge>
+                        <Badge className={`text-[10px] text-white ${STATUS_COLORS[order.status?.toLowerCase()] || 'bg-gray-500'}`}>{order.status || 'Unknown'}</Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-sm space-y-3">

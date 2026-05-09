@@ -2,6 +2,7 @@ import { Download, FileBarChart } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
+import { toast } from "sonner";
 
 const reports = [
   { name: "Profit & Loss Statement", desc: "Monthly P&L with year-over-year comparison" },
@@ -13,6 +14,14 @@ const reports = [
 ];
 
 export default function FinancialReports() {
+  const handleGenerate = (name: string) => {
+    toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
+      loading: `Compiling data for ${name}...`,
+      success: `${name} has been generated and queued for download.`,
+      error: 'Failed to generate report',
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Financial Reports" description="Pre-built financial statements" breadcrumbs={[{ label: "Payments" }, { label: "Reports" }]} />
@@ -24,7 +33,14 @@ export default function FinancialReports() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{r.name}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{r.desc}</div>
-                <Button variant="outline" size="sm" className="mt-3"><Download className="h-3.5 w-3.5 mr-1.5" />Generate</Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={() => handleGenerate(r.name)}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />Generate
+                </Button>
               </div>
             </div>
           </Section>

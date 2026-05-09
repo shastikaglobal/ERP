@@ -12,13 +12,14 @@ import { toast } from "sonner";
 type Quotation = {
   id: string;
   quotation_number: string;
-  amount: number;
+  total_amount: number;
   currency: string;
   status: string;
-  items_count: number;
+  items_count?: number;
   valid_until: string | null;
   created_at: string;
   customers: { name: string } | null;
+  quotation_items?: { id: string }[];
 };
 
 export default function QuotationsList() {
@@ -32,8 +33,9 @@ export default function QuotationsList() {
         const { data, error } = await supabase
           .from("quotations")
           .select(`
-            *,
-            customers (name)
+            id, quotation_number, total_amount, currency, status, valid_until, created_at,
+            customers (name),
+            quotation_items (id)
           `)
           .order("created_at", { ascending: false });
 
@@ -51,6 +53,7 @@ export default function QuotationsList() {
   const formattedData = quotations.map(q => ({
     ...q,
     customer: q.customers?.name || "Unknown",
+    items_count: q.quotation_items ? q.quotation_items.length : 0,
   }));
 
   if (loading) {
@@ -77,7 +80,7 @@ export default function QuotationsList() {
           { key: "quotation_number", header: "Quote #", render: (r) => <span className="font-mono text-xs font-semibold">{r.quotation_number}</span> },
           { key: "customer", header: "Customer", render: (r) => <span className="font-medium">{r.customer}</span> },
           { key: "items_count", header: "Items", render: (r) => <span className="tabular-nums">{r.items_count}</span> },
-          { key: "amount", header: "Amount", render: (r) => <span className="font-medium tabular-nums">{r.currency} {r.amount.toLocaleString()}</span> },
+          { key: "amount", header: "Amount", render: (r) => <span className="font-medium tabular-nums">{r.currency} {Number(r.total_amount || 0).toLocaleString()}</span> },
           { key: "status", header: "Status", render: (r) => <StatusBadge status={r.status} /> },
           { key: "valid_until", header: "Valid Until", render: (r) => <span className="text-xs text-muted-foreground">{r.valid_until ? format(new Date(r.valid_until), "PP") : "-"}</span> },
           { key: "created_at", header: "Created", render: (r) => <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), "PP")}</span> },

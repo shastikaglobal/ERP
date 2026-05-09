@@ -55,17 +55,26 @@ export function useNotifications() {
     fetchNotifications();
 
     // Real-time subscription
-    const channel = supabase
-      .channel("app-notifications-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "app_notifications" },
-        () => fetchNotifications()
-      )
-      .subscribe();
+    // Generate a unique channel name to prevent Strict Mode collisions
+    const channelName = `app-notifications-realtime-${Date.now()}-${Math.random()}`;
+    const channel = supabase.channel(channelName);
+
+    // Register ALL listeners BEFORE calling .subscribe()
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "app_notifications" },
+      () => {
+        fetchNotifications();
+      }
+    );
+
+    // Only invoke subscribe after listeners are added
+    channel.subscribe();
 
     return () => {
+      // Unsubscribe and completely remove the channel to prevent duplicate subscriptions on re-renders
       channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [fetchNotifications]);
 

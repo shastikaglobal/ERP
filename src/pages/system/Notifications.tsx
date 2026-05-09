@@ -50,7 +50,9 @@ function NotifCard({ n, onRead }: { n: AppNotification; onRead: (id: string) => 
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
         <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+          {n.created_at && !isNaN(new Date(n.created_at).getTime()) 
+            ? formatDistanceToNow(new Date(n.created_at), { addSuffix: true }) 
+            : "Just now"}
         </p>
       </div>
 
