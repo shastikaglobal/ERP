@@ -11,6 +11,10 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import LeadActivities from "./pages/crm/Activities";
 import LeadsList from "./pages/crm/LeadsList";
+import LeadDetail from "./pages/crm/LeadDetail";
+import CreateLead from "./pages/crm/CreateLead";
+import EditLead from "./pages/crm/EditLead";
+import ConvertLead from "./pages/crm/Convert";
 import LeadPipeline from "./pages/crm/Pipeline";
 import EmailIntegration from "./pages/crm/EmailIntegration";
 import CompleteProfile from "./pages/CompleteProfile";
@@ -182,8 +186,12 @@ const App = () => (
                 {/* CRM */}
                 <Route path="/crm/activities" element={<LeadActivities />} />
                 <Route path="/crm/leads" element={<LeadsList />} />
+                <Route path="/crm/leads/create" element={<CreateLead />} />
+                <Route path="/crm/leads/:id" element={<LeadDetail />} />
+                <Route path="/crm/leads/:id/edit" element={<EditLead />} />
                 <Route path="/crm/pipeline" element={<LeadPipeline />} />
                 <Route path="/crm/email" element={<EmailIntegration />} />
+                <Route path="/crm/convert" element={<ConvertLead />} />
               {/* Orders */}
               <Route path="/orders" element={<OrdersList />} />
               <Route path="/orders/create" element={<CreateOrder />} />

@@ -1,81 +1,103 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { to, subject, message, leadName } = await req.json();
+    const { to, subject, text, html, attachments, companyId } = await req.json();
 
-    if (!to || !subject || !message) {
-      throw new Error("Missing required fields: to, subject, or message");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: company } = await supabaseClient.from("companies").select("*").eq("id", companyId).single();
+
+    if (!company?.smtp_host || !company?.smtp_user || !company?.smtp_pass) {
+      throw new Error("SMTP settings are incomplete.");
     }
 
-    if (!RESEND_API_KEY) {
-      // For development/demo purposes if API key is not set
-      console.warn("RESEND_API_KEY is not set. Simulating email send.");
-      console.log(`To: ${to}\nSubject: ${subject}\nMessage: ${message}`);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return new Response(JSON.stringify({ success: true, simulated: true }), {
+    const smtpConfig = {
+      hostname: company.smtp_host,
+      port: parseInt(company.smtp_port || "587"),
+      username: company.smtp_user,
+      password: company.smtp_pass,
+      from: company.from_email || company.smtp_user
+    };
+
+    // 1. Process attachments
+    const processedAttachments = [];
+    if (attachments && Array.isArray(attachments)) {
+      for (const att of attachments) {
+        const response = await fetch(att.url);
+        const blob = await response.blob();
+        const buffer = await blob.arrayBuffer();
+        const uint8 = new Uint8Array(buffer);
+        
+        // Convert to base64 for deno-smtp
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+
+        processedAttachments.push({
+          filename: att.filename,
+          content: base64,
+          encoding: "base64"
+        });
+      }
+    }
+
+    const client = new SmtpClient();
+    
+    try {
+      const connConfig = {
+        hostname: smtpConfig.hostname,
+        port: smtpConfig.port,
+        username: smtpConfig.username,
+        password: smtpConfig.password,
+      };
+
+      if (smtpConfig.port === 465) {
+        await client.connectTLS(connConfig);
+      } else {
+        await client.connect(connConfig);
+      }
+
+      await client.send({
+        from: smtpConfig.from,
+        to: to,
+        subject: subject,
+        content: text || "This email requires an HTML compatible viewer",
+        html: html || text,
+        attachments: processedAttachments
+      });
+
+      await client.close();
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
-    }
-
-    // Call Resend API
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "BDE Team <bde@shastika.com>", // Make sure this domain is verified in Resend
-        to: [to],
-        subject: subject,
-        html: `
-          <div style="font-family: sans-serif; max-w-2xl mx-auto p-4">
-            <p>Hi ${leadName || 'there'},</p>
-            <p style="white-space: pre-wrap;">${message}</p>
-            <hr style="margin-top: 2rem; border-color: #eee;" />
-            <p style="color: #666; font-size: 0.875rem;">Sent securely via Shastika ERP</p>
-          </div>
-        `,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.text();
-      console.error("Resend API Error:", errorData);
-      throw new Error("Failed to send email via Resend");
-    }
-
-    const data = await res.json();
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("Error in send-email function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
+    } catch (smtpErr) {
+      console.error("SMTP Error:", smtpErr);
+      return new Response(JSON.stringify({ error: `Zoho Error: ${smtpErr.message}` }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+        status: 400,
+      });
+    }
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

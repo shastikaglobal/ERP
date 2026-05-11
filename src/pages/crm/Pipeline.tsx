@@ -16,12 +16,14 @@ type Lead = {
 };
 
 const STAGES = [
-  { id: "new", label: "New", color: "bg-slate-500" },
-  { id: "contacted", label: "Contacted", color: "bg-blue-500" },
-  { id: "negotiation", label: "Negotiation", color: "bg-yellow-500" },
-  { id: "qualified", label: "Qualified", color: "bg-purple-500" },
-  { id: "won", label: "Won", color: "bg-green-500" },
-  { id: "lost", label: "Lost", color: "bg-red-500" }
+  { id: "New", label: "New", color: "bg-slate-500" },
+  { id: "Contacted", label: "Contacted", color: "bg-blue-400" },
+  { id: "Qualified", label: "Qualified", color: "bg-purple-500" },
+  { id: "Proposal", label: "Proposal", color: "bg-orange-500" },
+  { id: "Negotiation", label: "Negotiation", color: "bg-yellow-500" },
+  { id: "Nurturing", label: "Nurturing", color: "bg-cyan-500" },
+  { id: "Won", label: "Won", color: "bg-emerald-500" },
+  { id: "Lost", label: "Lost", color: "bg-rose-500" }
 ];
 
 export default function LeadPipeline() {

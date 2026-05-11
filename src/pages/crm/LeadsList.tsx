@@ -23,15 +23,17 @@ type Lead = {
   profiles?: { full_name: string };
 };
 
-const STAGES = ["new", "contacted", "negotiation", "qualified", "won", "lost"];
+const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "Nurturing", "Won", "Lost"];
 
 const STAGE_COLORS: Record<string, string> = {
-  new: "bg-slate-500",
-  contacted: "bg-blue-500",
-  negotiation: "bg-yellow-500",
-  qualified: "bg-purple-500",
-  won: "bg-green-500",
-  lost: "bg-red-500",
+  New: "bg-slate-500",
+  Contacted: "bg-blue-400",
+  Qualified: "bg-purple-500",
+  Proposal: "bg-orange-500",
+  Negotiation: "bg-yellow-500",
+  Nurturing: "bg-cyan-500",
+  Won: "bg-emerald-500",
+  Lost: "bg-rose-500",
 };
 
 export default function LeadsList() {
@@ -57,13 +59,19 @@ export default function LeadsList() {
 
   const fetchLeads = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single();
+      if (!profile?.company_id) return;
+
       const { data, error } = await supabase
         .from("leads")
         .select(`
           id, company_name, contact_name, country, interested_product, stage, assigned_to,
           profiles:assigned_to (full_name)
         `)
-        .eq('company_id', (await supabase.from('profiles').select('company_id').eq('id', (await supabase.auth.getSession()).data.session?.user?.id).single()).data?.company_id)
+        .eq('company_id', profile.company_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -115,7 +123,7 @@ export default function LeadsList() {
         contact_name: contactName,
         country: country,
         interested_product: product,
-        stage: "new",
+        stage: "New",
         assigned_to: assignedTo || userId,
         created_by: userId,
         company_id: (await supabase.from('profiles').select('company_id').eq('id', userId).single()).data?.company_id
@@ -158,7 +166,7 @@ export default function LeadsList() {
       if (customerError) throw customerError;
 
       // 2. Update Lead Stage (optional, maybe 'converted')
-      await supabase.from("leads").update({ stage: "won" }).eq("id", lead.id);
+      await supabase.from("leads").update({ stage: "Won" }).eq("id", lead.id);
 
       toast.success(`${lead.company_name} is now a registered Customer!`);
       fetchLeads();
@@ -191,51 +199,9 @@ export default function LeadsList() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Leads</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" /> Add Lead</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Create New Lead</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddLead} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">Company Name *</Label>
-                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} required className="bg-background border-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Contact Name</Label>
-                <Input value={contactName} onChange={(e) => setContactName(e.target.value)} className="bg-background border-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Country</Label>
-                <Input value={country} onChange={(e) => setCountry(e.target.value)} className="bg-background border-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Interested Product</Label>
-                <Input value={product} onChange={(e) => setProduct(e.target.value)} className="bg-background border-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Assign To</Label>
-                <Select value={assignedTo} onValueChange={setAssignedTo}>
-                  <SelectTrigger className="bg-background border-input">
-                    <SelectValue placeholder="Select user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {team.map(member => (
-                      <SelectItem key={member.id} value={member.id}>{member.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save Lead
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => nav("/crm/leads/create")}>
+          <Plus className="mr-2 h-4 w-4" /> Add Lead
+        </Button>
       </div>
 
       <div className="border border-border rounded-lg bg-card overflow-hidden shadow-sm">
@@ -266,8 +232,12 @@ export default function LeadsList() {
               </TableRow>
             ) : (
               leads.map((lead) => (
-                <TableRow key={lead.id} className="border-border hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-bold text-foreground">{lead.company_name}</TableCell>
+                <TableRow 
+                  key={lead.id} 
+                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => nav(`/crm/leads/${lead.id}`)}
+                >
+                  <TableCell className="font-bold text-foreground hover:text-primary transition-colors">{lead.company_name}</TableCell>
                   <TableCell className="text-sm">{lead.contact_name || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.interested_product || "-"}</TableCell>
@@ -285,7 +255,7 @@ export default function LeadsList() {
                         }
                       }}
                     >
-                      <SelectTrigger className={`h-8 w-32 ${STAGE_COLORS[lead.stage]} text-white border-none font-bold capitalize`}>
+                      <SelectTrigger className={`h-8 w-32 ${STAGE_COLORS[lead.stage] || 'bg-slate-500'} text-white border-none font-bold`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -300,21 +270,21 @@ export default function LeadsList() {
                           size="sm" 
                           variant="outline" 
                           className="h-8 text-[10px] font-bold uppercase tracking-wider"
-                          onClick={() => nav("/quotations/create", { state: { lead: lead } })}
+                          onClick={(e) => { e.stopPropagation(); nav("/quotations/create", { state: { lead: lead } }); }}
                         >
                           Quote
                         </Button>
-                        {lead.stage === "won" && (
+                        {lead.stage === "Won" && (
                         <Button 
                           size="sm" 
                           variant="outline" 
                           className="h-8 text-[10px] font-bold uppercase tracking-wider border-emerald-500/50 text-emerald-500 hover:bg-emerald-500 hover:text-white"
-                          onClick={() => convertToCustomer(lead)}
+                          onClick={(e) => { e.stopPropagation(); convertToCustomer(lead); }}
                         >
                           Convert
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10" onClick={() => confirmDelete(lead.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); confirmDelete(lead.id); }}>
                         <Trash2 className="h-4 w-4 text-destructive opacity-50 hover:opacity-100" />
                       </Button>
                     </div>

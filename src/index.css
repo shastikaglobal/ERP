@@ -1,3 +1,4 @@
+@import "react-quill/dist/quill.snow.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -179,4 +180,33 @@
 
   /* Logo mark */
   .logo-mark { background: var(--gradient-logo); }
+
+  /* Custom Quill Overrides for Dark Mode */
+  .ql-toolbar.ql-snow {
+    @apply border-border bg-card rounded-t-xl;
+    border-bottom: 0;
+  }
+  .ql-container.ql-snow {
+    @apply border-border bg-muted/30 rounded-b-xl min-h-[200px] text-base;
+  }
+  .ql-editor {
+    @apply text-foreground;
+  }
+  .ql-snow .ql-stroke {
+    @apply stroke-muted-foreground;
+  }
+  .ql-snow .ql-fill {
+    @apply fill-muted-foreground;
+  }
+  .ql-snow .ql-picker {
+    @apply text-muted-foreground;
+  }
+  .ql-snow.ql-toolbar button:hover .ql-stroke,
+  .ql-snow.ql-toolbar button.ql-active .ql-stroke {
+    @apply stroke-primary;
+  }
+  .ql-snow.ql-toolbar button:hover .ql-fill,
+  .ql-snow.ql-toolbar button.ql-active .ql-fill {
+    @apply fill-primary;
+  }
 }
