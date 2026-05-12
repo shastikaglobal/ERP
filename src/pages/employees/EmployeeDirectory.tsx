@@ -180,7 +180,7 @@ export default function EmployeeDirectory() {
                       <div className="font-semibold truncate" title={e.full_name || "Unknown"}>
                         {e.full_name || "Unknown"}
                       </div>
-                      {isAdminOrManager && <StatusBadge status={e.is_active ? "Active" : "Inactive"} />}
+                      {isAdminOrManager && !e.is_active && <StatusBadge status="Inactive" />}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted inline-flex px-2 py-0.5 rounded mb-3">
                       {roleName}

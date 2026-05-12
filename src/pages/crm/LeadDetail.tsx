@@ -290,7 +290,6 @@ export default function LeadDetail() {
     }
   };
 
-  const [syncing, setSyncing] = useState(false);
   const handleSyncEmails = async () => {
     setSyncing(true);
     try {
