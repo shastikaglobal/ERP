@@ -19,7 +19,7 @@ export default function BarcodeDetail() {
       const { data, error } = await supabase
         .from("batch_barcodes")
         .select(
-          "id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name))"
+            "id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, net_weight, packing_date, sku_code, carton_number_total, batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name))"
         )
         .eq("id", id!)
         .maybeSingle();
@@ -95,22 +95,26 @@ export default function BarcodeDetail() {
           </div>
         </Section>
 
-        <Section title="Batch details">
+        <Section title="Cargo details">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <Field label="Type">
-              <span className="capitalize">
-                {data.level}
-                {data.box_number != null ? ` · Box #${data.box_number}` : ""}
-              </span>
-            </Field>
             <Field label="Status"><StatusBadge status={data.status} /></Field>
             <Field label="Current location"><StatusBadge status={data.current_location} /></Field>
+            <Field label="Carton No.">
+              <span className="font-bold">
+                {data.box_number} / {data.carton_number_total || "—"}
+              </span>
+            </Field>
+            <Field label="Net Weight">
+              <span className="text-emerald-500 font-bold">
+                {data.net_weight ? `${data.net_weight} Kg` : "—"}
+              </span>
+            </Field>
+            <Field label="Packing Date">{data.packing_date || "—"}</Field>
+            <Field label="SKU / Product Code">{data.sku_code || "—"}</Field>
             <Field label="Scans"><span className="tabular-nums">{data.scan_count}</span></Field>
             <Field label="Product">{data.batch?.product?.name ?? "—"}</Field>
-            <Field label="Grade">{data.batch?.grade ?? "—"}</Field>
             <Field label="Supplier">{data.batch?.farmer?.full_name ?? "—"}</Field>
             <Field label="Warehouse">{data.batch?.warehouse?.name ?? "—"}</Field>
-            <Field label="Received">{data.batch?.received_date ?? "—"}</Field>
             <Field label="Last scanned">
               {data.last_scanned_at ? new Date(data.last_scanned_at).toLocaleString() : "Never"}
             </Field>

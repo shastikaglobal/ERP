@@ -15,7 +15,7 @@ export default function CreateOrder() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [productsList, setProductsList] = useState<{id: string, name: string}[]>([]);
+  const [productsList, setProductsList] = useState<{id: string, name: string, unit?: string}[]>([]);
   const [leadsList, setLeadsList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -23,12 +23,17 @@ export default function CreateOrder() {
       if (!profile?.company_id) return;
       
       const [productsRes, leadsRes] = await Promise.all([
-        supabase.from('products').select('id, name').eq('company_id', profile.company_id).order('name'),
-        supabase.from('leads').select('id, company_name, contact_name, country, interested_product').eq('stage', 'won').order('company_name')
+        supabase.from('products').select('id, name, unit').eq('company_id', profile.company_id).order('name'),
+        supabase.from('leads')
+          .select('id, company_name, email, country, interested_product')
+          .eq('company_id', profile.company_id)
+          .order('company_name')
       ]);
       
       if (productsRes.data) setProductsList(productsRes.data);
-      if (leadsRes.data) setLeadsList(leadsRes.data);
+      if (leadsRes.data) {
+        setLeadsList(leadsRes.data);
+      }
     };
     loadData();
   }, [profile?.company_id]);
@@ -45,14 +50,23 @@ export default function CreateOrder() {
     if (!selectedLeadId) return;
     const lead = leadsList.find(l => l.id === selectedLeadId);
     if (lead) {
-      setCustomerName(lead.company_name || lead.contact_name);
+      setCustomerName(lead.company_name || "");
       setCustomerCountry(lead.country || "");
-      if (lead.interested_product && !product) setProduct(lead.interested_product);
+      setCustomerEmail(lead.email || "");
+      if (lead.interested_product) setProduct(lead.interested_product);
     }
   }, [selectedLeadId, leadsList]);
 
   const [quantity, setQuantity] = useState<number | "">("");
-  const [unit, setUnit] = useState("kg");
+  const [unit, setUnit] = useState("");
+  
+  // Update unit when product is selected
+  useEffect(() => {
+    if (!product) return;
+    const p = productsList.find(item => item.name === product);
+    if (p?.unit) setUnit(p.unit);
+  }, [product, productsList]);
+  
   const [unitPrice, setUnitPrice] = useState<number | "">("");
   const [currency, setCurrency] = useState("USD");
   const [expectedDelivery, setExpectedDelivery] = useState("");
@@ -135,15 +149,23 @@ export default function CreateOrder() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Select CRM Customer</Label>
+              <Label className="text-primary font-bold">Select CRM Buyer / Lead</Label>
               <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
-                <SelectTrigger><SelectValue placeholder="Select a converted lead (Optional)" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-primary/5 border-primary/20">
+                  <SelectValue placeholder="Choose a Lead from CRM" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-white/10">
                   {leadsList.map(l => (
-                    <SelectItem key={l.id} value={l.id}>{l.company_name || l.contact_name}</SelectItem>
+                    <SelectItem key={l.id} value={l.id}>
+                      <div className="flex flex-col">
+                        <span className="font-bold">{l.company_name}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">{l.country || 'Global'} Buyer</span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground italic">Note: Export Orders are created for Buyers. For Farmers/Suppliers, use the Procurement section.</p>
             </div>
             <div className="space-y-2">
               <Label>Customer Name *</Label>

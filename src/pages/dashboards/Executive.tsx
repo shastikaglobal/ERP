@@ -181,7 +181,7 @@ export default function ExecutiveDashboard() {
         </div>
       </div>
 
-      <WorkflowHelper />
+      <WorkflowHelper profile={profile} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
         <StatCard label="Total Revenue" value={isLive ? `$${(totalRevenue / 1000).toFixed(1)}K` : "$0"} delta={{ value: "Live", positive: true }} hint="last 6 months" icon={<DollarSign className="h-4 w-4" />} />

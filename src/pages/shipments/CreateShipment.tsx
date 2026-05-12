@@ -161,7 +161,8 @@ export default function CreateShipment() {
         destination_port: destinationPort,
         departure_date: departureDate || null,
         eta: eta || null,
-        status: 'Pending'
+        status: 'Pending',
+        created_by: profile!.id
       }).select().single();
 
       if (shipErr) throw shipErr;

@@ -42,6 +42,7 @@ import ConvertToCustomer from "./pages/farmers/ConvertToCustomer";
 // Procurement (live)
 import PurchaseOrdersListLive from "./pages/procurement/PurchaseOrdersListLive";
 import CreatePOLive from "./pages/procurement/CreatePOLive";
+import PurchaseOrderDetailLive from "./pages/procurement/PurchaseOrderDetailLive";
 import SuppliersList from "./pages/procurement/SuppliersList";
 import SupplierDetail from "./pages/procurement/SupplierDetail";
 import SupplierAnalytics from "./pages/procurement/SupplierAnalytics";
@@ -79,6 +80,7 @@ import OrderDetail from "./pages/orders/OrderDetail";
 import CreateOrder from "./pages/orders/CreateOrder";
 import OrderStatus from "./pages/orders/OrderStatus";
 import Fulfillment from "./pages/orders/Fulfillment";
+import OrderReport from "./pages/orders/OrderReport";
 
 // Shipments
 import ShipmentsList from "./pages/shipments/ShipmentsList";
@@ -153,6 +155,7 @@ const App = () => (
               {/* Procurement (live) */}
               <Route path="/procurement/orders" element={<PurchaseOrdersListLive />} />
               <Route path="/procurement/orders/create" element={<CreatePOLive />} />
+              <Route path="/procurement/orders/:id" element={<PurchaseOrderDetailLive />} />
               <Route path="/procurement/suppliers" element={<SuppliersList />} />
               <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
               <Route path="/procurement/analytics" element={<SupplierAnalytics />} />
@@ -199,6 +202,7 @@ const App = () => (
               <Route path="/orders/status" element={<OrderStatus />} />
               <Route path="/orders/fulfillment" element={<Fulfillment />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
+              <Route path="/orders/:id/report" element={<OrderReport />} />
 
               {/* Shipments */}
               <Route path="/shipments" element={<ShipmentsList />} />

@@ -44,21 +44,43 @@ export default function ConvertLead() {
     fetchEligibleLeads();
   }, []);
 
-  const handleConvert = async (lead: Lead) => {
+  const handleConvert = async (lead: any) => {
     setConverting(lead.id);
     try {
-      // Mark as won
-      const { error } = await supabase
+      // 1. First, create the official Customer record
+      const { data: customer, error: customerError } = await supabase
+        .from("customers")
+        .insert({
+          name: lead.company_name,
+          email: lead.email || null,
+          phone: lead.phone || null,
+          country: lead.country || null,
+          company_id: lead.company_id,
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (customerError) {
+        if (customerError.code === '23505') {
+          throw new Error("This customer already exists in your directory.");
+        }
+        throw customerError;
+      }
+
+      // 2. Mark the lead as won
+      const { error: leadError } = await supabase
         .from("leads")
         .update({ stage: "won" })
         .eq("id", lead.id);
 
-      if (error) throw error;
+      if (leadError) throw leadError;
       
-      toast.success(`${lead.company_name} successfully converted to customer!`);
+      toast.success(`${lead.company_name} is now an official Customer!`);
       // Remove from list
       setEligible(eligible.filter(l => l.id !== lead.id));
     } catch (error: any) {
+      console.error("Conversion error:", error);
       toast.error(error.message || "Failed to convert lead");
     } finally {
       setConverting(null);

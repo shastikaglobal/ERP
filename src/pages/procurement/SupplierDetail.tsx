@@ -82,6 +82,21 @@ export default function SupplierDetail() {
     setIsEditing(false);
   };
 
+  const handleRate = async (newRating: number) => {
+    try {
+      const { error } = await supabase
+        .from("suppliers")
+        .update({ rating: newRating })
+        .eq("id", id);
+
+      if (error) throw error;
+      setSupplier({ ...supplier, rating: newRating });
+      toast.success(`Supplier rated ${newRating} stars`);
+    } catch (err: any) {
+      toast.error("Failed to update rating");
+    }
+  };
+
   if (loading) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -208,10 +223,25 @@ export default function SupplierDetail() {
               <>
                 <div className="pt-4 border-t">
                   <p className="text-sm font-medium mb-2">Rating</p>
-                  <div className="flex">
-                    {Array(5).fill(0).map((_, i) => (
-                      <Star key={i} className={`h-5 w-5 ${i < supplier.rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
-                    ))}
+                  <div className="flex gap-1">
+                    {Array(5).fill(0).map((_, i) => {
+                      const starValue = i + 1;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => handleRate(starValue)}
+                          className="focus:outline-none group transition-transform active:scale-90"
+                        >
+                          <Star 
+                            className={`h-5 w-5 transition-colors ${
+                              starValue <= (supplier.rating || 0) 
+                                ? "text-yellow-500 fill-yellow-500" 
+                                : "text-gray-600 group-hover:text-yellow-400"
+                            }`} 
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="pt-4 border-t">

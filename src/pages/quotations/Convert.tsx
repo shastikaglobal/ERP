@@ -23,14 +23,26 @@ export default function ConvertQuotation() {
         .from('quotations')
         .select(`
           *,
-          customer:customers(name, country)
+          customer:customers(name, country),
+          items:quotation_items(quantity, product_id, products(name, unit))
         `)
         .eq('company_id', profile.company_id)
         .eq('status', 'Approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Production Filter: Exclude demo/test names
+      const demoNames = [
+        'abc corporation', 'anamika', 'asmii', 'bunny', 'dhana', 'dove', 
+        'global solutions', 'kalai', 'Gayathri', 'kaviya', 'ram', 
+        'shastika', 'sneka', 'vinoth', 'vishnu', 'yellow'
+      ];
+
+      return (data || []).filter(q => {
+        const name = q.customer?.name?.toLowerCase() || '';
+        return !demoNames.includes(name);
+      });
     },
     enabled: !!profile?.company_id
   });
@@ -41,18 +53,29 @@ export default function ConvertQuotation() {
       const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const orderNumber = `ORD-${year}-${rand}`;
 
+      // Calculate totals and get units from items
+      const totalQty = quote.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+      const productSummary = quote.items?.map((i: any) => i.products?.name || 'Product').join(", ").substring(0, 100) || 'Export Goods';
+      const mainUnit = quote.items?.[0]?.products?.unit || 'kg';
+
       // 1. Create Order
       const { data: order, error: orderErr } = await supabase
         .from('export_orders')
         .insert({
           company_id: profile!.company_id,
-          customer_id: quote.customer_id,
+          customer_name: quote.customer?.name || 'Unknown',
+          customer_country: quote.customer?.country || 'N/A',
           order_number: orderNumber,
           total_amount: quote.amount,
           currency: quote.currency,
+          quantity: totalQty > 0 ? totalQty : 1,
+          unit_price: totalQty > 0 ? (quote.amount / totalQty) : quote.amount,
+          unit: mainUnit,
+          product: productSummary,
           status: 'Pending',
           payment_terms: quote.payment_terms,
           payment_status: 'unpaid',
+          created_by: profile!.id,
           notes: `Converted from Quotation ${quote.quotation_number}`
         })
         .select('id')

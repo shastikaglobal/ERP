@@ -22,7 +22,7 @@ export default function CreateInspection() {
   const [foreign, setForeign] = useState("");
   const [broken, setBroken] = useState("");
   const [grade, setGrade] = useState("A");
-  const [result, setResult] = useState("approved");
+  const [result, setResult] = useState("pending");
   const [notes, setNotes] = useState("");
 
   const { data: batches, isLoading: batchesLoading } = useQuery({

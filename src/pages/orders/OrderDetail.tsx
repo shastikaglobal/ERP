@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Building2, MapPin, Package, Mail, Calendar, DollarSign, Edit3 } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, MapPin, Package, Mail, Calendar, DollarSign, Edit3, Printer, Download } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -67,15 +67,32 @@ export default function OrderDetail() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => navigate("/orders")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Order {order.order_number}</h1>
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            Placed on {format(new Date(order.order_date), "PPP")}
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate("/orders")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Order {order.order_number}</h1>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              Placed on {format(new Date(order.order_date), "PPP")}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            className="border-[#1A5276] text-[#1A5276] hover:bg-[#1A5276]/5"
+            onClick={() => window.open(`/orders/${id}/report`, '_blank')}
+          >
+            <Printer className="h-4 w-4 mr-2" /> Print Report
+          </Button>
+          <Button 
+            className="bg-[#1A5276] hover:bg-[#154360]"
+            onClick={() => window.open(`/orders/${id}/report?download=true`, '_blank')}
+          >
+            <Download className="h-4 w-4 mr-2" /> Export PDF
+          </Button>
         </div>
       </div>
 

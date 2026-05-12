@@ -1,6 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
+// Technical Polyfill needed for modern Deno environments
+if (typeof Deno.writeAll !== "function") {
+  Deno.writeAll = async (w: any, data: Uint8Array) => {
+    let nwritten = 0;
+    while (nwritten < data.length) {
+      nwritten += await w.write(data.subarray(nwritten));
+    }
+  };
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -25,32 +35,27 @@ Deno.serve(async (req) => {
 
     const smtpConfig = {
       hostname: company.smtp_host,
-      port: parseInt(company.smtp_port || "587"),
+      port: parseInt(String(company.smtp_port) || "587"),
       username: company.smtp_user,
       password: company.smtp_pass,
       from: company.from_email || company.smtp_user
     };
 
-    // 1. Process attachments
     const processedAttachments = [];
     if (attachments && Array.isArray(attachments)) {
       for (const att of attachments) {
         const response = await fetch(att.url);
-        const blob = await response.blob();
-        const buffer = await blob.arrayBuffer();
-        const uint8 = new Uint8Array(buffer);
-        
-        // Convert to base64 for deno-smtp
-        let binary = "";
+        const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
+        
+        let binary = "";
         for (let i = 0; i < bytes.byteLength; i++) {
           binary += String.fromCharCode(bytes[i]);
         }
-        const base64 = btoa(binary);
 
         processedAttachments.push({
           filename: att.filename,
-          content: base64,
+          content: btoa(binary),
           encoding: "base64"
         });
       }
@@ -59,24 +64,27 @@ Deno.serve(async (req) => {
     const client = new SmtpClient();
     
     try {
-      const connConfig = {
-        hostname: smtpConfig.hostname,
-        port: smtpConfig.port,
-        username: smtpConfig.username,
-        password: smtpConfig.password,
-      };
-
       if (smtpConfig.port === 465) {
-        await client.connectTLS(connConfig);
+        await client.connectTLS({
+          hostname: smtpConfig.hostname,
+          port: smtpConfig.port,
+          username: smtpConfig.username,
+          password: smtpConfig.password,
+        });
       } else {
-        await client.connect(connConfig);
+        await client.connect({
+          hostname: smtpConfig.hostname,
+          port: smtpConfig.port,
+          username: smtpConfig.username,
+          password: smtpConfig.password,
+        });
       }
 
       await client.send({
         from: smtpConfig.from,
         to: to,
         subject: subject,
-        content: text || "This email requires an HTML compatible viewer",
+        content: text || "HTML Email",
         html: html || text,
         attachments: processedAttachments
       });
@@ -88,7 +96,7 @@ Deno.serve(async (req) => {
       });
     } catch (smtpErr) {
       console.error("SMTP Error:", smtpErr);
-      return new Response(JSON.stringify({ error: `Zoho Error: ${smtpErr.message}` }), {
+      return new Response(JSON.stringify({ error: smtpErr.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });

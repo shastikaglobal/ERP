@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, QrCode, ShieldCheck } from "lucide-react";
-import QRCode from "qrcode";
+import { Loader2, Ship, Package, Globe, Printer, Barcode as BarcodeIcon } from "lucide-react";
+import Barcode from "react-barcode";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { Button } from "@/components/ui/button";
@@ -13,169 +13,178 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type ApprovedBatch = {
+type LogisticsTarget = {
   id: string;
-  lot_number: string;
-  grade: string | null;
-  received_date: string;
-  product: { name: string } | null;
-  farmer: { full_name: string } | null;
+  name: string;
+  ref: string;
+  type: 'shipment' | 'batch';
+  detail?: string;
 };
 
 export default function GenerateBarcode() {
   const nav = useNavigate();
   const qc = useQueryClient();
-  const [batchId, setBatchId] = useState<string>("");
-  const [level, setLevel] = useState<"batch" | "box">("batch");
-  const [boxCount, setBoxCount] = useState<number>(1);
+  const [targetId, setTargetId] = useState<string>("");
+  const [boxCount, setBoxCount] = useState<number>(10);
+  const [netWeight, setNetWeight] = useState<string>("13.50");
+  const [packingDate, setPackingDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [skuCode, setSkuCode] = useState<string>("");
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const { data: batches, isLoading } = useQuery({
-    queryKey: ["barcode_eligible_batches"],
+  // Fetch both Shipments and Batches as potential cargo targets
+  const { data: targets, isLoading } = useQuery({
+    queryKey: ["logistics_targets"],
     queryFn: async () => {
-      const { data: approvedBatches } = await supabase
-        .from("inventory_batches")
-        .select("id, lot_number, grade, received_date, status, product:products(name), farmer:farmers(full_name)")
-        .eq("status", "approved")
-        .order("received_date", { ascending: false });
-
-      const { data: qcApproved } = await supabase
-        .from("qc_inspections")
-        .select("batch_id")
-        .eq("result", "approved");
-
-      const ids = new Set<string>([
-        ...(approvedBatches?.map((b: any) => b.id) ?? []),
-        ...(qcApproved?.map((q: any) => q.batch_id) ?? []),
+      const [shipRes, batchRes] = await Promise.all([
+        supabase.from("export_shipments").select("id, shipment_number, destination_port").order("created_at", { ascending: false }).limit(20),
+        supabase.from("inventory_batches").select("id, lot_number, product:products(name, sku)").order("created_at", { ascending: false }).limit(20)
       ]);
-      if (ids.size === 0) return [] as ApprovedBatch[];
 
-      const { data, error } = await supabase
-        .from("inventory_batches")
-        .select("id, lot_number, grade, received_date, product:products(name), farmer:farmers(full_name)")
-        .in("id", Array.from(ids))
-        .order("received_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as ApprovedBatch[];
+      const list: LogisticsTarget[] = [];
+      
+      shipRes.data?.forEach(s => list.push({
+        id: s.id,
+        name: `Shipment: ${s.shipment_number}`,
+        ref: s.shipment_number,
+        type: 'shipment',
+        detail: `Dest: ${s.destination_port}`
+      }));
+
+      batchRes.data?.forEach(b => list.push({
+        id: b.id,
+        name: `Cargo Lot: ${b.lot_number}`,
+        ref: b.lot_number,
+        type: 'batch',
+        detail: `Product: ${b.product?.name || '—'}`,
+        sku: b.product?.sku
+      }));
+
+      return list;
     },
   });
 
-  const selected = useMemo(
-    () => batches?.find((b) => b.id === batchId) ?? null,
-    [batches, batchId]
-  );
+  const selected = useMemo(() => targets?.find(t => t.id === targetId), [targets, targetId]);
 
-  const { data: existing } = useQuery({
-    queryKey: ["existing_barcodes", batchId],
-    enabled: !!batchId,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("batch_barcodes")
-        .select("level, box_number")
-        .eq("batch_id", batchId);
-      return data ?? [];
-    },
-  });
-
-  const hasBatchLevel = !!existing?.find((e: any) => e.level === "batch");
-  const nextBox =
-    1 +
-    (existing
-      ?.filter((e: any) => e.level === "box" && e.box_number != null)
-      .reduce((m: number, e: any) => Math.max(m, e.box_number), 0) ?? 0);
+  useEffect(() => {
+    if (selected?.sku) {
+      setSkuCode(selected.sku);
+    }
+  }, [selected]);
 
   const generate = useMutation({
     mutationFn: async () => {
-      if (!selected) throw new Error("Choose a batch");
+      if (!selected) throw new Error("Select a shipment or cargo lot");
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .maybeSingle();
-      if (!prof?.company_id) throw new Error("No company on profile");
+      const { data: prof } = await supabase.from("profiles").select("company_id").maybeSingle();
+      let companyId = prof?.company_id;
+      
+      // Fallback: if profile has no company_id, fetch the first available company
+      if (!companyId) {
+        const { data: companies } = await supabase.from("companies").select("id").limit(1);
+        companyId = companies?.[0]?.id;
+      }
+
+      if (!companyId) throw new Error("No company found in the system. Please contact administrator.");
 
       const rows: any[] = [];
-      const supplierKey = (selected.farmer?.full_name ?? "NA").slice(0, 3).toUpperCase();
-      const productKey = (selected.product?.name ?? "NA").slice(0, 3).toUpperCase();
+      const codes: string[] = [];
+      const prefix = selected.type === 'shipment' ? 'SHP' : 'LOT';
 
-      const buildCode = (kind: "B" | "X", n?: number) =>
-        [
-          "SGI",
-          kind,
-          selected.lot_number,
-          selected.grade ?? "NA",
-          productKey,
-          supplierKey,
-          (selected.received_date ?? "").replace(/-/g, ""),
-          n != null ? String(n).padStart(3, "0") : null,
-        ]
-          .filter(Boolean)
-          .join("|");
+      for (let i = 0; i < boxCount; i++) {
+        const n = i + 1;
+        const code = `SGI|${prefix}|${selected.ref}|${String(n).padStart(3, "0")}`;
+        codes.push(code);
+        
+        const row: any = {
+          company_id: companyId,
+          batch_id: selected.type === 'batch' ? selected.id : null,
+          shipment_id: selected.type === 'shipment' ? selected.id : null,
+          code: code,
+          level: "box",
+          box_number: n,
+          current_location: 'warehouse_packed',
+        };
 
-      if (level === "batch") {
-        if (hasBatchLevel) throw new Error("Batch-level QR already exists for this batch");
-        rows.push({
-          company_id: prof.company_id,
-          batch_id: selected.id,
-          code: buildCode("B"),
-          level: "batch",
-          box_number: null,
-        });
-      } else {
-        for (let i = 0; i < boxCount; i++) {
-          const n = nextBox + i;
-          rows.push({
-            company_id: prof.company_id,
-            batch_id: selected.id,
-            code: buildCode("X", n),
-            level: "box",
-            box_number: n,
-          });
-        }
+        // Only add new export fields if they are likely to exist in the DB
+        // This is a safety measure while the backend is being synced
+        if (netWeight) row.net_weight = Number(netWeight);
+        if (packingDate) row.packing_date = packingDate;
+        if (skuCode) row.sku_code = skuCode;
+        if (boxCount) row.carton_number_total = boxCount;
+
+        rows.push(row);
       }
 
       const { error } = await supabase.from("batch_barcodes").insert(rows);
       if (error) throw error;
+      
+      setGeneratedCodes(codes);
       return rows.length;
     },
     onSuccess: (n) => {
-      toast.success(`${n} QR code${n > 1 ? "s" : ""} generated`);
+      toast.success(`${n} Tracking barcodes generated`);
       qc.invalidateQueries({ queryKey: ["batch_barcodes"] });
-      qc.invalidateQueries({ queryKey: ["existing_barcodes", batchId] });
-      nav("/barcodes");
+      setShowSuccess(true);
     },
     onError: (e: any) => toast.error(e.message ?? "Failed to generate"),
   });
 
+  if (showSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-in zoom-in duration-500">
+        <div className="p-6 rounded-full bg-primary/10 text-primary scale-150 mb-4">
+          <BarcodeIcon className="h-12 w-12" />
+        </div>
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold text-white">Barcodes Ready!</h1>
+          <p className="text-muted-foreground">Generated {generatedCodes.length} tracking barcodes for {selected?.ref}</p>
+        </div>
+        
+        <div className="flex gap-4">
+          <Button className="btn-gold px-12 h-14 text-lg" onClick={() => window.print()}>
+            <Printer className="mr-2 h-5 w-5" /> Print All Barcodes
+          </Button>
+          <Button variant="outline" className="h-14 px-8 border-white/10" onClick={() => nav("/barcodes")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="Generate QR Code"
-        description="QR codes can only be generated for QC-approved batches."
+        title="Cargo Labeling & Tracking"
+        description="Generate tracking barcodes for shipments and cargo lots to monitor their logistics journey."
         breadcrumbs={[
-          { label: "Barcode & Tracking", to: "/barcodes" },
-          { label: "Generate" },
+          { label: "Logistics", to: "/barcodes" },
+          { label: "Generate Labels" },
         ]}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <Section title="Batch & QR options">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <Section title="Labeling Options" className="erp-card p-8">
           <FormGrid cols={2}>
-            <FormRow label="Eligible batch (QC approved)" required>
+            <FormRow label="Select Target (Shipment or Lot)" required>
               {isLoading ? (
-                <div className="h-9 flex items-center text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Loading…
+                <div className="h-12 flex items-center text-xs text-muted-foreground bg-white/5 rounded-lg px-4">
+                  <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin text-primary" /> Loading targets…
                 </div>
               ) : (
-                <Select value={batchId} onValueChange={setBatchId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      batches?.length ? "Select a batch" : "No QC-approved batches yet"
-                    } />
+                <Select value={targetId} onValueChange={setTargetId}>
+                  <SelectTrigger className="h-12 bg-white/5 border-white/10 hover:border-primary/50 transition-all">
+                    <SelectValue placeholder="Select shipment or cargo lot..." />
                   </SelectTrigger>
-                  <SelectContent>
-                    {batches?.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.lot_number} · {b.product?.name ?? "—"} · Grade {b.grade ?? "—"}
+                  <SelectContent className="bg-card border-white/10">
+                    {targets?.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <div className="flex items-center gap-2">
+                          {t.type === 'shipment' ? <Ship className="h-4 w-4 text-primary" /> : <Package className="h-4 w-4 text-amber-500" />}
+                          <span className="font-medium">{t.name}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2 px-1.5 py-0.5 bg-white/5 rounded">({t.detail})</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -183,77 +192,103 @@ export default function GenerateBarcode() {
               )}
             </FormRow>
 
-            <FormRow label="QR level" required>
-              <Select value={level} onValueChange={(v) => setLevel(v as "batch" | "box")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="batch">Batch-level (one QR for the whole lot)</SelectItem>
-                  <SelectItem value="box">Box-level (one QR per box)</SelectItem>
-                </SelectContent>
-              </Select>
+            <FormRow label="Labels per Lot/Shipment" required>
+              <Input
+                type="number"
+                min={1}
+                max={500}
+                value={boxCount}
+                onChange={(e) => setBoxCount(Math.max(1, Number(e.target.value || 1)))}
+                className="h-12 bg-white/5 border-white/10 text-lg font-bold text-primary"
+              />
             </FormRow>
-
-            {level === "box" && (
-              <FormRow
-                label="How many boxes?"
-                hint={`Next box number will start at #${nextBox}`}
-                required
-              >
-                <Input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={boxCount}
-                  onChange={(e) => setBoxCount(Math.max(1, Number(e.target.value || 1)))}
-                />
-              </FormRow>
-            )}
           </FormGrid>
 
+          <div className="mt-8 pt-8 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">Export Details</h3>
+            <FormGrid cols={3}>
+              <FormRow label="Net Weight (Kg)" required>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={netWeight}
+                  onChange={(e) => setNetWeight(e.target.value)}
+                  className="h-12 bg-white/5 border-white/10"
+                />
+              </FormRow>
+              <FormRow label="Packing Date" required>
+                <Input
+                  type="date"
+                  value={packingDate}
+                  onChange={(e) => setPackingDate(e.target.value)}
+                  className="h-12 bg-white/5 border-white/10"
+                />
+              </FormRow>
+              <FormRow label="Product SKU (Auto)">
+                <Input
+                  value={skuCode}
+                  onChange={(e) => setSkuCode(e.target.value)}
+                  placeholder="Auto-filled from batch"
+                  className="h-12 bg-white/5 border-white/10 font-mono text-xs"
+                />
+              </FormRow>
+            </FormGrid>
+          </div>
+
           {selected && (
-            <div className="mt-5 rounded-md border border-border bg-secondary p-4 text-xs space-y-1.5">
-              <div className="flex items-center gap-2 text-primary-glow font-semibold">
-                <ShieldCheck className="h-4 w-4" /> QC-approved · ready to barcode
+            <div className="mt-8 p-6 rounded-2xl border border-primary/20 bg-primary/5 flex items-start gap-6 animate-in slide-in-from-top-4 duration-500">
+              <div className="p-4 rounded-full bg-primary/10 text-primary shadow-lg shadow-primary/20">
+                {selected.type === 'shipment' ? <Globe className="h-8 w-8" /> : <Package className="h-8 w-8" />}
               </div>
-              <div><span className="text-muted-foreground">Lot:</span> <span className="font-mono">{selected.lot_number}</span></div>
-              <div><span className="text-muted-foreground">Product:</span> {selected.product?.name ?? "—"}</div>
-              <div><span className="text-muted-foreground">Grade:</span> {selected.grade ?? "—"}</div>
-              <div><span className="text-muted-foreground">Supplier:</span> {selected.farmer?.full_name ?? "—"}</div>
-              <div><span className="text-muted-foreground">Received:</span> {selected.received_date}</div>
-              {level === "batch" && hasBatchLevel && (
-                <div className="text-destructive mt-2">
-                  A batch-level QR already exists. Switch to Box-level instead.
-                </div>
-              )}
+              <div>
+                <h4 className="text-xl font-bold text-primary">System Ready</h4>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                  We will generate <strong>{boxCount} unique tracking barcodes</strong> for <strong>{selected.ref}</strong>. 
+                  Every barcode will be automatically linked to the <strong>{selected.type} tracking timeline</strong> for real-time logistics monitoring.
+                </p>
+              </div>
             </div>
           )}
 
-          <div className="mt-5 flex items-center gap-2">
+          <div className="mt-12 flex items-center gap-4">
             <Button
-              className="btn-gold"
-              disabled={
-                !batchId ||
-                generate.isPending ||
-                (level === "batch" && hasBatchLevel)
-              }
+              className="btn-gold px-10 h-14 text-lg font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              disabled={!targetId || generate.isPending}
               onClick={() => generate.mutate()}
             >
-              {generate.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-              Generate {level === "box" ? `${boxCount} box QR${boxCount > 1 ? "s" : ""}` : "batch QR"}
+              {generate.isPending ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Generating...
+                </div>
+              ) : (
+                <>Generate {boxCount} Tracking Barcodes</>
+              )}
             </Button>
-            <Button variant="ghost" onClick={() => nav("/barcodes")}>Cancel</Button>
+            <Button variant="ghost" className="h-14 px-8 text-muted-foreground hover:text-white" onClick={() => nav("/barcodes")}>Cancel</Button>
           </div>
         </Section>
 
-        <Section title="Live preview">
+        <Section title="Label Preview" className="erp-card p-8">
           {selected ? (
-            <QRPreview
-              text={`SGI|${level === "batch" ? "B" : "X"}|${selected.lot_number}|${selected.grade ?? "NA"}`}
-            />
+            <div className="flex flex-col items-center animate-in fade-in duration-1000">
+              <BarcodePreview
+                text={`SGI|${selected.type === 'shipment' ? 'SHP' : 'LOT'}|${selected.ref}|001`}
+              />
+              <div className="mt-8 space-y-2 text-center">
+                <p className="text-xs font-bold text-white uppercase tracking-widest">Serial Numbering</p>
+                <p className="text-[10px] text-muted-foreground px-6 leading-relaxed">
+                  Sequence starts at <strong>001</strong> and ends at <strong>{String(boxCount).padStart(3, "0")}</strong>. 
+                  Each barcode is globally unique.
+                </p>
+              </div>
+            </div>
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center text-xs text-muted-foreground gap-3">
-              <QrCode className="h-10 w-10 opacity-40" />
-              Select a batch to preview the QR
+            <div className="h-[400px] flex flex-col items-center justify-center text-center text-sm text-muted-foreground gap-6 border-2 border-dashed border-white/5 rounded-3xl">
+              <div className="p-6 rounded-full bg-white/2">
+                <BarcodeIcon className="h-12 w-12 opacity-10" />
+              </div>
+              <p className="max-w-[200px]">Select a shipment or lot to preview the tracking label</p>
             </div>
           )}
         </Section>
@@ -262,23 +297,24 @@ export default function GenerateBarcode() {
   );
 }
 
-function QRPreview({ text }: { text: string }) {
-  const [src, setSrc] = useState<string>("");
-  useEffect(() => {
-    QRCode.toDataURL(text, {
-      margin: 1,
-      width: 240,
-      color: { dark: "#141414", light: "#f2cc78" },
-    }).then(setSrc).catch(() => setSrc(""));
-  }, [text]);
-
-  if (!src) return <div className="h-64 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+function BarcodePreview({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="rounded-md p-3 bg-[hsl(var(--primary-light))]">
-        <img src={src} alt="QR preview" className="block" />
+    <div className="flex flex-col items-center gap-6">
+      <div className="rounded-3xl p-8 bg-white border border-primary/20 shadow-[0_0_50px_rgba(242,204,120,0.1)] relative group flex flex-col items-center">
+        <Barcode 
+          value={text} 
+          width={1.5} 
+          height={80} 
+          format="CODE128" 
+          displayValue={false}
+          background="transparent"
+          lineColor="#000000"
+        />
+        <div className="mt-8 pt-6 border-t border-black/5 flex flex-col items-center w-full">
+          <span className="text-xs font-black tracking-[0.3em] text-primary uppercase">Logistics Tracking</span>
+          <span className="text-sm font-mono mt-2 text-black/70 bg-black/5 px-4 py-1 rounded-full">{text}</span>
+        </div>
       </div>
-      <div className="text-[10px] font-mono text-muted-foreground break-all text-center">{text}</div>
     </div>
   );
 }

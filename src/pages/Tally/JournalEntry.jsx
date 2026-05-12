@@ -8,12 +8,7 @@ import { Plus, Trash2, Save, CheckCheck, AlertTriangle, Lock, Loader2 } from 'lu
 
 const statusVariant = { Posted: 'default', Draft: 'secondary' }
 
-const ACCOUNTS = [
-  'Cash Account','Bank — HDFC','Sales Account','Purchase Account',
-  'CGST Payable','SGST Payable','IGST Payable','Raj Exports',
-  'Priya Traders','Office Rent','Salary Expense','Capital Account',
-  'Sundry Debtors','Stock in Hand',
-]
+
 
 const DEFAULT_ROWS = [
   { account: '', drcr: 'Dr', debit: '', credit: '', gst: 'None' },
@@ -42,6 +37,30 @@ function NewEntryForm({ onSaved }) {
   const [narration, setNarration] = useState('')
   const [rows, setRows] = useState(DEFAULT_ROWS)
   const [saving, setSaving] = useState(false)
+  const [accountsList, setAccountsList] = useState([
+    'Cash Account', 'Bank — HDFC', 'Sales Account', 'Purchase Account',
+    'CGST Payable', 'SGST Payable', 'IGST Payable', 'Office Rent', 
+    'Salary Expense', 'Capital Account', 'Sundry Debtors', 'Stock in Hand'
+  ])
+
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const { data: customers } = await supabase.from('customers').select('name')
+        const { data: suppliers } = await supabase.from('suppliers').select('name')
+        
+        const dynamicAccounts = [
+          ...accountsList,
+          ...(customers?.map(c => c.name) || []),
+          ...(suppliers?.map(s => s.name) || [])
+        ]
+        setAccountsList([...new Set(dynamicAccounts)].sort())
+      } catch (err) {
+        console.error("Failed to load dynamic accounts", err)
+      }
+    }
+    loadAccounts()
+  }, [])
 
   const addRow = () => setRows((r) => [...r, { account: '', drcr: 'Dr', debit: '', credit: '', gst: 'None' }])
   const delRow = (i) => setRows((r) => r.filter((_, idx) => idx !== i))
@@ -166,7 +185,7 @@ function NewEntryForm({ onSaved }) {
                 <td className="px-4 py-3">
                   <select value={row.account} onChange={e => upd(i, 'account', e.target.value)} className="w-full bg-[#1c1c1c] border border-[#333333] rounded-lg text-white text-xs py-1.5 px-3 placeholder-[#4a4a4a] focus:border-[#F59E0B] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(245,158,11,0.3)] hover:border-[#F59E0B]">
                     <option value="">— Select Account —</option>
-                    {ACCOUNTS.map((a) => <option key={a}>{a}</option>)}
+                    {accountsList.map((a) => <option key={a}>{a}</option>)}
                   </select>
                 </td>
                 <td className="px-4 py-3">

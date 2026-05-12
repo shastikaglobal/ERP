@@ -24,6 +24,7 @@ export default function CreatePOLive() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [suppliers, setSuppliers] = useState<{id: string, name: string}[]>([]);
+  const [products, setProducts] = useState<{id: string, name: string, unit: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -37,31 +38,26 @@ export default function CreatePOLive() {
   ]);
 
   useEffect(() => {
-    const fetchSuppliers = async () => {
+    const fetchData = async () => {
       try {
-        // Fetching from 'farmers' table as they are the primary suppliers in this ERP
-        const { data, error } = await supabase
-          .from("farmers")
-          .select("id, full_name")
-          .eq("is_active", true);
+        const [supRes, prodRes] = await Promise.all([
+          supabase.from("farmers").select("id, full_name").eq("is_active", true),
+          supabase.from("products").select("id, name, unit").eq("is_active", true)
+        ]);
           
-        if (error) throw error;
+        if (supRes.error) throw supRes.error;
+        if (prodRes.error) throw prodRes.error;
         
-        // Map farmers to a standard supplier format for the UI
-        const mappedSuppliers = (data || []).map(f => ({
-          id: f.id,
-          name: f.full_name
-        }));
-        
-        setSuppliers(mappedSuppliers);
+        setSuppliers((supRes.data || []).map(f => ({ id: f.id, name: f.full_name })));
+        setProducts((prodRes.data || []).map(p => ({ id: p.id, name: p.name, unit: p.unit })));
       } catch (err: any) {
-        toast.error("Failed to load suppliers/farmers");
+        toast.error("Failed to load catalog data");
         console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchSuppliers();
+    fetchData();
   }, []);
 
   const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
@@ -76,7 +72,18 @@ export default function CreatePOLive() {
   };
 
   const updateItem = (id: string, field: keyof POItem, value: any) => {
-    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    setItems(items.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: value };
+        // If product changes, try to auto-fill the unit
+        if (field === 'product') {
+          const prod = products.find(p => p.id === value);
+          if (prod) updated.unit = prod.unit;
+        }
+        return updated;
+      }
+      return item;
+    }));
   };
 
   const handleSave = async (status: 'draft' | 'sent') => {
@@ -84,32 +91,44 @@ export default function CreatePOLive() {
       return toast.error("Authentication error. Please refresh and try again.");
     }
     if (!supplierId) return toast.error("Please select a supplier");
-    if (items.some(i => !i.product)) return toast.error("Please fill all product names");
+    if (items.some(i => !i.product)) return toast.error("Select a product for all items");
 
     setSaving(true);
     try {
-      // Generate a unique PO number for this company
-      const poNumber = `PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      
-      // Clean items for storage
-      const cleanItems = items.map(({ id, ...rest }) => rest);
+      // Step 1: Generate a professional PO number instantly
+      const timestamp = new Date().getTime().toString().slice(-4);
+      const year = new Date().getFullYear();
+      const generatedPoNumber = `PO-${year}-${timestamp}`;
 
-      const { error } = await supabase.from("purchase_orders").insert({
+      // Step 2: Create the PO header
+      const { data: po, error: poErr } = await supabase.from("purchase_orders").insert({
+        po_number: generatedPoNumber,
         company_id: profile.company_id,
-        po_number: poNumber,
         farmer_id: supplierId,
-        status: status === 'draft' ? 'draft' : 'approved', // 'sent' maps to 'approved' in po_status enum
+        status: status === 'draft' ? 'draft' : 'approved',
         expected_delivery: expectedDate ? new Date(expectedDate).toISOString() : null,
         total: totalAmount,
+        subtotal: totalAmount,
         currency,
-        items: cleanItems,
         notes,
-        created_by: user.id
-      });
+        created_by: user.id,
+        order_date: new Date().toISOString()
+      }).select().single();
 
-      if (error) throw error;
+      if (poErr) throw poErr;
 
-      toast.success(`Purchase order ${status === 'draft' ? 'saved as draft' : 'issued'} successfully`);
+      // Step 2: Create the PO items linked to products
+      const itemRows = items.map(i => ({
+        po_id: po.id,
+        product_id: i.product,
+        quantity: i.quantity,
+        unit_price: i.unit_price
+      }));
+
+      const { error: itemsErr } = await supabase.from("purchase_order_items").insert(itemRows);
+      if (itemsErr) throw itemsErr;
+
+      toast.success(`Purchase order ${po.po_number} ${status === 'draft' ? 'saved' : 'issued'} successfully`);
       navigate("/procurement/orders");
     } catch (err: any) {
       toast.error(err.message || "Failed to create purchase order");
@@ -167,12 +186,16 @@ export default function CreatePOLive() {
                   {items.map((item, index) => (
                     <TableRow key={item.id} className="group border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <TableCell className="pl-6 py-4">
-                        <Input 
-                          placeholder="What are you buying?" 
-                          value={item.product} 
-                          onChange={(e) => updateItem(item.id, "product", e.target.value)} 
-                          className="border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary/50 px-0 h-8 text-white placeholder:text-muted-foreground/30"
-                        />
+                        <Select value={item.product} onValueChange={(val) => updateItem(item.id, "product", val)}>
+                          <SelectTrigger className="border-none bg-transparent hover:bg-white/5 h-8 focus:ring-1 focus:ring-primary/50 transition-colors">
+                            <SelectValue placeholder="Select product..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-card border-white/10 max-h-[200px]">
+                            {products.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="py-4">
                         <Input 

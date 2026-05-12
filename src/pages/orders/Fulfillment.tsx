@@ -12,22 +12,29 @@ export default function Fulfillment() {
   const [loading, setLoading] = useState(true);
   const [shippingIds, setShippingIds] = useState<string[]>([]);
 
-  const fetchFulfillments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("export_orders")
-        .select("*")
-        .in("status", ["confirmed", "processing"])
-        .order("expected_delivery", { ascending: true });
-        
-      if (error) throw error;
-      setOrders(data || []);
-    } catch (err: any) {
-      toast.error("Failed to load fulfillments");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchFulfillments = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      
+      const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single();
+      if (!profile?.company_id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("export_orders")
+          .select("*")
+          .eq('company_id', profile.company_id)
+          .in("status", ["confirmed", "processing", "pending", "Pending"])
+          .order("created_at", { ascending: false });
+          
+        if (error) throw error;
+        setOrders(data || []);
+      } catch (err: any) {
+        toast.error("Failed to load fulfillments");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
     fetchFulfillments();
