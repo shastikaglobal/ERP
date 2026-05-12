@@ -14,12 +14,29 @@ export const chartOfAccounts = [
 ];
 
 const SearchBar = ({ placeholder, value, onChange }) => (
-  <Input 
+  <input 
     type="text" 
     placeholder={placeholder} 
     value={value} 
     onChange={onChange} 
-    className="w-64 bg-card/50 border-border text-sm h-8 focus:ring-amber-500/20 focus:border-amber-500/50"
+    style={{
+      backgroundColor: '#0f0f0f',
+      border: '1px solid #333',
+      color: '#ffffff',
+      borderRadius: '8px',
+      padding: '8px 14px',
+      fontSize: '13px',
+      minWidth: '220px',
+      outline: 'none',
+    }}
+    onFocus={(e) => {
+      e.target.style.borderColor = '#f0a500';
+      e.target.style.boxShadow = '0 0 0 2px rgba(240,165,0,0.15)';
+    }}
+    onBlur={(e) => {
+      e.target.style.borderColor = '#333';
+      e.target.style.boxShadow = 'none';
+    }}
   />
 )
 
@@ -85,7 +102,26 @@ export default function ChartOfAccounts() {
       <PageHeader
         title="Chart of Accounts"
         breadcrumbs={[{ label: 'Home' }, { label: 'Masters' }, { label: 'Chart of Accounts' }]}
-        actions={<button className="btn-gold text-xs py-1.5"><Plus size={13} /> New Account</button>}
+        actions={
+          <button 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#f0a500',
+              color: '#000000',
+              border: '1.5px solid #f0a500',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              boxShadow: '0 0 12px rgba(240,165,0,0.3)',
+            }}
+          >
+            <Plus size={15} /> New Account
+          </button>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
@@ -106,11 +142,32 @@ export default function ChartOfAccounts() {
                 <button
                   key={t}
                   onClick={() => setTypeFilter(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    typeFilter === t
-                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-                  }`}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    ...(typeFilter === t
+                      ? {
+                          background: '#f0a500',
+                          color: '#000',
+                          border: '1px solid #f0a500',
+                          boxShadow: '0 0 8px rgba(240,165,0,0.3)'
+                        }
+                      : {
+                          background: 'transparent',
+                          color: '#888',
+                          border: '1px solid #333'
+                        })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (typeFilter !== t) e.target.style.background = 'rgba(240,165,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (typeFilter !== t) e.target.style.background = 'transparent';
+                  }}
                 >
                   {t}
                 </button>

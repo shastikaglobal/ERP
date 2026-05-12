@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/badge'
 import { Tag } from '../../components/ui/tag'
 import { supabase } from '../../lib/supabase'
 import { toast } from 'sonner'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Download } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -114,9 +114,46 @@ export default function GSTReports() {
         title="GST Reports"
         breadcrumbs={[{ label: 'Home' }, { label: 'Reports' }, { label: 'GST' }]}
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <div className="flex items-center gap-2">
+            <input type="date" defaultValue="2026-03-01" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
+            <input type="date" defaultValue="2026-03-31" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
+            <button 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                color: '#f0a500',
+                border: '1.5px solid #f0a500',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={15} /> Export
+            </button>
+            <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="btn-gold"><Plus className="h-4 w-4 mr-2" /> Add GST Entry</Button>
+              <button 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#f0a500',
+                  color: '#000000',
+                  border: '1.5px solid #f0a500',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px rgba(240,165,0,0.3)',
+                }}
+              >
+                <Plus size={15} /> Add GST Entry
+              </button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] bg-card border-border">
               <DialogHeader>
@@ -184,6 +221,7 @@ export default function GSTReports() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
@@ -206,14 +244,41 @@ export default function GSTReports() {
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-border bg-card/70 shadow-sm">
-        <div className="border-b border-border bg-card/80 px-6 py-4">
-          <Tabs defaultValue="All" value={filter} onValueChange={setFilter}>
-            <TabsList className="bg-background/50">
-              <TabsTrigger value="All">All</TabsTrigger>
-              <TabsTrigger value="Sales">Sales</TabsTrigger>
-              <TabsTrigger value="Purchase">Purchase</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="border-b border-[#2a2a2a] bg-[#161616] px-6 py-4 flex gap-1">
+          {['All', 'Sales', 'Purchase'].map(t => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                ...(filter === t
+                  ? {
+                      background: '#f0a500',
+                      color: '#000',
+                      border: '1px solid #f0a500',
+                      boxShadow: '0 0 8px rgba(240,165,0,0.3)'
+                    }
+                  : {
+                      background: 'transparent',
+                      color: '#888',
+                      border: '1px solid #333'
+                    })
+              }}
+              onMouseEnter={(e) => {
+                if (filter !== t) e.target.style.background = 'rgba(240,165,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                if (filter !== t) e.target.style.background = 'transparent';
+              }}
+            >
+              {t}
+            </button>
+          ))}
         </div>
         <div className="overflow-x-auto bg-card/70">
           {loading ? (

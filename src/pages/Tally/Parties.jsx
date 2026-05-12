@@ -14,7 +14,24 @@ const SearchBar = ({ placeholder, value, onChange, children }) => (
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="input-field text-xs py-1.5 min-w-[220px]"
+      style={{
+        backgroundColor: '#0f0f0f',
+        border: '1px solid #333',
+        color: '#ffffff',
+        borderRadius: '8px',
+        padding: '8px 14px',
+        fontSize: '13px',
+        minWidth: '220px',
+        outline: 'none',
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = '#f0a500';
+        e.target.style.boxShadow = '0 0 0 2px rgba(240,165,0,0.15)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = '#333';
+        e.target.style.boxShadow = 'none';
+      }}
     />
     {children}
   </div>
@@ -41,7 +58,26 @@ export default function Parties() {
       <PageHeader
         title="Parties"
         breadcrumbs={[{ label: 'Home' }, { label: 'Masters' }, { label: 'Parties' }]}
-        actions={<button className="btn-gold text-xs py-1.5"><Plus size={13} /> Add Party</button>}
+        actions={
+          <button 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#f0a500',
+              color: '#000000',
+              border: '1.5px solid #f0a500',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              boxShadow: '0 0 12px rgba(240,165,0,0.3)',
+            }}
+          >
+            <Plus size={15} /> Add Party
+          </button>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
@@ -69,11 +105,32 @@ export default function Parties() {
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    typeFilter === t
-                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-                  }`}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    ...(typeFilter === t
+                      ? {
+                          background: '#f0a500',
+                          color: '#000',
+                          border: '1px solid #f0a500',
+                          boxShadow: '0 0 8px rgba(240,165,0,0.3)'
+                        }
+                      : {
+                          background: 'transparent',
+                          color: '#888',
+                          border: '1px solid #333'
+                        })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (typeFilter !== t) e.target.style.background = 'rgba(240,165,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (typeFilter !== t) e.target.style.background = 'transparent';
+                  }}
                 >
                   {t}
                 </button>
