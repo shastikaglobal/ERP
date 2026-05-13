@@ -67,8 +67,10 @@ export type Database = {
         Row: {
           batch_id: string
           box_number: number | null
+          carton_number_total: number | null
           code: string
           company_id: string
+          container_id: string | null
           created_at: string
           created_by: string | null
           current_location: Database["public"]["Enums"]["barcode_location"]
@@ -76,15 +78,21 @@ export type Database = {
           last_scanned_at: string | null
           last_scanned_by: string | null
           level: string
+          net_weight: number | null
+          packing_date: string | null
           scan_count: number
+          shipment_id: string | null
+          sku_code: string | null
           status: string
           updated_at: string
         }
         Insert: {
           batch_id: string
           box_number?: number | null
+          carton_number_total?: number | null
           code: string
           company_id: string
+          container_id?: string | null
           created_at?: string
           created_by?: string | null
           current_location?: Database["public"]["Enums"]["barcode_location"]
@@ -92,15 +100,21 @@ export type Database = {
           last_scanned_at?: string | null
           last_scanned_by?: string | null
           level?: string
+          net_weight?: number | null
+          packing_date?: string | null
           scan_count?: number
+          shipment_id?: string | null
+          sku_code?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           batch_id?: string
           box_number?: number | null
+          carton_number_total?: number | null
           code?: string
           company_id?: string
+          container_id?: string | null
           created_at?: string
           created_by?: string | null
           current_location?: Database["public"]["Enums"]["barcode_location"]
@@ -108,7 +122,11 @@ export type Database = {
           last_scanned_at?: string | null
           last_scanned_by?: string | null
           level?: string
+          net_weight?: number | null
+          packing_date?: string | null
           scan_count?: number
+          shipment_id?: string | null
+          sku_code?: string | null
           status?: string
           updated_at?: string
         }

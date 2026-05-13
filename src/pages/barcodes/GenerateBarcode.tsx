@@ -19,6 +19,12 @@ type LogisticsTarget = {
   ref: string;
   type: 'shipment' | 'batch';
   detail?: string;
+  sku?: string;
+  // New fields for dynamic linking
+  quantity?: number;
+  packing_details?: string;
+  total_cartons?: number;
+  unit_net_weight?: number;
 };
 
 export default function GenerateBarcode() {
@@ -37,19 +43,35 @@ export default function GenerateBarcode() {
     queryKey: ["logistics_targets"],
     queryFn: async () => {
       const [shipRes, batchRes] = await Promise.all([
-        supabase.from("export_shipments").select("id, shipment_number, destination_port").order("created_at", { ascending: false }).limit(20),
-        supabase.from("inventory_batches").select("id, lot_number, product:products(name, sku)").order("created_at", { ascending: false }).limit(20)
+        supabase.from("export_shipments").select(`
+          id, 
+          shipment_number, 
+          destination_port, 
+          total_cartons,
+          unit_net_weight,
+          export_orders(quantity, net_weight, packing_details, product, total_cartons, unit_net_weight)
+        `).order("created_at", { ascending: false }).limit(20),
+        supabase.from("inventory_batches").select("id, lot_number, quantity_kg, product:products(name, sku)").order("created_at", { ascending: false }).limit(20)
       ]);
 
       const list: LogisticsTarget[] = [];
       
-      shipRes.data?.forEach(s => list.push({
-        id: s.id,
-        name: `Shipment: ${s.shipment_number}`,
-        ref: s.shipment_number,
-        type: 'shipment',
-        detail: `Dest: ${s.destination_port}`
-      }));
+      shipRes.data?.forEach(s => {
+        const order = Array.isArray(s.export_orders) ? s.export_orders[0] : s.export_orders;
+        list.push({
+          id: s.id,
+          name: `Shipment: ${s.shipment_number}`,
+          ref: s.shipment_number,
+          type: 'shipment',
+          detail: `Dest: ${s.destination_port}`,
+          sku: order?.product,
+          quantity: order?.quantity,
+          packing_details: order?.packing_details,
+          // New formal fields (priority to shipment-level)
+          total_cartons: s.total_cartons || order?.total_cartons,
+          unit_net_weight: s.unit_net_weight || order?.unit_net_weight
+        });
+      });
 
       batchRes.data?.forEach(b => list.push({
         id: b.id,
@@ -57,7 +79,8 @@ export default function GenerateBarcode() {
         ref: b.lot_number,
         type: 'batch',
         detail: `Product: ${b.product?.name || '—'}`,
-        sku: b.product?.sku
+        sku: b.product?.sku,
+        quantity: b.quantity_kg
       }));
 
       return list;
@@ -66,11 +89,39 @@ export default function GenerateBarcode() {
 
   const selected = useMemo(() => targets?.find(t => t.id === targetId), [targets, targetId]);
 
+  // Logic to auto-fill and calculate based on selected target
   useEffect(() => {
-    if (selected?.sku) {
-      setSkuCode(selected.sku);
+    if (!selected) return;
+
+    if (selected.sku) setSkuCode(selected.sku);
+
+    // Dynamic Carton & Weight Logic
+    if (selected.type === 'shipment') {
+      // 1. Priority: Formal fields from DB
+      if (selected.unit_net_weight) {
+        setNetWeight(String(selected.unit_net_weight));
+      } else {
+        // Fallback: Parsing logic
+        const details = selected.packing_details?.toLowerCase() || "";
+        const match = details.match(/(\d+(\.\d+)?)\s*kg/);
+        const weightPerBox = match ? parseFloat(match[1]) : 13.50;
+        setNetWeight(String(weightPerBox));
+      }
+
+      if (selected.total_cartons) {
+        setBoxCount(selected.total_cartons);
+      } else if (selected.quantity) {
+        // Fallback: Calculation logic
+        const w = parseFloat(netWeight) || 13.50;
+        setBoxCount(Math.ceil(selected.quantity / w) || 10);
+      }
+    } else if (selected.type === 'batch') {
+      setNetWeight("10.00");
+      if (selected.quantity) {
+        setBoxCount(Math.ceil(selected.quantity / 10));
+      }
     }
-  }, [selected]);
+  }, [selected, netWeight]);
 
   const generate = useMutation({
     mutationFn: async () => {
@@ -87,6 +138,42 @@ export default function GenerateBarcode() {
 
       if (!companyId) throw new Error("No company found in the system. Please contact administrator.");
 
+      let currentBatchId = selected.type === 'batch' ? selected.id : null;
+
+      if (selected.type === 'shipment') {
+        const shipmentNumber = selected.ref;
+        // 1. Check if batch exists for this shipment
+        const { data: existingBatch } = await supabase
+          .from("shipment_batches")
+          .select("id")
+          .eq("shipment_id", shipmentNumber)
+          .maybeSingle();
+        
+        if (existingBatch) {
+          // 3. If batch found -> proceed as normal
+          currentBatchId = existingBatch.id;
+        } else {
+          // 2. If batch NOT found -> automatically CREATE a new batch record
+          console.log("Attempting to auto-create batch for shipment:", shipmentNumber, "UUID was:", selected.id);
+          const { data: newBatch, error: batchError } = await supabase
+            .from("shipment_batches")
+            .insert({
+              shipment_id: shipmentNumber,
+              shipment_uuid: selected.id,
+              status: 'active',
+              carton_number_total: boxCount
+            })
+            .select("id")
+            .single();
+            
+          if (batchError) {
+            console.error("Exact batch error:", batchError);
+            throw new Error(`Batch creation failed: ${batchError.message}`);
+          }
+          currentBatchId = newBatch.id;
+        }
+      }
+
       const rows: any[] = [];
       const codes: string[] = [];
       const prefix = selected.type === 'shipment' ? 'SHP' : 'LOT';
@@ -98,26 +185,22 @@ export default function GenerateBarcode() {
         
         const row: any = {
           company_id: companyId,
-          batch_id: selected.type === 'batch' ? selected.id : null,
+          batch_id: currentBatchId,
           shipment_id: selected.type === 'shipment' ? selected.id : null,
           code: code,
           level: "box",
           box_number: n,
-          current_location: 'warehouse_packed',
+          current_location: 'packing',
         };
-
-        // Only add new export fields if they are likely to exist in the DB
-        // This is a safety measure while the backend is being synced
-        if (netWeight) row.net_weight = Number(netWeight);
-        if (packingDate) row.packing_date = packingDate;
-        if (skuCode) row.sku_code = skuCode;
-        if (boxCount) row.carton_number_total = boxCount;
 
         rows.push(row);
       }
 
-      const { error } = await supabase.from("batch_barcodes").insert(rows);
-      if (error) throw error;
+      const { error: barcodeError } = await supabase.from("batch_barcodes").insert(rows);
+      if (barcodeError) {
+        console.error('Full barcode insert error:', JSON.stringify(barcodeError));
+        throw new Error(`Barcode insert failed: ${barcodeError.message}`);
+      }
       
       setGeneratedCodes(codes);
       return rows.length;
@@ -132,22 +215,53 @@ export default function GenerateBarcode() {
 
   if (showSuccess) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-in zoom-in duration-500">
-        <div className="p-6 rounded-full bg-primary/10 text-primary scale-150 mb-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-in zoom-in duration-500 print:p-0">
+        <div className="p-6 rounded-full bg-primary/10 text-primary scale-150 mb-4 print:hidden">
           <BarcodeIcon className="h-12 w-12" />
         </div>
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 print:hidden">
           <h1 className="text-4xl font-bold text-white">Barcodes Ready!</h1>
           <p className="text-muted-foreground">Generated {generatedCodes.length} tracking barcodes for {selected?.ref}</p>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex gap-4 print:hidden">
           <Button className="btn-gold px-12 h-14 text-lg" onClick={() => window.print()}>
             <Printer className="mr-2 h-5 w-5" /> Print All Barcodes
           </Button>
           <Button variant="outline" className="h-14 px-8 border-white/10" onClick={() => nav("/barcodes")}>
             Back to Dashboard
           </Button>
+        </div>
+
+        {/* Hidden Printable Section */}
+        <div className="hidden print:block print:w-full">
+          <div className="grid grid-cols-2 gap-4 p-4">
+            {generatedCodes.map((code, idx) => (
+              <div key={idx} className="border border-black p-4 flex flex-col items-center justify-center bg-white page-break-inside-avoid mb-4 h-[250px]">
+                <div className="flex flex-col items-center w-full">
+                  <div className="mb-2 font-bold text-black uppercase text-[10px] tracking-widest border-b border-black w-full text-center pb-1">
+                    Shastika Global Impex — {selected?.type === 'shipment' ? 'Shipment' : 'Cargo Lot'}
+                  </div>
+                  <Barcode 
+                    value={code} 
+                    width={1.2} 
+                    height={60} 
+                    format="CODE128" 
+                    displayValue={false}
+                    background="#ffffff"
+                    lineColor="#000000"
+                  />
+                  <div className="mt-4 text-[12px] font-mono font-bold text-black bg-gray-100 px-3 py-1 rounded border border-black/10">
+                    {code}
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 w-full text-[8px] font-bold text-black border-t border-black pt-2 uppercase">
+                    <div>Net Wt: {netWeight} Kg</div>
+                    <div className="text-right">Date: {packingDate}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

@@ -18,9 +18,11 @@ export default function BarcodeDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("batch_barcodes")
-        .select(
-            "id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, net_weight, packing_date, sku_code, carton_number_total, batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name))"
-        )
+        .select(`
+          id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at,
+          batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name)),
+          shipment:export_shipments(shipment_number, destination_port, customer_name, carrier, eta)
+        `)
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
@@ -57,7 +59,7 @@ export default function BarcodeDetail() {
   return (
     <div>
       <PageHeader
-        title={`QR · ${data.code}`}
+        title={`Tracking · ${data.code}`}
         breadcrumbs={[
           { label: "Barcode & Tracking", to: "/barcodes" },
           { label: data.code },
@@ -67,59 +69,76 @@ export default function BarcodeDetail() {
             <Button variant="outline" size="sm" onClick={() => nav("/barcodes")}>
               <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
             </Button>
-            <Button variant="outline" size="sm" onClick={download}>Download</Button>
+            <Button variant="outline" size="sm" onClick={download}>Download QR</Button>
             <Button size="sm" className="btn-gold" onClick={print}>
-              <Printer className="h-4 w-4 mr-1.5" /> Print
+              <Printer className="h-4 w-4 mr-1.5" /> Print Label
             </Button>
           </div>
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
-        <Section>
-          <div id="print-area" className="flex flex-col items-center gap-3">
+      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+        <Section className="erp-card overflow-hidden">
+          <div id="print-area" className="flex flex-col items-center gap-6 p-4">
+            <div className="text-center space-y-1">
+              <div className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Logistics Tracking</div>
+              <div className="text-xl font-bold text-white">{data.sku_code || data.batch?.product?.name || "Cargo Unit"}</div>
+            </div>
+
             {qrSrc ? (
-              <div className="rounded-md p-4 bg-[hsl(var(--primary-light))]">
-                <img src={qrSrc} alt={data.code} className="block w-[300px] h-[300px]" />
+              <div className="rounded-3xl p-6 bg-white shadow-xl shadow-primary/10 border border-primary/20">
+                <img src={qrSrc} alt={data.code} className="block w-[280px] h-[280px] object-contain" />
               </div>
             ) : (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             )}
-            <div className="text-center space-y-0.5">
-              <div className="text-sm font-semibold">{data.batch?.product?.name ?? "—"}</div>
-              <div className="text-xs text-muted-foreground">
-                Lot {data.batch?.lot_number} · Grade {data.batch?.grade ?? "—"}
+            
+            <div className="text-center space-y-2">
+              <div className="text-xs font-mono font-bold bg-primary/10 text-primary px-4 py-1.5 rounded-full border border-primary/20">
+                {data.code}
               </div>
-              <div className="text-[10px] font-mono text-muted-foreground">{data.code}</div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Carton {data.box_number} of {data.carton_number_total || "—"}</p>
             </div>
           </div>
         </Section>
 
-        <Section title="Cargo details">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <Field label="Status"><StatusBadge status={data.status} /></Field>
-            <Field label="Current location"><StatusBadge status={data.current_location} /></Field>
-            <Field label="Carton No.">
-              <span className="font-bold">
-                {data.box_number} / {data.carton_number_total || "—"}
-              </span>
-            </Field>
-            <Field label="Net Weight">
-              <span className="text-emerald-500 font-bold">
-                {data.net_weight ? `${data.net_weight} Kg` : "—"}
-              </span>
-            </Field>
-            <Field label="Packing Date">{data.packing_date || "—"}</Field>
-            <Field label="SKU / Product Code">{data.sku_code || "—"}</Field>
-            <Field label="Scans"><span className="tabular-nums">{data.scan_count}</span></Field>
-            <Field label="Product">{data.batch?.product?.name ?? "—"}</Field>
-            <Field label="Supplier">{data.batch?.farmer?.full_name ?? "—"}</Field>
-            <Field label="Warehouse">{data.batch?.warehouse?.name ?? "—"}</Field>
-            <Field label="Last scanned">
-              {data.last_scanned_at ? new Date(data.last_scanned_at).toLocaleString() : "Never"}
-            </Field>
-          </dl>
-        </Section>
+        <div className="space-y-6">
+          <Section title="Cargo Status" className="erp-card">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <Field label="Tracking Status"><StatusBadge status={data.status} /></Field>
+              <Field label="Current Location"><StatusBadge status={data.current_location} /></Field>
+              <Field label="Scans Count"><span className="text-xl font-bold tabular-nums text-white">{data.scan_count}</span></Field>
+              <Field label="Net Weight"><span className="text-xl font-bold text-emerald-500">{data.net_weight ? `${data.net_weight} Kg` : "—"}</span></Field>
+            </div>
+          </Section>
+
+          <Section title="Logistics & Destination" className="erp-card">
+            <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6 text-sm">
+              {data.shipment ? (
+                <>
+                  <Field label="Shipment No."><span className="font-bold text-primary">{data.shipment.shipment_number}</span></Field>
+                  <Field label="Destination Port"><span className="font-bold text-white">{data.shipment.destination_port || "—"}</span></Field>
+                  <Field label="Customer"><span className="font-bold">{data.shipment.customer_name || "—"}</span></Field>
+                  <Field label="Carrier"><span className="font-medium text-blue-400">{data.shipment.carrier || "—"}</span></Field>
+                  <Field label="Expected Arrival (ETA)"><span className="font-bold">{data.shipment.eta ? new Date(data.shipment.eta).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "TBD"}</span></Field>
+                </>
+              ) : (
+                <>
+                  <Field label="Inventory Lot"><span className="font-bold text-amber-500">{data.batch?.lot_number}</span></Field>
+                  <Field label="Product Name"><span className="font-bold">{data.batch?.product?.name || "—"}</span></Field>
+                  <Field label="Warehouse"><span className="font-medium">{data.batch?.warehouse?.name || "—"}</span></Field>
+                  <Field label="Supplier/Farmer">{data.batch?.farmer?.full_name || "—"}</Field>
+                </>
+              )}
+              <Field label="Packing Date">{data.packing_date ? new Date(data.packing_date).toLocaleDateString('en-GB') : "—"}</Field>
+              <Field label="Last Scanned Activity">
+                <span className="text-muted-foreground">
+                  {data.last_scanned_at ? new Date(data.last_scanned_at).toLocaleString() : "No scans yet"}
+                </span>
+              </Field>
+            </dl>
+          </Section>
+        </div>
       </div>
 
       <style>{`

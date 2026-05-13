@@ -47,9 +47,9 @@ export default function BalanceSheet() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="btn-gold text-xs py-1.5 rounded-lg shadow-gold/10 inline-flex items-center gap-2"
+              className="btn-gold flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md hover:-translate-y-[1px]"
             >
-              <Download size={13} /> PDF
+              <Download size={14} /> PDF
             </button>
           </div>
         }

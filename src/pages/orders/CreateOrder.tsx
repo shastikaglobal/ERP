@@ -76,6 +76,8 @@ export default function CreateOrder() {
   const [packingDetails, setPackingDetails] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("90 % of the invoice value to be paid in advance, and the remaining 10 % of the invoice value to be paid after the loading of goods.\n\nNote : Including packing, loading and Transport.");
   const [notes, setNotes] = useState("");
+  const [totalCartons, setTotalCartons] = useState<number | "">("");
+  const [unitNetWeight, setUnitNetWeight] = useState<number | "">("");
 
   const totalAmount = (Number(quantity) || 0) * (Number(unitPrice) || 0);
 
@@ -114,6 +116,8 @@ export default function CreateOrder() {
         packing_details: packingDetails,
         payment_terms: paymentTerms,
         notes,
+        total_cartons: totalCartons ? Number(totalCartons) : null,
+        unit_net_weight: unitNetWeight ? Number(unitNetWeight) : null,
         created_by: userId,
         status: 'pending',
         payment_status: 'unpaid'
@@ -279,6 +283,14 @@ export default function CreateOrder() {
             <div className="space-y-2 md:col-span-2">
               <Label>Terms of Payment</Label>
               <Textarea value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="e.g. 90% advance..." className="h-20" />
+            </div>
+            <div className="space-y-2">
+              <Label>Total Cartons</Label>
+              <Input type="number" value={totalCartons} onChange={e => setTotalCartons(Number(e.target.value) || "")} placeholder="e.g. 10" />
+            </div>
+            <div className="space-y-2">
+              <Label>Net Weight per Carton (Kg)</Label>
+              <Input type="number" step="0.01" value={unitNetWeight} onChange={e => setUnitNetWeight(Number(e.target.value) || "")} placeholder="e.g. 13.50" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Notes</Label>

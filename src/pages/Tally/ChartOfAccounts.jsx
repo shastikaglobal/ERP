@@ -3,6 +3,7 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { Badge } from '../../components/ui/badge'
 import { Input } from '../../components/ui/input'
 import { Plus, CheckCircle, XCircle, Edit, Trash2, BookOpen, TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react'
+import { toast } from 'sonner'
 
 // Mock Data
 export const chartOfAccounts = [
@@ -58,10 +59,28 @@ const StatCard = ({ icon: Icon, label, value, accent }) => (
 )
 
 export default function ChartOfAccounts() {
+  const [accounts, setAccounts] = useState(chartOfAccounts)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('All')
 
-  const filtered = chartOfAccounts.filter(a => {
+  const handleNewAccount = () => {
+    const name = window.prompt("Enter new Account Name:");
+    if (name && name.trim()) {
+      const code = (Math.floor(Math.random() * 9000) + 1000).toString();
+      const newAcc = { code, name: name.trim(), group: 'Expenses', type: 'Expense', balance: '₹0', gst: false, status: 'Active' };
+      setAccounts([...accounts, newAcc]);
+      toast.success(`${name.trim()} account created successfully!`);
+    }
+  }
+
+  const handleDelete = (code) => {
+    if (window.confirm("Are you sure you want to delete this account?")) {
+      setAccounts(accounts.filter(a => a.code !== code));
+      toast.success("Account deleted successfully!");
+    }
+  }
+
+  const filtered = accounts.filter(a => {
     const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.code.includes(search)
     const matchType   = typeFilter === 'All' || a.type === typeFilter
     return matchSearch && matchType
@@ -104,6 +123,7 @@ export default function ChartOfAccounts() {
         breadcrumbs={[{ label: 'Home' }, { label: 'Masters' }, { label: 'Chart of Accounts' }]}
         actions={
           <button 
+            onClick={handleNewAccount}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -125,11 +145,11 @@ export default function ChartOfAccounts() {
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <StatCard icon={BookOpen} label="Total Accounts" value={chartOfAccounts.length} accent="indigo" />
-        <StatCard icon={TrendingUp} label="Assets" value={chartOfAccounts.filter(a=>a.type==='Asset').length} accent="blue" />
-        <StatCard icon={TrendingDown} label="Liabilities" value={chartOfAccounts.filter(a=>a.type==='Liability').length} accent="red" />
-        <StatCard icon={DollarSign} label="Income" value={chartOfAccounts.filter(a=>a.type==='Income').length} accent="emerald" />
-        <StatCard icon={PieChart} label="Expenses" value={chartOfAccounts.filter(a=>a.type==='Expense').length} accent="amber" />
+        <StatCard icon={BookOpen} label="Total Accounts" value={accounts.length} accent="indigo" />
+        <StatCard icon={TrendingUp} label="Assets" value={accounts.filter(a=>a.type==='Asset').length} accent="blue" />
+        <StatCard icon={TrendingDown} label="Liabilities" value={accounts.filter(a=>a.type==='Liability').length} accent="red" />
+        <StatCard icon={DollarSign} label="Income" value={accounts.filter(a=>a.type==='Income').length} accent="emerald" />
+        <StatCard icon={PieChart} label="Expenses" value={accounts.filter(a=>a.type==='Expense').length} accent="amber" />
       </div>
 
       <div className="relative overflow-hidden rounded-3xl border border-border bg-card/70 shadow-sm">
@@ -222,7 +242,7 @@ export default function ChartOfAccounts() {
                       <td className="tbl-cell">
                         <div className="flex items-center gap-2">
                           <button className="text-xs text-amber-400 hover:text-amber-300 font-medium">Edit</button>
-                          <button className="text-xs text-red-400 hover:text-red-300 font-medium"><Trash2 size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(a.code); }} className="text-xs text-red-400 hover:text-red-300 font-medium"><Trash2 size={12} /></button>
                         </div>
                       </td>
                     </tr>

@@ -27,6 +27,23 @@ export default function Ledger() {
     return true
   })
 
+  const handleExportCSV = () => {
+    const header = ['Date', 'Particulars', 'Voucher', 'Type', 'Debit', 'Credit', 'Balance', 'BalType'].join(',');
+    const rows = filtered.map(r => 
+      [`"${r.date}"`, `"${r.particulars}"`, `"${r.voucher}"`, `"${r.type}"`, r.debit || 0, r.credit || 0, r.balance || 0, `"${r.balType || ''}"`].join(',')
+    ).join('\n');
+    
+    const csvContent = header + '\n' + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${account.replace(/\s+/g, '_')}_Ledger_Mar_2026.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       <style>{`
@@ -45,6 +62,7 @@ export default function Ledger() {
             <input type="date" defaultValue="2026-03-01" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
             <input type="date" defaultValue="2026-03-31" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
             <button 
+              onClick={handleExportCSV}
               style={{
                 display: 'flex',
                 alignItems: 'center',

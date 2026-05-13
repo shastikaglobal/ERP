@@ -161,6 +161,8 @@ export default function CreateShipment() {
         destination_port: destinationPort,
         departure_date: departureDate || null,
         eta: eta || null,
+        total_cartons: selectedOrder?.total_cartons,
+        unit_net_weight: selectedOrder?.unit_net_weight,
         status: 'Pending',
         created_by: profile!.id
       }).select().single();
@@ -279,6 +281,14 @@ export default function CreateShipment() {
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Order Quantity</p>
                 <p className="text-sm font-bold">{selectedOrder.quantity} {selectedOrder.unit}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Total Cartons</p>
+                <p className="text-sm font-bold">{selectedOrder.total_cartons || '—'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Net Wt / Box</p>
+                <p className="text-sm font-bold">{selectedOrder.unit_net_weight || '—'} Kg</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Customer</p>

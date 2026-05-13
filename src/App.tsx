@@ -113,6 +113,7 @@ import ActivityLogs from "./pages/system/ActivityLogs";
 import Subscriptions from "./pages/system/Subscriptions";
 import Settings from "./pages/system/Settings";
 import TallyIndex from "./pages/Tally/index";
+import JournalEntry from "./pages/Tally/JournalEntry";
 
 const queryClient = new QueryClient();
 
@@ -227,6 +228,7 @@ const App = () => (
               
               {/* Tally Integration */}
               <Route path="/tally/*" element={<TallyIndex />} />
+              <Route path="/journal" element={<JournalEntry />} />
               {/* Employees */}
               <Route path="/employees" element={<EmployeeDirectory />} />
               <Route path="/employees/attendance" element={<Attendance />} />

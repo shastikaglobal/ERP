@@ -63,14 +63,14 @@ function NewEntryForm({ onSaved }) {
   const delRow = (i) => setRows((r) => r.filter((_, idx) => idx !== i))
   const upd = (i, k, v) => setRows((r) => r.map((row, idx) => (idx === i ? { ...row, [k]: v } : row)))
 
-  const totDr = rows.reduce((s, r) => s + (parseFloat(r.debit) || 0), 0)
-  const totCr = rows.reduce((s, r) => s + (parseFloat(r.credit) || 0), 0)
+  const totDr = rows.reduce((s, r) => s + (r.drcr === 'Dr' ? (parseFloat(r.debit) || 0) : 0), 0)
+  const totCr = rows.reduce((s, r) => s + (r.drcr === 'Cr' ? (parseFloat(r.credit) || 0) : 0), 0)
   const diff = Math.abs(totDr - totCr)
   const canPost = diff === 0 && !saving && totDr > 0
 
   const saveEntry = async (status) => {
     if (status === 'Posted' && !canPost) {
-      if (totDr === 0) return toast.error('Total debit must be greater than 0 to post.')
+      if (totDr === 0 && totCr === 0) return toast.error('Please enter transaction amounts before posting.')
       return toast.error('Voucher must be balanced before posting (Difference: ₹' + diff.toFixed(2) + ')')
     }
     setSaving(true)
