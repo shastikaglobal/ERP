@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
-import QRCode from "qrcode";
+import Barcode from "react-barcode";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Section } from "@/components/shared/FormShell";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function BarcodeDetail() {
@@ -19,9 +16,9 @@ export default function BarcodeDetail() {
       const { data, error } = await supabase
         .from("batch_barcodes")
         .select(`
-          id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, net_weight, packing_date, sku_code, carton_number_total,
-          batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name)),
-          shipment:export_shipments(shipment_number, destination_port, customer_name, carrier, eta)
+          id, code, box_number, net_weight, packing_date, sku_code, product_name, carton_number_total,
+          company:companies(name),
+          batch:inventory_batches(product:products(name))
         `)
         .eq("id", id!)
         .maybeSingle();
@@ -30,36 +27,26 @@ export default function BarcodeDetail() {
     },
   });
 
-  const [qrSrc, setQrSrc] = useState("");
-  useEffect(() => {
-    if (!data?.code) return;
-    QRCode.toDataURL(data.code, {
-      margin: 1,
-      width: 360,
-      color: { dark: "#141414", light: "#f2cc78" },
-    }).then(setQrSrc);
-  }, [data?.code]);
-
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
-      <div className="erp-card flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const print = () => window.print();
-  const download = () => {
-    const a = document.createElement("a");
-    a.href = qrSrc;
-    a.download = `${data.code}.png`;
-    a.click();
-  };
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center py-24 text-muted-foreground text-sm">
+        Barcode not found.
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
-        title={`Tracking · ${data.code}`}
+        title={`Label · ${data.code}`}
         breadcrumbs={[
           { label: "Barcode & Tracking", to: "/barcodes" },
           { label: data.code },
@@ -69,94 +56,94 @@ export default function BarcodeDetail() {
             <Button variant="outline" size="sm" onClick={() => nav("/barcodes")}>
               <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
             </Button>
-            <Button variant="outline" size="sm" onClick={download}>Download QR</Button>
-            <Button size="sm" className="btn-gold" onClick={print}>
+            <Button size="sm" className="btn-gold" onClick={() => window.print()}>
               <Printer className="h-4 w-4 mr-1.5" /> Print Label
             </Button>
           </div>
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <Section className="erp-card overflow-hidden">
-          <div id="print-area" className="flex flex-col items-center gap-6 p-4">
-            <div className="text-center space-y-1">
-              <div className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Logistics Tracking</div>
-              <div className="text-xl font-bold text-white">{data.sku_code || data.batch?.product?.name || "Cargo Unit"}</div>
-            </div>
-
-            {qrSrc ? (
-              <div className="rounded-3xl p-6 bg-white shadow-xl shadow-primary/10 border border-primary/20">
-                <img src={qrSrc} alt={data.code} className="block w-[280px] h-[280px] object-contain" />
-              </div>
-            ) : (
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            )}
-            
-            <div className="text-center space-y-2">
-              <div className="text-xs font-mono font-bold bg-primary/10 text-primary px-4 py-1.5 rounded-full border border-primary/20">
-                {data.code}
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Carton {data.box_number} of {data.carton_number_total || "—"}</p>
-            </div>
+      {/* ── Label Card ─────────────────────────────────────────────── */}
+      <div className="max-w-xl mx-auto mt-6">
+        <div
+          id="print-label"
+          className="bg-white text-black border-2 border-black flex flex-col"
+        >
+          {/* Header */}
+          <div className="bg-black py-3 text-center">
+            <p className="text-white text-[10px] font-black tracking-[0.35em] uppercase">
+              Export Cargo Identification
+            </p>
           </div>
-        </Section>
 
-        <div className="space-y-6">
-          <Section title="Cargo Status" className="erp-card">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <Field label="Tracking Status"><StatusBadge status={data.status} /></Field>
-              <Field label="Current Location"><StatusBadge status={data.current_location} /></Field>
-              <Field label="Scans Count"><span className="text-xl font-bold tabular-nums text-white">{data.scan_count}</span></Field>
-              <Field label="Net Weight"><span className="text-xl font-bold text-emerald-500">{data.net_weight ? `${data.net_weight} Kg` : "—"}</span></Field>
+          {/* Fields */}
+          {[
+            ["Company Name",   data.company?.name || "Shastika Global Impex"],
+            ["Product Name",   data.product_name || data.batch?.product?.name || "Cargo Unit"],
+            ["SKU / Product Code", data.sku_code || "—"],
+            ["Carton Number",  `BOX ${data.box_number}${data.carton_number_total ? ` OF ${data.carton_number_total}` : ""}`],
+            ["Net Weight",     data.net_weight ? `${data.net_weight} KG` : "—"],
+            [
+              "Packing Date",
+              data.packing_date
+                ? new Date(data.packing_date).toLocaleDateString("en-GB", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  })
+                : "—",
+            ],
+          ].map(([label, value]) => (
+            <div key={label} className="flex border-b-2 border-black">
+              <div className="w-[38%] border-r-2 border-black px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center">
+                {label}
+              </div>
+              <div className="w-[62%] px-4 py-3 text-base font-black uppercase">
+                {value}
+              </div>
             </div>
-          </Section>
+          ))}
 
-          <Section title="Logistics & Destination" className="erp-card">
-            <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6 text-sm">
-              {data.shipment ? (
-                <>
-                  <Field label="Shipment No."><span className="font-bold text-primary">{data.shipment.shipment_number}</span></Field>
-                  <Field label="Destination Port"><span className="font-bold text-white">{data.shipment.destination_port || "—"}</span></Field>
-                  <Field label="Customer"><span className="font-bold">{data.shipment.customer_name || "—"}</span></Field>
-                  <Field label="Carrier"><span className="font-medium text-blue-400">{data.shipment.carrier || "—"}</span></Field>
-                  <Field label="Expected Arrival (ETA)"><span className="font-bold">{data.shipment.eta ? new Date(data.shipment.eta).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "TBD"}</span></Field>
-                </>
-              ) : (
-                <>
-                  <Field label="Inventory Lot"><span className="font-bold text-amber-500">{data.batch?.lot_number}</span></Field>
-                  <Field label="Product Name"><span className="font-bold">{data.batch?.product?.name || "—"}</span></Field>
-                  <Field label="Warehouse"><span className="font-medium">{data.batch?.warehouse?.name || "—"}</span></Field>
-                  <Field label="Supplier/Farmer">{data.batch?.farmer?.full_name || "—"}</Field>
-                </>
-              )}
-              <Field label="Packing Date">{data.packing_date ? new Date(data.packing_date).toLocaleDateString('en-GB') : "—"}</Field>
-              <Field label="Last Scanned Activity">
-                <span className="text-muted-foreground">
-                  {data.last_scanned_at ? new Date(data.last_scanned_at).toLocaleString() : "No scans yet"}
-                </span>
-              </Field>
-            </dl>
-          </Section>
+          {/* Barcode */}
+          <div className="flex flex-col items-center py-6 px-4 gap-2">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.25em] mb-1">
+              Barcode Number
+            </p>
+            <p className="text-xl font-mono font-black tracking-widest mb-1">
+              {data.code}
+            </p>
+            <Barcode
+              value={data.code}
+              width={2}
+              height={80}
+              format="CODE128"
+              displayValue={false}
+              background="transparent"
+              lineColor="#000000"
+              margin={0}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="bg-black py-2 text-center">
+            <p className="text-white text-[9px] font-bold tracking-widest uppercase">
+              Official Cargo Identification • Audit Ready Logistics Data
+            </p>
+          </div>
         </div>
       </div>
 
       <style>{`
         @media print {
           body * { visibility: hidden !important; }
-          #print-area, #print-area * { visibility: visible !important; }
-          #print-area { position: absolute; inset: 0; padding: 24px; background: white; }
+          #print-label, #print-label * { visibility: visible !important; }
+          #print-label {
+            position: absolute;
+            inset: 0;
+            width: 100% !important;
+            border: none !important;
+          }
+          button, nav, header { display: none !important; }
         }
       `}</style>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5">{children}</dd>
     </div>
   );
 }
