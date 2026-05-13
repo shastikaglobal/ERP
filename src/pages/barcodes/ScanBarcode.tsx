@@ -19,31 +19,6 @@ import { toast } from "sonner";
 import { Html5Qrcode } from "html5-qrcode";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type ScanResult = {
-  barcode_id: string;
-  code: string;
-  level: string;
-  box_number: number | null;
-  current_location: string;
-  status: string;
-  scan_count: number;
-  batch_id: string;
-  lot_number: string;
-  product_name: string;
-  sku_code: string | null;
-  net_weight: number | null;
-  packing_date: string | null;
-  carton_total: number | null;
-  grade: string | null;
-  warehouse_name: string | null;
-  farmer_name: string | null;
-  received_date: string;
-  shipment_number: string | null;
-  destination_port: string | null;
-  container_number: string | null;
-  company_name: string | null;
-};
-
 type ActiveShipment = { id: string; shipment_number: string; destination_port: string; status: string };
 type ShipmentContainer = { id: string; container_number: string; container_type: string };
 
@@ -64,7 +39,8 @@ export default function ScanBarcode() {
   // scanner state
   const [code, setCode]           = useState("");
   const [updateLoc, setUpdateLoc] = useState<string>("none");
-  const [result, setResult]       = useState<ScanResult | null>(null);
+  const [result, setResult]       = useState<any | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [scanning, setScanning]   = useState(false);
   const [busy, setBusy]           = useState(false);
   const scannerRef                = useRef<Html5Qrcode | null>(null);
@@ -109,24 +85,31 @@ export default function ScanBarcode() {
   const submit = async (raw: string) => {
     if (!raw) return;
     setBusy(true);
+    setScanError(null);
+    setResult(null);
     try {
-      const { data, error } = await supabase.rpc("scan_barcode", {
-        _code:         raw,
-        _new_location: updateLoc === "none" || !updateLoc ? null : (updateLoc as any),
-        _shipment_id:  shipmentId  === "none" ? null : shipmentId,
-        _container_id: containerId === "none" ? null : containerId,
-      });
-      if (error) throw error;
-      const row = (data as any[])?.[0] as ScanResult | undefined;
-      if (!row) throw new Error("Barcode not found");
-      setResult(row);
-      toast.success("Scanned ✓", {
-        description: shipmentId !== "none"
-          ? `Linked to ${activeShipments.find(s => s.id === shipmentId)?.shipment_number}`
-          : row.code,
-      });
+      const { data, error } = await supabase
+        .from('batch_barcodes')
+        .select('*')
+        .eq('code', raw)
+        .single();
+        
+      if (error || !data) {
+        setScanError("Barcode not found in system");
+        return;
+      }
+      
+      setResult(data);
+      
+      // Optional: Update location/shipment if selected
+      if (updateLoc !== "none" || shipmentId !== "none") {
+         const updates: any = {};
+         if (updateLoc !== "none") updates.current_location = updateLoc;
+         if (shipmentId !== "none") updates.shipment_id = shipmentId;
+         await supabase.from('batch_barcodes').update(updates).eq('id', data.id);
+      }
     } catch (e: any) {
-      toast.error("Scan failed", { description: e.message });
+      setScanError("Barcode not found in system");
     } finally {
       setBusy(false);
     }
@@ -302,109 +285,68 @@ export default function ScanBarcode() {
 
         {/* ── Right: result ── */}
         <Section title="Result">
-          {!result ? (
+          {scanError ? (
+            <div className="h-80 flex flex-col items-center justify-center text-center text-red-500 font-bold gap-3">
+              <ScanLine className="h-10 w-10 opacity-40" />
+              {scanError}
+            </div>
+          ) : !result ? (
             <div className="h-80 flex flex-col items-center justify-center text-center text-xs text-muted-foreground gap-3">
               <ScanLine className="h-10 w-10 opacity-40" />
               Scan or enter a code to see batch details
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary-glow font-semibold text-sm">
-                <ShieldCheck className="h-4 w-4" /> Verified · scan #{result.scan_count}
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 text-emerald-500 font-bold text-lg mb-4">
+                <ShieldCheck className="h-6 w-6" /> ✓ Cargo Identified
               </div>
 
-              {/* Shipment link banner */}
-              {result.shipment_number && (
-                <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 animate-in slide-in-from-right-4 duration-500">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary">
-                    <Ship className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary text-sm">{result.shipment_number}</span>
-                      <Badge variant="outline" className="text-[9px] border-primary/20 bg-primary/5">Linked</Badge>
-                    </div>
-                    <div className="text-muted-foreground mt-1 flex items-center gap-1">
-                      <Globe className="h-3 w-3" />
-                      <span>Destination: <strong>{result.destination_port || 'Not Assigned'}</strong></span>
-                    </div>
-                    {result.container_number && (
-                      <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <ContainerIcon className="h-3 w-3" />
-                        <span>Container: {result.container_number}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="border border-primary/20 rounded-2xl bg-card overflow-hidden shadow-2xl">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl p-6 text-black border border-gray-200">
                 <table className="w-full text-sm">
-                  <tbody className="divide-y divide-white/5">
-                    <tr className="bg-primary/5">
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Company Name</td>
-                      <td className="px-4 py-3 font-bold text-primary">{result.company_name || "Shastika Global Impex"}</td>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider w-1/3">Company Name</td>
+                      <td className="py-3 font-bold text-gray-900">Shastika Global Impex Pvt Ltd</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Product Name</td>
-                      <td className="px-4 py-3 font-semibold">{result.product_name}</td>
-                    </tr>
-                    <tr className="bg-primary/5">
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">SKU / Product Code</td>
-                      <td className="px-4 py-3 font-mono text-xs">{result.sku_code || "—"}</td>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">Product Name</td>
+                      <td className="py-3 font-bold text-gray-900">{result.product_name || "—"}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Carton Number</td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          {result.box_number} / {result.carton_total || "—"}
-                        </Badge>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">SKU / Product Code</td>
+                      <td className="py-3 font-mono text-gray-700">{result.sku_code || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">Carton Number</td>
+                      <td className="py-3 font-bold text-gray-900">
+                        {result.box_number} / {result.carton_number_total || "—"}
                       </td>
                     </tr>
-                    <tr className="bg-primary/5">
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Net Weight</td>
-                      <td className="px-4 py-3 font-bold text-emerald-500">{result.net_weight ? `${result.net_weight} Kg` : "—"}</td>
+                    <tr>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">Net Weight</td>
+                      <td className="py-3 font-bold text-gray-900">{result.net_weight ? `${result.net_weight} KG` : "—"}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Packing Date</td>
-                      <td className="px-4 py-3 text-muted-foreground">{result.packing_date || "—"}</td>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">Packing Date</td>
+                      <td className="py-3 font-bold text-gray-900">
+                        {result.packing_date 
+                          ? new Date(result.packing_date).toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-') 
+                          : "—"}
+                      </td>
                     </tr>
-                    <tr className="bg-primary/5">
-                      <td className="px-4 py-3 font-medium text-muted-foreground uppercase text-[10px] tracking-wider">Barcode Number</td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-primary-glow">{result.code}</td>
+                    <tr>
+                      <td className="py-3 font-semibold text-gray-500 uppercase text-[10px] tracking-wider">Barcode Number</td>
+                      <td className="py-3 font-mono font-bold tracking-widest text-gray-900">{result.code}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-xs mt-2">
-                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div className="text-muted-foreground uppercase text-[9px] font-bold mb-1">Current Status</div>
-                  <StatusBadge status={result.status} />
-                </div>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div className="text-muted-foreground uppercase text-[9px] font-bold mb-1">Last Location</div>
-                  <StatusBadge status={result.current_location} />
-                </div>
-              </div>
-
               <div className="flex items-center gap-2 pt-2">
-                <Button size="sm" className="btn-gold" onClick={() => nav(`/barcodes/${result.barcode_id}`)}>
+                <Button size="sm" className="btn-gold" onClick={() => nav(`/barcodes/${result.id}`)}>
                   Open barcode
                 </Button>
-                {result.shipment_number && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      // navigate to the shipment — need the shipment id from state
-                      if (shipmentId !== "none") nav(`/shipments/${shipmentId}`);
-                    }}
-                  >
-                    <Ship className="h-3.5 w-3.5 mr-1.5" /> View Shipment
-                  </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => { setResult(null); setCode(""); }}>
+                <Button size="sm" variant="ghost" onClick={() => { setResult(null); setCode(""); setScanError(null); }}>
                   <X className="h-4 w-4 mr-1" /> Clear
                 </Button>
               </div>

@@ -69,65 +69,27 @@ export default function BarcodeDetail() {
       <div className="max-w-xl mx-auto mt-6">
         <div
           id="print-label"
-          className="bg-white text-black border-2 border-black flex flex-col"
+          className="bg-white text-black border-2 border-gray-200 flex flex-col items-center justify-center py-20 px-8 rounded-xl"
         >
-          {/* Header */}
-          <div className="bg-black py-3 text-center">
-            <p className="text-white text-[10px] font-black tracking-[0.35em] uppercase">
-              Export Cargo Identification
-            </p>
-          </div>
-
-          {/* Fields */}
-          {[
-            ["Company Name",   data.company?.name || "Shastika Global Impex"],
-            ["Product Name",   data.product_name || data.batch?.product?.name || "Cargo Unit"],
-            ["SKU / Product Code", data.sku_code || "—"],
-            ["Carton Number",  `BOX ${data.box_number}${data.carton_number_total ? ` OF ${data.carton_number_total}` : ""}`],
-            ["Net Weight",     data.net_weight ? `${data.net_weight} KG` : "—"],
-            [
-              "Packing Date",
-              data.packing_date
-                ? new Date(data.packing_date).toLocaleDateString("en-GB", {
-                    day: "2-digit", month: "short", year: "numeric",
-                  })
-                : "—",
-            ],
-          ].map(([label, value]) => (
-            <div key={label} className="flex border-b-2 border-black">
-              <div className="w-[38%] border-r-2 border-black px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center">
-                {label}
-              </div>
-              <div className="w-[62%] px-4 py-3 text-base font-black uppercase">
-                {value}
-              </div>
-            </div>
-          ))}
+          {/* Title */}
+          <h2 className="text-[#c1a153] text-2xl md:text-3xl font-black tracking-[0.25em] uppercase mb-12 text-center">
+            Logistics Tracking
+          </h2>
 
           {/* Barcode */}
-          <div className="flex flex-col items-center py-6 px-4 gap-2">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.25em] mb-1">
-              Barcode Number
-            </p>
-            <p className="text-xl font-mono font-black tracking-widest mb-1">
-              {data.code}
-            </p>
+          <div className="flex flex-col items-center gap-6">
             <Barcode
               value={data.code}
-              width={2}
-              height={80}
+              width={3}
+              height={120}
               format="CODE128"
               displayValue={false}
               background="transparent"
               lineColor="#000000"
               margin={0}
             />
-          </div>
-
-          {/* Footer */}
-          <div className="bg-black py-2 text-center">
-            <p className="text-white text-[9px] font-bold tracking-widest uppercase">
-              Official Cargo Identification • Audit Ready Logistics Data
+            <p className="text-2xl font-mono font-black tracking-widest text-center">
+              {data.code}
             </p>
           </div>
         </div>
@@ -139,11 +101,19 @@ export default function BarcodeDetail() {
           #print-label, #print-label * { visibility: visible !important; }
           #print-label {
             position: absolute;
-            inset: 0;
+            left: 0;
+            top: 0;
             width: 100% !important;
+            height: 100vh !important;
             border: none !important;
+            border-radius: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
           }
-          button, nav, header { display: none !important; }
+          button, nav, header, aside { display: none !important; }
+          @page { margin: 0; }
         }
       `}</style>
     </div>
