@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Ship, Package, Globe, Printer, Barcode as BarcodeIcon } from "lucide-react";
+import { Loader2, Ship, Package, Globe, Printer, Barcode as BarcodeIcon, ShoppingCart } from "lucide-react";
 import Barcode from "react-barcode";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
@@ -113,7 +113,7 @@ export default function GenerateBarcode() {
   const { data: targets = [], isLoading } = useQuery<LogisticsTarget[]>({
     queryKey: ["logistics_targets"],
     queryFn: async () => {
-      const [shipRes, batchRes, barcodeRes] = await Promise.all([
+      const [shipRes, batchRes, orderRes, barcodeRes] = await Promise.all([
         supabase
           .from("export_shipments")
           .select(`id, shipment_number, destination_port, total_cartons, unit_net_weight,
@@ -123,7 +123,11 @@ export default function GenerateBarcode() {
           .from("inventory_batches")
           .select("id, lot_number, quantity_kg, product:products(name, sku)")
           .order("created_at", { ascending: false }).limit(30),
-        supabase.from("batch_barcodes").select("shipment_id, batch_id"),
+        supabase
+          .from("export_orders")
+          .select("id, order_number, destination, quantity, net_weight, packing_details, product, total_cartons, unit_net_weight")
+          .order("created_at", { ascending: false }).limit(30),
+        supabase.from("batch_barcodes").select("shipment_id, batch_id"), // ignore order_id to prevent errors if it doesn't exist
       ]);
 
       const list: LogisticsTarget[] = [];
@@ -160,6 +164,21 @@ export default function GenerateBarcode() {
         });
       });
 
+      orderRes.data?.forEach((o) => {
+        list.push({
+          id: o.id,
+          name: `Export Order: ${o.order_number}`,
+          ref: o.order_number,
+          type: "order",
+          detail: `Dest: ${o.destination ?? "—"} (Pending Shipment)`,
+          product_name: o.product ?? undefined,
+          quantity: o.quantity ?? undefined,
+          packing_details: o.packing_details ?? undefined,
+          total_cartons: o.total_cartons ?? undefined,
+          unit_net_weight: o.unit_net_weight ?? undefined,
+        });
+      });
+
       return list;
     },
   });
@@ -175,7 +194,7 @@ export default function GenerateBarcode() {
     if (t.product_name) setProductName(t.product_name);
 
     let boxes = 10;
-    if (t.type === "shipment") {
+    if (t.type === "shipment" || t.type === "order") {
       if (t.unit_net_weight) {
         setNetWeight(String(t.unit_net_weight));
       } else {
@@ -229,6 +248,7 @@ export default function GenerateBarcode() {
           company_id:  companyId,
           batch_id:    selected.type === "batch"    ? selected.id : null,
           shipment_id: selected.type === "shipment" ? selected.id : null,
+          order_id:    selected.type === "order"    ? selected.id : null,
           code:        `${selected.ref} | ${productName || "Product"} | ${parsedWeight > 0 ? parsedWeight + "KG" : ""} | BOX ${boxNumber}/${totalCartons}`.replace(/ \s+/g, " "),
           level:       "box",
           box_number:  boxNumber,
@@ -450,9 +470,9 @@ export default function GenerateBarcode() {
                     ) : targets.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         <div className="flex items-center gap-2 text-white">
-                          {t.type === "shipment"
-                            ? <Ship className="h-4 w-4 text-primary" />
-                            : <Package className="h-4 w-4 text-amber-500" />}
+                            {t.type === "shipment" && <Ship className="h-4 w-4 text-primary" />}
+                            {t.type === "batch" && <Package className="h-4 w-4 text-amber-500" />}
+                            {t.type === "order" && <ShoppingCart className="h-4 w-4 text-emerald-500" />}
                           <span className="font-medium">{t.name}</span>
                           <span className="text-[10px] text-muted-foreground ml-2 px-1.5 py-0.5 bg-white/5 rounded">
                             ({t.detail})

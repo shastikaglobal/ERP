@@ -23,7 +23,8 @@ export default function BarcodesList() {
           .select(`
             id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, 
             batch:inventory_batches(lot_number, grade, product:products(name), farmer:farmers(full_name)), 
-            shipment:export_shipments(id, shipment_number, destination_port, status)
+            shipment:export_shipments(id, shipment_number, destination_port, status),
+            order:export_orders(id, order_number, destination, status)
           `)
           .order("created_at", { ascending: false });
         
@@ -75,7 +76,7 @@ export default function BarcodesList() {
     },
     {
       key: "shipment",
-      header: "Shipment Ref",
+      header: "Shipment / Order",
       render: (r: any) => r.shipment ? (
         <div className="flex flex-col gap-1">
           <Button
@@ -88,6 +89,20 @@ export default function BarcodesList() {
           </Button>
           <span className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Globe className="h-2.5 w-2.5" /> {r.shipment.destination_port || "—"}
+          </span>
+        </div>
+      ) : r.order ? (
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="link"
+            className="h-auto p-0 text-xs font-mono text-emerald-500 justify-start"
+            onClick={() => nav(`/orders/${r.order.id}`)}
+          >
+            <Package className="h-3 w-3 mr-1" />
+            {r.order.order_number}
+          </Button>
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Globe className="h-2.5 w-2.5" /> {r.order.destination || "—"}
           </span>
         </div>
       ) : (

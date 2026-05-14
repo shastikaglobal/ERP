@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { COUNTRIES } from "@/lib/countries";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 export default function CreateLead() {
   const nav = useNavigate();
@@ -17,6 +22,7 @@ export default function CreateLead() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
+  const [openCountry, setOpenCountry] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
   const [country, setCountry] = useState("");
@@ -104,18 +110,50 @@ export default function CreateLead() {
               />
             </FormRow>
             <FormRow label="Country" required>
-              <Select value={country} onValueChange={setCountry}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="United States">United States</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
-                  <SelectItem value="Japan">Japan</SelectItem>
-                  <SelectItem value="India">India</SelectItem>
-                  <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={openCountry} onOpenChange={setOpenCountry}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCountry}
+                    className="w-full justify-between font-normal bg-card text-left px-3 h-10 border-input shadow-none"
+                  >
+                    {country ? country : <span className="text-muted-foreground">Select country</span>}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search country..." />
+                    <CommandList>
+                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandGroup>
+                        {COUNTRIES.map((c) => (
+                          <CommandItem
+                            key={c}
+                            value={c}
+                            onSelect={(currentValue) => {
+                              // CommandItem converts value to lowercase internally sometimes, 
+                              // so we match against the original array
+                              const original = COUNTRIES.find(x => x.toLowerCase() === currentValue.toLowerCase()) || currentValue;
+                              setCountry(original === country ? "" : original);
+                              setOpenCountry(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                country === c ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {c}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </FormRow>
             <FormRow label="Industry">
               <Select value={industry} onValueChange={setIndustry}>
