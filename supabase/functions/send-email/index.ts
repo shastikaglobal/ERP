@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { encodeBase64 } from "https://deno.land/std@0.203.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +43,7 @@ Deno.serve(async (req) => {
 
     const apiDomain = account.account_email?.endsWith('.com') ? 'zoho.com' : 'zoho.in';
     
-    // 2. Refresh token
+    // 2. Refresh token if needed
     let accessToken = account.access_token;
     const now = new Date();
     const expiry = new Date(account.expiry_time);
@@ -86,19 +85,55 @@ Deno.serve(async (req) => {
 
     if (!zohoId) throw new Error("Could not retrieve Zoho Account ID.");
 
-    // 4. Process attachments
+    // 3. Insert email record early with status 'sending' to trigger Realtime UI
+    let emailRecordId;
+    try {
+      const { data: insertedEmail } = await supabaseClient.from("emails").insert({
+        account_id: account.id,
+        company_id: companyId,
+        to_address: to,
+        subject: subject || "(No Subject)",
+        body: html || text,
+        status: 'sending'
+      }).select('id').single();
+      if (insertedEmail) emailRecordId = insertedEmail.id;
+    } catch (e) {
+      console.error("Could not insert pending email log", e);
+    }
+
+    // 4. Process attachments (Zoho requires uploading them first via REST API)
     const processedAttachments = [];
     if (Array.isArray(attachments)) {
       for (const att of attachments) {
         if (!att.path) continue;
         const { data: fileData, error } = await supabaseClient.storage.from("email-attachments").download(att.path);
         if (error || !fileData) continue;
-        const bytes = new Uint8Array(await fileData.arrayBuffer());
-        processedAttachments.push({
-          name: att.filename,
-          content: encodeBase64(bytes),
-          isInline: false,
+        
+        // Upload to Zoho API
+        const uploadUrl = `https://mail.${apiDomain}/api/accounts/${zohoId}/messages/attachments?fileName=${encodeURIComponent(att.filename || 'attachment.pdf')}`;
+        
+        const uploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Zoho-oauthtoken ${accessToken}`,
+            "Content-Type": "application/octet-stream"
+          },
+          body: fileData
         });
+
+        const uploadResult = await uploadRes.json();
+        
+        if (uploadRes.ok && uploadResult.data) {
+          const attachmentData = Array.isArray(uploadResult.data) ? uploadResult.data[0] : uploadResult.data;
+          processedAttachments.push({
+            storeName: attachmentData.storeName,
+            attachmentPath: attachmentData.attachmentPath,
+            attachmentName: att.filename || 'attachment.pdf'
+          });
+        } else {
+          console.error("Zoho attachment upload failed:", uploadResult);
+          throw new Error("Failed to upload attachment to Zoho: " + JSON.stringify(uploadResult));
+        }
       }
     }
 
@@ -130,36 +165,30 @@ Deno.serve(async (req) => {
     const result = await response.json();
     
     if (!response.ok) {
-      // RETURN DETAILED ERROR BODY TO FRONTEND
-      const errorMessage = result.status?.description || JSON.stringify(result);
+      const errorMessage = JSON.stringify(result); // full response
+      if (emailRecordId) {
+        await supabaseClient.from("emails").update({ status: 'failed', error_message: errorMessage }).eq('id', emailRecordId);
+      }
       return new Response(JSON.stringify({ 
         success: false, 
         error: `Zoho rejected the request: ${errorMessage}` 
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 6. Save history
-    try {
-      await supabaseClient.from("emails").insert({
-        account_id: account.id,
-        company_id: companyId,
-        to_address: to,
-        subject: subject || "(No Subject)",
-        body: html || text,
-      });
-    } catch (dbErr) {
-      console.warn("Could not save history, but email was sent:", dbErr);
+    // 6. Update history to 'sent'
+    if (emailRecordId) {
+      await supabaseClient.from("emails").update({ status: 'sent', delivered_at: new Date().toISOString() }).eq('id', emailRecordId);
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Email sent successfully", messageId: result.data?.messageId }),
+      JSON.stringify({ success: true, message: "Email sent successfully", messageId: result.data?.messageId, emailId: emailRecordId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (err: any) {
     return new Response(
       JSON.stringify({ success: false, error: err.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

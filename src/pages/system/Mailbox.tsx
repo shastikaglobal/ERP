@@ -38,6 +38,12 @@ export default function Mailbox() {
   const [isComposing, setIsComposing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Live status tracking
+  const [emailStatuses, setEmailStatuses] = useState<Record<string, string>>({});
+
+  // Realtime connection status
+  const [isConnected, setIsConnected] = useState(false);
+
   const handleSelectEmail = async (email: any) => {
     setSelectedEmail(email);
     setIsComposing(false);
@@ -113,6 +119,7 @@ export default function Mailbox() {
     }
   }
 
+  // Realtime subscription with full live update support
   useEffect(() => {
     if (!selectedAccount) return;
 
@@ -126,14 +133,53 @@ export default function Mailbox() {
           table: "emails",
           filter: `account_id=eq.${selectedAccount}`,
         },
-        () => {
-          fetchHistory(selectedAccount);
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            const { id, status, subject } = payload.new;
+
+            // Update live status badge instantly
+            setEmailStatuses(prev => ({ ...prev, [id]: status }));
+
+            // Update email in list without full refresh
+            setSentEmails(prev =>
+              prev.map(e => e.id === id ? { ...e, ...payload.new } : e)
+            );
+
+            // Show toast based on status
+            if (status === "sent") {
+              toast.success(`✓ Delivered: ${subject}`, {
+                duration: 4000,
+                icon: "📨",
+              });
+            } else if (status === "failed") {
+              toast.error(`✗ Failed to send: ${subject}`, {
+                duration: 6000,
+                icon: "⚠️",
+              });
+            }
+          }
+
+          if (payload.eventType === "INSERT") {
+            // New email — add to top of list instantly
+            setSentEmails(prev => {
+              const exists = prev.find(e => e.id === payload.new.id);
+              if (exists) return prev;
+              return [payload.new, ...prev];
+            });
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsConnected(true);
+        } else {
+          setIsConnected(false);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      setIsConnected(false);
     };
   }, [selectedAccount]);
 
@@ -155,6 +201,7 @@ export default function Mailbox() {
       const account = accounts.find((a) => a.id === selectedAccount);
       if (!account) return toast.error("Account not found");
 
+      // Step 1: Upload attachments first
       const uploadedAttachments = [];
       for (const file of attachments) {
         const filePath = `mailbox/${Date.now()}-${file.name}`;
@@ -171,26 +218,49 @@ export default function Mailbox() {
         });
       }
 
-      const plainText = content.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
+      const plainText = content
+        .replace(/<(.|\n)*?>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
-      const { data, error } = await supabase.functions.invoke(
-        "send-email",
-        {
-          body: {
-            to, subject, html: content, text: plainText,
-            companyId: profile?.company_id, accountId: account.id,
-            attachments: uploadedAttachments,
-          },
-        }
-      );
+      // Step 2: Insert as draft first
+      const { data: emailRow, error: insertError } = await supabase
+        .from("emails")
+        .insert({
+          to_address: to,
+          from_address: account.account_email,
+          subject: subject,
+          body_html: content,
+          body_text: plainText,
+          status: "draft",
+          folder: "sent",
+          company_id: profile?.company_id,
+          account_id: account.id,
+          attachments: uploadedAttachments.length > 0
+            ? uploadedAttachments
+            : null,
+        })
+        .select()
+        .single();
 
-      if (error) return toast.error(`Connection Error: ${error.message}`);
-      if (data?.success === false) return toast.error(`Send Failed: ${data.error}`);
+      if (insertError) throw insertError;
 
-      toast.success("Email sent successfully!");
-      setTo(""); setSubject(""); setContent(""); setAttachments([]);
+      // Step 3: Set to pending → triggers DB webhook automatically
+      const { error: updateError } = await supabase
+        .from("emails")
+        .update({ status: "pending" })
+        .eq("id", emailRow.id);
+
+      if (updateError) throw updateError;
+
+      // UI feedback — Realtime will update actual status live
+      toast.loading("Sending email...", { id: `sending-${emailRow.id}`, duration: 10000 });
+      setTo("");
+      setSubject("");
+      setContent("");
+      setAttachments([]);
       setIsComposing(false);
-      await fetchHistory(selectedAccount);
+
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -212,12 +282,24 @@ export default function Mailbox() {
   };
 
   const folders = [
-    { id: "inbox", label: "Inbox", icon: Inbox, count: sentEmails.length },
+    { id: "inbox", label: "Inbox", icon: Inbox, count: sentEmails.filter(e => e.folder === "inbox" || !e.folder).length },
     { id: "starred", label: "Starred", icon: Star },
     { id: "snoozed", label: "Snoozed", icon: Clock },
     { id: "sent", label: "Sent", icon: SendIcon },
     { id: "drafts", label: "Drafts", icon: FileIcon, count: 0 },
   ];
+
+  // Filter emails by search query
+  const filteredEmails = sentEmails.filter(email => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      email.subject?.toLowerCase().includes(q) ||
+      email.from_address?.toLowerCase().includes(q) ||
+      email.to_address?.toLowerCase().includes(q) ||
+      email.body_text?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="h-[calc(100vh-6rem)] flex flex-col pt-0 w-full overflow-hidden">
@@ -243,6 +325,12 @@ export default function Mailbox() {
         </div>
         
         <div className="flex items-center gap-4 ml-auto">
+          {/* Realtime connection indicator */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+            <span className="hidden md:inline">{isConnected ? 'Live' : 'Connecting...'}</span>
+          </div>
+
           <div className="hidden md:flex items-center gap-2">
             <select 
               className="bg-transparent border border-border rounded-full px-4 py-2 text-sm font-medium focus:ring-1 cursor-pointer text-foreground hover:bg-muted/50 transition-colors"
@@ -435,7 +523,44 @@ export default function Mailbox() {
                     <span className="italic text-muted-foreground">No content available</span>
                   )}
                 </div>
-                
+
+                {/* Attachments */}
+                {selectedEmail.attachments &&
+                  Array.isArray(selectedEmail.attachments) &&
+                  selectedEmail.attachments.length > 0 && (
+                  <div className="mt-8 pl-12">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      Attachments ({selectedEmail.attachments.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedEmail.attachments.map((att: any, i: number) => (
+                        <button
+                          key={i}
+                          onClick={async () => {
+                            const { data } = await supabase.storage
+                              .from("email-attachments")
+                              .createSignedUrl(att.path, 60);
+                            if (data?.signedUrl) {
+                              window.open(data.signedUrl, "_blank");
+                            }
+                          }}
+                          className="flex items-center gap-2 bg-muted/50 hover:bg-muted px-4 py-3 rounded-xl border text-sm transition-colors cursor-pointer"
+                        >
+                          <FileText className="h-5 w-5 text-red-500" />
+                          <div className="text-left">
+                            <div className="font-medium text-foreground truncate max-w-[200px]">
+                              {att.filename}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {att.contentType || "File"}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-12 pl-12 flex gap-3">
                    <Button variant="outline" className="rounded-full px-6 bg-transparent"><Reply className="h-4 w-4 mr-2" /> Reply</Button>
                    <Button variant="outline" className="rounded-full px-6 bg-transparent"><Forward className="h-4 w-4 mr-2" /> Forward</Button>
@@ -443,14 +568,18 @@ export default function Mailbox() {
               </div>
             ) : (
               <div className="divide-y divide-border/40">
-                {sentEmails.length === 0 ? (
+                {filteredEmails.length === 0 ? (
                   <div className="p-20 text-center text-muted-foreground flex flex-col items-center">
                     <Inbox className="h-16 w-16 mb-6 opacity-20" />
-                    <p className="text-lg font-medium">Your inbox is empty</p>
-                    <p className="text-sm mt-2 opacity-70">New messages will appear here.</p>
+                    <p className="text-lg font-medium">
+                      {searchQuery ? "No emails match your search" : "Your inbox is empty"}
+                    </p>
+                    <p className="text-sm mt-2 opacity-70">
+                      {searchQuery ? "Try a different search term" : "New messages will appear here."}
+                    </p>
                   </div>
                 ) : (
-                  sentEmails.map((email) => {
+                  filteredEmails.map((email) => {
                      const txt = document.createElement("textarea");
                      txt.innerHTML = email.subject || "(No Subject)";
                      const subjectText = txt.value;
@@ -460,6 +589,9 @@ export default function Mailbox() {
                         sender = sender.split("<")[0].trim() || sender;
                      }
                      sender = sender.replace(/"/g, '');
+
+                     // Get live status — prefer real-time update over DB value
+                     const liveStatus = emailStatuses[email.id] || email.status;
                      
                      return (
                     <div
@@ -484,13 +616,38 @@ export default function Mailbox() {
                         <span className="font-bold truncate shrink-0 text-foreground">
                            {subjectText}
                         </span>
+                        {/* Attachment indicator */}
+                        {email.attachments && Array.isArray(email.attachments) && email.attachments.length > 0 && (
+                          <Paperclip className="h-3 w-3 text-muted-foreground shrink-0 ml-1" />
+                        )}
                         <span className="text-muted-foreground truncate ml-2">
                           - {email.body_text ? email.body_text.substring(0, 100) : "No preview available..."}
                         </span>
                       </div>
 
-                      <div className="w-24 shrink-0 text-right text-xs font-bold pl-4 text-foreground/90">
-                        {format(new Date(email.created_at), "MMM d")}
+                      {/* Live status badge + date */}
+                      <div className="w-36 shrink-0 text-right text-xs pl-4 flex items-center justify-end gap-2">
+                        {liveStatus === "sending" && (
+                          <span className="flex items-center gap-1 text-blue-400 font-medium">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Sending
+                          </span>
+                        )}
+                        {liveStatus === "pending" && (
+                          <span className="flex items-center gap-1 text-yellow-400 font-medium">
+                            <Clock className="h-3 w-3" />
+                            Queued
+                          </span>
+                        )}
+                        {liveStatus === "sent" && (
+                          <span className="text-green-500 font-bold text-base">✓</span>
+                        )}
+                        {liveStatus === "failed" && (
+                          <span className="text-red-500 font-bold">✗</span>
+                        )}
+                        <span className="font-bold text-foreground/90">
+                          {format(new Date(email.created_at), "MMM d")}
+                        </span>
                       </div>
                     </div>
                   )})

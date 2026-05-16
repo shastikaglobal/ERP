@@ -152,21 +152,50 @@ export default function LeadDetail() {
 
       const emailBody = `${message}${company?.email_signature || ''}`;
       
-      const { data, error } = await supabase.functions.invoke("send-email", {
-        body: {
-          to: lead.email,
-          subject,
-          text: emailBody.replace(/<[^>]*>?/gm, ''),
-          html: emailBody,
-          companyId: lead.company_id,
-          attachments: uploadedAttachments
-        },
-      });
+      toast.info("Queuing email...");
+
+      // 2. Outbox Pattern: Insert into Database (Webhook triggers backend)
+      const { data, error } = await supabase.from("emails").insert({
+        to_address: lead.email,
+        subject: subject,
+        body_html: emailBody,
+        company_id: lead.company_id,
+        lead_id: lead.id,
+        status: 'pending',
+        attachments: uploadedAttachments
+      }).select('id').single();
 
       if (error) throw error;
       
-      const count = data?.attachmentCount || 0;
-      toast.success(`Email sent successfully! (Verified ${count} attachments)`);
+      const emailId = data?.id;
+      
+      if (emailId) {
+        // Subscribe to real-time status updates for this specific email
+        const channel = supabase
+          .channel(`email-status-${emailId}`)
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'emails',
+            filter: `id=eq.${emailId}`
+          }, (payload) => {
+            const { status, error_message } = payload.new;
+            if (status === 'sent') {
+              toast.success(`Email Delivered! (Verified ${uploadedAttachments.length} attachments)`);
+              supabase.removeChannel(channel);
+            }
+            if (status === 'failed') {
+              toast.error(`Delivery Failed: ${error_message}`);
+              supabase.removeChannel(channel);
+            }
+          })
+          .subscribe();
+          
+        toast.loading("Sending...");
+      } else {
+        // Fallback if no emailId returned
+        toast.success(`Email queued!`);
+      }
 
       setShowComposer(false);
       setAttachments([]); // Clear attachments
@@ -193,7 +222,6 @@ export default function LeadDetail() {
       console.error("Email error:", e);
       let errorMsg = e.message;
       
-      // If it's a Supabase Functions error, try to get the real error from the response body
       if (e.context && typeof e.context.json === 'function') {
         try {
           const body = await e.context.json();
@@ -207,7 +235,6 @@ export default function LeadDetail() {
     } finally {
       setSending(false);
     }
-
   };
   const handleSync = async () => {
     if (!lead || !id) return;
