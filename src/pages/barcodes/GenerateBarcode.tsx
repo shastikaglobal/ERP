@@ -19,7 +19,7 @@ type LogisticsTarget = {
   id: string;
   name: string;
   ref: string;
-  type: "shipment" | "batch";
+  type: "shipment" | "batch" | "order";
   detail?: string;
   sku?: string;
   product_name?: string;

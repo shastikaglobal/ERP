@@ -92,14 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const setupSessionInterval = (sess: Session | null) => {
       if (sessionInterval) clearInterval(sessionInterval);
-      const activeName = sess?.user?.user_metadata?.active_profile?.full_name;
-      if (activeName) {
-        sessionInterval = setInterval(async () => {
-          await supabase.from('active_sessions')
-            .update({ last_active: new Date().toISOString() })
-            .eq('profile_name', activeName);
-        }, 5 * 60 * 1000);
-      }
+      // Removed active_sessions logic related to profile selector
     };
 
     const subscribeRealtime = (uid: string) => {
@@ -190,9 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (session?.user) {
-      await supabase.from('active_sessions').delete().eq('user_id', session.user.id);
-    }
+    // Session tracking via active_sessions is removed
     await supabase.auth.signOut();
   };
 

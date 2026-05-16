@@ -31,13 +31,9 @@ export default function AuthCallback() {
             status: "pending",
             full_name: metadata?.full_name || email?.split("@")[0] || "User",
           });
-          if (mounted) navigate("/pending", { replace: true });
-        } else {
-          if (mounted) navigate(
-            profile.status === "approved" ? "/dashboard" : "/pending",
-            { replace: true }
-          );
         }
+        
+        if (mounted) navigate("/dashboard", { replace: true });
       } catch (err: any) {
         if (mounted) setErrorMsg(err.message || "An error occurred.");
       }

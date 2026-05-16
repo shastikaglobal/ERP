@@ -62,7 +62,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
   const initials = (profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase();
-  const activeUser = session?.user?.user_metadata?.active_profile?.full_name;
+  const activeUser = profile?.full_name || profile?.email || "User";
 
   const handleSignOut = async () => {
     await signOut();

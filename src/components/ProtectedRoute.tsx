@@ -8,31 +8,13 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!session) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
-  }
-
-  // Hard-block: profile must exist and be approved
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-sm text-muted-foreground">Setting up your account…</div>
-      </div>
-    );
-  }
-
-  if (!profile.requested_role && profile.status === "pending") {
-    // Brand new Google sign-in: collect phone + role first
-    return <Navigate to="/complete-profile" replace />;
-  }
-
-  if (profile.status !== "approved") {
-    return <Navigate to="/waiting-approval" replace />;
   }
 
   return children;

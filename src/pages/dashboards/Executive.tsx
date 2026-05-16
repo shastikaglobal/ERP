@@ -61,21 +61,7 @@ export default function ExecutiveDashboard() {
     enabled: !!profile?.id
   });
 
-  // --- Query 4: Active Sessions ---
-  const { data: activeSessions = [] } = useQuery({
-    queryKey: ['active_sessions'],
-    queryFn: async () => {
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from('active_sessions')
-        .select('*')
-        .gte('last_active', fifteenMinsAgo)
-        .order('last_active', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    refetchInterval: 30000 // 30 seconds
-  });
+
 
   // --- Build Revenue by Month chart ---
   const chartSales = (() => {
@@ -306,43 +292,6 @@ export default function ExecutiveDashboard() {
         </Section>
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-        <Section title="Active Users">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border text-muted-foreground text-xs uppercase text-left">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium">Role</th>
-                  <th className="px-4 py-2 font-medium">Login Time</th>
-                  <th className="px-4 py-2 font-medium">Device</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {activeSessions.length === 0 ? (
-                  <tr><td colSpan={5} className="py-4 text-center text-muted-foreground">No active users found</td></tr>
-                ) : (
-                  activeSessions.map((s: any) => {
-                    const isActive = new Date(s.last_active).getTime() > Date.now() - 5 * 60 * 1000;
-                    return (
-                      <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className={`h-2.5 w-2.5 rounded-full shadow-sm ${isActive ? 'bg-green-500 shadow-green-500/50' : 'bg-yellow-500 shadow-yellow-500/50'}`} title={isActive ? 'Active (within 5 min)' : 'Idle (5-15 min)'} />
-                        </td>
-                        <td className="px-4 py-3 font-medium">{s.profile_name}</td>
-                        <td className="px-4 py-3 capitalize text-muted-foreground">{s.profile_role || 'User'}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{format(new Date(s.login_at), 'hh:mm a')}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs truncate max-w-[200px]" title={s.device_info}>{s.device_info}</td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      </div>
     </div>
   );
 }
