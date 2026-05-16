@@ -13,7 +13,7 @@ export default function Auth() {
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [busyGithub, setBusyGithub] = useState(false);
 
-  const from = (location.state as { from?: string })?.from || "/dashboards/executive";
+  const from = (location.state as { from?: string })?.from || "/dashboard";
 
   if (!loading && session) return <Navigate to={from} replace />;
 

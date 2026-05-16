@@ -19,7 +19,7 @@ type LogisticsTarget = {
   id: string;
   name: string;
   ref: string;
-  type: "shipment" | "batch";
+  type: "shipment" | "batch" | "order";
   detail?: string;
   sku?: string;
   product_name?: string;
@@ -84,6 +84,113 @@ const LABEL_SIZES: LabelSize[] = [
 function parseWeightFromDetails(details: string): number | null {
   const match = details.toLowerCase().match(/(\d+(\.\d+)?)\s*kg/);
   return match ? parseFloat(match[1]) : null;
+}
+
+function LabelContent({
+  sizeId, code, idx, boxCount, productName, skuCode, selectedSku, netWeight, packingDate, labelSize
+}: any) {
+  const fs = labelSize.fontScale;
+  const headerPx = Math.round(7 * fs);
+  const labelPx = Math.round(6 * fs);
+  const valuePx = Math.round(7 * fs);
+  const footerPx = Math.round(5 * fs);
+  const rowMinH = Math.max(6, Math.round(11 * fs));
+
+  const pDate = packingDate ? packingDate.split('-').reverse().join('-') : "—";
+  const pSku = skuCode || selectedSku || "—";
+  const pProd = productName || "—";
+
+  if (sizeId === "2x1") {
+    return (
+      <div className="barcode-label bg-white text-black overflow-hidden flex flex-col justify-between h-full w-full p-1 box-border" style={{ border: '1px solid black' }}>
+        <div className="flex justify-between items-center w-full" style={{ fontSize: '8px' }}>
+          <div className="font-bold truncate">SGI Pvt Ltd</div>
+          <div className="truncate">SKU: {pSku}</div>
+        </div>
+        <div className="flex flex-col items-center justify-center flex-1 w-full my-0.5">
+          <Barcode value={code} width={1} height={30} format="CODE128" displayValue={false} margin={0} background="transparent" lineColor="#000000" />
+          <div className="font-mono font-bold text-[9px] mt-0.5 tracking-tight">{code}</div>
+        </div>
+        <div className="flex justify-between items-center w-full" style={{ fontSize: '8px' }}>
+          <div>{netWeight} KG</div>
+          <div>{pDate}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (sizeId === "2x2") {
+    return (
+      <div className="barcode-label bg-white text-black overflow-hidden flex flex-col items-center justify-between h-full w-full p-2 box-border" style={{ border: '1px solid black' }}>
+        <div className="text-[11px] font-bold text-center w-full truncate shrink-0">
+          Shastika Global Impex Pvt Ltd
+        </div>
+        <div className="flex flex-col items-center shrink-0 w-full mt-0.5" style={{ fontSize: '10px' }}>
+          <div className="text-center font-semibold w-full truncate">{pProd}</div>
+          <div className="text-center w-full truncate">SKU: {pSku}</div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center w-full my-1">
+          <Barcode value={code} width={1.5} height={40} format="CODE128" displayValue={false} margin={0} background="transparent" lineColor="#000000" />
+          <div className="font-mono font-bold text-[10px] text-center w-full tracking-widest mt-1 shrink-0">{code}</div>
+        </div>
+        <div className="flex justify-between items-center w-full border-t border-gray-300 pt-1" style={{ fontSize: '9px' }}>
+          <div>BOX {idx + 1} OF {boxCount}</div>
+          <div>{netWeight} KG</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (sizeId === "3x1") {
+    return (
+      <div className="barcode-label bg-white text-black overflow-hidden flex items-center justify-between h-full w-full p-1.5 box-border" style={{ border: '1px solid black' }}>
+        <div className="flex flex-col h-full justify-center w-[60%] pr-2" style={{ fontSize: '9px', lineHeight: 1.3 }}>
+          <div className="font-black uppercase truncate text-[10px] mb-1">Shastika Global Impex Pvt Ltd</div>
+          <div className="font-bold truncate">{pProd}</div>
+          <div className="truncate">SKU: {pSku}</div>
+          <div className="truncate">Weight: {netWeight} KG</div>
+          <div className="truncate">Date: {pDate}</div>
+        </div>
+        <div className="flex flex-col items-center justify-center shrink-0 w-[40%] h-full">
+          <Barcode value={code} width={1} height={50} format="CODE128" displayValue={false} margin={0} background="transparent" lineColor="#000000" />
+          <div className="font-mono font-bold text-[7px] text-center tracking-tighter mt-1">{code}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to 4x2
+  return (
+    <div className="barcode-label bg-white text-black overflow-hidden flex flex-col p-[2px] justify-between h-full w-full box-border border border-black">
+      <div
+        style={{ fontSize: `${headerPx}px`, letterSpacing: '0.1em' }}
+        className="text-gray-500 text-center font-bold uppercase shrink-0 mb-[2px] pt-[2px]"
+      >
+        Export Cargo Identification
+      </div>
+      <div className="flex flex-col overflow-hidden" style={{ flex: "0 0 auto" }}>
+        {([
+          ["COMPANY",      "Shastika Global Impex Pvt Ltd"],
+          ["PRODUCT",      pProd],
+          ["SKU / CODE",   pSku],
+          ["CARTON NO.",   `${idx + 1} OF ${boxCount}`],
+          ["NET WEIGHT",   `${netWeight} KG`],
+          ["PACKING DATE", pDate],
+        ] as [string, string][]).map(([lbl, val]) => (
+          <div key={lbl} style={{ minHeight: `${rowMinH}px` }} className="flex border-b border-gray-200 shrink-0">
+            <div style={{ fontSize: `${labelPx}px`, lineHeight: 1.1, padding: "1px 2px" }} className="w-[35%] flex items-center text-gray-500 font-semibold">{lbl}</div>
+            <div style={{ fontSize: `${valuePx}px`, lineHeight: 1.1, padding: "1px 2px" }} className="w-[65%] flex items-center font-bold truncate text-black">{val}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col items-center justify-center overflow-hidden mt-[2px]" style={{ flex: "1 1 auto", padding: "1px" }}>
+        <div style={{ fontSize: `${Math.max(8, headerPx + 1)}px`, letterSpacing: '0.1em', color: '#c1a153' }} className="font-black uppercase mb-[2px]">Logistics Tracking</div>
+        <Barcode value={code} width={labelSize.barcodeWidth} height={labelSize.barcodeHeight} format="CODE128" displayValue={false} margin={0} background="transparent" lineColor="#000000" />
+        <div style={{ fontSize: `${Math.max(6, valuePx)}px`, letterSpacing: '0.1em' }} className="font-mono font-black text-center mt-[2px]">{code}</div>
+      </div>
+      <div style={{ fontSize: `${footerPx}px` }} className="text-gray-400 text-center uppercase shrink-0 mt-[2px] pb-[2px]">Official Cargo Identification</div>
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -242,11 +349,46 @@ export default function GenerateBarcode() {
       const parsedWeight = parseFloat(netWeight) || 0;
 
       const count = endCarton - startCarton + 1;
+      let currentBatchId = selected.type === 'batch' ? selected.id : null;
+
+      if (selected.type === 'shipment') {
+        const shipmentNumber = selected.ref;
+        // 1. Check if batch exists for this shipment
+        const { data: existingBatch } = await supabase
+          .from("shipment_batches")
+          .select("id")
+          .eq("shipment_id", shipmentNumber)
+          .maybeSingle();
+        
+        if (existingBatch) {
+          currentBatchId = existingBatch.id;
+        } else {
+          // 2. If batch NOT found -> automatically CREATE a new batch record
+          console.log("Attempting to auto-create batch for shipment:", shipmentNumber, "UUID was:", selected.id);
+          const { data: newBatch, error: batchError } = await supabase
+            .from("shipment_batches")
+            .insert({
+              shipment_id: shipmentNumber,
+              shipment_uuid: selected.id,
+              status: 'active',
+              carton_number_total: totalCartons
+            })
+            .select("id")
+            .single();
+            
+          if (batchError) {
+            console.error("Exact batch error:", batchError);
+            throw new Error(`Batch creation failed: ${batchError.message}`);
+          }
+          currentBatchId = newBatch.id;
+        }
+      }
+
       const rows = Array.from({ length: count }, (_, i) => {
         const boxNumber = startCarton + i;
         return {
           company_id:  companyId,
-          batch_id:    selected.type === "batch"    ? selected.id : null,
+          batch_id:    currentBatchId,
           shipment_id: selected.type === "shipment" ? selected.id : null,
           order_id:    selected.type === "order"    ? selected.id : null,
           code:        `${selected.ref} | ${productName || "Product"} | ${parsedWeight > 0 ? parsedWeight + "KG" : ""} | BOX ${boxNumber}/${totalCartons}`.replace(/ \s+/g, " "),
@@ -262,9 +404,11 @@ export default function GenerateBarcode() {
       });
 
       const codes = rows.map((r) => r.code);
-      const { error } = await supabase.from("batch_barcodes").insert(rows);
-      if (error) throw error;
-
+      const { error: barcodeError } = await supabase.from("batch_barcodes").insert(rows);
+      if (barcodeError) {
+        console.error('Full barcode insert error:', JSON.stringify(barcodeError));
+        throw new Error(`Barcode insert failed: ${barcodeError.message}`);
+      }
       setGeneratedCodes(codes);
       return rows.length;
     },
@@ -284,14 +428,6 @@ export default function GenerateBarcode() {
   // SUCCESS / PRINT VIEW
   // ─────────────────────────────────────────────────────────────────────────
   if (showSuccess) {
-    // All font sizes derived from fontScale so they shrink with the label
-    const fs        = labelSize.fontScale;
-    const headerPx  = Math.round(8  * fs);
-    const labelPx   = Math.round(7  * fs);
-    const valuePx   = Math.round(8  * fs);
-    const footerPx  = Math.round(6  * fs);
-    const rowMinH   = Math.max(8, Math.round(13 * fs));
-
     // Physical dimensions for inline styles (mm units honoured at print time)
     const labelStyle: React.CSSProperties = {
       width:           `${labelSize.widthMm}mm`,
@@ -331,80 +467,19 @@ export default function GenerateBarcode() {
         {/* ── Printable sheet ── */}
         <div id="print-sheet" className="hidden print:block">
           {generatedCodes.map((code, idx) => (
-            <div
-              key={code}
-              style={labelStyle}
-              className="bg-white text-black border border-black overflow-hidden flex flex-col"
-            >
-              {/* Header */}
-              <div
-                style={{ fontSize: `${headerPx}px`, lineHeight: 1.2, padding: "1px 2px" }}
-                className="bg-black text-white text-center font-black tracking-widest uppercase shrink-0"
-              >
-                Export Cargo Identification
-              </div>
-
-              {/* 6 data rows */}
-              <div className="flex flex-col overflow-hidden" style={{ flex: "1 1 auto" }}>
-                {([
-                  ["Company",      "Shastika Global Impex Pvt Ltd"],
-                  ["Product",      productName || "—"],
-                  ["SKU / Code",   skuCode || selected?.sku || "—"],
-                  ["Carton No.",   `BOX ${startCarton + idx} OF ${totalCartons}`],
-                  ["Net Weight",   `${netWeight} KG`],
-                  ["Packing Date", packingDate],
-                ] as [string, string][]).map(([lbl, val]) => (
-                  <div
-                    key={lbl}
-                    style={{ minHeight: `${rowMinH}px` }}
-                    className="flex border-b border-black shrink-0"
-                  >
-                    <div
-                      style={{ fontSize: `${labelPx}px`, lineHeight: 1.1, padding: "1px 2px" }}
-                      className="w-[36%] border-r border-black flex items-center text-gray-500 uppercase font-bold"
-                    >
-                      {lbl}
-                    </div>
-                    <div
-                      style={{ fontSize: `${valuePx}px`, lineHeight: 1.1, padding: "1px 2px" }}
-                      className="w-[64%] flex items-center font-black truncate"
-                    >
-                      {val}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Barcode — takes remaining height */}
-                <div
-                  className="flex flex-col items-center justify-center overflow-hidden"
-                  style={{ flex: "1 1 auto", padding: "1px", minHeight: `${labelSize.barcodeHeight + 15}px` }}
-                >
-                  <div
-                    style={{ fontSize: `${Math.max(5, footerPx - 1)}px` }}
-                    className="font-bold text-center leading-none mb-[2px] w-full truncate px-2"
-                  >
-                    {code}
-                  </div>
-                  <Barcode
-                    value={code}
-                    width={labelSize.barcodeWidth}
-                    height={labelSize.barcodeHeight}
-                    format="CODE128"
-                    displayValue={false}
-                    margin={0}
-                    background="transparent"
-                    lineColor="#000000"
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div
-                style={{ fontSize: `${footerPx}px`, padding: "1px 2px" }}
-                className="bg-black text-white text-center font-bold tracking-widest uppercase shrink-0"
-              >
-                Official Cargo Identification
-              </div>
+            <div key={code} style={labelStyle}>
+              <LabelContent
+                sizeId={labelSizeId}
+                code={code}
+                idx={startCarton - 1 + idx}
+                boxCount={totalCartons}
+                productName={productName}
+                skuCode={skuCode}
+                selectedSku={selected?.sku}
+                netWeight={netWeight}
+                packingDate={packingDate}
+                labelSize={labelSize}
+              />
             </div>
           ))}
         </div>
@@ -425,6 +500,9 @@ export default function GenerateBarcode() {
               display: block;
               padding: 0;
               margin: 0;
+            }
+            .barcode-label {
+              page-break-after: always;
             }
             @page {
               size: ${labelSize.widthMm}mm ${labelSize.heightMm}mm;
@@ -628,51 +706,20 @@ export default function GenerateBarcode() {
               {/* Preview card — aspect-ratio matches chosen physical size */}
               <div
                 style={{ aspectRatio: `${labelSize.widthIn} / ${labelSize.heightIn}` }}
-                className="w-full max-w-[300px] bg-white text-black border-2 border-black flex flex-col overflow-hidden shadow-2xl"
+                className="w-full max-w-[300px] flex flex-col overflow-hidden shadow-2xl"
               >
-                <div className="bg-black text-white text-center py-[2px] text-[7px] font-black tracking-widest uppercase shrink-0">
-                  Export Cargo Identification
-                </div>
-
-                <div className="flex flex-col flex-1 overflow-hidden text-[6px] font-bold">
-                  {[
-                    ["Company",   "Shastika Global Impex"],
-                    ["Product",   productName || "—"],
-                    ["SKU",       skuCode || selected.sku || "—"],
-                    ["Carton",    `BOX ${startCarton} OF ${totalCartons}`],
-                    ["Weight",    `${netWeight} KG`],
-                    ["Pack Date", packingDate],
-                  ].map(([lbl, val]) => (
-                    <div key={lbl} className="flex border-b border-black shrink-0" style={{ minHeight: "9px" }}>
-                      <div className="w-[36%] border-r border-black px-[2px] flex items-center text-gray-500 uppercase leading-tight">
-                        {lbl}
-                      </div>
-                      <div className="w-[64%] px-[2px] flex items-center font-black truncate leading-tight">
-                        {val}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="flex flex-col items-center justify-center flex-1 overflow-hidden px-1 py-[2px] w-full">
-                    <div className="text-[6px] font-bold text-center leading-none mb-[2px] w-full truncate px-1">
-                      {previewCode}
-                    </div>
-                    <Barcode
-                      value={previewCode}
-                      width={0.5}
-                      height={20}
-                      format="CODE128"
-                      displayValue={false}
-                      margin={0}
-                      background="transparent"
-                      lineColor="#000000"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-black text-white text-center py-[1px] text-[5px] font-bold tracking-widest uppercase shrink-0">
-                  Official Cargo ID
-                </div>
+                <LabelContent
+                  sizeId={labelSizeId}
+                  code={previewCode}
+                  idx={0}
+                  boxCount={totalCartons}
+                  productName={productName}
+                  skuCode={skuCode}
+                  selectedSku={selected?.sku}
+                  netWeight={netWeight}
+                  packingDate={packingDate}
+                  labelSize={labelSize}
+                />
               </div>
 
               <p className="text-[10px] text-muted-foreground text-center max-w-[220px] leading-relaxed">

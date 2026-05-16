@@ -27,19 +27,58 @@ export default function Ledger() {
     return true
   })
 
+  const handleExportCSV = () => {
+    const header = ['Date', 'Particulars', 'Voucher', 'Type', 'Debit', 'Credit', 'Balance', 'BalType'].join(',');
+    const rows = filtered.map(r => 
+      [`"${r.date}"`, `"${r.particulars}"`, `"${r.voucher}"`, `"${r.type}"`, r.debit || 0, r.credit || 0, r.balance || 0, `"${r.balType || ''}"`].join(',')
+    ).join('\n');
+    
+    const csvContent = header + '\n' + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${account.replace(/\s+/g, '_')}_Ledger_Mar_2026.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
+      <style>{`
+        .force-gold-text { color: #f0a500 !important; }
+        .force-gold-input { background-color: #0f0f0f !important; border: 1px solid #333 !important; color: #fff !important; }
+        .force-gold-input:focus { border-color: #f0a500 !important; box-shadow: 0 0 0 2px rgba(240,165,0,0.15) !important; outline: none !important; }
+      `}</style>
       <PageHeader
         title="Ledger"
         breadcrumbs={[{ label: 'Home' }, { label: 'Accounts' }, { label: 'Ledger' }]}
         actions={
           <div className="flex items-center gap-2">
-            <select value={account} onChange={e => setAccount(e.target.value)} className="select-field w-48 text-xs focus:border-amber-500">
+            <select value={account} onChange={e => setAccount(e.target.value)} className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-48 text-sm transition-colors">
               {ACCOUNTS.map(a => <option key={a}>{a}</option>)}
             </select>
-            <input type="date" defaultValue="2026-03-01" className="input-field w-36 text-xs focus:border-amber-500" />
-            <input type="date" defaultValue="2026-03-31" className="input-field w-36 text-xs focus:border-amber-500" />
-            <button className="btn-gold text-xs py-1.5 rounded-lg shadow-gold flex items-center gap-2"><Download size={13} /> Export</button>
+            <input type="date" defaultValue="2026-03-01" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
+            <input type="date" defaultValue="2026-03-31" className="force-gold-input rounded-[8px] px-[14px] py-[8px] w-36 text-sm transition-colors" />
+            <button 
+              onClick={handleExportCSV}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                color: '#f0a500',
+                border: '1.5px solid #f0a500',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={15} /> Export
+            </button>
           </div>
         }
       />
@@ -62,19 +101,40 @@ export default function Ledger() {
       <div className="relative overflow-hidden rounded-3xl border border-border bg-card/70 shadow-sm">
         <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-card/80">
           <div>
-            <h3 className="text-lg font-semibold text-white">{account} — March 2026</h3>
-            <p className="text-sm text-slate-500 mt-1">Ledger transactions with debit/credit breakdown and balance tracking.</p>
+            <h3 className="text-lg font-semibold force-gold-text">{account} — March 2026</h3>
+            <p className="text-sm text-[#888888] mt-1">Ledger transactions with debit/credit breakdown and balance tracking.</p>
           </div>
           <div className="flex gap-1.5">
             {['All','Debit','Credit'].map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  filter === f
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 border border-transparent'
-                }`}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  ...(filter === f
+                    ? {
+                        background: '#f0a500',
+                        color: '#000',
+                        border: '1px solid #f0a500',
+                        boxShadow: '0 0 8px rgba(240,165,0,0.3)'
+                      }
+                    : {
+                        background: 'transparent',
+                        color: '#888',
+                        border: '1px solid #333'
+                      })
+                }}
+                onMouseEnter={(e) => {
+                  if (filter !== f) e.target.style.background = 'rgba(240,165,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  if (filter !== f) e.target.style.background = 'transparent';
+                }}
               >
                 {f}
               </button>
@@ -87,22 +147,22 @@ export default function Ledger() {
             <thead>
               <tr className="border-b border-border bg-card/80">
                 {['Date','Particulars','Voucher','Type','Debit','Credit','Balance'].map(h => (
-                  <th key={h} className="tbl-th tbl-header py-3">{h}</th>
+                  <th key={h} className={`force-gold-text uppercase text-[11px] tracking-[1.5px] py-4 px-6 font-[600] ${['Debit','Credit','Balance'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i} className="tbl-row hover:bg-amber-500/5 transition-colors">
-                  <td className="tbl-cell font-mono text-xs text-slate-500">{r.date}</td>
-                  <td className="tbl-cell text-slate-300">{r.particulars}</td>
-                  <td className="tbl-cell">{r.voucher === '—' ? <span className="text-slate-600">—</span> : <Tag className={getTagVariant(r.voucher)}>{r.voucher}</Tag>}</td>
-                  <td className="tbl-cell"><span className="text-xs text-slate-500 font-mono">{r.type}</span></td>
-                  <td className="tbl-cell dr text-red-400 font-mono">{r.debit ? fmt(r.debit) : '—'}</td>
-                  <td className="tbl-cell cr text-emerald-400 font-mono">{r.credit ? fmt(r.credit) : '—'}</td>
-                  <td className="tbl-cell font-mono font-semibold">
+                  <td className="tbl-cell text-left px-6 font-mono text-xs text-slate-500">{r.date}</td>
+                  <td className="tbl-cell text-left px-6 text-slate-300">{r.particulars}</td>
+                  <td className="tbl-cell text-left px-6">{r.voucher === '—' ? <span className="text-slate-600">—</span> : <Tag className={getTagVariant(r.voucher)}>{r.voucher}</Tag>}</td>
+                  <td className="tbl-cell text-left px-6"><span className="text-xs text-slate-500 font-mono">{r.type}</span></td>
+                  <td className="tbl-cell text-right px-6 text-[#ff6b6b] font-mono">{r.debit ? fmt(r.debit) : '—'}</td>
+                  <td className="tbl-cell text-right px-6 text-[#4ade80] font-mono">{r.credit ? fmt(r.credit) : '—'}</td>
+                  <td className="tbl-cell text-right px-6 font-mono font-semibold">
                     {r.balance === 0 ? '—' : (
-                      <span className={r.balType === 'Cr' ? 'text-emerald-400' : 'text-red-400'}>
+                      <span className={r.balType === 'Cr' ? 'text-[#4ade80]' : 'text-[#ff6b6b]'}>
                         {fmt(r.balance)} {r.balType}
                       </span>
                     )}
@@ -111,12 +171,11 @@ export default function Ledger() {
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-amber-500/30 bg-amber-500/10">
-                <td colSpan={3} className="px-4 py-4 font-semibold text-slate-200 text-sm">Closing Balance — 31 Mar 2026</td>
-                <td className="px-4 py-4"></td>
-                <td className="px-4 py-4 dr font-bold text-red-400">₹15,000</td>
-                <td className="px-4 py-4 cr font-bold text-emerald-400">₹6,60,000</td>
-                <td className="px-4 py-4 font-mono font-bold text-emerald-400">₹6,45,000 Cr</td>
+              <tr className="border-t-2 border-[#f0a500] bg-[#161616]">
+                <td colSpan={4} className="px-6 py-4 font-semibold force-gold-text text-sm">Closing Balance — 31 Mar 2026</td>
+                <td className="px-6 py-4 text-right font-bold text-[#ff6b6b]">₹15,000</td>
+                <td className="px-6 py-4 text-right font-bold text-[#4ade80]">₹6,60,000</td>
+                <td className="px-6 py-4 text-right font-mono font-bold text-[#4ade80]">₹6,45,000 Cr</td>
               </tr>
             </tfoot>
           </table>

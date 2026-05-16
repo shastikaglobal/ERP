@@ -57,11 +57,12 @@ function NotifRow({ n, onRead }: { n: AppNotification; onRead: (id: string) => v
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, session } = useAuth();
   const nav = useNavigate();
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
   const initials = (profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase();
+  const activeUser = profile?.full_name || profile?.email || "User";
 
   const handleSignOut = async () => {
     await signOut();
@@ -158,12 +159,18 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         </DropdownMenu>
 
         {/* ── User Menu ─────────────────────────────────────────────────── */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="h-8 w-8 rounded-full logo-mark text-[hsl(var(--primary-foreground))] flex items-center justify-center text-xs font-bold hover:opacity-90">
-              {initials}
-            </button>
-          </DropdownMenuTrigger>
+        <div className="flex items-center gap-3">
+          {activeUser && (
+            <span className="text-sm font-medium text-foreground hidden sm:inline-block">
+              {activeUser}
+            </span>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-8 w-8 rounded-full logo-mark text-[hsl(var(--primary-foreground))] flex items-center justify-center text-xs font-bold hover:opacity-90">
+                {initials}
+              </button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="text-sm font-medium truncate">
@@ -183,6 +190,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </header>
   );

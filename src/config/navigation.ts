@@ -12,8 +12,9 @@ import {
   FileSpreadsheet, FileBox, Award, BookOpen, Eye,
   Wallet, Receipt, AlertCircle, BarChart3, Coins,
   UsersRound, CalendarCheck, ShieldCheck,
-  Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare
+  Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare, Trash2, Inbox
 } from "lucide-react";
+
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -59,6 +60,7 @@ export const navGroups: NavGroup[] = [
       { title: "Leads", url: "/crm/leads", icon: UserCheck, permission: "farmers.view" },
       { title: "Pipeline", url: "/crm/pipeline", icon: GitBranch, permission: "farmers.view" },
       { title: "Email Integration", url: "/crm/email", icon: Mail, permission: "farmers.view" },
+      { title: "Zoho API Sync", url: "/system/integrations/zoho", icon: Mail, permission: "farmers.view" },
     ],
   },
 
@@ -203,6 +205,12 @@ export const navGroups: NavGroup[] = [
       { title: "Activity Logs", url: "/system/logs", icon: ScrollText, permission: "settings.view" },
       { title: "Subscriptions", url: "/system/subscriptions", icon: CreditCard, permission: "settings.manage" },
       { title: "Settings", url: "/system/settings", icon: Settings, permission: "settings.manage" },
+      { title: "Mailbox", url: "/system/mailbox", icon: Inbox, permission: "settings.manage" },
+      { title: "Zoho Integration", url: "/system/integrations/zoho", icon: Mail, permission: "settings.manage" },
+      { title: "System Reset", url: "/system/maintenance", icon: Trash2, permission: "settings.manage" },
     ],
   },
 ];
+
+
+

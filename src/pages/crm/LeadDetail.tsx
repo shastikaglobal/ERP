@@ -80,21 +80,48 @@ export default function LeadDetail() {
     if (!lead) return;
     setSending(true);
     try {
-      const email = lead.contact_name
+      const email = (lead as any).email || (lead.contact_name
         ? `${lead.contact_name.toLowerCase().replace(/\s+/g, ".")}@${lead.company_name.split(" ")[0].toLowerCase()}.com`
-        : "";
-      const { error } = await supabase.functions.invoke("send-email", {
-        body: { to: email, subject, message, leadName: lead.contact_name },
+        : "");
+      
+      const { data, error } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: email,
+          subject,
+          text: message,
+          html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
+          companyId: (lead as any).company_id
+        },
       });
-      if (error) throw new Error("Failed to send email");
+
+      if (error) throw error;
       toast.success("Email sent successfully!");
       setSubject("");
       setMessage("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send email");
+
+      // Record activity in history
+      await supabase.from("activities").insert({
+        lead_id: lead.id,
+        title: `Sent Email: ${subject}`,
+        type: "email",
+        content: message,
+        completed: true,
+        company_id: (lead as any).company_id
+      });
+
+      // Refresh activities list
+      const { data: acts } = await supabase
+        .from("activities")
+        .select(`id, title, type, created_at, completed, profiles:created_by(full_name)`)
+        .eq("lead_id", id)
+        .order("created_at", { ascending: false });
+      if (acts) setActivities(acts as unknown as Activity[]);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send email");
     } finally {
       setSending(false);
     }
+
   };
 
   if (loading) {

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +29,10 @@ const STAGES = [
 ];
 
 export default function LeadPipeline() {
+  const { roleSlugs } = useAuth();
+  const isAdmin = roleSlugs.has("admin");
   const [leads, setLeads] = useState<Lead[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const fetchLeads = async () => {
@@ -114,21 +119,28 @@ export default function LeadPipeline() {
                             {lead.interested_product && <div>📦 {lead.interested_product}</div>}
                           </div>
                           
-                          <Select
-                            value={lead.stage}
-                            onValueChange={(val) => updateLeadStage(lead.id, val)}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STAGES.map((s) => (
-                                <SelectItem key={s.id} value={s.id} className="text-xs">
-                                  Move to {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {isAdmin ? (
+                            <Select
+                              value={lead.stage}
+                              onValueChange={(val) => updateLeadStage(lead.id, val)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STAGES.map((s) => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                                    Move to {s.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="secondary" className="w-full justify-center text-[10px] h-6">
+                              {lead.stage}
+                            </Badge>
+                          )}
+
                         </CardContent>
                       </Card>
                     ))

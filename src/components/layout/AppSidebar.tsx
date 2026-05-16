@@ -36,9 +36,14 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <Sprout className="h-4 w-4 text-[hsl(var(--primary-foreground))]" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-foreground leading-tight truncate">Shastika Global</div>
+            <div className="text-sm font-semibold text-foreground leading-tight truncate">
+              {profile?.company_name || "AgriExport ERP"}
+            </div>
             <div className="text-[10px] text-sidebar-muted uppercase tracking-wider">Impex · Agri Export ERP</div>
           </div>
+
+
+
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">

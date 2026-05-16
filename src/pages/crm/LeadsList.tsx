@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+
 
 type Lead = {
   id: string;
@@ -35,7 +37,10 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 export default function LeadsList() {
+  const { roleSlugs } = useAuth();
+  const isAdmin = roleSlugs.has("admin");
   const nav = useNavigate();
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -272,27 +277,34 @@ export default function LeadsList() {
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.interested_product || "-"}</TableCell>
                   <TableCell>
-                    <Select 
-                      defaultValue={lead.stage} 
-                      onValueChange={async (newStage) => {
-                        try {
-                          const { error } = await supabase.from("leads").update({ stage: newStage }).eq("id", lead.id);
-                          if (error) throw error;
-                          toast.success(`Lead moved to ${newStage}`);
-                          fetchLeads();
-                        } catch (err: any) {
-                          toast.error(err.message || "Failed to update stage");
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`h-8 w-32 ${STAGE_COLORS[lead.stage]} text-white border-none font-bold capitalize`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    {isAdmin ? (
+                      <Select 
+                        defaultValue={lead.stage} 
+                        onValueChange={async (newStage) => {
+                          try {
+                            const { error } = await supabase.from("leads").update({ stage: newStage }).eq("id", lead.id);
+                            if (error) throw error;
+                            toast.success(`Lead moved to ${newStage}`);
+                            fetchLeads();
+                          } catch (err: any) {
+                            toast.error(err.message || "Failed to update stage");
+                          }
+                        }}
+                      >
+                        <SelectTrigger className={`h-8 w-32 ${STAGE_COLORS[lead.stage] || 'bg-slate-500'} text-white border-none font-bold`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge className={`h-8 w-32 justify-center ${STAGE_COLORS[lead.stage] || 'bg-slate-500'} text-white border-none font-bold`}>
+                        {lead.stage}
+                      </Badge>
+                    )}
                   </TableCell>
+
                   <TableCell className="text-xs text-muted-foreground font-medium">{lead.profiles?.full_name || "Unassigned"}</TableCell>
                   <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

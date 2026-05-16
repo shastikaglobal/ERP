@@ -44,7 +44,13 @@ export default function BalanceSheet() {
             <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold font-mono bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg shadow-sm shadow-emerald-500/20">
               <CheckCircle size={12} /> Balanced — ₹32,10,000
             </div>
-            <button className="btn-gold text-xs py-1.5 border-amber-500/30 text-amber-300"><Download size={13} /> PDF</button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="btn-gold flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md hover:-translate-y-[1px]"
+            >
+              <Download size={14} /> PDF
+            </button>
           </div>
         }
       />

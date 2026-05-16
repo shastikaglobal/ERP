@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingUp, Users } from "lucide-react";
 import { 
@@ -10,7 +12,9 @@ import { toast } from "sonner";
 import { startOfMonth } from "date-fns";
 
 export default function SupplierAnalytics() {
+  const { profile } = useAuth();
   const [stats, setStats] = useState({
+
     totalSuppliers: 0,
     totalPOValueMonth: 0,
   });
@@ -21,37 +25,25 @@ export default function SupplierAnalytics() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!profile?.company_id) return;
+
         const { count: supCount, error: supErr } = await supabase
           .from("farmers")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", profile.company_id);
         
         if (supErr) throw supErr;
 
-        const { data: poData, error: poErr } = await supabase
+        const { data: pos, error: poErr } = await supabase
           .from("purchase_orders")
-          .select("id, status, total, order_date, farmer_id");
+          .select("id, status, total, order_date, farmers(full_name)")
+          .eq("company_id", profile.company_id);
 
         if (poErr) throw poErr;
 
-        const farmerIds = Array.from(new Set((poData || []).map(po => po.farmer_id).filter(Boolean)));
-        let farmersMap: Record<string, string> = {};
-        
-        if (farmerIds.length > 0) {
-          const { data: farmersData } = await supabase
-            .from("farmers")
-            .select("id, full_name")
-            .in("id", farmerIds);
-            
-          if (farmersData) {
-            farmersData.forEach(f => {
-              farmersMap[f.id] = f.full_name;
-            });
-          }
-        }
-
         // Calculate PO value this month
         const thisMonthStart = startOfMonth(new Date());
-        const monthValue = poData
+        const monthValue = pos
           ?.filter(po => new Date(po.order_date) >= thisMonthStart)
           .reduce((sum, po) => sum + (Number(po.total) || 0), 0) || 0;
 
@@ -62,11 +54,16 @@ export default function SupplierAnalytics() {
 
         // Calculate top 5 suppliers
         const supplierTotals: Record<string, {name: string, value: number}> = {};
-        poData?.forEach(po => {
-          const supName = farmersMap[po.farmer_id] || "Unknown";
+        pos?.forEach(po => {
+          // Handle both object and array response for the relation
+          const farmerData = Array.isArray(po.farmers) ? po.farmers[0] : po.farmers;
+          const supName = (farmerData as any)?.full_name || "Unknown Supplier";
+          
           if (!supplierTotals[supName]) supplierTotals[supName] = { name: supName, value: 0 };
           supplierTotals[supName].value += Number(po.total) || 0;
         });
+
+
 
         const sortedSuppliers = Object.values(supplierTotals)
           .sort((a, b) => b.value - a.value)
@@ -79,7 +76,11 @@ export default function SupplierAnalytics() {
           statusCounts[po.status] = (statusCounts[po.status] || 0) + 1;
         });
 
-        const statusChartData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+        const statusChartData = Object.entries(statusCounts).map(([name, value]) => ({ 
+          name: name.charAt(0).toUpperCase() + name.slice(1), 
+          value 
+        }));
+
         setStatusData(statusChartData);
 
       } catch (err: any) {
@@ -89,8 +90,11 @@ export default function SupplierAnalytics() {
       }
     };
 
-    fetchData();
-  }, []);
+    if (profile?.company_id) {
+      fetchData();
+    }
+  }, [profile?.company_id]);
+
 
   const COLORS = ['#3b82f6', '#22c55e', '#a855f7', '#64748b', '#ef4444'];
 

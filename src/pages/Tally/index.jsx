@@ -11,6 +11,7 @@ import PLStatement from './PLStatement';
 import Parties from './Parties';
 import BalanceSheet from './BalanceSheet';
 import ChartOfAccounts from './ChartOfAccounts';
+import CreateParty from './CreateParty';
 
 export const PAGES = {
   DASHBOARD: 'DASHBOARD',
@@ -49,6 +50,7 @@ const TallyIndex = () => {
       <Route path="gst-reports" element={<GSTReports />} />
       <Route path="pl-statement" element={<PLStatement />} />
       <Route path="parties" element={<Parties />} />
+      <Route path="parties/create" element={<CreateParty />} />
       <Route path="balance-sheet" element={<BalanceSheet />} />
       <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
       <Route path="*" element={<Navigate to="" replace />} />

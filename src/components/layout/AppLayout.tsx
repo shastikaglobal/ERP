@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { Topbar } from "./Topbar";
+import { TeamChatPanel } from "../dashboard/TeamChatPanel";
 
 export default function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen flex w-full bg-background relative">
       <AppSidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar onMenuClick={() => setMobileOpen(true)} />
@@ -14,6 +15,7 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <TeamChatPanel />
     </div>
   );
 }

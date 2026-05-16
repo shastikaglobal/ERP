@@ -108,6 +108,11 @@ import Notifications from "./pages/system/Notifications";
 import ActivityLogs from "./pages/system/ActivityLogs";
 import Subscriptions from "./pages/system/Subscriptions";
 import Settings from "./pages/system/Settings";
+import Maintenance from "./pages/system/Maintenance";
+import ZohoIntegration from "./pages/system/ZohoIntegration";
+import Mailbox from "./pages/system/Mailbox";
+import TallyIndex from "./pages/Tally/index";
+import JournalEntry from "./pages/Tally/JournalEntry";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +130,7 @@ const App = () => (
             <Route path="/pending" element={<Pending />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/waiting-approval" element={<WaitingApproval />} />
+            <Route path="/select-profile" element={<Navigate to="/dashboard" replace />} />
             <Route path="/invoices/:id/preview" element={<InvoicePreview />} />
             <Route path="/packing-lists/:id/preview" element={<PackingListPreview />} />
             <Route path="/certificates/:id/preview" element={<CertificatePreview />} />
@@ -215,7 +221,9 @@ const App = () => (
               <Route path="/payments/overdue" element={<OverduePayments />} />
               <Route path="/payments/ledger" element={<Ledger />} />
               <Route path="/payments/reports" element={<FinancialReports />} />
-
+              {/* Tally Integration */}
+              <Route path="/tally/*" element={<TallyIndex />} />
+              <Route path="/journal" element={<JournalEntry />} />
               {/* Employees */}
               <Route path="/employees" element={<EmployeeDirectory />} />
               <Route path="/employees/attendance" element={<Attendance />} />
@@ -226,7 +234,13 @@ const App = () => (
               <Route path="/system/logs" element={<ActivityLogs />} />
               <Route path="/system/subscriptions" element={<Subscriptions />} />
               <Route path="/system/settings" element={<Settings />} />
+              <Route path="/system/maintenance" element={<Maintenance />} />
+              <Route path="/system/integrations/zoho" element={<ZohoIntegration />} />
+              <Route path="/system/mailbox" element={<Mailbox />} />
             </Route>
+
+
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

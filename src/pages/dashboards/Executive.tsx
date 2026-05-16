@@ -61,6 +61,8 @@ export default function ExecutiveDashboard() {
     enabled: !!profile?.id
   });
 
+
+
   // --- Build Revenue by Month chart ---
   const chartSales = (() => {
     const months: Record<string, { month: string; orders: number; revenue: number }> = {};
@@ -289,6 +291,7 @@ export default function ExecutiveDashboard() {
           </div>
         </Section>
       </div>
+
     </div>
   );
 }

@@ -6,14 +6,38 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Mail, ShieldCheck, Server, AlertCircle, CheckCircle2, HelpCircle, ExternalLink, Info, Loader2, User, Key, AtSign, Zap, Activity } from "lucide-react";
+import { 
+  Mail, ShieldCheck, Server, AlertCircle, CheckCircle2, 
+  HelpCircle, ExternalLink, Info, Loader2, User, Key, 
+  AtSign, Zap, Activity as ActivityIcon, Inbox, Send, Download, RefreshCw,
+  Search, User2, Clock, MessageSquare, ChevronRight, Filter
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+
+type EmailActivity = {
+  id: string;
+  lead_id: string;
+  title: string;
+  type: string;
+  content: string;
+  created_at: string;
+  leads?: {
+    company_name: string;
+    contact_name: string;
+    email: string;
+  };
+};
 
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
-  <div className="bg-card/50 rounded-2xl border p-6">
-    <h3 className="font-semibold mb-4">{title}</h3>
+  <div className="bg-card/50 rounded-2xl border p-6 h-full">
+    <h3 className="font-semibold mb-4 flex items-center gap-2">
+      {title}
+    </h3>
     {children}
   </div>
 );
@@ -30,200 +54,247 @@ export default function EmailIntegration() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testSuccess, setTestSuccess] = useState<boolean | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [emails, setEmails] = useState<EmailActivity[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   
+  // Configuration States
   const [smtpHost, setSmtpHost] = useState("smtppro.zoho.in");
   const [smtpPort, setSmtpPort] = useState("465");
-  const [smtpUser, setSmtpUser] = useState("bde@shastikaglobalimpex.co.in");
+  const [smtpUser, setSmtpUser] = useState("");
   const [smtpPass, setSmtpPass] = useState("");
-  const [fromEmail, setFromEmail] = useState("bde@shastikaglobalimpex.co.in");
+  const [fromEmail, setFromEmail] = useState("");
+  const [imapHost, setImapHost] = useState("imappro.zoho.in");
+  const [imapPort, setImapPort] = useState("993");
+  const [imapUser, setImapUser] = useState("");
+  const [imapPass, setImapPass] = useState("");
+
+  const fetchData = async () => {
+    if (!profile?.company_id) return;
+    
+    // 1. Fetch Company Config
+    const { data: comp } = await supabase.from("companies").select("*").eq("id", profile.company_id).single();
+    if (comp) {
+      setSmtpHost(comp.smtp_host || "smtppro.zoho.in");
+      setSmtpPort(comp.smtp_port || "465");
+      setSmtpUser(comp.smtp_user || "");
+      setFromEmail(comp.from_email || "");
+      setImapHost(comp.imap_host || "imappro.zoho.in");
+      setImapPort(String(comp.imap_port || "993"));
+      setImapUser(comp.imap_user || "");
+    }
+
+    // 2. Fetch Recent Email Activities
+    const { data: emailData } = await supabase
+      .from("activities")
+      .select(`
+        id, lead_id, title, type, content, created_at,
+        leads:lead_id(company_name, contact_name, email)
+      `)
+      .eq("type", "email")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    
+    if (emailData) setEmails(emailData as unknown as EmailActivity[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!profile?.company_id) return;
-    const fetchCompany = async () => {
-      const { data, error } = await supabase.from("companies").select("*").eq("id", profile.company_id).single();
-      if (!error && data) {
-        if (data.smtp_host) setSmtpHost(data.smtp_host);
-        if (data.smtp_port) setSmtpPort(data.smtp_port);
-        if (data.smtp_user) setSmtpUser(data.smtp_user);
-        if (data.from_email) setFromEmail(data.from_email);
-      }
-      setLoading(false);
+    fetchData();
+
+    // 1. Live Subscriptions for instant UI updates
+    const channel = supabase
+      .channel('live-emails')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activities',
+          filter: `type=eq.email`
+        },
+        () => {
+          console.log("New email activity detected, refreshing...");
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // 2. Auto-Sync with Server every 2 minutes
+    const syncInterval = setInterval(() => {
+      console.log("Auto-syncing with mail server...");
+      handleSyncAll(true); // Silent sync
+    }, 120000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(syncInterval);
     };
-    fetchCompany();
   }, [profile?.company_id]);
+
+  const handleSyncAll = async (silent = false) => {
+    if (!profile?.company_id) return;
+    if (!silent) setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-emails", {
+        body: { companyId: profile?.company_id }
+      });
+      if (error) throw error;
+      if (!silent && data?.count > 0) toast.success(`Synced ${data.count} new emails!`);
+      fetchData();
+    } catch (e: any) {
+      if (!silent) toast.error("Sync Failed: " + e.message);
+    } finally {
+      if (!silent) setSyncing(false);
+    }
+  };
+
 
   const handleSave = async () => {
     if (!profile?.company_id) return;
     setSaving(true);
-    const updateData: any = { smtp_host: smtpHost, smtp_port: smtpPort, smtp_user: smtpUser, from_email: fromEmail };
+    const updateData: any = { 
+      smtp_host: smtpHost, smtp_port: smtpPort, smtp_user: smtpUser, from_email: fromEmail,
+      imap_host: imapHost, imap_port: parseInt(imapPort), imap_user: imapUser
+    };
     if (smtpPass) updateData.smtp_pass = smtpPass;
+    if (imapPass) updateData.imap_pass = imapPass;
+
     const { error } = await supabase.from("companies").update(updateData).eq("id", profile.company_id);
     setSaving(false);
-    if (error) toast.error("Error saving email settings: " + error.message);
-    else toast.success("Email configuration securely saved.");
+    if (error) toast.error("Error: " + error.message);
+    else toast.success("Configuration saved.");
   };
 
-  const handleTestConnection = async () => {
-    if (!smtpHost || !smtpUser || (!smtpPass && !profile?.company_id)) return toast.error("Please fill in all SMTP details.");
-    setTesting(true); setTestSuccess(null);
-    try {
-      await handleSave();
-      
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: { 
-          to: smtpUser, 
-          subject: "SMTP Connection Test", 
-          message: "This is a test email to verify your SMTP configuration in Shastika ERP.", 
-          leadName: profile?.full_name || "Admin", 
-          companyId: profile?.company_id
-        }
-      });
-      
-      if (error) {
-        // Supabase function errors are returned in the response body
-        // We need to parse them if it's a FunctionsHttpError
-        let errorMsg = "Connection failed";
-        try {
-          const body = await error.context?.json();
-          errorMsg = body?.error || error.message || errorMsg;
-        } catch (e) {
-          errorMsg = error.message || errorMsg;
-        }
-        throw new Error(errorMsg);
-      }
-      
-      setTestSuccess(true); toast.success("Connection successful! Test email sent.");
-    } catch (error: any) {
-      setTestSuccess(false);
-      console.error("Test error:", error);
-      toast.error(error.message || "Connection failed");
-    } finally { setTesting(false); }
-  };
-
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
+  const filteredEmails = emails.filter(e => 
+    e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    e.leads?.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.leads?.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (loading) return <div className="flex justify-center py-24"><Loader2 className="animate-spin" /></div>;
+
   return (
-    <div className="max-w-6xl mx-auto pb-12 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
       <PageHeader
-        title="Email Integration"
-        description="Configure your SMTP server to send automated emails directly from the ERP."
-        breadcrumbs={[{ label: "CRM" }, { label: "Email Integration" }]}
+        title="Email Command Center"
+        description="Live view of all business communications across your leads and customers."
+        breadcrumbs={[{ label: "CRM" }, { label: "Live Email" }]}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
-              {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Server className="h-4 w-4 mr-2" />}
-              {testing ? "Testing..." : "Test Connection"}
+            <Button variant="outline" onClick={handleSyncAll} disabled={syncing}>
+              {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync Inbox
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-              {saving ? "Saving..." : "Save Settings"}
+            <Button onClick={() => nav("/crm/leads")} className="btn-gold">
+              New Outreach
             </Button>
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-        <div className="lg:col-span-2 space-y-6">
-          {testSuccess === true && (
-            <Alert className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle>Success</AlertTitle>
-              <AlertDescription>Your SMTP server is correctly configured and reachable. You can now send automated emails.</AlertDescription>
-            </Alert>
-          )}
+      <Tabs defaultValue="live" className="mt-8">
+        <TabsList className="bg-muted/50 p-1 mb-6">
+          <TabsTrigger value="live" className="gap-2"><Inbox className="h-4 w-4" /> Live Inbox</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2"><ShieldCheck className="h-4 w-4" /> Server Settings</TabsTrigger>
+        </TabsList>
 
-          {testSuccess === false && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Connection Failed</AlertTitle>
-              <AlertDescription>We couldn't connect to your mail server. Please check your host, port, and credentials.</AlertDescription>
-            </Alert>
-          )}
-
-          <Section title="SMTP Configuration">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormRow label="SMTP Host Address" required>
-                <div className="relative">
-                  <Server className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    className="pl-9 bg-background/50"
-                    placeholder="smtppro.zoho.in" 
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                  />
+        <TabsContent value="live">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar / Filters */}
+            <div className="lg:col-span-1 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search messages..." 
+                  className="pl-9 bg-card/50" 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="bg-card/50 border rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                  <Filter className="h-3 w-3" /> Quick Filters
+                </h4>
+                <div className="space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-start text-xs font-medium bg-primary/5 text-primary">All Communications</Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start text-xs font-medium hover:bg-muted">Inbound Replies</Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start text-xs font-medium hover:bg-muted">Outbound Sent</Button>
                 </div>
-              </FormRow>
-              <FormRow label="SMTP Port" required>
-                <div className="relative">
-                  <Activity className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    className="pl-9 bg-background/50"
-                    placeholder="465" 
-                    value={smtpPort}
-                    onChange={(e) => setSmtpPort(e.target.value)}
-                  />
-                </div>
-              </FormRow>
-              <FormRow label="Authentication Username" required>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    className="pl-9 bg-background/50"
-                    placeholder="bde@shastikaglobalimpex.co.in" 
-                    value={smtpUser}
-                    onChange={(e) => setSmtpUser(e.target.value)}
-                  />
-                </div>
-              </FormRow>
-              <FormRow label="Authentication Password" required>
-                <div className="relative">
-                  <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    className="pl-9 bg-background/50"
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={smtpPass}
-                    onChange={(e) => setSmtpPass(e.target.value)}
-                  />
-                </div>
-              </FormRow>
-              <FormRow label="Sender Email (From)" required>
-                <div className="relative">
-                  <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    className="pl-9 bg-background/50"
-                    placeholder="bde@shastikaglobalimpex.co.in" 
-                    value={fromEmail}
-                    onChange={(e) => setFromEmail(e.target.value)}
-                  />
-                </div>
-              </FormRow>
+              </div>
             </div>
-          </Section>
-        </div>
 
-        <div className="space-y-6">
-          <Section title="Setup Guide">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="zoho">
-                <AccordionTrigger className="text-sm font-medium">Using Zoho Mail</AccordionTrigger>
-                <AccordionContent className="text-xs space-y-2 text-muted-foreground">
-                  <p>1. Use <code>smtppro.zoho.in</code> as Host.</p>
-                  <p>2. Use Port <code>465</code> (SSL) or <code>587</code> (TLS).</p>
-                  <p>3. Use an App-specific password.</p>
-                  <p>4. <strong>Enable SMTP Access</strong> in Zoho Mail Settings.</p>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </Section>
-        </div>
-      </div>
+            {/* Email List */}
+            <div className="lg:col-span-3 space-y-3">
+              {filteredEmails.length === 0 ? (
+                <Card className="border-dashed py-24 text-center bg-muted/5">
+                  <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-muted-foreground">No emails found in history.</p>
+                </Card>
+              ) : (
+                filteredEmails.map(email => (
+                  <Card key={email.id} className="hover:border-primary/40 transition-all cursor-pointer group shadow-sm" onClick={() => nav(`/crm/leads/${email.lead_id}`)}>
+                    <CardContent className="p-4 flex items-start gap-4">
+                      <div className={`mt-1 p-2 rounded-lg ${email.title.includes('Sent') ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {email.title.includes('Sent') ? <Send className="h-4 w-4" /> : <Inbox className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="font-bold text-sm truncate group-hover:text-primary transition-colors">
+                            {email.leads?.company_name || "Unknown Company"}
+                          </h4>
+                          <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap bg-muted px-2 py-0.5 rounded flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(email.created_at), "MMM d, HH:mm")}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2 truncate">
+                          {email.title}
+                        </p>
+                        <div 
+                          className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-80"
+                          dangerouslySetInnerHTML={{ __html: email.content.substring(0, 200) }}
+                        />
+                        <div className="mt-3 flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                           <span className="flex items-center gap-1"><User2 className="h-3 w-3" /> {email.leads?.contact_name}</span>
+                           <span className="flex items-center gap-1"><AtSign className="h-3 w-3" /> {email.leads?.email}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 self-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="settings">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Section title="Outbound (SMTP)">
+                <div className="space-y-4">
+                  <FormRow label="SMTP Host"><Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} /></FormRow>
+                  <FormRow label="SMTP Port"><Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} /></FormRow>
+                  <FormRow label="Username"><Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} /></FormRow>
+                  <FormRow label="Password"><Input type="password" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} /></FormRow>
+                </div>
+              </Section>
+              <Section title="Inbound (IMAP)">
+                <div className="space-y-4">
+                  <FormRow label="IMAP Host"><Input value={imapHost} onChange={e => setImapHost(e.target.value)} /></FormRow>
+                  <FormRow label="IMAP Port"><Input value={imapPort} onChange={e => setImapPort(e.target.value)} /></FormRow>
+                  <FormRow label="Username"><Input value={imapUser} onChange={e => setImapUser(e.target.value)} /></FormRow>
+                  <FormRow label="Password"><Input type="password" value={imapPass} onChange={e => setImapPass(e.target.value)} /></FormRow>
+                </div>
+              </Section>
+           </div>
+           <div className="mt-8 flex justify-end">
+              <Button onClick={handleSave} disabled={saving} className="btn-gold px-8">
+                {saving ? "Saving..." : "Save Configuration"}
+              </Button>
+           </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

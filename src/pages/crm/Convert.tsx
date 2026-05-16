@@ -7,6 +7,8 @@ import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+
 
 type Lead = {
   id: string;
@@ -18,7 +20,10 @@ type Lead = {
 };
 
 export default function ConvertLead() {
+  const { roleSlugs } = useAuth();
+  const isAdmin = roleSlugs.has("admin");
   const nav = useNavigate();
+
   const [eligible, setEligible] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [converting, setConverting] = useState<string | null>(null);
@@ -117,8 +122,9 @@ export default function ConvertLead() {
                   <Button 
                     size="sm" 
                     onClick={() => handleConvert(l)}
-                    disabled={converting === l.id}
+                    disabled={converting === l.id || !isAdmin}
                   >
+
                     {converting === l.id ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5 mr-1.5" />}
                     Convert <ArrowRight className="h-3.5 w-3.5 ml-1" />
                   </Button>

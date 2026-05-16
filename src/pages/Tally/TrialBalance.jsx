@@ -30,6 +30,27 @@ export default function TrialBalance() {
   const totDr = trialBalance.reduce((s, r) => s + r.closeDr, 0)
   const totCr = trialBalance.reduce((s, r) => s + r.closeCr, 0)
 
+  const handleExportCSV = () => {
+    const header = ['Account', 'Group', 'Opening Dr', 'Opening Cr', 'Txn Debit', 'Txn Credit', 'Closing Dr', 'Closing Cr'].join(',');
+    const rows = trialBalance.map(r => 
+      [`"${r.account}"`, `"${r.group}"`, r.openDr, r.openCr, r.txnDr, r.txnCr, r.closeDr, r.closeCr].join(',')
+    ).join('\n');
+    
+    const csvContent = header + '\n' + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Trial_Balance_FY2025-26.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -40,8 +61,12 @@ export default function TrialBalance() {
             <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold font-mono bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg shadow-sm shadow-emerald-500/20">
               <CheckCircle size={12} /> Balanced
             </div>
-            <button className="btn-gold text-xs py-1.5 rounded-lg shadow-gold/10"><Download size={13} /> Excel</button>
-            <button className="btn-gold text-xs py-1.5 rounded-lg shadow-gold/10"><Download size={13} /> PDF</button>
+            <button onClick={handleExportCSV} className="btn-gold flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md hover:-translate-y-[1px]">
+              <Download size={14} /> Excel
+            </button>
+            <button onClick={handleExportPDF} className="flex items-center gap-2 border border-primary/50 text-primary-glow px-4 py-2 rounded-lg text-xs font-bold hover:bg-primary/10 transition-all">
+              <Download size={14} /> PDF
+            </button>
           </div>
         }
       />
