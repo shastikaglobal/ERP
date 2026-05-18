@@ -17,9 +17,28 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const toggleGroup = (title: string) =>
     setOpenGroups((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
 
+  const isBD = roleSlugs.has("bd");
+
   // Filter items by permission (if no permission set, always visible)
   const visibleGroups = navGroups
-    .map((g) => ({ ...g, items: g.items.filter((i) => !i.permission || can(i.permission)) }))
+    .map((g) => {
+      // For BD role, only allow Dashboards, CRM, Quotations, and Documents groups
+      if (isBD) {
+        const allowedGroups = ["Dashboards", "CRM", "Quotations", "Documents"];
+        if (!allowedGroups.includes(g.title)) {
+          return { ...g, items: [] };
+        }
+      }
+
+      let items = g.items.filter((i) => !i.permission || can(i.permission));
+
+      // For BD role, further restrict Dashboards items to only "Sales Analytics"
+      if (isBD && g.title === "Dashboards") {
+        items = items.filter((i) => i.title === "Sales Analytics");
+      }
+
+      return { ...g, items };
+    })
     .filter((g) => g.items.length > 0);
 
   return (

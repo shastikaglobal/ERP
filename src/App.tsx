@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
@@ -122,6 +122,22 @@ import TallyIndex from "./pages/Tally/index";
 
 const queryClient = new QueryClient();
 
+const DashboardRedirect = () => {
+  const { roleSlugs } = useAuth();
+  if (roleSlugs.has("bd")) {
+    return <Navigate to="/dashboards/sales" replace />;
+  }
+  return <Navigate to="/dashboards/executive" replace />;
+};
+
+const BDRestrictedRouteOutlet = () => {
+  const { roleSlugs } = useAuth();
+  if (roleSlugs.has("bd")) {
+    return <Navigate to="/dashboards/sales" replace />;
+  }
+  return <Outlet />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -142,48 +158,21 @@ const App = () => (
             <Route path="/share/quote/:id" element={<PublicQuotationView />} />
             
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<Navigate to="/dashboards/executive" replace />} />
-              <Route path="/approvals" element={<Approvals />} />
-
-              {/* Dashboards */}
-              <Route path="/dashboards/executive" element={<Executive />} />
+              <Route path="/dashboard" element={<DashboardRedirect />} />
+              
+              {/* Allowed for BD & Everyone else */}
               <Route path="/dashboards/sales" element={<SalesAnalytics />} />
-              <Route path="/dashboards/shipments" element={<ShipmentAnalytics />} />
-              <Route path="/dashboards/financial" element={<FinancialOverview />} />
-              <Route path="/dashboards/employees" element={<EmployeeProductivity />} />
-
-              {/* Farmers */}
-              <Route path="/farmers" element={<FarmersList />} />
-              <Route path="/farmers/create" element={<CreateFarmer />} />
-              <Route path="/farmers/convert" element={<ConvertToCustomer />} />
-              <Route path="/farmers/:id" element={<FarmerDetail />} />
-
-              {/* Procurement (live) */}
-              <Route path="/procurement/orders" element={<PurchaseOrdersListLive />} />
-              <Route path="/procurement/orders/create" element={<CreatePOLive />} />
-              <Route path="/procurement/orders/:id" element={<PurchaseOrderDetailLive />} />
-              <Route path="/procurement/suppliers" element={<SuppliersList />} />
-              <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
-              <Route path="/procurement/analytics" element={<SupplierAnalytics />} />
-
-              {/* Quality Control (live) */}
-              <Route path="/qc/inspections" element={<InspectionsList />} />
-              <Route path="/qc/inspections/create" element={<CreateInspection />} />
-              <Route path="/qc/approvals" element={<QCApprovals />} />
-
-              {/* Barcode & Tracking */}
-              <Route path="/barcodes" element={<BarcodesList />} />
-              <Route path="/barcodes/generate" element={<GenerateBarcode />} />
-              <Route path="/barcodes/scan" element={<ScanBarcode />} />
-              <Route path="/barcodes/:id" element={<BarcodeDetail />} />
-
-              {/* Inventory */}
-              <Route path="/inventory/products" element={<ProductCatalog />} />
-              <Route path="/inventory/products/create" element={<CreateProduct />} />
-              <Route path="/inventory/stock" element={<StockDashboard />} />
-              <Route path="/inventory/movements" element={<StockMovements />} />
-              <Route path="/inventory/warehouses" element={<Warehouses />} />
-              <Route path="/inventory/alerts" element={<LowStockAlerts />} />
+              
+              {/* CRM */}
+              <Route path="/crm/activities" element={<LeadActivities />} />
+              <Route path="/crm/leads" element={<LeadsList />} />
+              <Route path="/crm/leads/create" element={<CreateLead />} />
+              <Route path="/crm/leads/:id" element={<LeadDetail />} />
+              <Route path="/crm/leads/:id/edit" element={<EditLead />} />
+              <Route path="/crm/pipeline" element={<LeadPipeline />} />
+              <Route path="/crm/email" element={<EmailIntegration />} />
+              <Route path="/crm/convert" element={<ConvertLead />} />
+              <Route path="/system/integrations/zoho" element={<ZohoIntegration />} />
 
               {/* Quotations */}
               <Route path="/quotations" element={<QuotationsList />} />
@@ -193,30 +182,6 @@ const App = () => (
               <Route path="/quotations/:id" element={<QuotationPreview />} />
               <Route path="/quotations/:id/report" element={<QuotationReport />} />
 
-                {/* CRM */}
-                <Route path="/crm/activities" element={<LeadActivities />} />
-                <Route path="/crm/leads" element={<LeadsList />} />
-                <Route path="/crm/leads/create" element={<CreateLead />} />
-                <Route path="/crm/leads/:id" element={<LeadDetail />} />
-                <Route path="/crm/leads/:id/edit" element={<EditLead />} />
-                <Route path="/crm/pipeline" element={<LeadPipeline />} />
-                <Route path="/crm/email" element={<EmailIntegration />} />
-                <Route path="/crm/convert" element={<ConvertLead />} />
-              {/* Orders */}
-              <Route path="/orders" element={<OrdersList />} />
-              <Route path="/orders/create" element={<CreateOrder />} />
-              <Route path="/orders/status" element={<OrderStatus />} />
-              <Route path="/orders/fulfillment" element={<Fulfillment />} />
-              <Route path="/orders/:id" element={<OrderDetail />} />
-              <Route path="/orders/:id/report" element={<OrderReport />} />
-
-              {/* Shipments */}
-              <Route path="/shipments" element={<ShipmentsList />} />
-              <Route path="/shipments/create" element={<CreateShipment />} />
-              <Route path="/shipments/containers" element={<ContainerTracking />} />
-              <Route path="/shipments/delivery" element={<DeliveryStatus />} />
-              <Route path="/shipments/:id" element={<ShipmentDetail />} />
-
               {/* Documents */}
               <Route path="/documents" element={<Navigate to="/documents/invoices" replace />} />
               <Route path="/documents/invoices" element={<Invoices />} />
@@ -224,31 +189,90 @@ const App = () => (
               <Route path="/documents/certificates" element={<Certificates />} />
               <Route path="/documents/viewer" element={<DocumentViewer />} />
               <Route path="/documents/invoices/:id" element={<InvoiceReport />} />
-
-              {/* Payments */}
-              <Route path="/payments" element={<PaymentsRegister />} />
-              <Route path="/payments/overdue" element={<OverduePayments />} />
-              <Route path="/payments/ledger" element={<Ledger />} />
-              <Route path="/payments/reports" element={<FinancialReports />} />
               
-              {/* Tally Integration */}
-              <Route path="/tally/*" element={<TallyIndex />} />
-              {/* Employees */}
-              <Route path="/employees" element={<EmployeeDirectory />} />
-              <Route path="/employees/attendance" element={<Attendance />} />
-              <Route path="/employees/roles" element={<RolesPermissions />} />
-
-              {/* System */}
+              {/* General System */}
               <Route path="/system/notifications" element={<Notifications />} />
-              <Route path="/system/logs" element={<ActivityLogs />} />
-              <Route path="/system/subscriptions" element={<Subscriptions />} />
-              <Route path="/system/settings" element={<Settings />} />
-              <Route path="/system/maintenance" element={<Maintenance />} />
-              <Route path="/system/integrations/zoho" element={<ZohoIntegration />} />
-              <Route path="/system/mailbox" element={<Mailbox />} />
+
+              {/* RESTRICTED ROUTES (NOT allowed for BD) */}
+              <Route element={<BDRestrictedRouteOutlet />}>
+                <Route path="/approvals" element={<Approvals />} />
+
+                {/* Restricted Dashboards */}
+                <Route path="/dashboards/executive" element={<Executive />} />
+                <Route path="/dashboards/shipments" element={<ShipmentAnalytics />} />
+                <Route path="/dashboards/financial" element={<FinancialOverview />} />
+                <Route path="/dashboards/employees" element={<EmployeeProductivity />} />
+
+                {/* Farmers */}
+                <Route path="/farmers" element={<FarmersList />} />
+                <Route path="/farmers/create" element={<CreateFarmer />} />
+                <Route path="/farmers/convert" element={<ConvertToCustomer />} />
+                <Route path="/farmers/:id" element={<FarmerDetail />} />
+
+                {/* Procurement */}
+                <Route path="/procurement/orders" element={<PurchaseOrdersListLive />} />
+                <Route path="/procurement/orders/create" element={<CreatePOLive />} />
+                <Route path="/procurement/orders/:id" element={<PurchaseOrderDetailLive />} />
+                <Route path="/procurement/suppliers" element={<SuppliersList />} />
+                <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
+                <Route path="/procurement/analytics" element={<SupplierAnalytics />} />
+
+                {/* Quality Control */}
+                <Route path="/qc/inspections" element={<InspectionsList />} />
+                <Route path="/qc/inspections/create" element={<CreateInspection />} />
+                <Route path="/qc/approvals" element={<QCApprovals />} />
+
+                {/* Barcode & Tracking */}
+                <Route path="/barcodes" element={<BarcodesList />} />
+                <Route path="/barcodes/generate" element={<GenerateBarcode />} />
+                <Route path="/barcodes/scan" element={<ScanBarcode />} />
+                <Route path="/barcodes/:id" element={<BarcodeDetail />} />
+
+                {/* Inventory */}
+                <Route path="/inventory/products" element={<ProductCatalog />} />
+                <Route path="/inventory/products/create" element={<CreateProduct />} />
+                <Route path="/inventory/stock" element={<StockDashboard />} />
+                <Route path="/inventory/movements" element={<StockMovements />} />
+                <Route path="/inventory/warehouses" element={<Warehouses />} />
+                <Route path="/inventory/alerts" element={<LowStockAlerts />} />
+
+                {/* Orders */}
+                <Route path="/orders" element={<OrdersList />} />
+                <Route path="/orders/create" element={<CreateOrder />} />
+                <Route path="/orders/status" element={<OrderStatus />} />
+                <Route path="/orders/fulfillment" element={<Fulfillment />} />
+                <Route path="/orders/:id" element={<OrderDetail />} />
+                <Route path="/orders/:id/report" element={<OrderReport />} />
+
+                {/* Shipments */}
+                <Route path="/shipments" element={<ShipmentsList />} />
+                <Route path="/shipments/create" element={<CreateShipment />} />
+                <Route path="/shipments/containers" element={<ContainerTracking />} />
+                <Route path="/shipments/delivery" element={<DeliveryStatus />} />
+                <Route path="/shipments/:id" element={<ShipmentDetail />} />
+
+                {/* Payments */}
+                <Route path="/payments" element={<PaymentsRegister />} />
+                <Route path="/payments/overdue" element={<OverduePayments />} />
+                <Route path="/payments/ledger" element={<Ledger />} />
+                <Route path="/payments/reports" element={<FinancialReports />} />
+                
+                {/* Tally Integration */}
+                <Route path="/tally/*" element={<TallyIndex />} />
+
+                {/* Employees */}
+                <Route path="/employees" element={<EmployeeDirectory />} />
+                <Route path="/employees/attendance" element={<Attendance />} />
+                <Route path="/employees/roles" element={<RolesPermissions />} />
+
+                {/* Restricted System */}
+                <Route path="/system/logs" element={<ActivityLogs />} />
+                <Route path="/system/subscriptions" element={<Subscriptions />} />
+                <Route path="/system/settings" element={<Settings />} />
+                <Route path="/system/maintenance" element={<Maintenance />} />
+                <Route path="/system/mailbox" element={<Mailbox />} />
+              </Route>
             </Route>
-
-
 
             <Route path="*" element={<NotFound />} />
           </Routes>
