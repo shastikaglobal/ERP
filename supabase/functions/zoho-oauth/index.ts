@@ -56,7 +56,7 @@ serve(async (req) => {
     });
     const userData = await userResponse.json();
     const accountInfo = userData.data[0];
-    let accountEmail = accountInfo.primaryEmailAddress || accountInfo.accountName;
+    let accountEmail = accountInfo.incomingMailAddress || accountInfo.primaryEmailAddress || accountInfo.accountName;
     if (!accountEmail.includes("@")) {
       accountEmail = `${accountEmail}@zoho.in`;
     }

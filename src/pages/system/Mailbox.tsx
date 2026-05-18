@@ -44,6 +44,10 @@ export default function Mailbox() {
   // Realtime connection status
   const [isConnected, setIsConnected] = useState(false);
 
+  // Syncing state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
+
   const handleSelectEmail = async (email: any) => {
     setSelectedEmail(email);
     setIsComposing(false);
@@ -118,6 +122,54 @@ export default function Mailbox() {
       setSentEmails(data);
     }
   }
+
+  async function syncEmails(accountId: string, isManual = false) {
+    if (!accountId) return;
+    if (isManual) setIsManualSyncing(true);
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-zoho-emails", {
+        body: { accountId }
+      });
+      
+      if (error) {
+        console.error("Sync error:", error);
+        if (isManual) toast.error(`Sync error: ${error.message}`);
+        return;
+      }
+
+      if (data?.success === false) {
+        console.error("Sync failed:", data.error);
+        if (isManual) toast.error(`Sync failed: ${data.error}`);
+        return;
+      }
+
+      await fetchHistory(accountId);
+      if (isManual) {
+        toast.success(`Synced ${data?.syncCount || 0} messages!`);
+      }
+    } catch (err: any) {
+      console.error("Unexpected sync error:", err);
+      if (isManual) toast.error(`Unexpected sync error: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+      if (isManual) setIsManualSyncing(false);
+    }
+  }
+
+  // Background polling sync every 60 seconds
+  useEffect(() => {
+    if (!selectedAccount) return;
+    
+    // Initial sync on mount/account change
+    syncEmails(selectedAccount, false);
+
+    const interval = setInterval(() => {
+      syncEmails(selectedAccount, false);
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [selectedAccount]);
 
   // Realtime subscription with full live update support
   useEffect(() => {
@@ -282,15 +334,32 @@ export default function Mailbox() {
   };
 
   const folders = [
-    { id: "inbox", label: "Inbox", icon: Inbox, count: sentEmails.filter(e => e.folder === "inbox" || !e.folder).length },
+    { id: "inbox", label: "Inbox", icon: Inbox, count: sentEmails.filter(e => !e.folder || e.folder.toLowerCase() === "inbox").length },
     { id: "starred", label: "Starred", icon: Star },
     { id: "snoozed", label: "Snoozed", icon: Clock },
-    { id: "sent", label: "Sent", icon: SendIcon },
-    { id: "drafts", label: "Drafts", icon: FileIcon, count: 0 },
+    { id: "sent", label: "Sent", icon: SendIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "sent").length },
+    { id: "drafts", label: "Drafts", icon: FileIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "draft" || e.folder?.toLowerCase() === "drafts").length },
   ];
 
-  // Filter emails by search query
+  // Filter emails by active folder and search query
   const filteredEmails = sentEmails.filter(email => {
+    // 1. Filter by active folder (case-insensitive)
+    const folderName = email.folder?.toLowerCase() || 'inbox';
+    
+    if (activeFolder === "inbox") {
+      // Inbox includes 'inbox' or default undefined folder, but excludes 'sent' or 'draft'
+      if (folderName !== "inbox") return false;
+    } else if (activeFolder === "sent") {
+      if (folderName !== "sent") return false;
+    } else if (activeFolder === "drafts") {
+      if (folderName !== "draft" && folderName !== "drafts") return false;
+    } else if (activeFolder === "starred") {
+      if (!email.is_starred) return false;
+    } else if (activeFolder === "snoozed") {
+      if (folderName !== "snoozed") return false;
+    }
+
+    // 2. Filter by search query
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -415,8 +484,8 @@ export default function Mailbox() {
                 <Button variant="ghost" size="icon" className="rounded-sm h-8 w-8 hover:bg-muted">
                   <CheckSquare className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => fetchHistory(selectedAccount)}>
-                  <RefreshCw className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => syncEmails(selectedAccount, true)} disabled={isManualSyncing}>
+                  <RefreshCw className={`h-4 w-4 ${isManualSyncing ? 'animate-spin' : ''}`} />
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted">
                   <MoreVertical className="h-4 w-4" />

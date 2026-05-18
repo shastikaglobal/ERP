@@ -131,6 +131,7 @@ serve(async (req) => {
           received_at: new Date(parseInt(msg.receivedTime)).toISOString(),
           is_read: msg.status === "1",
           folder: "Inbox",
+          status: "received",
         }, { onConflict: "zoho_message_id" });
       if (!error) syncCount++;
     }
