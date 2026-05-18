@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { Sprout, Loader2 } from "lucide-react";
+import { Sprout, Loader2, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +13,14 @@ export default function Auth() {
   const { session, loading } = useAuth();
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [busyGithub, setBusyGithub] = useState(false);
+  const [busyEmail, setBusyEmail] = useState(false);
+  const [busyBypass, setBusyBypass] = useState(false);
+
+  // Email Auth State
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
 
   const from = (location.state as { from?: string })?.from || "/dashboards/executive";
 
@@ -42,6 +51,75 @@ export default function Auth() {
     }
   };
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return toast.error("Please enter email and password");
+
+    setBusyEmail(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          }
+        });
+        if (error) throw error;
+        toast.success("Account created successfully! Please complete your profile.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
+        toast.success("Signed in successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Authentication failed");
+    } finally {
+      setBusyEmail(false);
+    }
+  };
+
+  const handleQuickLogin = async (role: 'admin' | 'bde') => {
+    const devEmail = `${role}@shastika.local`;
+    const devPassword = "password123";
+
+    setBusyBypass(true);
+    try {
+      // 1. Try to sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: devEmail,
+        password: devPassword
+      });
+
+      if (error) {
+        // 2. If user doesn't exist, sign up
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: devEmail,
+          password: devPassword
+        });
+        if (signUpErr) throw signUpErr;
+
+        // 3. Authenticate
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: devEmail,
+          password: devPassword
+        });
+        if (signInErr) throw signInErr;
+      }
+
+      toast.success(`Logged in as dev-${role.toUpperCase()} successfully!`);
+    } catch (err: any) {
+      toast.error(err.message || "Bypass login failed");
+    } finally {
+      setBusyBypass(false);
+    }
+  };
+
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
       <div className="w-full max-w-md">
@@ -68,7 +146,7 @@ export default function Auth() {
           {/* Google */}
           <Button
             onClick={handleGoogle}
-            disabled={busyGoogle || busyGithub}
+            disabled={busyGoogle || busyGithub || busyEmail || busyBypass}
             className="w-full"
             size="lg"
             variant="outline"
@@ -89,7 +167,7 @@ export default function Auth() {
           {/* GitHub */}
           <Button
             onClick={handleGithub}
-            disabled={busyGoogle || busyGithub}
+            disabled={busyGoogle || busyGithub || busyEmail || busyBypass}
             className="w-full"
             size="lg"
             variant="outline"
@@ -103,6 +181,98 @@ export default function Auth() {
             )}
             Continue with GitHub
           </Button>
+
+          {/* Standard Email/Password Login Option */}
+          <div className="border-t border-border pt-3">
+            {!showEmailAuth ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEmailAuth(true)}
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+              >
+                Or use email and password
+              </Button>
+            ) : (
+              <form onSubmit={handleEmailAuth} className="space-y-3">
+                <div className="space-y-1">
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-9 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-9 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    className="flex-1 text-xs"
+                    disabled={busyGoogle || busyGithub || busyEmail || busyBypass}
+                  >
+                    {busyEmail && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    {isSignUp ? "Sign Up" : "Sign In"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                  >
+                    {isSignUp ? "To Sign In" : "Create Account"}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          {/* Development / Localhost Quick Bypass (100% Reliable Local Testing) */}
+          {isLocalhost && (
+            <div className="border-t border-dashed border-primary/20 pt-4 mt-2 bg-primary/5 p-3 rounded-lg border">
+              <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-primary">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                <span>🔌 Local Developer Mode</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-3 leading-relaxed">
+                Google OAuth usually blocks logins inside private/incognito tabs on localhost. Use these one-click buttons to bypass OAuth and test roles instantly!
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={() => handleQuickLogin('bde')}
+                  disabled={busyGoogle || busyGithub || busyEmail || busyBypass}
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs"
+                >
+                  {busyBypass ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : "⚡ Dev BDE"}
+                </Button>
+                <Button
+                  onClick={() => handleQuickLogin('admin')}
+                  disabled={busyGoogle || busyGithub || busyEmail || busyBypass}
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                >
+                  {busyBypass ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : "⚡ Dev Admin"}
+                </Button>
+              </div>
+            </div>
+          )}
 
           <p className="text-center text-xs text-muted-foreground">
             By continuing you agree to the workspace terms. Your account will be created with{" "}
