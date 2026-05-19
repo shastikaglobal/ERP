@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 
 export function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { session, profile, loading, refresh } = useAuth();
+  const { session, profile, loading, refresh, roleSlugs } = useAuth();
   const location = useLocation();
 
   // Robust fallback: if profile is null, poll for it because the trigger might be delayed

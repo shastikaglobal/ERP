@@ -29,6 +29,7 @@ import ShipmentAnalytics from "./pages/dashboards/ShipmentAnalytics";
 import FinancialOverview from "./pages/dashboards/FinancialOverview";
 import EmployeeProductivity from "./pages/dashboards/EmployeeProductivity";
 import FinanceTally from "./pages/dashboards/FinanceTally";
+import BdeDashboard from "./pages/dashboards/BdeDashboard";
 
 // Farmers
 import FarmersList from "./pages/farmers/FarmersList";
@@ -117,9 +118,14 @@ import JournalEntry from "./pages/Tally/JournalEntry";
 const queryClient = new QueryClient();
 
 const DashboardRedirect = () => {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs, profile } = useAuth();
   const isSecretary = roleSlugs.has("secretary");
-  return <Navigate to={isSecretary ? "/dashboards/finance-tally" : "/dashboards/executive"} replace />;
+  const isBde = roleSlugs.has("bd") || 
+                roleSlugs.has("bde") || 
+                (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
+  if (isSecretary) return <Navigate to="/dashboards/finance-tally" replace />;
+  if (isBde) return <Navigate to="/dashboards/bde" replace />;
+  return <Navigate to="/dashboards/executive" replace />;
 };
 
 const RootRedirect = () => {
@@ -162,6 +168,7 @@ const App = () => (
               {/* Dashboards */}
               <Route path="/dashboards/executive" element={<Executive />} />
               <Route path="/dashboards/finance-tally" element={<FinanceTally />} />
+              <Route path="/dashboards/bde" element={<BdeDashboard />} />
               <Route path="/dashboards/sales" element={<SalesAnalytics />} />
               <Route path="/dashboards/shipments" element={<ShipmentAnalytics />} />
               <Route path="/dashboards/financial" element={<FinancialOverview />} />

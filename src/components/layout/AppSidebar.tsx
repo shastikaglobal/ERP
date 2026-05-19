@@ -34,6 +34,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           { title: "Finance & Tally", url: "/dashboards/finance-tally", icon: LayoutDashboard }
         ];
       }
+      if (g.title === "Dashboards" && isBde) {
+        items = [
+          { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
+        ];
+      }
       return { ...g, items };
     })
     .filter((g) => g.items.length > 0)
