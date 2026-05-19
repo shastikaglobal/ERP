@@ -17,5 +17,14 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
+  // Redirect users with pending/rejected profiles to the correct onboarding/waiting routes
+  if (profile && profile.status !== "approved") {
+    if (profile.requested_role) {
+      return <Navigate to="/waiting-approval" replace />;
+    } else {
+      return <Navigate to="/complete-profile" replace />;
+    }
+  }
+
   return children;
 }

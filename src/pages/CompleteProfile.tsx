@@ -24,7 +24,7 @@ const ROLE_OPTIONS = [
 
 export default function CompleteProfile() {
   const nav = useNavigate();
-  const { session, profile, loading, refresh, roleSlugs } = useAuth();
+  const { session, profile, loading, refresh, roleSlugs, signOut } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
@@ -129,6 +129,9 @@ export default function CompleteProfile() {
           </Button>
           <Button type="button" variant="ghost" className="w-full" onClick={skip}>
             Skip → Go to Dashboard
+          </Button>
+          <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => signOut()}>
+            Sign out / Switch account
           </Button>
         </form>
       </div>
