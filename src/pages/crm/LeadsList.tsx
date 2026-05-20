@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,8 @@ const STAGE_COLORS: Record<string, string> = {
 
 export default function LeadsList() {
   const { roleSlugs } = useAuth();
-  const isAdmin = roleSlugs.has("admin");
+  // Allow admin, manager and bde to edit lead stage
+  const canEditStage = ["admin", "manager", "bde"].some((r) => roleSlugs.has(r));
   const nav = useNavigate();
 
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -277,7 +278,7 @@ export default function LeadsList() {
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.interested_product || "-"}</TableCell>
                   <TableCell>
-                    {isAdmin ? (
+                    {canEditStage ? (
                       <Select 
                         defaultValue={lead.stage} 
                         onValueChange={async (newStage) => {
@@ -312,7 +313,11 @@ export default function LeadsList() {
                           size="sm" 
                           variant="outline" 
                           className="h-8 text-[10px] font-bold uppercase tracking-wider"
-                          onClick={() => nav("/quotations/create", { state: { lead: lead } })}
+                          onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            nav("/quotations/create", { state: { lead: lead } });
+                          }}
                         >
                           Quote
                         </Button>
@@ -321,12 +326,25 @@ export default function LeadsList() {
                           size="sm" 
                           variant="outline" 
                           className="h-8 text-[10px] font-bold uppercase tracking-wider border-emerald-500/50 text-emerald-500 hover:bg-emerald-500 hover:text-white"
-                          onClick={() => convertToCustomer(lead)}
+                          onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            convertToCustomer(lead);
+                          }}
                         >
                           Convert
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10" onClick={() => confirmDelete(lead.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-destructive/10"
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          confirmDelete(lead.id);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive opacity-50 hover:opacity-100" />
                       </Button>
                     </div>
