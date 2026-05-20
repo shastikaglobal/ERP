@@ -202,10 +202,9 @@ export default function CreateOrder() {
                 <Input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
               </div>
             </div>
-              <div className="space-y-2">
-                <Label>Country</Label>
-                <Input value={customerCountry} onChange={e => setCustomerCountry(e.target.value)} placeholder="e.g. UAE, UK" />
-              </div>
+            <div className="space-y-2">
+              <Label>Country</Label>
+              <Input value={customerCountry} onChange={e => setCustomerCountry(e.target.value)} placeholder="e.g. UAE, UK" />
             </div>
             <div className="space-y-2">
               <Label>Company Address (Bill To)</Label>

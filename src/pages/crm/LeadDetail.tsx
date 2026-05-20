@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -35,6 +36,7 @@ type Lead = {
 export default function LeadDetail() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { profile } = useAuth();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -93,7 +95,7 @@ export default function LeadDetail() {
         to_address: email,
         subject: subject,
         body_html: emailBody,
-        company_id: (lead as any).company_id,
+        company_id: profile?.company_id,
         lead_id: lead.id,
         status: 'pending',
         attachments: []
@@ -142,7 +144,7 @@ export default function LeadDetail() {
         type: "email",
         content: message,
         completed: true,
-        company_id: (lead as any).company_id
+        company_id: profile?.company_id
       });
 
       // Refresh activities list

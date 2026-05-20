@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import LeadActivities from "./pages/crm/Activities";
 import LeadsList from "./pages/crm/LeadsList";
+import FollowUps from "./pages/crm/FollowUps";
+import { FollowUpReminders } from "./components/crm/FollowUpReminders";
 import LeadDetail from "./pages/crm/LeadDetail";
 import LeadPipeline from "./pages/crm/Pipeline";
 import EmailIntegration from "./pages/crm/EmailIntegration";
@@ -149,6 +151,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <FollowUpReminders />
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
@@ -223,6 +226,7 @@ const App = () => (
               {/* CRM */}
               <Route path="/crm/activities" element={<LeadActivities />} />
               <Route path="/crm/leads" element={<LeadsList />} />
+              <Route path="/crm/follow-ups" element={<FollowUps />} />
               <Route path="/crm/leads/:id" element={<LeadDetail />} />
               <Route path="/crm/pipeline" element={<LeadPipeline />} />
               <Route path="/crm/email" element={<EmailIntegration />} />

@@ -35,7 +35,7 @@
     --muted-foreground: 0 0% 60%;     /* #9a9a9a secondary text */
 
     --accent: 39 78% 45%;             /* gold accent (use /10 for tint) */
-    --accent-foreground: 39 70% 57%;  /* #e0b040 */
+    --accent-foreground: 0 0% 0%;     /* black for contrast on gold */
 
     --destructive: 0 67% 62%;         /* #e05c5c */
     --destructive-foreground: 0 0% 98%;
@@ -101,7 +101,7 @@
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 60%;
     --accent: 39 78% 45%;
-    --accent-foreground: 39 70% 57%;
+    --accent-foreground: 0 0% 0%;
     --destructive: 0 67% 62%;
     --destructive-foreground: 0 0% 98%;
     --success: 152 39% 48%;
