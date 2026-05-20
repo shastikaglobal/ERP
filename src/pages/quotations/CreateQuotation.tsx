@@ -19,6 +19,8 @@ interface Lead {
   contact_name?: string;
   interested_product?: string;
   email?: string;
+  mobile?: string;
+  country?: string;
 }
 
 interface Product {
@@ -47,7 +49,8 @@ export default function CreateQuotation() {
   // Form State
   const [selectedLeadId, setSelectedLeadId] = useState(leadFromState?.id || "");
   const [customerName, setCustomerName] = useState(leadFromState?.company_name || "");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerPhone, setCustomerPhone] = useState(leadFromState?.mobile || "");
+  const [customerAddress, setCustomerAddress] = useState(leadFromState?.country || "");
   const [currency, setCurrency] = useState("USD");
   const [validUntil, setValidUntil] = useState("");
   const [incoterm, setIncoterm] = useState("CIF");
@@ -63,6 +66,9 @@ export default function CreateQuotation() {
   const [netWeight, setNetWeight] = useState("");
   const [quoteNumber, setQuoteNumber] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("90 % of the invoice value to be paid in advance, and the remaining 10 % of the invoice value to be paid after the loading of goods.\n\nNote : Including packing, loading and Transport.");
+  const [estimatedShipmentDate, setEstimatedShipmentDate] = useState("");
+  const [packingPerBag, setPackingPerBag] = useState("");
+  const [bagWeight, setBagWeight] = useState("");
   
   const getCurrencySymbol = (curr: string) => {
     switch (curr) {
@@ -70,6 +76,16 @@ export default function CreateQuotation() {
       case "EUR": return "€";
       case "INR": return "₹";
       default: return curr;
+    }
+  };
+
+  const handleLeadChange = (val: string) => {
+    setSelectedLeadId(val);
+    const lead = leadsList.find(l => l.id === val);
+    if (lead) {
+      setCustomerName(lead.company_name || lead.contact_name || "");
+      if (lead.mobile) setCustomerPhone(lead.mobile);
+      if (lead.country) setCustomerAddress(lead.country);
     }
   };
   
@@ -126,13 +142,7 @@ export default function CreateQuotation() {
     }
   };
 
-  useEffect(() => {
-    if (!selectedLeadId) return;
-    const lead = leadsList.find(l => l.id === selectedLeadId);
-    if (lead) {
-      setCustomerName(lead.company_name || lead.contact_name);
-    }
-  }, [selectedLeadId, leadsList]);
+
 
   const addItem = () => setItems((s) => [...s, { id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, price: 0 }]);
   const removeItem = (id: string) => setItems((s) => s.filter((i) => i.id !== id));
@@ -144,20 +154,43 @@ export default function CreateQuotation() {
   const totalAmount = taxableAmount + taxAmount;
 
   const handleSave = async () => {
-    if (!customerName || items.length === 0 || !items[0].product_name) {
-      return toast.error("Please provide a customer name and at least one product.");
+    if (!customerName || !customerAddress || !customerPhone || items.length === 0 || !items[0].product_name) {
+      return toast.error("Please provide a customer name, address, phone number, and at least one product.");
     }
 
     setSaving(true);
     try {
-      // 1. Create Customer record if needed
+      // 1. Find or Create Customer
       let customerId = null;
-      const { data: custData, error: custErr } = await supabase
+      const { data: existingCust } = await supabase
         .from('customers')
-        .insert({ company_id: profile!.company_id, name: customerName })
-        .select('id').single();
-      
-      if (!custErr && custData) customerId = custData.id;
+        .select('id')
+        .eq('company_id', profile!.company_id)
+        .eq('name', customerName)
+        .limit(1);
+
+      if (existingCust && existingCust.length > 0) {
+        customerId = existingCust[0].id;
+        await supabase
+          .from('customers')
+          .update({
+            address: customerAddress || null,
+            phone: customerPhone || null
+          })
+          .eq('id', customerId);
+      } else {
+        const { data: custData, error: custErr } = await supabase
+          .from('customers')
+          .insert({ 
+            company_id: profile!.company_id, 
+            name: customerName,
+            address: customerAddress || null,
+            phone: customerPhone || null
+          })
+          .select('id').single();
+        
+        if (!custErr && custData) customerId = custData.id;
+      }
 
       // 2. Create Quotation
       const finalQuoteNumber = quoteNumber || `QT-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
@@ -182,6 +215,9 @@ export default function CreateQuotation() {
           port_of_loading: portOfLoading || null,
           port_of_discharge: portOfDischarge || null,
           net_weight: netWeight || null,
+          estimated_shipment_date: estimatedShipmentDate || null,
+          packing_per_bag: packingPerBag || null,
+          bag_weight: bagWeight || null,
           currency,
           status: 'Draft',
           items_count: items.length,
@@ -256,7 +292,7 @@ export default function CreateQuotation() {
         <Section title="Customer & Terms">
           <FormGrid cols={3}>
             <FormRow label="Select CRM Lead">
-              <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+              <Select value={selectedLeadId} onValueChange={handleLeadChange}>
                 <SelectTrigger><SelectValue placeholder="Link a lead (optional)" /></SelectTrigger>
                 <SelectContent>
                   {leadsList.map(l => (
@@ -271,8 +307,11 @@ export default function CreateQuotation() {
             <FormRow label="Customer Name *" required>
               <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Company or contact name" />
             </FormRow>
-            <FormRow label="Customer Phone">
+            <FormRow label="Customer Phone *" required>
               <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="e.g. +491729819755" />
+            </FormRow>
+            <FormRow label="Customer Address *" required>
+              <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Customer address (used in Bill To)" />
             </FormRow>
             <FormRow label="Currency">
               <Select value={currency} onValueChange={setCurrency}>
@@ -352,6 +391,15 @@ export default function CreateQuotation() {
             </FormRow>
             <FormRow label="Port of Discharge">
               <Input value={portOfDischarge} onChange={e => setPortOfDischarge(e.target.value)} placeholder="e.g. Jebel Ali Port" />
+            </FormRow>
+            <FormRow label="Est. Shipment Date">
+              <Input type="date" value={estimatedShipmentDate} onChange={e => setEstimatedShipmentDate(e.target.value)} />
+            </FormRow>
+            <FormRow label="Packing Per Bag">
+              <Input value={packingPerBag} onChange={e => setPackingPerBag(e.target.value)} placeholder="e.g. 25" />
+            </FormRow>
+            <FormRow label="Bag Weight (Kg)">
+              <Input value={bagWeight} onChange={e => setBagWeight(e.target.value)} placeholder="e.g. 13" />
             </FormRow>
             <FormRow label="Tax Rate (%)">
               <Input type="number" min="0" max="100" step="any" value={taxRate} onChange={e => setTaxRate(Number(e.target.value) || 0)} placeholder="0.00" />

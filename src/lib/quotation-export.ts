@@ -143,12 +143,13 @@ export const exportSingleQuotationToPDF = (quotation: any) => {
   doc.text(custName.toUpperCase(), margin + 4, currentY + 13);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  const custAddress = quotation.customer?.address || "";
+  const custAddress = quotation.customer?.address || quotation.customer_address || "";
   const splitAddress = doc.splitTextToSize(custAddress, r1Col1W - 8);
   doc.text(splitAddress, margin + 4, currentY + 18);
-  if (quotation.customer_phone) {
+  const custPhone = quotation.customer_phone || quotation.customer?.phone;
+  if (custPhone) {
     doc.setFont("helvetica", "bold");
-    doc.text(`Phone no : ${quotation.customer_phone}`, margin + 4, currentY + 18 + splitAddress.length * 4 + 4);
+    doc.text(`Phone no : ${custPhone}`, margin + 4, currentY + 18 + splitAddress.length * 4 + 4);
   }
 
   // Col 2: Terms of Payment

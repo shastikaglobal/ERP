@@ -21,7 +21,7 @@ export default function QuotationPreview() {
         .from('quotations')
         .select(`
           *,
-          customer:customers(name, email, address),
+          customer:customers(name, email, address, phone),
           items:quotation_items(
             *,
             product:products(name, sku, unit, hs_code)
@@ -94,7 +94,7 @@ export default function QuotationPreview() {
     try {
       const formatted = {
         ...q,
-        customer_name: q.customer?.name || "Unknown"
+        customer_name: q.customer?.name || q.customer_name || "Unknown"
       };
       exportQuotationsToPDF([formatted], false);
       toast.success("PDF file downloaded");
@@ -170,9 +170,12 @@ export default function QuotationPreview() {
             </div>
             <div>
               <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Consignee / Bill To</div>
-              <div className="font-bold text-lg">{q.customer?.name}</div>
-              <div className="text-sm text-muted-foreground mt-3 space-y-2">
-                <p>{q.customer?.address || 'No address provided'}</p>
+              <div className="font-bold text-lg">{q.customer?.name || q.customer_name || 'Customer Name'}</div>
+              <div className="text-sm text-muted-foreground mt-3 space-y-2 leading-relaxed">
+                <p>{q.customer?.address || q.customer_address || 'Address not provided'}</p>
+                {(q.customer_phone || q.customer?.phone) && (
+                  <p className="text-xs font-semibold">Phone: {q.customer_phone || q.customer?.phone}</p>
+                )}
                 <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-400 block uppercase tracking-tighter font-bold">Valid until</span>
@@ -180,7 +183,7 @@ export default function QuotationPreview() {
                   </div>
                   <div>
                     <span className="text-slate-400 block uppercase tracking-tighter font-bold">Incoterm</span>
-                    <span className="font-medium">{q.incoterm || 'CIF'}</span>
+                    <span className="font-medium">{q.incoterm || '---'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block uppercase tracking-tighter font-bold">Packaging Type</span>

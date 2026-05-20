@@ -62,7 +62,7 @@ export default function QuotationsList() {
           amount,
           currency,
           *,
-          customer:customers(name, address),
+          customer:customers(name, address, phone),
           items:quotation_items(
             *,
             product:products(name, sku, unit)
@@ -77,7 +77,7 @@ export default function QuotationsList() {
         ...q,
         id: q.id,
         quotation_number: q.quotation_number,
-        customer_name: q.customer?.name || 'Unknown',
+        customer_name: q.customer?.name || q.customer_name || 'Unknown',
         items_count: q.items?.length || 0,
         items: q.items || [],
         amount: q.amount,
@@ -115,7 +115,7 @@ export default function QuotationsList() {
     try {
       const formatted = {
         ...quotation,
-        customer_name: quotation.customer?.name || "Unknown"
+        customer_name: quotation.customer?.name || quotation.customer_name || "Unknown"
       };
 
       exportQuotationsToPDF([formatted], false);
@@ -137,7 +137,7 @@ export default function QuotationsList() {
     try {
       const formattedData = quotations.map((q: Quotation) => ({
         ...q,
-        customer_name: q.customer?.name || "Unknown"
+        customer_name: q.customer?.name || q.customer_name || "Unknown"
       }));
       exportQuotationsToPDF(formattedData, true);
       toast.success("PDF file downloaded");
