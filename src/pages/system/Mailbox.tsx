@@ -54,7 +54,8 @@ const getDefaultSignature = (profile: any) => {
   }
 
   const company = profile.company_name || "Shastika Global Impex Private Limited";
-  const email = profile.email || "bde@shastikaglobalimpex.co.in";
+  const isBde = profile.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase());
+  const email = isBde ? "bde@shastikaglobalimpex.co.in" : (profile.email || "bde@shastikaglobalimpex.co.in");
   const phone = profile.phone || "+91 95662 66228";
   const whatsapp = "+91 95662 66241"; // WhatsApp number from screenshot
   const logoUrl = window.location.origin + "/logo.webp";
@@ -84,7 +85,7 @@ const getDefaultSignature = (profile: any) => {
 };
 
 export default function Mailbox() {
-  const { profile, refresh } = useAuth();
+  const { profile, refresh, roleSlugs } = useAuth();
 
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
@@ -244,10 +245,19 @@ export default function Mailbox() {
   async function fetchAccounts() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("zoho_accounts")
-        .select("*")
-        .eq("user_id", profile?.id);
+      const isBde = roleSlugs?.has("bd") || 
+                    roleSlugs?.has("bde") || 
+                    (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
+
+      let query = supabase.from("zoho_accounts").select("*");
+      
+      if (isBde) {
+        query = query.or(`user_id.eq.${profile?.id},account_email.eq.bde@shastikaglobalimpex.co.in`);
+      } else {
+        query = query.eq("user_id", profile?.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         toast.error(error.message);
@@ -256,8 +266,10 @@ export default function Mailbox() {
 
       if (data && data.length > 0) {
         setAccounts(data);
-        setSelectedAccount(data[0].id);
-        await fetchHistory(data[0].id);
+        const bdeAccount = data.find(acc => acc.account_email === "bde@shastikaglobalimpex.co.in");
+        const defaultAccountId = bdeAccount ? bdeAccount.id : data[0].id;
+        setSelectedAccount(defaultAccountId);
+        await fetchHistory(defaultAccountId);
       }
     } catch (err: any) {
       toast.error(err.message);
