@@ -13,7 +13,9 @@ type Permission = { id: string; module: string };
 
 export default function RolesPermissions() {
   const { profile, roleSlugs } = useAuth();
-  const canManageRoles = roleSlugs.has("admin") || roleSlugs.has("manager");
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const canManageRoles = slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
+  const isSecretary = slugs.includes("secretary") && !slugs.includes("admin") && !slugs.includes("manager");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -121,7 +123,7 @@ export default function RolesPermissions() {
         title="Roles & Permissions" 
         description="Configure access for each role. Saved directly to the live database." 
         breadcrumbs={[{ label: "Employees" }, { label: "Roles" }]} 
-        actions={canManageRoles && <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save to Database"}</Button>}
+        actions={canManageRoles && !isSecretary && <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save to Database"}</Button>}
       />
       <Approvals />
       {canManageRoles && (
@@ -149,8 +151,8 @@ export default function RolesPermissions() {
                         return (
                           <td 
                             key={r.id} 
-                            className="text-center px-3 py-3 cursor-pointer select-none group"
-                            onClick={() => toggleAccess(r.id, mod)}
+                            className={`text-center px-3 py-3 select-none group ${isSecretary ? 'cursor-default' : 'cursor-pointer'}`}
+                            onClick={() => !isSecretary && toggleAccess(r.id, mod)}
                           >
                             <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded transition-colors ${hasAccess ? 'bg-success/20' : 'bg-transparent hover:bg-sidebar-accent'}`}>
                               {hasAccess ? (

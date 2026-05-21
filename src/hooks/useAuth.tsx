@@ -239,10 +239,12 @@ export function useCan() {
 
 export function useIsAdminOrManager() {
   const { roleSlugs } = useAuth();
-  return roleSlugs.has("admin") || roleSlugs.has("manager");
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  return slugs.includes("admin") || slugs.includes("manager");
 }
 
 export function useCanManageApprovals() {
   const { roleSlugs } = useAuth();
-  return roleSlugs.has("admin") || roleSlugs.has("manager") || roleSlugs.has("secretary");
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  return slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
 }

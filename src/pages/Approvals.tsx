@@ -34,7 +34,9 @@ const ROLE_OPTIONS = [
 export default function Approvals() {
   const { roleSlugs } = useAuth();
   const canManageApprovals = useCanManageApprovals();
-  const canAction = roleSlugs.has("admin") || roleSlugs.has("manager");
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const canAction = slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
+  const showColumns = canAction;
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingRoleSel, setPendingRoleSel] = useState<Record<string, string>>({});
@@ -144,7 +146,8 @@ export default function Approvals() {
             </TableCell>
             {showActions && (
               <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
+                {canAction && (
+                  <div className="flex items-center justify-end gap-2">
                     <Select
                       value={pendingRoleSel[r.id] || r.requested_role || "bde"}
                       onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
@@ -154,13 +157,14 @@ export default function Approvals() {
                         {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  <Button size="sm" onClick={() => approve(r)} disabled={busyId === r.id}>
-                    <Check className="h-3.5 w-3.5 mr-1" /> Approve
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => reject(r)} disabled={busyId === r.id}>
-                    <X className="h-3.5 w-3.5 mr-1" /> Reject
-                  </Button>
-                </div>
+                    <Button size="sm" onClick={() => approve(r)} disabled={busyId === r.id}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => reject(r)} disabled={busyId === r.id}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Reject
+                    </Button>
+                  </div>
+                )}
               </TableCell>
             )}
           </TableRow>
@@ -186,7 +190,7 @@ export default function Approvals() {
             <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
             <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
           </TabsList>
-          <TabsContent value="pending" className="erp-card p-2">{renderTable(pending, canAction)}</TabsContent>
+          <TabsContent value="pending" className="erp-card p-2">{renderTable(pending, showColumns)}</TabsContent>
           <TabsContent value="approved" className="erp-card p-2">
             <Table>
               <TableHeader>
@@ -195,12 +199,12 @@ export default function Approvals() {
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
-                  {canAction && <TableHead className="text-right">Change Role</TableHead>}
+                  {showColumns && <TableHead className="text-right">Change Role</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {approved.length === 0 && (
-                  <TableRow><TableCell colSpan={canAction ? 5 : 4} className="text-center text-sm text-muted-foreground py-8">No records</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={showColumns ? 5 : 4} className="text-center text-sm text-muted-foreground py-8">No records</TableCell></TableRow>
                 )}
                 {approved.map((r) => (
                   <TableRow key={r.id}>
@@ -208,22 +212,24 @@ export default function Approvals() {
                     <TableCell className="text-sm">{r.email}</TableCell>
                     <TableCell className="text-sm">{r.phone || "—"}</TableCell>
                     <TableCell><Badge variant="default">{r.status}</Badge></TableCell>
-                    {canAction && (
+                    {showColumns && (
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Select
-                            value={pendingRoleSel[r.id] || r.requested_role || "bde"}
-                            onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
-                          >
-                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
-                            <Check className="h-3.5 w-3.5 mr-1" /> Change
-                          </Button>
-                        </div>
+                        {canAction && (
+                          <div className="flex items-center justify-end gap-2">
+                            <Select
+                              value={pendingRoleSel[r.id] || r.requested_role || "bde"}
+                              onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
+                            >
+                              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
+                              <Check className="h-3.5 w-3.5 mr-1" /> Change
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     )}
                   </TableRow>

@@ -12,6 +12,7 @@ import {
   DollarSign, BookOpen, AlertCircle, FileSpreadsheet, 
   ArrowRight, FilePlus, Receipt, FileText, BarChart3, Plus 
 } from "lucide-react";
+import Approvals from "@/pages/Approvals";
 
 export default function FinanceTallyDashboard() {
   const navigate = useNavigate();
@@ -240,6 +241,7 @@ export default function FinanceTallyDashboard() {
           icon={<BookOpen className="h-4 w-4 text-[#f0a500]" />} 
         />
       </div>
+      <Approvals />
 
       {/* Quick Actions */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>

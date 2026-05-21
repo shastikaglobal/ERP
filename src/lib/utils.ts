@@ -9,13 +9,16 @@ export function previewDocument(filename: string) {
   const newTab = window.open("", "_blank");
   if (!newTab) return;
 
+  const dateStr = new Date().toLocaleDateString();
+  const docId = filename.split('.')[0];
+  
   const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Document Preview - \${filename}</title>
+      <title>PI PREVIEW - ` + filename + `</title>
       <style>
         body {
           font-family: system-ui, -apple-system, sans-serif;
@@ -80,8 +83,8 @@ export function previewDocument(filename: string) {
     <body>
       <div class="page">
         <div class="header">
-          <h1>AgriExportOS - Document Preview</h1>
-          <div class="meta">Generated: \${new Date().toLocaleDateString()}</div>
+          <h1>SGI - PROFORMA INVOICE PREVIEW</h1>
+          <div class="meta">Generated: ` + dateStr + `</div>
         </div>
         
         <div class="content">
@@ -93,12 +96,12 @@ export function previewDocument(filename: string) {
           
           <div class="detail-row">
             <div class="detail-label">File Name</div>
-            <div class="detail-value" style="font-family: monospace;">\${filename}</div>
+            <div class="detail-value" style="font-family: monospace;">` + filename + `</div>
           </div>
           
           <div class="detail-row">
             <div class="detail-label">Document ID</div>
-            <div class="detail-value">\${filename.split('.')[0]}</div>
+            <div class="detail-value">` + docId + `</div>
           </div>
           
           <div class="detail-row">

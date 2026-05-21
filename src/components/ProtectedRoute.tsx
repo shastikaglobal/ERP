@@ -52,8 +52,9 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   }
 
   // BDE Role Route Restriction
-  const isBde = roleSlugs.has("bd") || 
-                roleSlugs.has("bde") || 
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const isBde = slugs.includes("bd") || 
+                slugs.includes("bde") || 
                 (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
   if (isBde) {

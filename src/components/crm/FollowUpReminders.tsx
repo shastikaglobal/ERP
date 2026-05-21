@@ -6,41 +6,50 @@ import { X, Check, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+
 type FollowUp = {
   id: string;
   company_name: string;
   contact_name?: string | null;
   follow_up_date: string;
   assigned_to: string;
+  reminder_time: string;
 };
 
 export function FollowUpReminders() {
   const { profile, roleSlugs } = useAuth();
   const [reminders, setReminders] = useState<FollowUp[]>([]);
 
+  console.log("FollowUpReminders: profile=", profile, "roleSlugs=", Array.from(roleSlugs));
+
   const fetchReminders = async () => {
     if (!profile) return;
 
-    const allowedRoles = ["admin", "bd", "bde", "manager"];
-    const hasAccess = Array.from(roleSlugs).some(r => allowedRoles.includes(r));
-    if (!hasAccess) return;
-
     const today = new Date().toISOString().split('T')[0];
-    console.log("Checking reminders for date:", today);
-    console.log("Profile:", profile);
+    const now = new Date();
+    const currentHHMM = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     try {
       const { data, error } = await supabase
         .from("follow_ups")
-        .select("id, company_name, contact_name, follow_up_date, assigned_to")
+        .select("id, company_name, contact_name, follow_up_date, assigned_to, reminder_time")
         .eq("follow_up_date", today)
         .eq("is_notified", false);
 
-      console.log("Reminders found:", data, "Error:", error);
-
       if (error) throw error;
-      if (data && data.length > 0) {
-        setReminders(data as FollowUp[]);
+      
+      if (data) {
+        // Filter those where current time matches or has passed the reminder_time
+        const pending = (data as FollowUp[]).filter(r => {
+          if (!r.reminder_time) return true; // Show immediately if no time set
+          
+          const [remH, remM] = r.reminder_time.split(':');
+          const remHHMM = `${remH}:${remM}`;
+          
+          return currentHHMM >= remHHMM;
+        });
+
+        setReminders(pending);
       }
     } catch (error: any) {
       console.error("Error fetching reminders:", error.message);
@@ -64,13 +73,15 @@ export function FollowUpReminders() {
   };
 
   useEffect(() => {
-    fetchReminders();
-    
-    // Check every 30 minutes
-    const interval = setInterval(fetchReminders, 30 * 60 * 1000);
-    
-    return () => clearInterval(interval);
+    if (profile) {
+      fetchReminders();
+      // Check every minute for precise time-based notifications
+      const interval = setInterval(fetchReminders, 60 * 1000);
+      return () => clearInterval(interval);
+    }
   }, [profile?.id]);
+
+  if (!profile) return null;
 
   if (reminders.length === 0) return null;
 
@@ -79,34 +90,38 @@ export function FollowUpReminders() {
       {reminders.map((reminder) => (
         <div 
           key={reminder.id}
-          className="bg-gray-900 border border-amber-500/50 rounded-xl shadow-xl p-4 animate-in fade-in slide-in-from-right-4 duration-300"
+          className="bg-gray-900 border border-amber-500/50 rounded-xl shadow-2xl p-5 animate-in fade-in slide-in-from-right-4 duration-300"
         >
           <div className="flex items-start gap-3">
-            <div className="bg-amber-500 rounded-full p-2 mt-0.5">
+            <div className="bg-amber-500 rounded-full p-2.5 mt-0.5 shadow-lg shadow-amber-500/20">
               <Bell className="h-4 w-4 text-white" />
             </div>
-            <div className="flex-1 space-y-1">
-              <p className="text-sm font-bold text-amber-400">
-                Reminder: You were asked to call {reminder.company_name} today!
+            <div className="flex-1 space-y-1.5">
+              <p className="text-sm font-extrabold text-amber-400 tracking-tight leading-tight">
+                Reminder: You were asked to call {reminder.company_name} at {reminder.reminder_time ? (
+                  new Date(`2000-01-01T${reminder.reminder_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+                ) : '09:00 AM'} today!
               </p>
               {reminder.contact_name && (
-                <p className="text-xs text-gray-300">Contact: {reminder.contact_name}</p>
+                <p className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                   Contact: <span className="text-gray-200">{reminder.contact_name}</span>
+                </p>
               )}
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2.5 pt-2">
                 <Button 
                   size="sm" 
-                  className="bg-amber-500 hover:bg-amber-600 text-black h-8 text-[10px] uppercase font-bold"
+                  className="bg-amber-500 hover:bg-amber-600 text-black h-9 px-4 text-[10px] uppercase font-black tracking-widest shadow-lg shadow-amber-500/10"
                   onClick={() => markAsDone(reminder.id, reminder.company_name)}
                 >
-                  <Check className="mr-1 h-3.5 w-3.5" /> Done
+                  <Check className="mr-1.5 h-4 w-4" /> Got it
                 </Button>
                 <Button 
                   size="sm" 
                   variant="ghost"
-                  className="h-8 text-[10px] uppercase font-bold text-gray-400 hover:text-white hover:bg-gray-700"
+                  className="h-9 px-3 text-[10px] uppercase font-bold text-gray-400 hover:text-white hover:bg-gray-800"
                   onClick={() => setReminders(prev => prev.filter(r => r.id !== reminder.id))}
                 >
-                  <X className="mr-1 h-3.5 w-3.5" /> Later
+                  <X className="mr-1.5 h-4 w-4" /> Dismiss
                 </Button>
               </div>
             </div>

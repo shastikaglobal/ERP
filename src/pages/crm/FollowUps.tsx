@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Check, Bell, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type FollowUp = {
   id: string;
@@ -20,6 +21,13 @@ type FollowUp = {
   note?: string | null;
   assigned_to?: string | null;
   is_notified: boolean;
+  reminder_time?: string | null;
+  business_category?: string | null;
+  product_type?: string | null;
+  country?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  website?: string | null;
   created_at?: string | null;
 };
 
@@ -27,6 +35,12 @@ type LeadOption = {
   id: string;
   company_name: string;
   contact_name?: string | null;
+  business_category?: string | null;
+  product_type?: string | null;
+  country?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  website?: string | null;
 };
 
 const bdTeam = ["Kaviya", "Gayathri"];
@@ -44,6 +58,9 @@ export default function FollowUps() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
+  const [reminderTime, setReminderTime] = useState("09:00");
+  const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
+  const [contactMethod, setContactMethod] = useState("WhatsApp");
   const [note, setNote] = useState("");
   const [assignedTo, setAssignedTo] = useState(bdTeam[0]);
   const [filter, setFilter] = useState<"all" | "mine" | "pending">("all");
@@ -55,7 +72,7 @@ export default function FollowUps() {
     try {
       const { data, error } = await supabase
         .from("leads")
-        .select("id, company_name, contact_name")
+        .select("id, company_name, contact_name, business_category, product_type, country, mobile, email, website")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -70,7 +87,7 @@ export default function FollowUps() {
     try {
       const { data, error } = await supabase
         .from("follow_ups")
-        .select("id, lead_id, company_name, contact_name, follow_up_date, note, assigned_to, is_notified, created_at")
+        .select("id, lead_id, company_name, contact_name, follow_up_date, reminder_time, note, assigned_to, is_notified, business_category, product_type, country, mobile, email, website")
         .order("follow_up_date", { ascending: false });
 
       if (error) throw error;
@@ -109,6 +126,16 @@ export default function FollowUps() {
     }
 
     const assignee = assignedTo;
+    
+    // Convert 12h to 24h for storage
+    let [hours, minutes] = reminderTime.split(':').map(Number);
+    if (timePeriod === "PM" && hours < 12) hours += 12;
+    if (timePeriod === "AM" && hours === 12) hours = 0;
+    const finalTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+
+    const combinedNote = note.trim() 
+      ? `${contactMethod}: ${note.trim()}`
+      : contactMethod;
 
     try {
       const { error } = await supabase.from("follow_ups").insert({
@@ -116,9 +143,16 @@ export default function FollowUps() {
         company_name: lead.company_name,
         contact_name: lead.contact_name,
         follow_up_date: followUpDate,
-        note,
+        reminder_time: finalTime,
+        note: combinedNote,
         assigned_to: assignee,
         is_notified: false,
+        business_category: lead.business_category,
+        product_type: lead.product_type,
+        country: lead.country,
+        mobile: lead.mobile,
+        email: lead.email,
+        website: lead.website,
       });
 
       if (error) throw error;
@@ -126,6 +160,8 @@ export default function FollowUps() {
       setIsDialogOpen(false);
       setSelectedLeadId("");
       setFollowUpDate("");
+      setReminderTime("09:00");
+      setContactMethod("WhatsApp");
       setNote("");
       setAssignedTo(bdTeam[0]);
       fetchFollowUps();
@@ -216,7 +252,8 @@ export default function FollowUps() {
               <TableHead>Contact</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Assigned To</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Note</TableHead>
+              <TableHead>Reminder Time</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -241,9 +278,30 @@ export default function FollowUps() {
                   <TableCell>{formatDate(followUp.follow_up_date)}</TableCell>
                   <TableCell>{followUp.assigned_to || "Unassigned"}</TableCell>
                   <TableCell>
-                    <Badge className="rounded-full px-2 py-1 text-[10px] uppercase">
-                      {followUp.is_notified ? "Acknowledged" : "Pending"}
-                    </Badge>
+                    {followUp.note ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="text-left cursor-help">
+                            {followUp.note.length > 40 
+                              ? `${followUp.note.substring(0, 40)}...` 
+                              : followUp.note}
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[300px] bg-slate-900 text-white border-slate-800">
+                            <p>{followUp.note}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {followUp.reminder_time ? (
+                      <div className="flex items-center gap-1 text-xs text-amber-500 font-medium">
+                        <Bell className="h-3 w-3" />
+                        {new Date(`2000-01-01T${followUp.reminder_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                      </div>
+                    ) : "09:00 AM"}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     {!followUp.is_notified && (
@@ -292,6 +350,53 @@ export default function FollowUps() {
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedLeadId && leads.find(l => l.id === selectedLeadId) && (
+              <div className="p-4 bg-muted/20 rounded-xl border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-border/30">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Selected Lead Details</span>
+                  <Badge variant="outline" className="text-[10px] bg-background/50">Auto-filled</Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  <div className="col-span-full">
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Company Name</div>
+                    <div className="text-sm font-semibold text-foreground">{leads.find(l => l.id === selectedLeadId)?.company_name}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Business Category</div>
+                    <div className="text-xs text-foreground/80">{leads.find(l => l.id === selectedLeadId)?.business_category || "—"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Product Type</div>
+                    <div className="text-xs text-foreground/80">{leads.find(l => l.id === selectedLeadId)?.product_type || "—"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Country</div>
+                    <div className="text-xs text-foreground/80">{leads.find(l => l.id === selectedLeadId)?.country || "—"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Mobile</div>
+                    <div className="text-xs text-foreground/80">{leads.find(l => l.id === selectedLeadId)?.mobile || "—"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Email</div>
+                    <div className="text-xs text-foreground/80 truncate">{leads.find(l => l.id === selectedLeadId)?.email || "—"}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Website</div>
+                    <div className="text-xs text-foreground/80 truncate">{leads.find(l => l.id === selectedLeadId)?.website || "—"}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-foreground">Follow-Up Date *</Label>
               <Input
@@ -301,6 +406,27 @@ export default function FollowUps() {
                 required
                 className="bg-background border-input"
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Reminder Time *</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  required
+                  className="bg-background border-input flex-1"
+                />
+                <Select value={timePeriod} onValueChange={(v: any) => setTimePeriod(v)}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue placeholder="AM/PM" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">Assigned To</Label>
@@ -318,11 +444,25 @@ export default function FollowUps() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Note</Label>
+              <Label className="text-foreground">Contact Method *</Label>
+              <Select value={contactMethod} onValueChange={setContactMethod}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select contact method" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                  <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="Phone Call">Phone Call</SelectItem>
+                  <SelectItem value="WhatsApp & Email">WhatsApp & Email</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Note (Optional)</Label>
               <Input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add follow-up details"
+                placeholder="Add any additional notes..."
                 className="bg-background border-input"
               />
             </div>

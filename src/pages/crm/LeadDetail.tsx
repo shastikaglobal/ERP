@@ -30,7 +30,7 @@ type Lead = {
   stage: string;
   created_at: string;
   updated_at: string;
-  profiles?: { full_name: string };
+  assigned_to: string;
 };
 
 export default function LeadDetail() {
@@ -51,7 +51,7 @@ export default function LeadDetail() {
       try {
         const { data: leadData, error: leadError } = await supabase
           .from("leads")
-          .select(`*, profiles:assigned_to(full_name)`)
+          .select(`*`)
           .eq("id", id)
           .single();
 
@@ -185,7 +185,7 @@ export default function LeadDetail() {
     return <div className="p-6">Lead not found</div>;
   }
 
-  const ownerName = lead.profiles?.full_name || "Unassigned";
+  const ownerName = lead.assigned_to || "Unassigned";
 
   return (
     <div>
