@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Edit, Mail, Phone, Building, Calendar, Package, UserCheck, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Edit, Mail, Phone, Building, Calendar, Package, UserCheck, Loader2, Send, Globe } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,11 @@ type Lead = {
   stage: string;
   created_at: string;
   updated_at: string;
-  assigned_to: string;
+  email?: string | null;
+  website?: string | null;
+  mobile?: string | null;
+  assigned_to?: string | null;
+  profiles?: { full_name: string };
 };
 
 export default function LeadDetail() {
@@ -82,7 +86,7 @@ export default function LeadDetail() {
     if (!lead) return;
     setSending(true);
     try {
-      const email = (lead as any).email || (lead.contact_name
+      const email = lead.email || (lead.contact_name
         ? `${lead.contact_name.toLowerCase().replace(/\s+/g, ".")}@${lead.company_name.split(" ")[0].toLowerCase()}.com`
         : "");
 
@@ -235,15 +239,43 @@ export default function LeadDetail() {
         <div className="space-y-4">
           <Section title="Contact">
             <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2"><Building className="h-4 w-4 text-muted-foreground" />{lead.contact_name || "-"}</div>
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-muted-foreground" />
+                <span>Contact: {lead.contact_name || "-"}</span>
+              </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                {lead.contact_name
-                  ? `${lead.contact_name.toLowerCase().replace(/\s+/g, ".")}@${lead.company_name.split(" ")[0].toLowerCase()}.com`
-                  : "-"}
+                {lead.email ? (
+                  <a href={`mailto:${lead.email}`} className="text-primary hover:underline">{lead.email}</a>
+                ) : (
+                  <span>-</span>
+                )}
               </div>
-              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />Not Provided</div>
-              <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" />Last updated {format(new Date(lead.updated_at || lead.created_at), "PP")}</div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                {lead.mobile ? (
+                  <a href={`tel:${lead.mobile}`} className="text-primary hover:underline">{lead.mobile}</a>
+                ) : (
+                  <span>Not Provided</span>
+                )}
+              </div>
+              {lead.website && (
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <a 
+                    href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                  >
+                    {lead.website}
+                  </a>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span>Last updated {format(new Date(lead.updated_at || lead.created_at), "PP")}</span>
+              </div>
             </div>
           </Section>
           <Section title="Interest">

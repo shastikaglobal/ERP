@@ -37,6 +37,84 @@ export function TeamChatPanel() {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
+  // Draggable logic for floating bubble
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const elementStartPos = useRef({ x: 0, y: 0 });
+  const hasMoved = useRef(false);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return; // Only left click
+    setIsDragging(true);
+    hasMoved.current = false;
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    const rect = e.currentTarget.getBoundingClientRect();
+    elementStartPos.current = { x: rect.left, y: rect.top };
+    e.preventDefault();
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
+    if (e.touches.length !== 1) return;
+    setIsDragging(true);
+    hasMoved.current = false;
+    dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    const rect = e.currentTarget.getBoundingClientRect();
+    elementStartPos.current = { x: rect.left, y: rect.top };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartPos.current.x;
+      const dy = e.clientY - dragStartPos.current.y;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        hasMoved.current = true;
+      }
+      let newX = elementStartPos.current.x + dx;
+      let newY = elementStartPos.current.y + dy;
+      const padding = 10;
+      const btnSize = 56;
+      newX = Math.max(padding, Math.min(window.innerWidth - btnSize - padding, newX));
+      newY = Math.max(padding, Math.min(window.innerHeight - btnSize - padding, newY));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - dragStartPos.current.x;
+      const dy = e.touches[0].clientY - dragStartPos.current.y;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        hasMoved.current = true;
+      }
+      let newX = elementStartPos.current.x + dx;
+      let newY = elementStartPos.current.y + dy;
+      const padding = 10;
+      const btnSize = 56;
+      newX = Math.max(padding, Math.min(window.innerWidth - btnSize - padding, newX));
+      newY = Math.max(padding, Math.min(window.innerHeight - btnSize - padding, newY));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isDragging]);
+
   const currentUserFirstName = currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.email?.split('@')[0] || "";
 
   console.log('messages:', messages);
@@ -504,17 +582,31 @@ export function TeamChatPanel() {
         ))}
       </div>
 
-      {/* FLOATING BUBBLE */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full bg-[#1a1a1a] border-2 border-[#f0a500] flex items-center justify-center shadow-lg hover:scale-105 transition-transform group relative"
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            zIndex: 9999
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onClick={() => {
+            if (!hasMoved.current) {
+              setIsOpen(true);
+            }
           }}
+          className="h-14 w-14 rounded-full bg-[#1a1a1a] border-2 border-[#f0a500] flex items-center justify-center shadow-lg hover:scale-105 transition-transform group relative cursor-move select-none touch-none"
+          style={
+            position
+              ? {
+                  position: 'fixed',
+                  left: `${position.x}px`,
+                  top: `${position.y}px`,
+                  zIndex: 9999,
+                }
+              : {
+                  position: 'fixed',
+                  bottom: '24px',
+                  right: '24px',
+                  zIndex: 9999,
+                }
+          }
         >
           <MessageCircle className="h-6 w-6 text-[#f0a500] group-hover:fill-[#f0a500]/20 transition-colors" />
           {unreadCount > 0 && (
