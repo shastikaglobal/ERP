@@ -10,6 +10,10 @@ import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Item = { id: string; product_id: string; product_name: string; hsn_code: string; qty: number; price: number };
 
@@ -64,11 +68,171 @@ export default function CreateQuotation() {
   const [quoteNumber, setQuoteNumber] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("90 % of the invoice value to be paid in advance, and the remaining 10 % of the invoice value to be paid after the loading of goods.\n\nNote : Including packing, loading and Transport.");
   
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const currencies = [
+    { code: "AED", name: "UAE Dirham" },
+    { code: "AFN", name: "Afghan Afghani" },
+    { code: "ALL", name: "Albanian Lek" },
+    { code: "AMD", name: "Armenian Dram" },
+    { code: "ANG", name: "Netherlands Antillean Guilder" },
+    { code: "AOA", name: "Angolan Kwanza" },
+    { code: "ARS", name: "Argentine Peso" },
+    { code: "AUD", name: "Australian Dollar" },
+    { code: "AWG", name: "Aruban Florin" },
+    { code: "AZN", name: "Azerbaijani Manat" },
+    { code: "BAM", name: "Bosnia-Herzegovina Convertible Mark" },
+    { code: "BBD", name: "Barbadian Dollar" },
+    { code: "BDT", name: "Bangladeshi Taka" },
+    { code: "BGN", name: "Bulgarian Lev" },
+    { code: "BHD", name: "Bahraini Dinar" },
+    { code: "BIF", name: "Burundian Franc" },
+    { code: "BMD", name: "Bermudan Dollar" },
+    { code: "BND", name: "Brunei Dollar" },
+    { code: "BOB", name: "Bolivian Boliviano" },
+    { code: "BRL", name: "Brazilian Real" },
+    { code: "BSD", name: "Bahamian Dollar" },
+    { code: "BTN", name: "Bhutanese Ngultrum" },
+    { code: "BWP", name: "Botswanan Pula" },
+    { code: "BYN", name: "Belarusian Ruble" },
+    { code: "BZD", name: "Belize Dollar" },
+    { code: "CAD", name: "Canadian Dollar" },
+    { code: "CDF", name: "Congolese Franc" },
+    { code: "CHF", name: "Swiss Franc" },
+    { code: "CLP", name: "Chilean Peso" },
+    { code: "CNY", name: "Chinese Yuan" },
+    { code: "COP", name: "Colombian Peso" },
+    { code: "CRC", name: "Costa Rican Colon" },
+    { code: "CUP", name: "Cuban Peso" },
+    { code: "CVE", name: "Cape Verdean Escudo" },
+    { code: "CZK", name: "Czech Koruna" },
+    { code: "DJF", name: "Djiboutian Franc" },
+    { code: "DKK", name: "Danish Krone" },
+    { code: "DOP", name: "Dominican Peso" },
+    { code: "DZD", name: "Algerian Dinar" },
+    { code: "EGP", name: "Egyptian Pound" },
+    { code: "ERN", name: "Eritrean Nakfa" },
+    { code: "ETB", name: "Ethiopian Birr" },
+    { code: "EUR", name: "Euro" },
+    { code: "FJD", name: "Fijian Dollar" },
+    { code: "GBP", name: "British Pound" },
+    { code: "GEL", name: "Georgian Lari" },
+    { code: "GHS", name: "Ghanaian Cedi" },
+    { code: "GMD", name: "Gambian Dalasi" },
+    { code: "GNF", name: "Guinean Franc" },
+    { code: "GTQ", name: "Guatemalan Quetzal" },
+    { code: "GYD", name: "Guyanaese Dollar" },
+    { code: "HKD", name: "Hong Kong Dollar" },
+    { code: "HNL", name: "Honduran Lempira" },
+    { code: "HRK", name: "Croatian Kuna" },
+    { code: "HTG", name: "Haitian Gourde" },
+    { code: "HUF", name: "Hungarian Forint" },
+    { code: "IDR", name: "Indonesian Rupiah" },
+    { code: "ILS", name: "Israeli Shekel" },
+    { code: "INR", name: "Indian Rupee" },
+    { code: "IQD", name: "Iraqi Dinar" },
+    { code: "IRR", name: "Iranian Rial" },
+    { code: "ISK", name: "Icelandic Krona" },
+    { code: "JMD", name: "Jamaican Dollar" },
+    { code: "JOD", name: "Jordanian Dinar" },
+    { code: "JPY", name: "Japanese Yen" },
+    { code: "KES", name: "Kenyan Shilling" },
+    { code: "KGS", name: "Kyrgystani Som" },
+    { code: "KHR", name: "Cambodian Riel" },
+    { code: "KMF", name: "Comorian Franc" },
+    { code: "KPW", name: "North Korean Won" },
+    { code: "KRW", name: "South Korean Won" },
+    { code: "KWD", name: "Kuwaiti Dinar" },
+    { code: "KYD", name: "Cayman Islands Dollar" },
+    { code: "KZT", name: "Kazakhstani Tenge" },
+    { code: "LAK", name: "Laotian Kip" },
+    { code: "LBP", name: "Lebanese Pound" },
+    { code: "LKR", name: "Sri Lankan Rupee" },
+    { code: "LRD", name: "Liberian Dollar" },
+    { code: "LSL", name: "Lesotho Loti" },
+    { code: "LYD", name: "Libyan Dinar" },
+    { code: "MAD", name: "Moroccan Dirham" },
+    { code: "MDL", name: "Moldovan Leu" },
+    { code: "MGA", name: "Malagasy Ariary" },
+    { code: "MKD", name: "Macedonian Denar" },
+    { code: "MMK", name: "Myanmar Kyat" },
+    { code: "MNT", name: "Mongolian Tugrik" },
+    { code: "MOP", name: "Macanese Pataca" },
+    { code: "MRU", name: "Mauritanian Ouguiya" },
+    { code: "MUR", name: "Mauritian Rupee" },
+    { code: "MVR", name: "Maldivian Rufiyaa" },
+    { code: "MWK", name: "Malawian Kwacha" },
+    { code: "MXN", name: "Mexican Peso" },
+    { code: "MYR", name: "Malaysian Ringgit" },
+    { code: "MZN", name: "Mozambican Metical" },
+    { code: "NAD", name: "Namibian Dollar" },
+    { code: "NGN", name: "Nigerian Naira" },
+    { code: "NIO", name: "Nicaraguan Cordoba" },
+    { code: "NOK", name: "Norwegian Krone" },
+    { code: "NPR", name: "Nepalese Rupee" },
+    { code: "NZD", name: "New Zealand Dollar" },
+    { code: "OMR", name: "Omani Rial" },
+    { code: "PAB", name: "Panamanian Balboa" },
+    { code: "PEN", name: "Peruvian Sol" },
+    { code: "PGK", name: "Papua New Guinean Kina" },
+    { code: "PHP", name: "Philippine Peso" },
+    { code: "PKR", name: "Pakistani Rupee" },
+    { code: "PLN", name: "Polish Zloty" },
+    { code: "PYG", name: "Paraguayan Guarani" },
+    { code: "QAR", name: "Qatari Riyal" },
+    { code: "RON", name: "Romanian Leu" },
+    { code: "RSD", name: "Serbian Dinar" },
+    { code: "RUB", name: "Russian Ruble" },
+    { code: "RWF", name: "Rwandan Franc" },
+    { code: "SAR", name: "Saudi Riyal" },
+    { code: "SBD", name: "Solomon Islands Dollar" },
+    { code: "SCR", name: "Seychellois Rupee" },
+    { code: "SDG", name: "Sudanese Pound" },
+    { code: "SEK", name: "Swedish Krona" },
+    { code: "SGD", name: "Singapore Dollar" },
+    { code: "SLL", name: "Sierra Leonean Leone" },
+    { code: "SOS", name: "Somali Shilling" },
+    { code: "SRD", name: "Surinamese Dollar" },
+    { code: "STN", name: "São Tomé and Príncipe Dobra" },
+    { code: "SVC", name: "Salvadoran Colon" },
+    { code: "SYP", name: "Syrian Pound" },
+    { code: "SZL", name: "Swazi Lilangeni" },
+    { code: "THB", name: "Thai Baht" },
+    { code: "TJS", name: "Tajikistani Somoni" },
+    { code: "TMT", name: "Turkmenistani Manat" },
+    { code: "TND", name: "Tunisian Dinar" },
+    { code: "TOP", name: "Tongan Paʻanga" },
+    { code: "TRY", name: "Turkish Lira" },
+    { code: "TTD", name: "Trinidad and Tobago Dollar" },
+    { code: "TWD", name: "New Taiwan Dollar" },
+    { code: "TZS", name: "Tanzanian Shilling" },
+    { code: "UAH", name: "Ukrainian Hryvnia" },
+    { code: "UGX", name: "Ugandan Shilling" },
+    { code: "USD", name: "US Dollar" },
+    { code: "UYU", name: "Uruguayan Peso" },
+    { code: "UZS", name: "Uzbekistan Som" },
+    { code: "VES", name: "Venezuelan Bolívar" },
+    { code: "VND", name: "Vietnamese Dong" },
+    { code: "VUV", name: "Vanuatu Vatu" },
+    { code: "WST", name: "Samoan Tala" },
+    { code: "XAF", name: "Central African CFA Franc" },
+    { code: "XCD", name: "East Caribbean Dollar" },
+    { code: "XOF", name: "West African CFA Franc" },
+    { code: "XPF", name: "CFP Franc" },
+    { code: "YER", name: "Yemeni Rial" },
+    { code: "ZAR", name: "South African Rand" },
+    { code: "ZMW", name: "Zambian Kwacha" },
+    { code: "ZWL", name: "Zimbabwean Dollar" },
+  ];
+
   const getCurrencySymbol = (curr: string) => {
     switch (curr) {
       case "USD": return "$";
       case "EUR": return "€";
+      case "GBP": return "£";
+      case "JPY": return "¥";
+      case "CNY": return "¥";
       case "INR": return "₹";
+      case "AED": return "DH";
       default: return curr;
     }
   };
@@ -275,14 +439,49 @@ export default function CreateQuotation() {
               <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="e.g. +491729819755" />
             </FormRow>
             <FormRow label="Currency">
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="INR">INR</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={currencyOpen}
+                    className="w-full justify-between"
+                  >
+                    {currency
+                      ? `${currency} - ${currencies.find((c) => c.code === currency)?.name}`
+                      : "Select currency..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search currency..." />
+                    <CommandList>
+                      <CommandEmpty>No currency found.</CommandEmpty>
+                      <CommandGroup>
+                        {currencies.map((c) => (
+                          <CommandItem
+                            key={c.code}
+                            value={`${c.code} ${c.name}`}
+                            onSelect={() => {
+                              setCurrency(c.code);
+                              setCurrencyOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                currency === c.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {c.code} - {c.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </FormRow>
             <FormRow label="Valid until">
               <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
