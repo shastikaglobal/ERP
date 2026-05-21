@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { worldCurrencies } from "@/lib/currencies";
 
 export default function Settings() {
   const { profile } = useAuth();
@@ -152,12 +153,14 @@ export default function Settings() {
             <FormRow label="Company name"><Input value={name} onChange={e => setName(e.target.value)} /></FormRow>
             <FormRow label="Tax ID / GSTIN"><Input value={taxId} onChange={e => setTaxId(e.target.value)} placeholder="e.g. 33ABCDE1234F1Z5" /></FormRow>
             <FormRow label="Default currency">
-              <Select value={currency} onValueChange={setCurrency}>
+              <Select value={currency.toLowerCase()} onValueChange={setCurrency}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="inr">INR</SelectItem>
-                  <SelectItem value="usd">USD</SelectItem>
-                  <SelectItem value="eur">EUR</SelectItem>
+                  {worldCurrencies.map(c => (
+                    <SelectItem key={c.code.toLowerCase()} value={c.code.toLowerCase()}>
+                      {c.code} - {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FormRow>

@@ -48,7 +48,6 @@ export default function CreateLead() {
     setSubmitting(true);
     try {
       const { error } = await supabase.from("leads").insert({
-        company_id: profile.company_id,
         company_name: companyName,
         contact_name: contactName,
         email: email,
@@ -56,7 +55,7 @@ export default function CreateLead() {
         country: country,
         interested_product: product,
         stage: stage,
-        assigned_to: profile.id, // Auto-assign to the person creating it
+        assigned_to: (profile as any).full_name || "Unassigned", // Auto-assign name as text
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });

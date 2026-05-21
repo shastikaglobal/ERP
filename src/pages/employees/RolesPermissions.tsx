@@ -12,7 +12,8 @@ type Role = { id: string; name: string; slug: string };
 type Permission = { id: string; module: string };
 
 export default function RolesPermissions() {
-  const { profile } = useAuth();
+  const { profile, roleSlugs } = useAuth();
+  const canManageRoles = roleSlugs.has("admin") || roleSlugs.has("manager");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -120,51 +121,55 @@ export default function RolesPermissions() {
         title="Roles & Permissions" 
         description="Configure access for each role. Saved directly to the live database." 
         breadcrumbs={[{ label: "Employees" }, { label: "Roles" }]} 
-        actions={<Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save to Database"}</Button>}
+        actions={canManageRoles && <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save to Database"}</Button>}
       />
       <Approvals />
-      <div className="border-t border-border my-6" />
-      <Section>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-xs uppercase font-medium text-muted-foreground px-3 py-3">Module</th>
-                {roles.map((r) => (
-                  <th key={r.id} className="text-center text-xs uppercase font-medium text-muted-foreground px-3 py-3">
-                    {r.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {modules.map((mod) => (
-                <tr key={mod} className="border-b last:border-0 border-border hover:bg-sidebar-accent/30 transition-colors">
-                  <td className="px-3 py-3 font-medium capitalize">{mod}</td>
-                  {roles.map((r) => {
-                    const hasAccess = accessMap[`${r.id}_${mod}`];
-                    return (
-                      <td 
-                        key={r.id} 
-                        className="text-center px-3 py-3 cursor-pointer select-none group"
-                        onClick={() => toggleAccess(r.id, mod)}
-                      >
-                        <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded transition-colors ${hasAccess ? 'bg-success/20' : 'bg-transparent hover:bg-sidebar-accent'}`}>
-                          {hasAccess ? (
-                            <Check className="h-4 w-4 text-success" />
-                          ) : (
-                            <span className="text-muted-foreground/30 group-hover:text-muted-foreground/60">—</span>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
+      {canManageRoles && (
+        <>
+          <div className="border-t border-border my-6" />
+          <Section>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-xs uppercase font-medium text-muted-foreground px-3 py-3">Module</th>
+                    {roles.map((r) => (
+                      <th key={r.id} className="text-center text-xs uppercase font-medium text-muted-foreground px-3 py-3">
+                        {r.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {modules.map((mod) => (
+                    <tr key={mod} className="border-b last:border-0 border-border hover:bg-sidebar-accent/30 transition-colors">
+                      <td className="px-3 py-3 font-medium capitalize">{mod}</td>
+                      {roles.map((r) => {
+                        const hasAccess = accessMap[`${r.id}_${mod}`];
+                        return (
+                          <td 
+                            key={r.id} 
+                            className="text-center px-3 py-3 cursor-pointer select-none group"
+                            onClick={() => toggleAccess(r.id, mod)}
+                          >
+                            <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded transition-colors ${hasAccess ? 'bg-success/20' : 'bg-transparent hover:bg-sidebar-accent'}`}>
+                              {hasAccess ? (
+                                <Check className="h-4 w-4 text-success" />
+                              ) : (
+                                <span className="text-muted-foreground/30 group-hover:text-muted-foreground/60">—</span>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        </>
+      )}
     </div>
   );
 }

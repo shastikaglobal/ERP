@@ -41,6 +41,8 @@ export default function CreateOrder() {
   // Form State
   const [selectedLeadId, setSelectedLeadId] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerGst, setCustomerGst] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerCountry, setCustomerCountry] = useState("");
   const [product, setProduct] = useState("");
@@ -78,6 +80,11 @@ export default function CreateOrder() {
   const [notes, setNotes] = useState("");
   const [totalCartons, setTotalCartons] = useState<number | "">("");
   const [unitNetWeight, setUnitNetWeight] = useState<number | "">("");
+  
+  const [countryOfOrigin, setCountryOfOrigin] = useState("India");
+  const [portOfLoading, setPortOfLoading] = useState("Nhava Sheva Port, India");
+  const [portOfDischarge, setPortOfDischarge] = useState("");
+  const [modeOfTransport, setModeOfTransport] = useState("Sea");
 
   const totalAmount = (Number(quantity) || 0) * (Number(unitPrice) || 0);
 
@@ -101,6 +108,8 @@ export default function CreateOrder() {
         company_id: profile!.company_id,
         order_number: orderNumber,
         customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_gst: customerGst,
         customer_email: customerEmail,
         customer_country: customerCountry,
         product,
@@ -118,6 +127,10 @@ export default function CreateOrder() {
         notes,
         total_cartons: totalCartons ? Number(totalCartons) : null,
         unit_net_weight: unitNetWeight ? Number(unitNetWeight) : null,
+        country_of_origin: countryOfOrigin || 'India',
+        port_of_loading: portOfLoading || null,
+        port_of_discharge: portOfDischarge || null,
+        mode_of_transport: modeOfTransport || null,
         created_by: userId,
         status: 'pending',
         payment_status: 'unpaid'
@@ -175,19 +188,27 @@ export default function CreateOrder() {
               <Label>Customer Name *</Label>
               <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Company or Individual Name" />
             </div>
+            <div className="space-y-2">
+              <Label>Phone Number</Label>
+              <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="e.g. +1 234 567 890" />
+            </div>
             <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>GSTIN (Optional)</Label>
+                <Input value={customerGst} onChange={e => setCustomerGst(e.target.value)} placeholder="e.g. 29ABCDE1234F1Z5" />
+              </div>
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Country</Label>
-                <Input value={customerCountry} onChange={e => setCustomerCountry(e.target.value)} placeholder="e.g. UAE, UK" />
-              </div>
             </div>
             <div className="space-y-2">
-              <Label>Shipping Address</Label>
-              <Textarea value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-24" />
+              <Label>Country</Label>
+              <Input value={customerCountry} onChange={e => setCustomerCountry(e.target.value)} placeholder="e.g. UAE, UK" />
+            </div>
+            <div className="space-y-2">
+              <Label>Company Address (Bill To)</Label>
+              <Textarea value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-24" placeholder="Full address for the invoice" />
             </div>
           </CardContent>
         </Card>
@@ -277,8 +298,32 @@ export default function CreateOrder() {
               <Input value={hsnCode} onChange={e => setHsnCode(e.target.value)} placeholder="e.g. 08039010" />
             </div>
             <div className="space-y-2">
+              <Label>Mode of Transport</Label>
+              <Select value={modeOfTransport} onValueChange={setModeOfTransport}>
+                <SelectTrigger><SelectValue placeholder="Select Transport" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Air">Air</SelectItem>
+                  <SelectItem value="Sea">Sea</SelectItem>
+                  <SelectItem value="Road">Road</SelectItem>
+                  <SelectItem value="Courier">Courier</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Packing Details</Label>
               <Input value={packingDetails} onChange={e => setPackingDetails(e.target.value)} placeholder="e.g. 13 Kg per box" />
+            </div>
+            <div className="space-y-2">
+              <Label>Country of Origin</Label>
+              <Input value={countryOfOrigin} onChange={e => setCountryOfOrigin(e.target.value)} placeholder="e.g. India" />
+            </div>
+            <div className="space-y-2">
+              <Label>Port of Loading</Label>
+              <Input value={portOfLoading} onChange={e => setPortOfLoading(e.target.value)} placeholder="e.g. Nhava Sheva Port" />
+            </div>
+            <div className="space-y-2">
+              <Label>Port of Discharge</Label>
+              <Input value={portOfDischarge} onChange={e => setPortOfDischarge(e.target.value)} placeholder="e.g. Jebel Ali Port" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Terms of Payment</Label>

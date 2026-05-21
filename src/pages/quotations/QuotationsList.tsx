@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { exportQuotationsToPDF } from "@/lib/quotation-export";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface QuotationItem {
   id: string;
@@ -89,6 +89,24 @@ export default function QuotationsList() {
     },
     enabled: !!profile?.company_id
   });
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    
+    const channel = supabase
+      .channel('quotations-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'quotations', filter: `company_id=eq.${profile.company_id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['quotations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.company_id, queryClient]);
 
   const handleRowDownload = async (e: React.MouseEvent, quotation: Quotation) => {
     e.stopPropagation();

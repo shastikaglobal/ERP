@@ -6,12 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
 
 
 type Lead = {
@@ -27,6 +34,7 @@ type Lead = {
   website: string;
   stage: string;
   assigned_to: string | null;
+  remark?: string | null;
   profiles?: { full_name: string };
 };
 
@@ -62,6 +70,11 @@ export default function LeadsList() {
   const [followUpNote, setFollowUpNote] = useState("");
   const bdTeam = ["Kaviya", "Gayathri"];
   const [followUpAssignedTo, setFollowUpAssignedTo] = useState(bdTeam[0]);
+  
+  const [isRemarkOpen, setIsRemarkOpen] = useState(false);
+  const [selectedRemarkLead, setSelectedRemarkLead] = useState<Lead | null>(null);
+  const [remarkMethod, setRemarkMethod] = useState("WhatsApp");
+  const [remarkText, setRemarkText] = useState("");
 
   // Form state
   const [date, setDate] = useState("");
@@ -81,16 +94,27 @@ export default function LeadsList() {
   // Assignment state
   const [team, setTeam] = useState<any[]>([]);
   const [assignedTo, setAssignedTo] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredLeads = leads.filter(lead => {
+    const query = searchQuery.toLowerCase();
+    return (
+      lead.company_name?.toLowerCase().includes(query) ||
+      lead.country?.toLowerCase().includes(query) ||
+      lead.product_type?.toLowerCase().includes(query) ||
+      lead.assigned_to?.toLowerCase().includes(query) ||
+      lead.business_category?.toLowerCase().includes(query) ||
+      lead.mobile?.toLowerCase().includes(query)
+    );
+  });
 
   const fetchLeads = async () => {
     try {
       const { data, error } = await supabase
         .from("leads")
         .select(`
-          id, date, business_category, company_name, contact_name, product_type, country, mobile, email, website, stage, assigned_to,
-          profiles:assigned_to (full_name)
+          id, date, business_category, company_name, contact_name, product_type, country, mobile, email, website, stage, assigned_to, remark
         `)
-        .eq('company_id', (await supabase.from('profiles').select('company_id').eq('id', (await supabase.auth.getSession()).data.session?.user?.id).single()).data?.company_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -112,18 +136,17 @@ export default function LeadsList() {
     const { data: profiles } = await supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id);
     if (profiles) {
       setTeam(profiles);
-      setAssignedTo(session.user.id);
     }
   };
 
   useEffect(() => {
     fetchLeads();
     fetchTeam();
-
+    
     // Add realtime subscription for leads
     const channel = supabase
       .channel('leads-changes')
-      .on('postgres_changes',
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'leads' },
         () => {
           fetchLeads();
@@ -145,6 +168,7 @@ export default function LeadsList() {
     setMobile("");
     setEmail("");
     setWebsite("");
+    setAssignedTo("");
   };
 
   const handleAddLead = async (e: React.FormEvent) => {
@@ -173,9 +197,8 @@ export default function LeadsList() {
         email: email,
         website: website,
         stage: "New",
-        assigned_to: assignedTo || userId,
-        created_by: userId,
-        company_id: (await supabase.from('profiles').select('company_id').eq('id', userId).single()).data?.company_id
+        assigned_to: assignedTo,
+        created_by: userId
       });
 
       if (error) throw error;
@@ -256,6 +279,36 @@ export default function LeadsList() {
     }
   };
 
+  const openRemark = (lead: Lead) => {
+    setSelectedRemarkLead(lead);
+    setRemarkMethod("WhatsApp");
+    setRemarkText(lead.remark || "");
+    setIsRemarkOpen(true);
+  };
+
+  const saveRemark = async () => {
+    if (!selectedRemarkLead) return;
+    setSubmitting(true);
+    try {
+      const formattedRemark = remarkText ? `[${remarkMethod}]: ${remarkText}` : "";
+      const { error } = await supabase
+        .from("leads")
+        .update({ remark: formattedRemark })
+        .eq("id", selectedRemarkLead.id);
+
+      if (error) throw error;
+      toast.success("Remark updated successfully");
+      setIsRemarkOpen(false);
+      setSelectedRemarkLead(null);
+      setRemarkText("");
+      fetchLeads();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save remark");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const confirmDelete = (id: string) => {
     setDeleteId(id);
     setConfirmOpen(true);
@@ -289,6 +342,9 @@ export default function LeadsList() {
           <DialogContent className="bg-card border-border max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-foreground">Create New Lead</DialogTitle>
+              <DialogDescription className="text-muted-foreground/60 text-xs">
+                Enter company and contact details to add a new lead to the CRM.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddLead} className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto pr-2">
 
@@ -385,6 +441,23 @@ export default function LeadsList() {
                 />
               </div>
 
+              {/* Assigned To */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Assigned To *</Label>
+                <Select value={assignedTo} onValueChange={setAssignedTo} required>
+                  <SelectTrigger className="h-10 bg-background border-input">
+                    <SelectValue placeholder="Select team member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bdTeam.map((member) => (
+                      <SelectItem key={member} value={member}>
+                        {member}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Submit */}
               <Button type="submit" disabled={submitting} className="w-full bg-primary hover:bg-primary/90">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -398,7 +471,10 @@ export default function LeadsList() {
         <Dialog open={isFollowUpOpen} onOpenChange={(open) => { if (!open) setIsFollowUpOpen(open); }}>
           <DialogContent className="bg-card border-border max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-foreground">Create Follow-Up</DialogTitle>
+              <DialogTitle className="text-foreground">Schedule Follow-Up</DialogTitle>
+              <DialogDescription className="text-muted-foreground/60 text-xs">
+                Set a date and reminder for your next interaction with this lead.
+              </DialogDescription>
             </DialogHeader>
             <form
               onSubmit={(event) => {
@@ -468,6 +544,74 @@ export default function LeadsList() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isRemarkOpen} onOpenChange={(open) => { if (!open) setIsRemarkOpen(open); }}>
+          <DialogContent className="bg-card border-border max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Add Remark - {selectedRemarkLead?.company_name}</DialogTitle>
+              <DialogDescription className="text-muted-foreground/60 text-xs">
+                Add internal notes and contact preferences for this lead.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Preferred Contact Method</Label>
+                <Select value={remarkMethod} onValueChange={setRemarkMethod}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                    <SelectItem value="Email">Email</SelectItem>
+                    <SelectItem value="Phone Call">Phone Call</SelectItem>
+                    <SelectItem value="WhatsApp & Email">WhatsApp & Email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Remark / Notes</Label>
+                <Textarea
+                  value={remarkText.includes(']: ') ? remarkText.split(']: ')[1] : remarkText}
+                  onChange={(e) => setRemarkText(e.target.value)}
+                  placeholder="e.g. Customer interested, follow up via WhatsApp..."
+                  className="bg-background border-input min-h-[100px]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={saveRemark} 
+                  disabled={submitting}
+                  className="w-full bg-primary hover:bg-primary/90"
+                >
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Remark
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsRemarkOpen(false);
+                    setSelectedRemarkLead(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Search Box */}
+      <div className="relative w-full max-w-2xl">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by company, country, product, assigned to..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 bg-card border-border focus-visible:ring-primary h-11"
+        />
       </div>
 
       {/* Table */}
@@ -493,21 +637,37 @@ export default function LeadsList() {
                   <Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" />
                 </TableCell>
               </TableRow>
-            ) : leads.length === 0 ? (
+            ) : filteredLeads.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-12 text-muted-foreground italic">
-                  No leads found.
+                  {searchQuery ? `No leads matching "${searchQuery}"` : "No leads found."}
                 </TableCell>
               </TableRow>
             ) : (
-              leads.map((lead) => (
+              filteredLeads.map((lead) => (
                 <TableRow
                   key={lead.id}
                   className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => nav(`/crm/leads/${lead.id}`)}
                 >
                   <TableCell className="text-sm">{lead.date || "-"}</TableCell>
-                  <TableCell className="font-bold text-foreground">{lead.company_name}</TableCell>
+                  <TableCell className="font-bold text-foreground">
+                    <div className="flex items-center gap-2">
+                      {lead.company_name}
+                      {lead.remark && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <MessageSquare className="h-4 w-4 text-amber-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 border-amber-500/50 text-amber-400 max-w-xs">
+                              {lead.remark}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-sm">{lead.business_category || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.product_type || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>
@@ -541,7 +701,7 @@ export default function LeadsList() {
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground font-medium">
-                    {lead.profiles?.full_name || "Unassigned"}
+                    {lead.assigned_to || "Unassigned"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -568,6 +728,18 @@ export default function LeadsList() {
                         }}
                       >
                         Follow-Up
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[10px] font-bold uppercase tracking-wider"
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openRemark(lead);
+                        }}
+                      >
+                        Remark
                       </Button>
                       {lead.stage?.toLowerCase() === "won" && (
                         <Button

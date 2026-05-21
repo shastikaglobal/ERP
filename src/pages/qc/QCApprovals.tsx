@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useCan } from "@/hooks/useAuth";
+import { useAuth, useCan } from "@/hooks/useAuth";
 
 export default function QCApprovals() {
   const qc = useQueryClient();

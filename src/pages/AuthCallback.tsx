@@ -1,72 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { session, loading } = useAuth();
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    let mounted = true;
-    let handled = false;
+    if (loading) return;
 
-    const handleUser = async (userId: string, email: string, metadata: any) => {
-      if (handled) return;
-      handled = true;
-
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("status")
-          .eq("id", userId)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (!profile) {
-          const { error: insertErr } = await supabase.from("profiles").insert({
-            id: userId,
-            email: email,
-            status: "approved", // Auto-approve new registrations to prevent user blockages
-            full_name: metadata?.full_name || email?.split("@")[0] || "User",
-          });
-          if (insertErr) throw insertErr;
-        }
-        
-        if (mounted) navigate("/dashboard", { replace: true });
-      } catch (err: any) {
-        if (mounted) setErrorMsg(err.message || "An error occurred.");
-      }
-    };
-
-    // 1. Register listener immediately
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session && mounted) {
-        await handleUser(session.user.id, session.user.email ?? "", session.user.user_metadata);
-      }
-    });
-
-    // 2. Check current session immediately
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && mounted) {
-        handleUser(session.user.id, session.user.email ?? "", session.user.user_metadata);
-      }
-    });
-
-    // 3. 10-second safety fallback timeout
-    const timeout = setTimeout(() => {
-      if (!handled && mounted) {
-        setErrorMsg("Login timeout. Please try signing in again.");
-      }
-    }, 10000);
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
-  }, [navigate]);
+    if (session) {
+      navigate("/dashboard", { replace: true });
+    } else {
+      setErrorMsg("Authentication failed or session expired. Please sign in again.");
+    }
+  }, [session, loading, navigate]);
 
   if (errorMsg) {
     return (

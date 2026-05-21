@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useCanManageApprovals } from "@/hooks/useAuth";
+import { useAuth, useCanManageApprovals } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 type ProfileRow = {
@@ -32,7 +32,9 @@ const ROLE_OPTIONS = [
 ];
 
 export default function Approvals() {
+  const { roleSlugs } = useAuth();
   const canManageApprovals = useCanManageApprovals();
+  const canAction = roleSlugs.has("admin") || roleSlugs.has("manager");
   const [rows, setRows] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingRoleSel, setPendingRoleSel] = useState<Record<string, string>>({});
@@ -184,7 +186,7 @@ export default function Approvals() {
             <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
             <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
           </TabsList>
-          <TabsContent value="pending" className="erp-card p-2">{renderTable(pending, true)}</TabsContent>
+          <TabsContent value="pending" className="erp-card p-2">{renderTable(pending, canAction)}</TabsContent>
           <TabsContent value="approved" className="erp-card p-2">
             <Table>
               <TableHeader>
@@ -193,12 +195,12 @@ export default function Approvals() {
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Change Role</TableHead>
+                  {canAction && <TableHead className="text-right">Change Role</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {approved.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">No records</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canAction ? 5 : 4} className="text-center text-sm text-muted-foreground py-8">No records</TableCell></TableRow>
                 )}
                 {approved.map((r) => (
                   <TableRow key={r.id}>
@@ -206,22 +208,24 @@ export default function Approvals() {
                     <TableCell className="text-sm">{r.email}</TableCell>
                     <TableCell className="text-sm">{r.phone || "—"}</TableCell>
                     <TableCell><Badge variant="default">{r.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Select
-                          value={pendingRoleSel[r.id] || r.requested_role || "bde"}
-                          onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
-                        >
-                          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
-                          <Check className="h-3.5 w-3.5 mr-1" /> Change
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canAction && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Select
+                            value={pendingRoleSel[r.id] || r.requested_role || "bde"}
+                            onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
+                          >
+                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
+                            <Check className="h-3.5 w-3.5 mr-1" /> Change
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

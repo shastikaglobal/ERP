@@ -142,7 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, sess) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((evt, sess) => {
+      // Debug: log auth state changes to help diagnose PKCE/token exchange issues
+      // (temporary - remove after debugging)
+      // eslint-disable-next-line no-console
+      console.debug("supabase.onAuthStateChange", { evt, sess });
       setSession(sess);
       setupSessionInterval(sess);
       if (sess?.user) {
@@ -161,17 +165,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      setupSessionInterval(sess);
-      if (sess?.user) {
-        userId = sess.user.id;
-        loadUserData(sess.user.id).finally(() => setLoading(false));
-        subscribeRealtime(sess.user.id);
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session: sess } }) => {
+        // Debug: log initial session fetch
+        // eslint-disable-next-line no-console
+        console.debug("supabase.getSession result", { sess });
+        setSession(sess);
+        setupSessionInterval(sess);
+        if (sess?.user) {
+          userId = sess.user.id;
+          loadUserData(sess.user.id).finally(() => setLoading(false));
+          subscribeRealtime(sess.user.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("supabase.getSession error", err);
         setLoading(false);
-      }
-    });
+      });
 
     return () => {
       if (sessionInterval) clearInterval(sessionInterval);
@@ -200,7 +213,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) {
+    // Fail-safe: avoid throwing during HMR/network blips — return a minimal fallback
+    // eslint-disable-next-line no-console
+    console.warn("useAuth used outside AuthProvider — returning fallback context");
+    return {
+      session: null,
+      user: null,
+      profile: null,
+      permissions: new Set<string>(),
+      roleSlugs: new Set<string>(),
+      loading: true,
+      onlineUsers: [],
+      signOut: async () => {},
+      refresh: async () => {},
+    } as AuthCtx;
+  }
   return ctx;
 }
 

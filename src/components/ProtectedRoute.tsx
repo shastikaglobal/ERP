@@ -57,7 +57,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
                 (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
   if (isBde) {
-    const allowedPrefixes = ["/dashboards", "/dashboard", "/crm", "/customers", "/quotations", "/documents", "/system"];
+    const allowedPrefixes = ["/dashboards", "/dashboard", "/crm", "/customers", "/quotations", "/documents", "/system", "/orders/create"];
     const isAllowed = allowedPrefixes.some(prefix => 
       location.pathname === prefix || location.pathname.startsWith(prefix + "/")
     );
@@ -68,4 +68,3 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
 
   return children;
 }
-

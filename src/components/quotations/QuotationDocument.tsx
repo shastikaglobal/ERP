@@ -23,7 +23,7 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#ffffff"
       });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -31,7 +31,7 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`PI-${quotation.quotation_number || "download"}.pdf`);
+      pdf.save(`Quotation-${quotation.quotation_number || 'download'}.pdf`);
     } catch (err) {
       console.error("PDF generation error:", err);
     } finally {
@@ -39,51 +39,18 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
     }
   };
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const validityDate = quotation.valid_until
-    ? new Date(quotation.valid_until).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    : "TBD";
+    ? new Date(quotation.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : 'TBD';
 
   const totalAmount = Number(quotation.amount || 0);
-  const currencySym =
-    quotation.currency === "USD"
-      ? "USD"
-      : quotation.currency === "EUR"
-      ? "Euro"
-      : quotation.currency || "INR";
+  const currencySym = quotation.currency === 'USD' ? 'USD' : quotation.currency === 'EUR' ? 'EUR' : (quotation.currency || 'INR');
   const items = quotation.quotation_items || quotation.items || [];
 
-  const subtotal = Number(quotation.subtotal || 0);
-  const taxRate = Number(quotation.tax_rate || 0);
-  const taxAmount = Number(quotation.tax_amount || 0);
-
-  // Packing info lines
-  const packingLines = [
-    quotation.packaging_type ? `Packing Type : ${quotation.packaging_type}` : null,
-    quotation.net_weight ? `Net Weight : ${quotation.net_weight}` : null,
-    quotation.packing_per_bag ? `1 Bag – ${quotation.packing_per_bag} Pieces` : null,
-    quotation.bag_weight ? `1 Bag – ${quotation.bag_weight} Kg` : null,
-  ].filter(Boolean);
-
   return (
-    <div
-      style={{
-        background: "#f0f2f5",
-        color: "black",
-        minHeight: "100vh",
-        padding: "40px 20px",
-        fontFamily: "'Calibri', 'Segoe UI', sans-serif",
-      }}
-      className="flex flex-col items-center print:bg-white print:p-0"
-    >
+    <div style={{ background: '#f0f2f5', color: 'black', minHeight: '100vh', padding: '40px 20px', fontFamily: 'sans-serif' }} className="flex flex-col items-center print:bg-white print:p-0">
+
       {/* Top Controls */}
       <div className="mb-6 w-full max-w-[210mm] flex justify-between items-center px-4 print:hidden">
         <Button
@@ -94,8 +61,8 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
           <X className="h-4 w-4 mr-2" /> Close
         </Button>
         <div className="flex gap-3">
-          <Button
-            variant="outline"
+          <Button 
+            variant="outline" 
             onClick={() => window.print()}
             className="rounded-full border-[#1A5276] text-[#1A5276] hover:bg-[#1A5276]/5"
           >
@@ -106,320 +73,195 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
             disabled={downloading}
             className="bg-[#1A5276] text-white hover:bg-[#154360] shadow-lg rounded-full px-6 min-w-[160px]"
           >
-            {downloading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
+            {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             {downloading ? "Generating PDF..." : "Save as PDF"}
           </Button>
         </div>
       </div>
 
       {/* Document */}
-      <div
-        ref={docRef}
-        className="relative bg-white w-full max-w-[210mm] shadow-2xl print:shadow-none text-black"
-        style={{ border: "1px solid #000" }}
-      >
-        {/* ── HEADER ROW ── */}
-        <div className="grid" style={{ gridTemplateColumns: "55% 45%", borderBottom: "1px solid #000" }}>
-          {/* Left: Company name + address */}
-          <div className="p-4" style={{ borderRight: "1px solid #000", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <h1
-              style={{
-                color: "#1F618D",
-                fontSize: "14px",
-                fontWeight: 800,
-                letterSpacing: "0.03em",
-                marginBottom: "10px",
-                textTransform: "uppercase",
-                textAlign: "center"
-              }}
-            >
-              SHASTIKA GLOBAL IMPEX PRIVATE LIMITED
-            </h1>
-            <div className="flex items-center gap-4">
-              <div style={{ width: "72px", flexShrink: 0 }}>
-                <img src="/logo.webp" alt="Logo" style={{ width: "100%", height: "auto", objectFit: "contain" }} />
+      <div ref={docRef} className="bg-white w-full max-w-[210mm] shadow-2xl print:shadow-none border-[1.5px] border-black text-black leading-tight">
+        
+        {/* Header Section */}
+        <div className="grid grid-cols-[55%_45%] border-b-[1.5px] border-black">
+          <div className="p-4 border-r-[1.5px] border-black flex flex-col items-center">
+            <h1 className="text-[12px] font-extrabold text-[#1A5276] mb-4 tracking-tight uppercase">SHASTIKA GLOBAL IMPEX PRIVATE LIMITED</h1>
+            <div className="flex w-full items-start gap-4">
+              <div className="w-20 h-20 flex-shrink-0">
+                <img src="/logo.webp" alt="Logo" className="w-full h-auto object-contain" />
               </div>
-              <div style={{ fontSize: "9px", lineHeight: "1.7", color: "#000" }}>
-                <div>Address: 41/1,ST-5, Sathy Athani Main Road,</div>
-                <div style={{ paddingLeft: "35px" }}>Thuckanayakanpalayam</div>
-                <div style={{ paddingLeft: "35px" }}>Erode - 638506, Tamil Nadu, India.</div>
-                <div>Phone no : <strong>+91 7397612015</strong></div>
-                <div>GSTIN : <strong>33ABPCS0605LIZ8</strong></div>
+              <div className="flex flex-col text-[9px] space-y-1 text-gray-800">
+                <div className="flex gap-2"><span>Address:</span> <span className="font-bold">41/1, ST-5, Sathy Athani Main Road,</span></div>
+                <div className="flex gap-2 ml-12"><span className="font-bold">Thuckanayakanpalayam</span></div>
+                <div className="flex gap-2 ml-12"><span className="font-bold">Erode - 638506, Tamil Nadu, India.</span></div>
+                <div className="flex gap-2 mt-2"><span>Phone  :</span> <span className="font-bold text-black">+91 7397612015</span></div>
+                <div className="flex gap-2"><span>GSTIN  :</span> <span className="font-bold text-black">33ABPCS0605LIZ8</span></div>
+                <div className="flex gap-2"><span>whatsapp number :</span> <span className="font-bold text-black">+91 9566266241</span></div>
               </div>
             </div>
           </div>
-
-          {/* Right: PROFORMA INVOICE title + PI details */}
-          <div className="p-4 flex flex-col items-center justify-start">
-            <h2
-              style={{
-                color: "#1F618D",
-                fontSize: "15px",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                marginBottom: "14px",
-                textAlign: "center",
-              }}
-            >
-              PROFORMA INVOICE
-            </h2>
-            <div style={{ fontSize: "9.5px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", marginBottom: "8px" }}>
-                <span>PI NO :</span>
-                <span style={{ fontWeight: 700 }}>{quotation.quotation_number || "—"}</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", marginBottom: "8px" }}>
-                <span>DATE :</span>
-                <span style={{ fontWeight: 700 }}>{today}</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", marginBottom: "4px" }}>
-                <span>VALID PI DATE :</span>
-                <span style={{ fontWeight: 700 }}>{validityDate}</span>
-              </div>
+          <div className="p-4 flex flex-col items-center">
+            <h2 className="text-[14px] font-extrabold text-[#1A5276] mb-4 tracking-wider uppercase">QUOTATION</h2>
+            <div className="w-full space-y-2 text-[9.5px] pl-8">
+              <div className="grid grid-cols-[110px_1fr]"><span>Quotation No :</span> <span className="font-bold">{quotation.quotation_number}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Date :</span> <span className="font-bold">{today}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Valid Until :</span> <span className="font-bold">{validityDate}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Currency :</span> <span className="font-bold">{quotation.currency || 'INR'}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Incoterm :</span> <span className="font-bold">{quotation.incoterms || quotation.incoterm || 'EXW'}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Packing Method :</span> <span className="font-bold">{quotation.packaging_type || '---'}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Packing Charge :</span> <span className="font-bold">{currencySym} {Number(quotation.packaging_cost || 0).toFixed(2)}</span></div>
+              <div className="grid grid-cols-[110px_1fr]"><span>Net Weight :</span> <span className="font-bold">{quotation.net_weight || '---'}</span></div>
             </div>
           </div>
         </div>
 
-        {/* ── SECTION HEADERS ROW ── */}
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: "33% 34% 33%", borderBottom: "1px solid #000" }}
-        >
-          {["BILL TO :", "SHIPMENT & TRADE TERMS", "Packing Type"].map((label, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "5px 8px",
-                fontSize: "9.5px",
-                fontWeight: 700,
-                color: i < 2 ? "#1F618D" : "#000",
-                textAlign: "center",
-                borderRight: i < 2 ? "1px solid #000" : "none",
-                background: "transparent",
-              }}
-            >
-              {label}
-            </div>
-          ))}
+        {/* Grid Row 1 (2 cols) */}
+        <div className="grid grid-cols-[55%_45%] border-b-[1.5px] border-black text-[9px] font-bold text-[#1A5276] bg-[#f8fafc] uppercase tracking-tighter">
+          <div className="border-r-[1.5px] border-black py-1.5 text-center">BILL TO :</div>
+          <div className="py-1.5 text-center">TERMS OF PAYMENT</div>
         </div>
-
-        {/* ── BILL TO / SHIPMENT / PACKING ROW ── */}
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: "33% 34% 33%",
-            borderBottom: "1px solid #000",
-            minHeight: "150px",
-          }}
-        >
-          {/* Bill To */}
-          <div style={{ padding: "10px", borderRight: "1px solid #000", fontSize: "9.5px", lineHeight: "1.9" }}>
-            <div style={{ fontWeight: 700, fontSize: "10px", marginBottom: "6px" }}>
-              {quotation.customer?.name || quotation.customer_name || "Customer Name"}
+        <div className="grid grid-cols-[55%_45%] border-b-[1.5px] border-black min-h-[100px] text-[10px]">
+          <div className="p-3 border-r-[1.5px] border-black flex flex-col">
+            <div className="font-bold text-[11px] mb-1.5 uppercase">{quotation.customer?.name || quotation.customer_name || 'Customer Name'}</div>
+            <div className="text-gray-800 whitespace-pre-wrap leading-tight text-[9px]">
+              {quotation.customer?.address || 'Address not provided'}
             </div>
-            <div style={{ color: "#000", marginBottom: "16px", whiteSpace: "pre-wrap" }}>
-              {quotation.customer?.address || quotation.customer_address || ""}
-            </div>
-            {(quotation.customer_phone || quotation.customer?.phone) && (
-              <div>Phone no : <strong>{quotation.customer_phone || quotation.customer?.phone}</strong></div>
+            {quotation.customer_phone && (
+              <div className="text-[9px] mt-2">
+                <span className="font-bold">Phone no : </span>{quotation.customer_phone}
+              </div>
             )}
           </div>
-
-          {/* Shipment & Trade Terms */}
-          <div style={{ padding: "10px", borderRight: "1px solid #000", fontSize: "9.5px", lineHeight: "1.9" }}>
-            <div style={{ marginBottom: "12px" }}>Country of Origin : <span style={{ color: "#000" }}>{quotation.country_of_origin || "India"}</span></div>
-            <div style={{ marginBottom: "12px" }}>Mode of Transport : <span style={{ color: "#000" }}>{quotation.mode_of_transport || quotation.shipment_type || "—"}</span></div>
-            <div style={{ marginBottom: "12px" }}>
-              <span style={{ color: "#000" }}>
-                Incoterms : {quotation.incoterms || quotation.incoterm || ""}
-              </span>
-            </div>
-            <div style={{ marginBottom: "4px" }}>Port of Loading : <span style={{ color: "#000" }}>{quotation.port_of_loading || "—"}</span></div>
-            <div style={{ marginBottom: "4px" }}>Port of Discharge : <span style={{ color: "#000" }}>{quotation.port_of_discharge || "—"}</span></div>
-            {quotation.estimated_shipment_date && (
-              <div style={{ marginBottom: "4px" }}>Estimated shipment date : <span style={{ color: "#000" }}>{quotation.estimated_shipment_date}</span></div>
-            )}
-          </div>
-
-          {/* Packing Type */}
-          <div style={{ padding: "10px", fontSize: "9.5px", lineHeight: "1.9", textAlign: "center" }}>
-            {packingLines.length > 0
-              ? packingLines.map((line, i) => <div key={i} style={{ marginBottom: "2px" }}>{line}</div>)
-              : (
-                <>
-                  <div style={{ marginBottom: "2px" }}>Packing Type : {quotation.packaging_type || "—"}</div>
-                  <div style={{ marginBottom: "2px" }}>Net Weight : {quotation.net_weight || "—"}</div>
-                </>
-              )}
+          <div className="p-3">
+            <p className="text-[9px] leading-tight text-gray-800 whitespace-pre-wrap">
+              {quotation.payment_terms || "Standard payment terms apply."}
+            </p>
           </div>
         </div>
 
-        {/* ── ITEMS TABLE ── */}
-        <div style={{ borderBottom: "1px solid #000" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+        {/* Grid Row 2 (2 cols) */}
+        <div className="grid grid-cols-[60%_40%] border-b-[1.5px] border-black text-[10px] font-bold text-[#1A5276] bg-[#f8fafc]">
+          <div className="border-r-[1.5px] border-black py-1.5 text-center">SHIPMENT &amp; TRADE TERMS</div>
+          <div className="py-1.5 text-center">TRANSPORT DETAILS</div>
+        </div>
+        <div className="grid grid-cols-[60%_40%] border-b-[1.5px] border-black min-h-[120px] text-[10px]">
+          <div className="p-4 border-r-[1.5px] border-black space-y-2">
+            <div className="grid grid-cols-[130px_1fr]"><span>Country of Origin :</span> <span className="font-bold">{quotation.country_of_origin || 'India'}</span></div>
+            <div className="grid grid-cols-[130px_1fr]"><span>Mode of Transport :</span> <span className="font-bold">{quotation.mode_of_transport || 'Truck'}</span></div>
+            <div className="grid grid-cols-[130px_1fr]"><span>Incoterms :</span> <span className="font-bold">{quotation.incoterms || quotation.incoterm || 'EXW'}</span></div>
+            <div className="grid grid-cols-[130px_1fr]"><span>Port of Loading :</span> <span className="font-bold">{quotation.port_of_loading || 'Nhava Sheva Port, India'}</span></div>
+            <div className="grid grid-cols-[130px_1fr]"><span>Port of Discharge :</span> <span className="font-bold">{quotation.port_of_discharge || '---'}</span></div>
+          </div>
+          <div className="p-4 space-y-2">
+            <div className="grid grid-cols-[110px_1fr]"><span>Transport :</span> <span className="font-bold">{quotation.shipment_type || 'Truck'}</span></div>
+            <div className="grid grid-cols-[110px_1fr]"><span>Transport Charges :</span> <span className="font-bold">{currencySym} {Number(quotation.shipping_cost || 0).toLocaleString()}</span></div>
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className="flex-1 min-h-[300px]">
+          <table className="w-full border-collapse table-fixed">
             <thead>
-              <tr style={{ background: "transparent", borderBottom: "1px solid #000" }}>
-                {[
-                  { label: "ID", w: "5%" },
-                  { label: "DESCRIPTION", w: "33%", align: "left" },
-                  { label: "HSN", w: "12%" },
-                  { label: "QUANTITY", w: "15%" },
-                  { label: "UNIT", w: "10%" },
-                  { label: "PRICE", w: "12%" },
-                  { label: "AMOUNT", w: "13%" },
-                ].map((col, i, arr) => (
-                  <th
-                    key={i}
-                    style={{
-                      padding: "6px 4px",
-                      fontSize: "8.5px",
-                      fontWeight: 700,
-                      color: "#1F618D",
-                      textTransform: "uppercase",
-                      textAlign: (col.align as any) || "center",
-                      borderRight: i < arr.length - 1 ? "1px solid #000" : "none",
-                      width: col.w,
-                      paddingLeft: col.align === "left" ? "8px" : "4px",
-                    }}
-                  >
-                    {col.label}
-                  </th>
-                ))}
+              <tr className="border-b-[1.5px] border-black text-[8px] font-bold text-[#1A5276] uppercase bg-[#f8fafc]">
+                <th className="border-r-[1.5px] border-black w-[5%] py-2 text-center">ID</th>
+                <th className="border-r-[1.5px] border-black w-[35%] px-4 py-2 text-left">DESCRIPTION</th>
+                <th className="border-r-[1.5px] border-black w-[12%] py-2 text-center">HSN</th>
+                <th className="border-r-[1.5px] border-black w-[12%] py-2 text-center">QUANTITY</th>
+                <th className="border-r-[1.5px] border-black w-[10%] py-2 text-center">UNIT</th>
+                <th className="border-r-[1.5px] border-black w-[13%] py-2 text-center text-[7px]">UNIT PRICE ({currencySym})</th>
+                <th className="w-[13%] py-2 text-center text-[7px]">AMOUNT ({currencySym})</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[10px]">
               {items.map((item: any, i: number) => (
-                <tr key={i} style={{ borderBottom: "1px solid #000", minHeight: "36px" }}>
-                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", borderRight: "1px solid #000" }}>{i + 1}</td>
-                  <td style={{ padding: "6px 8px", fontSize: "9px", borderRight: "1px solid #000", wordBreak: "break-word" }}>
-                    {item.description || item.product?.name || item.products?.name || item.product_name || "Product"}
+                <tr key={i} className="border-b border-black min-h-[40px]">
+                  <td className="border-r border-black text-center py-2">{i + 1}</td>
+                  <td className="border-r border-black px-4 py-2 font-medium leading-tight text-[9px] break-words">
+                    {item.description || item.product?.name || item.products?.name || item.product_name || 'Product'}
                   </td>
-                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", fontFamily: "monospace", borderRight: "1px solid #000" }}>
-                    {item.hsn_code || item.product?.hs_code || item.products?.hs_code || "—"}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", fontWeight: 700, borderRight: "1px solid #000" }}>
-                    {item.quantity} {item.unit || ""}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", borderRight: "1px solid #000" }}>
-                    {item.unit_label || item.unit_type || "1 bag"}
-                  </td>
-                  <td style={{ textAlign: "right", padding: "6px 6px", fontSize: "9px", fontWeight: 700, borderRight: "1px solid #000" }}>
-                    {Number(item.unit_price).toFixed(2)} {currencySym}
-                  </td>
-                  <td style={{ textAlign: "right", padding: "6px 6px", fontSize: "9px", fontWeight: 700 }}>
-                    {Number(item.total_price || item.quantity * item.unit_price).toFixed(2)} {currencySym}
-                  </td>
+                  <td className="border-r border-black text-center py-2 font-mono text-[9px]">{item.hsn_code || item.product?.hs_code || item.products?.hs_code || '—'}</td>
+                  <td className="border-r border-black text-center py-2 font-bold">{item.quantity}</td>
+                  <td className="border-r border-black text-center py-2 font-bold uppercase">{item.product?.unit || item.products?.unit || item.unit || 'PCS'}</td>
+                  <td className="border-r border-black text-right pr-4 py-2 font-bold">{Number(item.unit_price).toFixed(2)}</td>
+                  <td className="text-right pr-4 py-2 font-bold">{Number(item.total_price || (item.quantity * item.unit_price)).toFixed(2)}</td>
                 </tr>
               ))}
-              {/* Empty filler rows */}
-              {[...Array(Math.max(0, 9 - items.length))].map((_, i) => (
-                <tr key={`e-${i}`} style={{ borderBottom: "1px solid #000", height: "28px" }}>
-                  {[...Array(7)].map((__, j) => (
-                    <td key={j} style={{ borderRight: j < 6 ? "1px solid #000" : "none" }} />
-                  ))}
+              {/* Fill remaining space with empty rows to maintain grid alignment */}
+              {[...Array(Math.max(0, 8 - items.length))].map((_, i) => (
+                <tr key={`e-${i}`} className="border-b border-gray-100 h-10">
+                  <td className="border-r border-black"></td>
+                  <td className="border-r border-black"></td>
+                  <td className="border-r border-black"></td>
+                  <td className="border-r border-black"></td>
+                  <td className="border-r border-black"></td>
+                  <td className="border-r border-black"></td>
+                  <td></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        {/* ── FOOTER ROW ── */}
-        <div className="grid" style={{ gridTemplateColumns: "55% 45%" }}>
-          {/* Left: Terms of Payment + Declaration */}
-          <div style={{ borderRight: "1px solid #000" }}>
-            <div
-              style={{
-                padding: "6px 10px 2px",
-                fontSize: "9.5px",
-                fontWeight: 700,
-                color: "#1F618D",
-                borderBottom: "1px solid #000",
-              }}
-            >
-              Terms of Payment
+        {/* Footer */}
+        <div className="grid grid-cols-[55%_45%] border-t-[1.5px] border-black min-h-[140px]">
+          <div className="border-r-[1.5px] border-black flex flex-col">
+            <div className="p-3 border-b border-black flex-1">
+              <h4 className="text-[10px] font-bold text-[#1A5276] mb-2 uppercase">NOTE</h4>
+              <p className="text-[9px] leading-relaxed text-gray-800 whitespace-pre-wrap">
+                {quotation.notes || "Including packing, loading and Transport."}
+              </p>
             </div>
-            <div style={{ padding: "6px 10px 10px", fontSize: "9px", lineHeight: "1.7", color: "#000", borderBottom: "1px solid #000", minHeight: "50px" }}>
-              {quotation.payment_terms || "Standard payment terms apply."}
-            </div>
-            {quotation.notes && (
-              <div style={{ padding: "4px 10px 6px", fontSize: "9px", color: "#000", borderBottom: "1px solid #000" }}>
-                Note : {quotation.notes}
-              </div>
-            )}
-            <div style={{ padding: "6px 10px 10px", fontSize: "9px", color: "#000", lineHeight: "1.6" }}>
-              <strong>Declaration :</strong> We hereby certify that the goods mentioned above are of Indian origin and the price and details stated in this proforma invoice are true and correct.
+            <div className="p-3">
+              <p className="text-[8px] uppercase font-bold text-gray-700 mb-4">DECLARATION</p>
+              <p className="text-[8.5px] italic text-gray-600 leading-tight">We hereby certify that the goods mentioned above are of Indian origin and the price and details stated in this quotation are true and correct.</p>
             </div>
           </div>
 
-          {/* Right: Totals + Signature */}
-          <div>
-            {/* SUB TOTAL */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px", fontSize: "9.5px", borderBottom: "1px solid #000" }}>
-              <span style={{ fontWeight: 600 }}>SUB TOTAL</span>
-              <span style={{ textAlign: "right", fontWeight: 600 }}>{subtotal > 0 ? `${subtotal.toLocaleString()} ${currencySym}` : ""}</span>
-            </div>
-            {/* Tax Rate */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px", fontSize: "9.5px", borderBottom: "1px solid #000" }}>
-              <span style={{ fontWeight: 600 }}>Tax Rate</span>
-              <span style={{ textAlign: "right", fontWeight: 600 }}>{taxRate.toFixed(2)}%</span>
-            </div>
-            {/* Tax */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px", fontSize: "9.5px", borderBottom: "1px solid #000" }}>
-              <span style={{ fontWeight: 600 }}>Tax</span>
-              <span style={{ textAlign: "right", fontWeight: 600 }}>{taxAmount.toFixed(2)}%</span>
-            </div>
-            {/* Total */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                padding: "6px 10px",
-                fontSize: "10px",
-                fontWeight: 800,
-                background: "#BDD7EE",
-                color: "#000",
-                borderBottom: "1px solid #000",
-              }}
-            >
-              <span>Total</span>
-              <span style={{ textAlign: "right" }}>{totalAmount.toLocaleString()} {currencySym}</span>
-            </div>
-
-            {/* Signature block */}
-            <div style={{ padding: "10px", fontSize: "9px" }}>
-              <div style={{ fontWeight: 700, textTransform: "uppercase", marginBottom: "25px" }}>
-                FOR SHASTIKA GLOBAL IMPEX PRIVATE LIMITED
+          <div className="flex flex-col">
+            <div className="border-b border-black">
+              <div className="grid grid-cols-2 px-4 py-1.5 text-[10px]">
+                <span className="text-gray-700 font-bold uppercase">SUB TOTAL</span>
+                <span className="text-right font-bold">{currencySym} {Number(quotation.subtotal || 0).toLocaleString()}</span>
               </div>
-              <div style={{ marginBottom: "10px" }}>
-                <span style={{ fontWeight: 600 }}>Authorized Signatory :</span>
+              <div className="grid grid-cols-2 px-4 py-1.5 text-[10px]">
+                <span className="text-gray-700 font-bold uppercase">PACKING CHARGE</span>
+                <span className="text-right font-bold">{currencySym} {Number(quotation.packaging_cost || 0).toLocaleString()}</span>
               </div>
-              <div>
-                <span style={{ fontWeight: 600 }}>Seal &amp; Sign :</span>
+              <div className="grid grid-cols-2 px-4 py-1.5 text-[10px]">
+                <span className="text-gray-700 font-bold uppercase">TRANSPORT CHARGES</span>
+                <span className="text-right font-bold">{currencySym} {Number(quotation.shipping_cost || 0).toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 px-4 py-1.5 text-[10px]">
+                <span className="text-gray-700 font-bold uppercase">TAX</span>
+                <span className="text-right font-bold">{currencySym} {Number(quotation.tax_amount || 0).toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 px-4 py-2 text-[11px] font-black bg-[#BDD7EE] text-[#1A5276] border-t border-black">
+                <span>TOTAL AMOUNT</span>
+                <span className="text-right">{currencySym} {totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div className="p-4 flex flex-col flex-1 justify-between text-[10px]">
+              <div className="font-extrabold text-[9px] uppercase tracking-tighter text-right">FOR SHASTIKA GLOBAL IMPEX PRIVATE LIMITED</div>
+              <div className="space-y-4 mt-6">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[9.5px]">Authorized Signatory :</span>
+                  <div className="flex-1 border-b border-dotted border-black h-4 px-2 italic text-gray-400 font-normal">__________________________</div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="font-bold text-[9.5px] pt-1">Seal &amp; Sign :</span>
+                  <div className="h-16 w-36 border border-black rounded flex items-center justify-center text-gray-300 text-[8px]">STAMP BOX</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Watermark */}
-        <div
-          style={{
-            position: "absolute",
-            top: "35%",
-            left: "20%",
-            right: "20%",
-            zIndex: 0,
-            opacity: 0.07,
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        >
-          <img src="/logo.webp" alt="Watermark" style={{ width: "100%", height: "auto", objectFit: "contain" }} />
+        {/* Watermark Logo */}
+        <div className="absolute top-[35%] left-[20%] right-[20%] z-0 opacity-10 pointer-events-none select-none">
+          <img src="/logo.webp" alt="Watermark" className="w-full h-auto object-contain" />
         </div>
+
       </div>
     </div>
   );

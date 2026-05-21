@@ -58,6 +58,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Activities", url: "/crm/activities", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Leads", url: "/crm/leads", icon: UserCheck, permission: "farmers.view" },
+      { title: "Follow-Ups", url: "/crm/follow-ups", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Pipeline", url: "/crm/pipeline", icon: GitBranch, permission: "farmers.view" },
       { title: "Email Integration", url: "/crm/email", icon: Mail, permission: "farmers.view" },
       { title: "Zoho API Sync", url: "/system/integrations/zoho", icon: Mail, permission: "farmers.view" },

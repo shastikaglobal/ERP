@@ -11,8 +11,8 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import LeadActivities from "./pages/crm/Activities";
 import LeadsList from "./pages/crm/LeadsList";
-// import FollowUps from "./pages/crm/FollowUps";
-// import { FollowUpReminders } from "./components/crm/FollowUpReminders";
+import FollowUps from "./pages/crm/FollowUps";
+import { FollowUpReminders } from "./components/crm/FollowUpReminders";
 import LeadDetail from "./pages/crm/LeadDetail";
 import LeadPipeline from "./pages/crm/Pipeline";
 import EmailIntegration from "./pages/crm/EmailIntegration";
@@ -22,8 +22,6 @@ import Pending from "./pages/Pending";
 import InvoicePreview from "./pages/documents/InvoicePreview";
 import PackingListPreview from "./pages/documents/PackingListPreview";
 import CertificatePreview from "./pages/documents/CertificatePreview";
-// import CommercialInvoicePreview from "./pages/documents/CommercialInvoicePreview";
-// import CommercialInvoices from "./pages/documents/CommercialInvoices";
 
 // Dashboards
 import Executive from "./pages/dashboards/Executive";
@@ -123,11 +121,9 @@ const queryClient = new QueryClient();
 const DashboardRedirect = () => {
   const { roleSlugs, profile } = useAuth();
   const isSecretary = roleSlugs.has("secretary");
-  const isBde =
-    roleSlugs.has("bd") ||
+  const isBde = roleSlugs.has("bd") ||
     roleSlugs.has("bde") ||
-    (profile?.requested_role &&
-      ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
+    (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
   if (isSecretary) return <Navigate to="/dashboards/finance-tally" replace />;
   if (isBde) return <Navigate to="/dashboards/bde" replace />;
   return <Navigate to="/dashboards/executive" replace />;
@@ -140,12 +136,7 @@ const RootRedirect = () => {
   const hash = location.hash;
 
   if (code || hash.includes("access_token") || hash.includes("error")) {
-    return (
-      <Navigate
-        to={`/auth/callback${location.search}${location.hash}`}
-        replace
-      />
-    );
+    return <Navigate to={`/auth/callback${location.search}${location.hash}`} replace />;
   }
 
   return <Navigate to="/auth" replace />;
@@ -158,7 +149,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          {/* <FollowUpReminders /> */}
+          <FollowUpReminders />
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
@@ -166,46 +157,19 @@ const App = () => (
             <Route path="/pending" element={<Pending />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/waiting-approval" element={<WaitingApproval />} />
-            <Route
-              path="/select-profile"
-              element={<Navigate to="/dashboard" replace />}
-            />
+            <Route path="/select-profile" element={<Navigate to="/dashboard" replace />} />
 
             {/* Public / Standalone Preview Routes (no AppLayout) */}
             <Route path="/invoices/:id/preview" element={<InvoicePreview />} />
-            <Route
-              path="/packing-lists/:id/preview"
-              element={<PackingListPreview />}
-            />
-            <Route
-              path="/documents/packing-lists/:id/preview"
-              element={<PackingListPreview />}
-            />
-            {/* <Route path="/documents/commercial-invoices/:id/preview" element={<CommercialInvoicePreview />} /> */}
-            <Route
-              path="/certificates/:id/preview"
-              element={<CertificatePreview />}
-            />
-            <Route
-              path="/share/quote/:id"
-              element={<PublicQuotationView />}
-            />
+            <Route path="/packing-lists/:id/preview" element={<PackingListPreview />} />
+            <Route path="/documents/packing-lists/:id/preview" element={<PackingListPreview />} />
+            <Route path="/documents/commercial-invoices/:id/preview" element={<InvoicePreview />} />
+            <Route path="/certificates/:id/preview" element={<CertificatePreview />} />
+            <Route path="/share/quote/:id" element={<PublicQuotationView />} />
 
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route
-                path="/dashboard"
-                element={<DashboardRedirect />}
-              />
-              <Route
-                path="/approvals"
-                element={<Navigate to="/employees/roles" replace />}
-              />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<DashboardRedirect />} />
+              <Route path="/approvals" element={<Navigate to="/employees/roles" replace />} />
 
               {/* Dashboards */}
               <Route path="/dashboards/executive" element={<Executive />} />
@@ -260,7 +224,7 @@ const App = () => (
               {/* CRM */}
               <Route path="/crm/activities" element={<LeadActivities />} />
               <Route path="/crm/leads" element={<LeadsList />} />
-              {/* <Route path="/crm/follow-ups" element={<FollowUps />} /> */}
+              <Route path="/crm/follow-ups" element={<FollowUps />} />
               <Route path="/crm/leads/:id" element={<LeadDetail />} />
               <Route path="/crm/pipeline" element={<LeadPipeline />} />
               <Route path="/crm/email" element={<EmailIntegration />} />
@@ -280,15 +244,11 @@ const App = () => (
               <Route path="/shipments/delivery" element={<DeliveryStatus />} />
 
               {/* Documents */}
-              <Route
-                path="/documents"
-                element={<Navigate to="/documents/invoices" replace />}
-              />
+              <Route path="/documents" element={<Navigate to="/documents/invoices" replace />} />
               <Route path="/documents/invoices" element={<Invoices />} />
               <Route path="/documents/invoices/:id" element={<InvoiceReport />} />
               <Route path="/documents/packing-lists" element={<PackingLists />} />
-              {/* ✅ FIX: CommercialInvoices file இல்லாததால் comment போட்டோம் */}
-              {/* <Route path="/documents/commercial-invoices" element={<CommercialInvoices />} /> */}
+              <Route path="/documents/commercial-invoices" element={<Invoices />} />
               <Route path="/documents/certificates" element={<Certificates />} />
               <Route path="/documents/viewer" element={<DocumentViewer />} />
 
@@ -301,10 +261,7 @@ const App = () => (
               {/* Tally */}
               <Route path="/tally/*" element={<TallyIndex />} />
               <Route path="/journal" element={<JournalEntry />} />
-              <Route
-                path="/gst-reports"
-                element={<Navigate to="/tally/gst-reports" replace />}
-              />
+              <Route path="/gst-reports" element={<Navigate to="/tally/gst-reports" replace />} />
 
               {/* Employees */}
               <Route path="/employees" element={<EmployeeDirectory />} />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronDown, Sprout, LayoutDashboard } from "lucide-react";
+import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
@@ -28,10 +28,21 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   // Filter items by permission (if no permission set, always visible)
   const visibleGroups = navGroups
     .map((g) => {
-      let items = g.items.filter((i) => !i.permission || can(i.permission));
+      const groupTitleLower = g.title.toLowerCase();
+      let items = g.items.filter((i) => {
+        if (isSecretary && allowedSecretaryGroups.has(groupTitleLower)) return true;
+        if (isBde && allowedBdeGroups.has(groupTitleLower)) return true;
+        return !i.permission || can(i.permission);
+      });
       if (g.title === "Dashboards" && isSecretary) {
         items = [
-          { title: "Finance & Tally", url: "/dashboards/finance-tally", icon: LayoutDashboard }
+          { title: "Finance & Tally", url: "/dashboards/finance-tally", icon: LayoutDashboard },
+          { title: "User Approvals", url: "/employees/roles", icon: ShieldCheck }
+        ];
+      }
+      if (g.title === "Dashboards" && isBde) {
+        items = [
+          { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
         ];
       }
       if (g.title === "Dashboards" && isBde) {
@@ -94,10 +105,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                 {isOpen && (
                   <div className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
                     {group.items.map((item) => {
-                      let ItemIcon = item.icon;
-                      if (typeof ItemIcon === "string" && iconMap[ItemIcon]) {
-                        ItemIcon = iconMap[ItemIcon];
-                      }
+                      const ItemIcon = item.icon;
                       return (
                         <NavLink
                           key={item.url}
