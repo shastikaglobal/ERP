@@ -22,18 +22,15 @@ export default function CreateOrder() {
     const loadData = async () => {
       if (!profile?.company_id) return;
       
-      const [productsRes, leadsRes] = await Promise.all([
-        supabase.from('products').select('id, name, unit').eq('company_id', profile.company_id).order('name'),
-        supabase.from('leads')
-          .select('id, company_name, email, country, interested_product')
-          .eq('company_id', profile.company_id)
-          .order('company_name')
-      ]);
-      
+      const productsRes = await supabase.from('products').select('id, name, unit').eq('company_id', profile.company_id).order('name');
       if (productsRes.data) setProductsList(productsRes.data);
-      if (leadsRes.data) {
-        setLeadsList(leadsRes.data);
-      }
+
+      const { data: leadsData } = await supabase
+        .from("leads")
+        .select("id, company_name, contact_name, mobile, email, country")
+        .order("created_at", { ascending: false });
+      
+      if (leadsData) setLeadsList(leadsData);
     };
     loadData();
   }, [profile?.company_id]);
@@ -53,9 +50,9 @@ export default function CreateOrder() {
     const lead = leadsList.find(l => l.id === selectedLeadId);
     if (lead) {
       setCustomerName(lead.company_name || "");
-      setCustomerCountry(lead.country || "");
+      setCustomerPhone(lead.mobile || "");
       setCustomerEmail(lead.email || "");
-      if (lead.interested_product) setProduct(lead.interested_product);
+      setCustomerCountry(lead.country || "");
     }
   }, [selectedLeadId, leadsList]);
 
@@ -80,6 +77,19 @@ export default function CreateOrder() {
   const [notes, setNotes] = useState("");
   const [totalCartons, setTotalCartons] = useState<number | "">("");
   const [unitNetWeight, setUnitNetWeight] = useState<number | "">("");
+  const [containerType, setContainerType] = useState("20 Feet FCL");
+  const [loadingType, setLoadingType] = useState("");
+  const [qtyPerCarton, setQtyPerCarton] = useState<number | "">("");
+  const [grossWeightPerCarton, setGrossWeightPerCarton] = useState<number | "">("");
+  const [totalNetWeight, setTotalNetWeight] = useState<number | "">("");
+  const [totalGrossWeight, setTotalGrossWeight] = useState<number | "">("");
+
+  // Banking Details
+  const [bankName, setBankName] = useState("State Bank of India");
+  const [bankBranch, setBankBranch] = useState("Erode, Tamil Nadu");
+  const [accountNo, setAccountNo] = useState("43841179923");
+  const [ifscCode, setIfscCode] = useState("SBIN02278");
+  const [swiftCode, setSwiftCode] = useState("SBININBB");
   
   const [countryOfOrigin, setCountryOfOrigin] = useState("India");
   const [portOfLoading, setPortOfLoading] = useState("Nhava Sheva Port, India");
@@ -127,6 +137,17 @@ export default function CreateOrder() {
         notes,
         total_cartons: totalCartons ? Number(totalCartons) : null,
         unit_net_weight: unitNetWeight ? Number(unitNetWeight) : null,
+        container_type: containerType,
+        loading_type: loadingType,
+        qty_per_carton: qtyPerCarton ? Number(qtyPerCarton) : null,
+        gross_weight_per_carton: grossWeightPerCarton ? Number(grossWeightPerCarton) : null,
+        total_net_weight: totalNetWeight ? Number(totalNetWeight) : null,
+        total_gross_weight: totalGrossWeight ? Number(totalGrossWeight) : null,
+        bank_name: bankName,
+        bank_branch: bankBranch,
+        account_no: accountNo,
+        ifsc_code: ifscCode,
+        swift_code: swiftCode,
         country_of_origin: countryOfOrigin || 'India',
         port_of_loading: portOfLoading || null,
         port_of_discharge: portOfDischarge || null,
@@ -134,7 +155,7 @@ export default function CreateOrder() {
         created_by: userId,
         status: 'pending',
         payment_status: 'unpaid'
-      });
+      } as any);
 
       if (error) throw error;
 
@@ -310,10 +331,6 @@ export default function CreateOrder() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Packing Details</Label>
-              <Input value={packingDetails} onChange={e => setPackingDetails(e.target.value)} placeholder="e.g. 13 Kg per box" />
-            </div>
-            <div className="space-y-2">
               <Label>Country of Origin</Label>
               <Input value={countryOfOrigin} onChange={e => setCountryOfOrigin(e.target.value)} placeholder="e.g. India" />
             </div>
@@ -325,21 +342,95 @@ export default function CreateOrder() {
               <Label>Port of Discharge</Label>
               <Input value={portOfDischarge} onChange={e => setPortOfDischarge(e.target.value)} placeholder="e.g. Jebel Ali Port" />
             </div>
+            <div className="space-y-2">
+              <Label>Swift Code</Label>
+              <Input value={swiftCode} onChange={e => setSwiftCode(e.target.value)} placeholder="e.g. SBININBB" />
+            </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Terms of Payment</Label>
               <Textarea value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="e.g. 90% advance..." className="h-20" />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Notes</Label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Internal notes, etc..." className="h-20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* New Packing Details Section */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Packing Details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <Label>Total Cartons</Label>
-              <Input type="number" value={totalCartons} onChange={e => setTotalCartons(Number(e.target.value) || "")} placeholder="e.g. 10" />
+              <Label>Container Type</Label>
+              <Select value={containerType} onValueChange={setContainerType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20 Feet FCL">20 Feet FCL</SelectItem>
+                  <SelectItem value="40 Feet FCL">40 Feet FCL</SelectItem>
+                  <SelectItem value="20 Feet LCL">20 Feet LCL</SelectItem>
+                  <SelectItem value="40 Feet LCL">40 Feet LCL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Loading Type</Label>
+              <Input value={loadingType} onChange={e => setLoadingType(e.target.value)} placeholder="e.g. Palletized" />
+            </div>
+            <div className="space-y-2">
+              <Label>No. of Cartons</Label>
+              <Input type="number" value={totalCartons} onChange={e => setTotalCartons(Number(e.target.value) || "")} placeholder="e.g. 100" />
+            </div>
+            <div className="space-y-2">
+              <Label>Qty per Carton</Label>
+              <Input type="number" value={qtyPerCarton} onChange={e => setQtyPerCarton(Number(e.target.value) || "")} placeholder="e.g. 10" />
+            </div>
+            <div className="space-y-2">
+              <Label>Gross Weight per Carton (Kg)</Label>
+              <Input type="number" step="0.01" value={grossWeightPerCarton} onChange={e => setGrossWeightPerCarton(Number(e.target.value) || "")} placeholder="e.g. 14.20" />
             </div>
             <div className="space-y-2">
               <Label>Net Weight per Carton (Kg)</Label>
               <Input type="number" step="0.01" value={unitNetWeight} onChange={e => setUnitNetWeight(Number(e.target.value) || "")} placeholder="e.g. 13.50" />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Notes</Label>
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Internal notes, etc..." className="h-20" />
+            <div className="space-y-2">
+              <Label>Total Net Weight (Kg)</Label>
+              <Input type="number" step="0.01" value={totalNetWeight} onChange={e => setTotalNetWeight(Number(e.target.value) || "")} placeholder="e.g. 1350" />
+            </div>
+            <div className="space-y-2">
+              <Label>Total Gross Weight (Kg)</Label>
+              <Input type="number" step="0.01" value={totalGrossWeight} onChange={e => setTotalGrossWeight(Number(e.target.value) || "")} placeholder="e.g. 1420" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Banking Details Section */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Banking Details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>Bank Name</Label>
+              <Input value={bankName} onChange={e => setBankName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Branch</Label>
+              <Input value={bankBranch} onChange={e => setBankBranch(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Account No</Label>
+              <Input value={accountNo} onChange={e => setAccountNo(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>IFSC Code</Label>
+              <Input value={ifscCode} onChange={e => setIfscCode(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Swift Code</Label>
+              <Input value={swiftCode} onChange={e => setSwiftCode(e.target.value)} />
             </div>
           </CardContent>
           <CardFooter className="justify-end border-t p-4 mt-2">

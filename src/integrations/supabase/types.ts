@@ -1161,12 +1161,44 @@ export type Database = {
           company_id: string
           customer_id: string | null
           order_number: string
+          customer_name: string | null
+          customer_phone: string | null
+          customer_gst: string | null
+          customer_email: string | null
+          customer_country: string | null
+          product: string | null
+          quantity: number | null
+          unit: string | null
+          unit_price: number | null
           total_amount: number
           currency: string
           status: string
+          expected_delivery: string | null
+          shipping_address: string | null
+          hsn_code: string | null
+          incoterms: string | null
+          packing_details: string | null
+          total_cartons: number | null
+          unit_net_weight: number | null
+          container_type: string | null
+          loading_type: string | null
+          qty_per_carton: number | null
+          gross_weight_per_carton: number | null
+          total_net_weight: number | null
+          total_gross_weight: number | null
+          bank_name: string | null
+          bank_branch: string | null
+          account_no: string | null
+          ifsc_code: string | null
+          swift_code: string | null
+          country_of_origin: string | null
+          port_of_loading: string | null
+          port_of_discharge: string | null
+          mode_of_transport: string | null
           payment_terms: string | null
           payment_status: string | null
           notes: string | null
+          created_by: string | null
           created_at: string
           updated_at: string
         }
@@ -1175,12 +1207,44 @@ export type Database = {
           company_id: string
           customer_id?: string | null
           order_number: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          customer_gst?: string | null
+          customer_email?: string | null
+          customer_country?: string | null
+          product?: string | null
+          quantity?: number | null
+          unit?: string | null
+          unit_price?: number | null
           total_amount: number
           currency?: string
           status?: string
+          expected_delivery?: string | null
+          shipping_address?: string | null
+          hsn_code?: string | null
+          incoterms?: string | null
+          packing_details?: string | null
+          total_cartons?: number | null
+          unit_net_weight?: number | null
+          container_type?: string | null
+          loading_type?: string | null
+          qty_per_carton?: number | null
+          gross_weight_per_carton?: number | null
+          total_net_weight?: number | null
+          total_gross_weight?: number | null
+          bank_name?: string | null
+          bank_branch?: string | null
+          account_no?: string | null
+          ifsc_code?: string | null
+          swift_code?: string | null
+          country_of_origin?: string | null
+          port_of_loading?: string | null
+          port_of_discharge?: string | null
+          mode_of_transport?: string | null
           payment_terms?: string | null
           payment_status?: string | null
           notes?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1189,12 +1253,44 @@ export type Database = {
           company_id?: string
           customer_id?: string | null
           order_number?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          customer_gst?: string | null
+          customer_email?: string | null
+          customer_country?: string | null
+          product?: string | null
+          quantity?: number | null
+          unit?: string | null
+          unit_price?: number | null
           total_amount?: number
           currency?: string
           status?: string
+          expected_delivery?: string | null
+          shipping_address?: string | null
+          hsn_code?: string | null
+          incoterms?: string | null
+          packing_details?: string | null
+          total_cartons?: number | null
+          unit_net_weight?: number | null
+          container_type?: string | null
+          loading_type?: string | null
+          qty_per_carton?: number | null
+          gross_weight_per_carton?: number | null
+          total_net_weight?: number | null
+          total_gross_weight?: number | null
+          bank_name?: string | null
+          bank_branch?: string | null
+          account_no?: string | null
+          ifsc_code?: string | null
+          swift_code?: string | null
+          country_of_origin?: string | null
+          port_of_loading?: string | null
+          port_of_discharge?: string | null
+          mode_of_transport?: string | null
           payment_terms?: string | null
           payment_status?: string | null
           notes?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
