@@ -65,6 +65,8 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
   const taxRate = Number(quotation.tax_rate || 0);
   const taxAmount = Number(quotation.tax_amount || 0);
 
+  const getAlphaIndex = (index: number) => String.fromCharCode(65 + index);
+
   // Packing info lines
   const packingLines = [
     quotation.packaging_type ? `Packing Type : ${quotation.packaging_type}` : null,
@@ -295,7 +297,7 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
             <tbody>
               {items.map((item: any, i: number) => (
                 <tr key={i} style={{ borderBottom: "1px solid #000", minHeight: "36px" }}>
-                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", borderRight: "1px solid #000" }}>{i + 1}</td>
+                  <td style={{ textAlign: "center", padding: "6px 2px", fontSize: "9px", borderRight: "1px solid #000" }}>{getAlphaIndex(i)}</td>
                   <td style={{ padding: "6px 8px", fontSize: "9px", borderRight: "1px solid #000", wordBreak: "break-word" }}>
                     {item.description || item.product?.name || item.products?.name || item.product_name || "Product"}
                   </td>

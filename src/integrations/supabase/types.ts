@@ -936,7 +936,6 @@ export type Database = {
           },
         ]
       }
-    }
       quotations: {
         Row: {
           id: string
@@ -1022,6 +1021,7 @@ export type Database = {
           quantity: number
           unit_price: number
           total_price: number
+          unit: string | null
           created_at: string
           updated_at: string
         }
@@ -1034,6 +1034,7 @@ export type Database = {
           quantity: number
           unit_price: number
           total_price?: number
+          unit?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1046,6 +1047,7 @@ export type Database = {
           quantity?: number
           unit_price?: number
           total_price?: number
+          unit?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1096,6 +1098,14 @@ export type Database = {
           email: string | null
           phone: string | null
           interested_product: string | null
+          product_type: string | null
+          business_category: string | null
+          mobile: string | null
+          website: string | null
+          country: string | null
+          date: string | null
+          assigned_to: string | null
+          remark: string | null
           status: string | null
           stage: string | null
           created_at: string
@@ -1109,6 +1119,14 @@ export type Database = {
           email?: string | null
           phone?: string | null
           interested_product?: string | null
+          product_type?: string | null
+          business_category?: string | null
+          mobile?: string | null
+          website?: string | null
+          country?: string | null
+          date?: string | null
+          assigned_to?: string | null
+          remark?: string | null
           status?: string | null
           stage?: string | null
           created_at?: string
@@ -1122,6 +1140,14 @@ export type Database = {
           email?: string | null
           phone?: string | null
           interested_product?: string | null
+          product_type?: string | null
+          business_category?: string | null
+          mobile?: string | null
+          website?: string | null
+          country?: string | null
+          date?: string | null
+          assigned_to?: string | null
+          remark?: string | null
           status?: string | null
           stage?: string | null
           created_at?: string
@@ -1173,7 +1199,9 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }    Views: {
+      }
+    }
+    Views: {
       tenants: {
         Row: {
           base_currency: string | null

@@ -26,15 +26,17 @@ type Lead = {
   company_name: string;
   contact_name: string;
   country: string;
-  interested_product: string;
+  product_type: string;
   stage: string;
   created_at: string;
   updated_at: string;
-  email?: string | null;
-  website?: string | null;
-  mobile?: string | null;
-  assigned_to?: string | null;
-  profiles?: { full_name: string };
+  assigned_to: string;
+  business_category?: string;
+  mobile?: string;
+  email?: string;
+  website?: string;
+  date?: string;
+  remark?: string;
 };
 
 export default function LeadDetail() {
@@ -48,6 +50,9 @@ export default function LeadDetail() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState("");
+  const [savingProduct, setSavingProduct] = useState(false);
 
   useEffect(() => {
     async function fetchLeadDetails() {
@@ -55,12 +60,13 @@ export default function LeadDetail() {
       try {
         const { data: leadData, error: leadError } = await supabase
           .from("leads")
-          .select(`*`)
+          .select(`*, product_type, business_category, mobile, email, website, date, remark, assigned_to`)
           .eq("id", id)
           .single();
 
         if (leadError) throw leadError;
         setLead(leadData as unknown as Lead);
+        setNewProduct(leadData.product_type || "");
 
         const { data: acts, error: actsError } = await supabase
           .from("activities")
@@ -177,6 +183,26 @@ export default function LeadDetail() {
     }
   };
 
+  const handleUpdateProduct = async () => {
+    if (!id || !lead) return;
+    setSavingProduct(true);
+    try {
+      const { error } = await supabase
+        .from("leads")
+        .update({ product_type: newProduct } as any)
+        .eq("id", id);
+
+      if (error) throw error;
+      setLead({ ...lead, product_type: newProduct });
+      setEditingProduct(false);
+      toast.success("Product of interest updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update product");
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -212,10 +238,40 @@ export default function LeadDetail() {
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div><dt className="text-xs text-muted-foreground mb-1">Lead ID</dt><dd className="font-mono text-xs">{lead.id}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Stage</dt><dd><StatusBadge status={lead.stage} /></dd></div>
-              <div><dt className="text-xs text-muted-foreground mb-1">Product of Interest</dt><dd>{lead.interested_product || "-"}</dd></div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground mb-1">Product of Interest</dt>
+                <dd className="flex items-center gap-2 group">
+                  {editingProduct ? (
+                    <div className="flex items-center gap-2 w-full max-w-md">
+                      <Input 
+                        value={newProduct} 
+                        onChange={e => setNewProduct(e.target.value)} 
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && handleUpdateProduct()}
+                      />
+                      <Button size="sm" onClick={handleUpdateProduct} disabled={savingProduct}>
+                        {savingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => {setEditingProduct(false); setNewProduct(lead.product_type || "");}}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="font-medium text-base">{lead.product_type || "-"}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingProduct(true)}>
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                </dd>
+              </div>
               <div><dt className="text-xs text-muted-foreground mb-1">Owner</dt><dd>{ownerName}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Country</dt><dd>{lead.country || "-"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground mb-1">Created</dt><dd>{format(new Date(lead.created_at), "PP")}</dd></div>
+              <div><dt className="text-xs text-muted-foreground mb-1">Mobile</dt><dd>{lead.mobile || "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground mb-1">Email</dt><dd>{lead.email || "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground mb-1">Business Category</dt><dd>{lead.business_category || "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground mb-1">Website</dt><dd>{lead.website || "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground mb-1">Created</dt><dd>{lead.date || format(new Date(lead.created_at), "PP")}</dd></div>
+              <div className="col-span-2"><dt className="text-xs text-muted-foreground mb-1">Remark</dt><dd className="text-muted-foreground whitespace-pre-wrap">{lead.remark || "-"}</dd></div>
             </dl>
           </Section>
           <Section title="Recent Activity">
@@ -279,9 +335,12 @@ export default function LeadDetail() {
             </div>
           </Section>
           <Section title="Interest">
-            <div className="flex items-center gap-2 text-lg font-semibold">
+            <div className={`flex items-center gap-2 text-lg font-semibold ${!lead.product_type ? 'text-muted-foreground italic' : ''}`}>
               <Package className="h-5 w-5 text-muted-foreground" />
-              {lead.interested_product || "No Product Specified"}
+              {lead.product_type || "No Product Specified"}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingProduct(true)}>
+                <Edit className="h-3 w-3" />
+              </Button>
             </div>
             <div className="text-xs text-muted-foreground mt-1">Primary product interest</div>
           </Section>

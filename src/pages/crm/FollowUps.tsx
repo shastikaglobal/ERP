@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Check, Bell, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type FollowUp = {
   id: string;
@@ -64,6 +65,8 @@ export default function FollowUps() {
   const [note, setNote] = useState("");
   const [assignedTo, setAssignedTo] = useState(bdTeam[0]);
   const [filter, setFilter] = useState<"all" | "mine" | "pending">("all");
+  const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const isBde = roleSlugs.has("bd") || roleSlugs.has("bde");
 
@@ -272,7 +275,14 @@ export default function FollowUps() {
               </TableRow>
             ) : (
               filteredFollowUps.map((followUp) => (
-                <TableRow key={followUp.id} className="border-border hover:bg-muted/30 transition-colors">
+                <TableRow 
+                  key={followUp.id} 
+                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setSelectedFollowUp(followUp);
+                    setIsDetailsOpen(true);
+                  }}
+                >
                   <TableCell>{followUp.company_name}</TableCell>
                   <TableCell>{followUp.contact_name || "—"}</TableCell>
                   <TableCell>{formatDate(followUp.follow_up_date)}</TableCell>
@@ -281,7 +291,7 @@ export default function FollowUps() {
                     {followUp.note ? (
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger className="text-left cursor-help">
+                          <TooltipTrigger className="text-left cursor-help" onClick={(e) => e.stopPropagation()}>
                             {followUp.note.length > 40 
                               ? `${followUp.note.substring(0, 40)}...` 
                               : followUp.note}
@@ -305,11 +315,27 @@ export default function FollowUps() {
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     {!followUp.is_notified && (
-                      <Button size="sm" variant="outline" className="h-8 text-[10px] uppercase tracking-wider" onClick={() => handleAcknowledge(followUp.id)}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 text-[10px] uppercase tracking-wider" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAcknowledge(followUp.id);
+                        }}
+                      >
                         <Check className="mr-1 h-3.5 w-3.5" /> Acknowledge
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" className="h-8 text-[10px] uppercase tracking-wider" onClick={() => handleDelete(followUp.id)}>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 text-[10px] uppercase tracking-wider" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(followUp.id);
+                      }}
+                    >
                       <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
                     </Button>
                   </TableCell>
@@ -477,6 +503,72 @@ export default function FollowUps() {
           </form>
         </DialogContent>
       </Dialog>
+      <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <SheetContent className="bg-slate-900 border-l border-slate-800 text-white sm:max-w-md overflow-y-auto">
+          <SheetHeader className="mb-6 border-b border-white/10 pb-4">
+            <SheetTitle className="text-white text-xl">Follow-Up Details</SheetTitle>
+          </SheetHeader>
+          
+          {selectedFollowUp && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">{selectedFollowUp.company_name}</h2>
+                <p className="text-slate-400 text-sm flex items-center gap-2">
+                  <Badge variant="outline" className="border-white/20 text-white/70 bg-white/5">
+                    {selectedFollowUp.is_notified ? "Acknowledged" : "Pending"}
+                  </Badge>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <DetailItem label="Contact Name" value={selectedFollowUp.contact_name} />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <DetailItem label="Follow-Up Date" value={formatDate(selectedFollowUp.follow_up_date)} />
+                  <DetailItem label="Reminder Time" value={selectedFollowUp.reminder_time ? new Date(`2000-01-01T${selectedFollowUp.reminder_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "09:00 AM"} />
+                </div>
+
+                <DetailItem label="Assigned To" value={selectedFollowUp.assigned_to} />
+                
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-3 mt-2">
+                  <div className="border-b border-white/10 pb-2 mb-1">
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Contact Activity</span>
+                  </div>
+                  <DetailItem 
+                    label="Contact Method" 
+                    value={selectedFollowUp.note?.split(": ")[0]} 
+                  />
+                  <DetailItem 
+                    label="Internal Note" 
+                    value={selectedFollowUp.note?.includes(": ") ? selectedFollowUp.note.split(": ").slice(1).join(": ") : "—"} 
+                  />
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Lead Information</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <DetailItem label="Business Category" value={selectedFollowUp.business_category} />
+                    <DetailItem label="Product Type" value={selectedFollowUp.product_type} />
+                    <DetailItem label="Country" value={selectedFollowUp.country} />
+                    <DetailItem label="Mobile" value={selectedFollowUp.mobile} />
+                  </div>
+                  <DetailItem label="Email" value={selectedFollowUp.email} />
+                  <DetailItem label="Website" value={selectedFollowUp.website} />
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string, value?: string | null }) {
+  return (
+    <div className="space-y-1">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">{label}</div>
+      <div className="text-sm font-medium text-slate-200">{value || "—"}</div>
     </div>
   );
 }

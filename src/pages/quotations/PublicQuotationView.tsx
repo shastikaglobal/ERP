@@ -128,6 +128,7 @@ export default function PublicQuotationView() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-slate-900">
+                    <th className="text-left py-4 px-0 font-black uppercase text-[11px] tracking-widest w-12 text-center">#</th>
                     <th className="text-left py-4 px-0 font-black uppercase text-[11px] tracking-widest">Description</th>
                     <th className="text-right py-4 px-4 font-black uppercase text-[11px] tracking-widest w-24">Qty</th>
                     <th className="text-right py-4 px-4 font-black uppercase text-[11px] tracking-widest w-32">Unit Price</th>
@@ -135,13 +136,14 @@ export default function PublicQuotationView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {(q.items || []).map((item: any) => (
+                  {(q.items || []).map((item: any, i: number) => (
                     <tr key={item.id}>
+                      <td className="py-6 px-0 text-center font-bold text-slate-400">{String.fromCharCode(65 + i)}</td>
                       <td className="py-6 px-0">
                         <p className="font-bold text-slate-900">{item.product?.name || 'Custom Product'}</p>
                         <p className="text-[10px] text-muted-foreground font-mono mt-1 uppercase">{item.product?.sku || 'GENERIC'}</p>
                       </td>
-                      <td className="text-right py-6 px-4 tabular-nums text-slate-700">{item.quantity.toLocaleString()} kg</td>
+                      <td className="text-right py-6 px-4 tabular-nums text-slate-700">{item.quantity.toLocaleString()} {item.unit || 'KG'}</td>
                       <td className="text-right py-6 px-4 tabular-nums text-slate-700">{q.currency} {item.unit_price.toLocaleString()}</td>
                       <td className="text-right py-6 px-0 tabular-nums font-bold text-slate-900">{q.currency} {item.total_price.toLocaleString()}</td>
                     </tr>

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-type Item = { id: string; db_id?: string; product_id: string; product_name: string; hsn_code: string; qty: number; price: number };
+type Item = { id: string; db_id?: string; product_id: string; product_name: string; hsn_code: string; qty: number; unit: string; price: number };
 
 interface Lead {
   id: string;
@@ -64,6 +64,7 @@ export default function EditQuotation() {
   const [paymentTerms, setPaymentTerms] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [quoteNumber, setQuoteNumber] = useState("");
+  const unitOptions = ["KG", "MT", "G", "LB", "PCS", "BOX", "CTN", "BAG", "L", "ML"];
 
   // New Packaging Type State
   const [isPkgModalOpen, setIsPkgModalOpen] = useState(false);
@@ -133,9 +134,10 @@ export default function EditQuotation() {
             product_name: i.description || "",
             hsn_code: i.hsn_code || "",
             qty: Number(i.quantity) || 1,
+            unit: i.unit || "KG",
             price: Number(i.unit_price) || 0
           }));
-          setItems(loadedItems.length > 0 ? loadedItems : [{ id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, price: 0 }]);
+          setItems(loadedItems.length > 0 ? loadedItems : [{ id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, unit: "KG", price: 0 }]);
         }
       } catch (err: any) {
         toast.error(err.message || "Failed to load quotation details");
@@ -170,7 +172,7 @@ export default function EditQuotation() {
     }
   };
 
-  const addItem = () => setItems((s) => [...s, { id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, price: 0 }]);
+  const addItem = () => setItems((s) => [...s, { id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, unit: "KG", price: 0 }]);
   const removeItem = (id: string) => setItems((s) => s.filter((i) => i.id !== id));
   const updateItem = (id: string, patch: Partial<Item>) => setItems((s) => s.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   
@@ -233,6 +235,7 @@ export default function EditQuotation() {
         quotation_id: id,
         product_id: i.product_id || null, 
         quantity: Number(i.qty),
+        unit: i.unit,
         unit_price: Number(i.price),
         total_price: Number(i.qty) * Number(i.price),
         description: i.product_name,
@@ -253,6 +256,8 @@ export default function EditQuotation() {
       setSaving(false);
     }
   };
+
+  const getAlphaIndex = (index: number) => String.fromCharCode(65 + index);
 
   if (loading) {
     return (
@@ -412,17 +417,19 @@ export default function EditQuotation() {
           <div className="overflow-x-auto -mx-5">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border">
-                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-2">Product Name</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-2 w-16">#</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">Product Name</th>
                 <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 w-32">HSN</th>
-                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 w-24">Qty</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 w-48">Qty / Unit</th>
                 <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 w-32">Unit Price</th>
                 <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 w-32">Total</th>
                 <th className="px-3 py-2 w-10" />
               </tr></thead>
               <tbody>
-                {items.map((i) => (
-                  <tr key={i.id} className="border-b last:border-0 border-border">
-                    <td className="px-5 py-2">
+                {items.map((i, index) => (
+                   <tr key={i.id} className="border-b last:border-0 border-border">
+                    <td className="px-5 py-2 font-medium text-muted-foreground">{getAlphaIndex(index)}</td>
+                    <td className="px-3 py-2">
                       <Input 
                         value={i.product_name} 
                         onChange={(e) => {
@@ -431,7 +438,8 @@ export default function EditQuotation() {
                           updateItem(i.id, { 
                             product_name: val, 
                             product_id: prod?.id || "",
-                            hsn_code: prod?.hs_code || i.hsn_code
+                            hsn_code: prod?.hs_code || i.hsn_code,
+                            unit: prod?.unit || i.unit
                           });
                         }} 
                         placeholder="Type product name..." 
@@ -448,7 +456,24 @@ export default function EditQuotation() {
                         placeholder="HSN Code"
                       />
                     </td>
-                    <td className="px-3 py-2"><Input type="number" min="1" value={i.qty} onChange={(e) => updateItem(i.id, { qty: Number(e.target.value) || 0 })} /></td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1">
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="any"
+                          value={i.qty} 
+                          onChange={(e) => updateItem(i.id, { qty: Number(e.target.value) || 0 })} 
+                          className="w-20"
+                        />
+                        <Select value={i.unit} onValueChange={(val) => updateItem(i.id, { unit: val })}>
+                          <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {unitOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={i.price} onChange={(e) => updateItem(i.id, { price: Number(e.target.value) || 0 })} /></td>
                     <td className="px-3 py-2 text-right tabular-nums font-medium">{(i.qty * i.price).toLocaleString()}</td>
                     <td className="px-3 py-2"><Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeItem(i.id)} disabled={items.length === 1}><Trash2 className="h-3.5 w-3.5" /></Button></td>
