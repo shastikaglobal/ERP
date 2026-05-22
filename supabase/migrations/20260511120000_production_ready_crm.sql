@@ -37,7 +37,7 @@ BEGIN
   INSERT INTO public.email_templates (company_id, name, subject, body)
   VALUES 
     (hq_id, 'Welcome Message', 'Welcome to Shastika Global Impex', '<p>Dear Customer,</p><p>Thank you for reaching out to us. We have received your inquiry.</p>'),
-    (hq_id, 'Quotation Details', 'Quotation for Products', '<p>Please find the requested quotation attached to this email.</p>'),
+    (hq_id, 'etails', 'Quotation for Products', '<p>Please find the requested quotation attached to this email.</p>'),
     (hq_id, 'Follow Up', 'Following up on your inquiry', '<p>I am following up to see if you have any questions about our previous message.</p>')
   ON CONFLICT DO NOTHING;
 END $$;
