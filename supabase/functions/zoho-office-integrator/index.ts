@@ -119,11 +119,12 @@ serve(async (req) => {
     const documentExts = ["doc", "docx", "odt", "rtf", "txt", "html"];
     const presentationExts = ["ppt", "pptx", "odp"];
     
+    // User explicitly wants Zoho Sheet for everything including PDFs (likely a misnamed spreadsheet)
     let zohoApiPath = "sheet/officeapi/v1/spreadsheet"; // default: spreadsheet
     let saveFormat = "xlsx";
     if (documentExts.includes(ext)) {
       zohoApiPath = "writer/officeapi/v1/document";
-      saveFormat = ext === "pdf" ? "pdf" : "docx";
+      saveFormat = "docx";
     } else if (presentationExts.includes(ext)) {
       zohoApiPath = "show/officeapi/v1/presentation";
       saveFormat = "pptx";
@@ -134,9 +135,22 @@ serve(async (req) => {
     zohoFormData.append("apikey", apiKey);
     
     // Create a new Blob with the correct MIME type so Zoho recognizes the format
+    let finalExt = ext;
+    if (ext === "pdf" || ext === "application/octet-stream") {
+      finalExt = "xlsx"; // Force spreadsheet for PDFs based on user request
+      correctMime = mimeMap["xlsx"];
+    }
     const correctBlob = new Blob([await fileData.arrayBuffer()], { type: correctMime });
+    
     // If filename doesn't have an extension, append the guessed one so Zoho knows how to parse it
-    const finalFilename = filename.toLowerCase().endsWith(`.${ext}`) ? filename : `${filename}.${ext}`;
+    // If it's a PDF, we replace .pdf with .xlsx so Zoho Sheet accepts it
+    let finalFilename = filename;
+    if (ext === "pdf" && filename.toLowerCase().endsWith(".pdf")) {
+      finalFilename = filename.slice(0, -4) + ".xlsx";
+    } else if (!filename.toLowerCase().endsWith(`.${finalExt}`)) {
+      finalFilename = `${filename}.${finalExt}`;
+    }
+    
     zohoFormData.append("document", correctBlob, finalFilename);
 
     const docId = path.replace(/[^a-zA-Z0-9]/g, "-"); // Create clean document ID
@@ -144,7 +158,7 @@ serve(async (req) => {
       "document_info",
       JSON.stringify({
         document_id: docId,
-        document_name: filename,
+        document_name: finalFilename
       })
     );
 

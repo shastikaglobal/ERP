@@ -121,6 +121,16 @@ export default function Mailbox() {
     setOpeningZohoIndex(index);
     // Open the window immediately without noopener/noreferrer so we can control its location asynchronously
     const zohoWindow = window.open("", "_blank");
+    if (zohoWindow) {
+      zohoWindow.document.write(`
+        <html>
+          <head><title>Loading Zoho...</title></head>
+          <body style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:#4a5568;">
+            <h2>Please wait, preparing document with Zoho...</h2>
+          </body>
+        </html>
+      `);
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke("zoho-office-integrator", {
@@ -1016,12 +1026,13 @@ export default function Mailbox() {
                     <div className="flex flex-wrap gap-3">
                       {selectedEmail.attachments.map((att: any, i: number) => {
                         const fname = att.filename?.toLowerCase() || "";
-                        const isSpreadsheet = fname.endsWith(".xlsx") || fname.endsWith(".xls") || fname.endsWith(".csv") || fname.endsWith(".ods") || fname.endsWith(".tsv");
+                        const hasNoExtension = !fname.includes(".");
+                        const isSpreadsheet = hasNoExtension || fname.endsWith(".xlsx") || fname.endsWith(".xls") || fname.endsWith(".csv") || fname.endsWith(".ods") || fname.endsWith(".tsv");
                         const isDocument = fname.endsWith(".doc") || fname.endsWith(".docx") || fname.endsWith(".odt") || fname.endsWith(".rtf") || fname.endsWith(".txt") || fname.endsWith(".html");
                         const isPresentation = fname.endsWith(".ppt") || fname.endsWith(".pptx") || fname.endsWith(".odp");
                         const isPdf = fname.endsWith(".pdf");
-                        // Zoho Office Integrator frequently rejects PDFs with 400 Unsupported Format, so we omit it
-                        const isZohoSupported = isSpreadsheet || isDocument || isPresentation;
+                        // The user explicitly wants Zoho to handle PDFs, so we include it
+                        const isZohoSupported = isSpreadsheet || isDocument || isPresentation || isPdf;
                         
                         return (
                           <div

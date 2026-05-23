@@ -40,7 +40,10 @@ export default function LeadActivities() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("call");
   const [leadId, setLeadId] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [dateStr, setDateStr] = useState("");
+  const [hourStr, setHourStr] = useState("12");
+  const [minuteStr, setMinuteStr] = useState("00");
+  const [ampmStr, setAmpmStr] = useState("AM");
   const [submitting, setSubmitting] = useState(false);
 
   // Delete Confirm state
@@ -94,11 +97,21 @@ export default function LeadActivities() {
 
       const finalLeadId = leadId && leadId !== "none" ? leadId : null;
 
+      let finalDueDate = null;
+      if (dateStr) {
+        let hourInt = parseInt(hourStr, 10);
+        if (ampmStr === "PM" && hourInt < 12) hourInt += 12;
+        if (ampmStr === "AM" && hourInt === 12) hourInt = 0;
+        
+        const timeString = `${hourInt.toString().padStart(2, '0')}:${minuteStr}:00`;
+        finalDueDate = new Date(`${dateStr}T${timeString}`).toISOString();
+      }
+
       const { error } = await supabase.from("activities").insert({
         title,
         type,
         lead_id: finalLeadId,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: finalDueDate,
         created_by: userId,
       });
 
@@ -109,7 +122,10 @@ export default function LeadActivities() {
       setTitle("");
       setType("call");
       setLeadId("");
-      setDueDate("");
+      setDateStr("");
+      setHourStr("12");
+      setMinuteStr("00");
+      setAmpmStr("AM");
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to create activity");
@@ -202,8 +218,43 @@ export default function LeadActivities() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <Label>Due Date & Time</Label>
+                <div className="flex gap-2">
+                  <Input type="date" className="flex-1" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
+                  <Select value={hourStr} onValueChange={setHourStr}>
+                    <SelectTrigger className="w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                        <SelectItem key={h} value={h.toString().padStart(2, '0')}>
+                          {h.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={minuteStr} onValueChange={setMinuteStr}>
+                    <SelectTrigger className="w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => (i * 5)).map((m) => (
+                        <SelectItem key={m} value={m.toString().padStart(2, '0')}>
+                          {m.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={ampmStr} onValueChange={setAmpmStr}>
+                    <SelectTrigger className="w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM">AM</SelectItem>
+                      <SelectItem value="PM">PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <Button type="submit" disabled={submitting} className="w-full">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
