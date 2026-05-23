@@ -21,6 +21,8 @@ export function DataTable<T extends Record<string, any>>({
   onRowClick,
   emptyMessage = "No records found",
   toolbar,
+  showSearch = true,
+  showFilters = false,
 }: {
   data: T[];
   columns: Column<T>[];
@@ -29,6 +31,8 @@ export function DataTable<T extends Record<string, any>>({
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   toolbar?: ReactNode;
+  showSearch?: boolean;
+  showFilters?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -47,21 +51,27 @@ export function DataTable<T extends Record<string, any>>({
 
   return (
     <div className="erp-card overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 p-3 border-b border-border">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search…"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-            className="pl-9 h-9"
-          />
+      {(showSearch || showFilters || toolbar) && (
+        <div className="flex flex-wrap items-center gap-2 p-3 border-b border-border">
+          {showSearch && (
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search…"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+                className="pl-9 h-9"
+              />
+            </div>
+          )}
+          {showFilters && (
+            <Button variant="outline" size="sm" className="h-9">
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" /> Filters
+            </Button>
+          )}
+          <div className="ml-auto flex items-center gap-2">{toolbar}</div>
         </div>
-        <Button variant="outline" size="sm" className="h-9">
-          <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" /> Filters
-        </Button>
-        <div className="ml-auto flex items-center gap-2">{toolbar}</div>
-      </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
