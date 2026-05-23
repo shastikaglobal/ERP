@@ -19,6 +19,7 @@ type ProfileRow = {
   status: "pending" | "approved" | "rejected";
   is_active: boolean;
   avatar_url: string | null;
+  biometric_id: string | null;
 };
 
 const ROLE_NAMES: Record<string, string> = {
@@ -43,7 +44,7 @@ export default function EmployeeDirectory() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, phone, requested_role, status, is_active, avatar_url")
+      .select("id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id")
       .eq("status", "approved")
       .order("full_name");
 
@@ -195,6 +196,25 @@ export default function EmployeeDirectory() {
                         <span>{e.phone || "N/A"}</span>
                       </div>
                     </div>
+                    {isAdminOrManager && (
+                      <div className="mt-3 pt-3 border-t border-border/50">
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">eSSL Machine ID</div>
+                        <Input
+                          size={1}
+                          className="h-7 text-xs bg-muted/50"
+                          placeholder="e.g. 101"
+                          defaultValue={e.biometric_id || ""}
+                          onBlur={async (event) => {
+                            const val = event.target.value.trim();
+                            if (val !== (e.biometric_id || "")) {
+                              const { error } = await supabase.from('profiles').update({ biometric_id: val || null }).eq('id', e.id);
+                              if (error) toast.error("Failed to update ID");
+                              else toast.success(`Updated ID for ${e.full_name}`);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </Section>

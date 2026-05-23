@@ -616,9 +616,8 @@ export default function FollowUps() {
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                
-
-                <div className="grid grid-cols-2 gap-4">
+                <DetailItem label="Contact Name" value={selectedFollowUp.contact_name} />
+                                <div className="grid grid-cols-2 gap-4">
                   <DetailItem label="Follow-Up Date" value={formatDate(selectedFollowUp.follow_up_date)} />
                   <DetailItem label="Reminder Time" value={selectedFollowUp.reminder_time ? new Date(`2000-01-01T${selectedFollowUp.reminder_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "09:00 AM"} />
                 </div>

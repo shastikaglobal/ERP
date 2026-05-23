@@ -54,6 +54,18 @@ const STAGE_COLORS: Record<string, string> = {
   Lost: "bg-red-500",
 };
 
+const EMAIL_SEPARATOR_REGEX = /[;,\n]+/;
+
+const parseEmails = (value?: string | null) =>
+  value
+    ? value
+        .split(EMAIL_SEPARATOR_REGEX)
+        .map((email) => email.trim())
+        .filter(Boolean)
+    : [];
+
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 export default function LeadsList() {
   const { roleSlugs } = useAuth();
   // Allow admin, manager and bde to edit lead stage
@@ -177,6 +189,17 @@ export default function LeadsList() {
       return;
     }
 
+    const parsedEmails = parseEmails(email);
+    if (parsedEmails.length === 0) {
+      toast.error("Please enter at least one email address");
+      return;
+    }
+
+    if (!parsedEmails.every(isValidEmail)) {
+      toast.error("Please enter valid email addresses separated by commas, semicolons, or new lines");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -194,7 +217,7 @@ export default function LeadsList() {
         product_type: productType,
         country: country,
         mobile: mobile,
-        email: email,
+        email: parsedEmails.join(", "),
         website: website,
         stage: "New",
         assigned_to: String(assignedTo || "")
@@ -431,13 +454,17 @@ export default function LeadsList() {
               {/* Email */}
               <div className="space-y-2">
                 <Label className="text-foreground">Email *</Label>
-                <Input
-                  type="email"
+                <Textarea
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter Email Address"
-                  className="bg-background border-input"
+                  placeholder="Enter one or more emails, separated by commas, semicolons, or new lines."
+                  className="bg-background border-input min-h-[70px]"
+                  autoComplete="off"
+                  name="emails"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  You can paste or type many emails, separated by commas, semicolons, or new lines.
+                </p>
               </div>
 
               {/* Website */}
@@ -631,6 +658,7 @@ export default function LeadsList() {
             <TableRow className="hover:bg-transparent border-border">
               <TableHead className="text-foreground font-bold">Date</TableHead>
               <TableHead className="text-foreground font-bold">Company</TableHead>
+              <TableHead className="text-foreground font-bold">Contact Name</TableHead>
               <TableHead className="text-foreground font-bold">Business Category</TableHead>
               <TableHead className="text-foreground font-bold">Product Type</TableHead>
               <TableHead className="text-foreground font-bold">Country</TableHead>
@@ -643,13 +671,13 @@ export default function LeadsList() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" />
                 </TableCell>
               </TableRow>
             ) : filteredLeads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground italic">
+                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground italic">
                   {searchQuery ? `No leads matching "${searchQuery}"` : "No leads found."}
                 </TableCell>
               </TableRow>
@@ -678,6 +706,7 @@ export default function LeadsList() {
                       )}
                     </div>
                   </TableCell>
+                  <TableCell className="text-sm">{lead.contact_name || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.business_category || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.product_type || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>

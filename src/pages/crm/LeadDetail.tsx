@@ -38,6 +38,18 @@ type Lead = {
   remark?: string;
 };
 
+const EMAIL_SEPARATOR_REGEX = /[;,\n]+/;
+
+const parseEmails = (value?: string | null) =>
+  value
+    ? value
+        .split(EMAIL_SEPARATOR_REGEX)
+        .map((email) => email.trim())
+        .filter(Boolean)
+    : [];
+
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 export default function LeadDetail() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -115,6 +127,7 @@ export default function LeadDetail() {
   }
 
   const ownerName = lead.assigned_to || "Unassigned";
+  const leadEmails = parseEmails(lead.email).filter(isValidEmail);
 
   return (
     <div>
@@ -166,7 +179,22 @@ export default function LeadDetail() {
               <div><dt className="text-xs text-muted-foreground mb-1">Owner</dt><dd>{ownerName}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Country</dt><dd>{lead.country || "-"}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Mobile</dt><dd>{lead.mobile || "-"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground mb-1">Email</dt><dd>{lead.email || "-"}</dd></div>
+              <div>
+                <dt className="text-xs text-muted-foreground mb-1">Email</dt>
+                <dd>
+                  {leadEmails.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {leadEmails.map((email) => (
+                        <a key={email} href={`mailto:${email}`} className="text-primary hover:underline">
+                          {email}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    "-"
+                  )}
+                </dd>
+              </div>
               <div><dt className="text-xs text-muted-foreground mb-1">Business Category</dt><dd>{lead.business_category || "-"}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Website</dt><dd>{lead.website || "-"}</dd></div>
               <div><dt className="text-xs text-muted-foreground mb-1">Created</dt><dd>{lead.date || format(new Date(lead.created_at), "PP")}</dd></div>
@@ -198,10 +226,16 @@ export default function LeadDetail() {
                 <Building className="h-4 w-4 text-muted-foreground" />
                 <span>Contact: {lead.contact_name || "-"}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                {lead.email ? (
-                  <a href={`mailto:${lead.email}`} className="text-primary hover:underline">{lead.email}</a>
+              <div className="flex items-start gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                {leadEmails.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    {leadEmails.map((email) => (
+                      <a key={email} href={`mailto:${email}`} className="text-primary hover:underline">
+                        {email}
+                      </a>
+                    ))}
+                  </div>
                 ) : (
                   <span>-</span>
                 )}

@@ -6,6 +6,7 @@ import { format, subDays } from "date-fns";
 import { Loader2, Fingerprint, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { EsslUploader } from "./EsslUploader";
 
 const past14Days = Array.from({ length: 14 }, (_, i) => {
   const d = subDays(new Date(), 13 - i);
@@ -31,7 +32,7 @@ export default function Attendance() {
     // Fetch approved profiles
     const { data: profiles, error: profErr } = await supabase
       .from('profiles')
-      .select('id, full_name, requested_role, company_id')
+      .select('id, full_name, requested_role, company_id, biometric_id')
       .eq('status', 'approved')
       .order('full_name');
 
@@ -110,7 +111,12 @@ export default function Attendance() {
 
   return (
     <div className="space-y-4 animate-in fade-in zoom-in duration-300">
-      <PageHeader title="Attendance" description="Track team presence and punch in for the day" breadcrumbs={[{ label: "Employees" }, { label: "Attendance" }]} />
+      <PageHeader 
+        title="Attendance" 
+        description="Track team presence and punch in for the day" 
+        breadcrumbs={[{ label: "Employees" }, { label: "Attendance" }]} 
+        actions={<EsslUploader employees={employees} onUploadComplete={loadData} />}
+      />
       
       {/* My Attendance Widget */}
       <div className="bg-gradient-to-r from-card to-card/50 p-6 rounded-lg border shadow-sm flex items-center justify-between">

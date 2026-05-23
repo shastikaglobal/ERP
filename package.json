@@ -45,6 +45,7 @@
     "@supabase/supabase-js": "^2.104.0",
     "@tanstack/query-core": "^5.99.2",
     "@tanstack/react-query": "^5.83.0",
+    "@types/papaparse": "^5.5.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -57,6 +58,9 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "node-cron": "^4.2.1",
+    "node-windows": "^1.0.0-beta.8",
+    "papaparse": "^5.5.3",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-barcode": "^1.6.1",
@@ -71,6 +75,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
