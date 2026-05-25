@@ -11,7 +11,8 @@ import { Loader2, User as UserIcon } from "lucide-react";
 import { worldCurrencies } from "@/lib/currencies";
 
 export default function Settings() {
-  const { profile } = useAuth();
+  const { profile, roleSlugs } = useAuth();
+  const isAdmin = Array.from(roleSlugs).map(s => s.toLowerCase()).includes("admin");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -215,65 +216,70 @@ export default function Settings() {
             </FormRow>
           </FormGrid>
         </Section>
-        <Section title="Company">
-          <FormGrid>
-            <FormRow label="Company name"><Input value={name} onChange={e => setName(e.target.value)} /></FormRow>
-            <FormRow label="Tax ID / GSTIN"><Input value={taxId} onChange={e => setTaxId(e.target.value)} placeholder="e.g. 33ABCDE1234F1Z5" /></FormRow>
-            <FormRow label="Default currency">
-              <Select value={currency.toLowerCase()} onValueChange={setCurrency}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {worldCurrencies.map(c => (
-                    <SelectItem key={c.code.toLowerCase()} value={c.code.toLowerCase()}>
-                      {c.code} - {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormRow>
-            <FormRow label="Timezone">
-              <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ist">Asia/Kolkata</SelectItem>
-                  <SelectItem value="utc">UTC</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormRow>
-            <FormRow label="Digital Seal & Sign">
-              <div className="flex flex-col gap-3">
-                {signatureUrl && (
-                  <div className="border rounded-md p-2 bg-white max-w-[200px]">
-                    <img src={signatureUrl} alt="Signature" className="w-full h-auto object-contain max-h-24" />
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Input type="file" accept="image/*" onChange={handleFileUpload} disabled={uploading} className="max-w-xs" />
-                  {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-                </div>
-                <p className="text-xs text-muted-foreground">Upload your company seal and signature (PNG/JPG). It will appear on all PDFs.</p>
-              </div>
-            </FormRow>
-          </FormGrid>
-        </Section>
-        <Section title="Document Numbering">
-          <FormGrid>
-            <FormRow label="Invoice prefix"><Input value={invPrefix} onChange={e => setInvPrefix(e.target.value)} /></FormRow>
-            <FormRow label="Quotation prefix"><Input value={qtPrefix} onChange={e => setQtPrefix(e.target.value)} /></FormRow>
-            <FormRow label="Order prefix"><Input value={soPrefix} onChange={e => setSoPrefix(e.target.value)} /></FormRow>
-            <FormRow label="Shipment prefix"><Input value={shPrefix} onChange={e => setShPrefix(e.target.value)} /></FormRow>
-          </FormGrid>
-        </Section>
         
-        <Section title="Email Integration (SMTP)">
-          <FormGrid>
-            <FormRow label="SMTP Host"><Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" /></FormRow>
-            <FormRow label="SMTP Port"><Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" /></FormRow>
-            <FormRow label="SMTP Username"><Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="user@company.com" /></FormRow>
-            <FormRow label="SMTP Password"><Input type="password" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} placeholder="••••••••" /></FormRow>
-            <FormRow label="From Email Address"><Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="noreply@company.com" /></FormRow>
-          </FormGrid>
-        </Section>
+        {isAdmin && (
+          <>
+            <Section title="Company">
+              <FormGrid>
+                <FormRow label="Company name"><Input value={name} onChange={e => setName(e.target.value)} /></FormRow>
+                <FormRow label="Tax ID / GSTIN"><Input value={taxId} onChange={e => setTaxId(e.target.value)} placeholder="e.g. 33ABCDE1234F1Z5" /></FormRow>
+                <FormRow label="Default currency">
+                  <Select value={currency.toLowerCase()} onValueChange={setCurrency}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {worldCurrencies.map(c => (
+                        <SelectItem key={c.code.toLowerCase()} value={c.code.toLowerCase()}>
+                          {c.code} - {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormRow>
+                <FormRow label="Timezone">
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ist">Asia/Kolkata</SelectItem>
+                      <SelectItem value="utc">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormRow>
+                <FormRow label="Digital Seal & Sign">
+                  <div className="flex flex-col gap-3">
+                    {signatureUrl && (
+                      <div className="border rounded-md p-2 bg-white max-w-[200px]">
+                        <img src={signatureUrl} alt="Signature" className="w-full h-auto object-contain max-h-24" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Input type="file" accept="image/*" onChange={handleFileUpload} disabled={uploading} className="max-w-xs" />
+                      {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Upload your company seal and signature (PNG/JPG). It will appear on all PDFs.</p>
+                  </div>
+                </FormRow>
+              </FormGrid>
+            </Section>
+            <Section title="Document Numbering">
+              <FormGrid>
+                <FormRow label="Invoice prefix"><Input value={invPrefix} onChange={e => setInvPrefix(e.target.value)} /></FormRow>
+                <FormRow label="Quotation prefix"><Input value={qtPrefix} onChange={e => setQtPrefix(e.target.value)} /></FormRow>
+                <FormRow label="Order prefix"><Input value={soPrefix} onChange={e => setSoPrefix(e.target.value)} /></FormRow>
+                <FormRow label="Shipment prefix"><Input value={shPrefix} onChange={e => setShPrefix(e.target.value)} /></FormRow>
+              </FormGrid>
+            </Section>
+            
+            <Section title="Email Integration (SMTP)">
+              <FormGrid>
+                <FormRow label="SMTP Host"><Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" /></FormRow>
+                <FormRow label="SMTP Port"><Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" /></FormRow>
+                <FormRow label="SMTP Username"><Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="user@company.com" /></FormRow>
+                <FormRow label="SMTP Password"><Input type="password" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} placeholder="••••••••" /></FormRow>
+                <FormRow label="From Email Address"><Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="noreply@company.com" /></FormRow>
+              </FormGrid>
+            </Section>
+          </>
+        )}
       </div>
     </div>
   );

@@ -53,11 +53,12 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
 
   // BDE Role Route Restriction
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const isAdmin = slugs.includes("admin");
   const isBde = slugs.includes("bd") || 
                 slugs.includes("bde") || 
                 (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
-  if (isBde) {
+  if (isBde && !isAdmin) {
     const allowedPrefixes = ["/dashboards", "/dashboard", "/crm", "/customers", "/quotations", "/documents", "/system", "/orders/create"];
     const isAllowed = allowedPrefixes.some(prefix => 
       location.pathname === prefix || location.pathname.startsWith(prefix + "/")

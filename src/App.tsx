@@ -120,10 +120,14 @@ const queryClient = new QueryClient();
 
 const DashboardRedirect = () => {
   const { roleSlugs, profile } = useAuth();
-  const isSecretary = roleSlugs.has("secretary");
-  const isBde = roleSlugs.has("bd") ||
-    roleSlugs.has("bde") ||
+  const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const isAdmin = slugs.includes("admin");
+  const isSecretary = slugs.includes("secretary");
+  const isBde = slugs.includes("bd") ||
+    slugs.includes("bde") ||
     (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
+    
+  if (isAdmin) return <Navigate to="/dashboards/executive" replace />;
   if (isSecretary) return <Navigate to="/dashboards/finance-tally" replace />;
   if (isBde) return <Navigate to="/dashboards/bde" replace />;
   return <Navigate to="/dashboards/executive" replace />;

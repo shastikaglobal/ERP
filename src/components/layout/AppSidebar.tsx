@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, UsersRound } from "lucide-react";
+import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, UsersRound, Settings } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const can = useCan();
   const { profile, roleSlugs } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
+  const isAdmin = slugs.includes("admin");
   const isSecretary = slugs.includes("secretary");
   const isBde = slugs.includes("bd") || 
                 slugs.includes("bde") || 
@@ -24,7 +25,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     setOpenGroups((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
 
   const allowedSecretaryGroups = new Set(["dashboards", "quotations", "documents", "finance", "tally", "accounts"]);
-  const allowedBdeGroups = new Set(["dashboards", "crm", "quotations", "documents", "hr & employees"]);
+  const allowedBdeGroups = new Set(["dashboards", "crm", "quotations", "documents", "system"]);
 
   // Filter items by permission (if no permission set, always visible)
   const visibleGroups = navGroups
@@ -35,26 +36,28 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         if (isBde && allowedBdeGroups.has(groupTitleLower)) return true;
         return !i.permission || can(i.permission);
       });
-      if (g.title === "Dashboards" && isSecretary) {
+      if (g.title === "Dashboards" && isSecretary && !isAdmin) {
         items = [
           { title: "Finance & Tally", url: "/dashboards/finance-tally", icon: LayoutDashboard },
           { title: "User Approvals", url: "/employees/roles", icon: ShieldCheck }
         ];
       }
-      if (g.title === "Dashboards" && isBde) {
+      if (g.title === "Dashboards" && isBde && !isAdmin) {
         items = [
           { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
         ];
       }
-      if (g.title === "HR & Employees" && isBde) {
+      if (g.title === "System" && isBde && !isAdmin) {
         items = [
-          { title: "Directory", url: "/employees", icon: UsersRound }
+          { title: "Settings", url: "/system/settings", icon: Settings }
         ];
       }
+
       return { ...g, items };
     })
     .filter((g) => g.items.length > 0)
     .filter((g) => {
+      if (isAdmin) return true;
       const titleLower = g.title.toLowerCase();
       if (isSecretary) return allowedSecretaryGroups.has(titleLower);
       if (isBde) return allowedBdeGroups.has(titleLower);
