@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, UsersRound } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
@@ -24,7 +24,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     setOpenGroups((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
 
   const allowedSecretaryGroups = new Set(["dashboards", "quotations", "documents", "finance", "tally", "accounts"]);
-  const allowedBdeGroups = new Set(["dashboards", "crm", "quotations", "documents"]);
+  const allowedBdeGroups = new Set(["dashboards", "crm", "quotations", "documents", "hr & employees"]);
 
   // Filter items by permission (if no permission set, always visible)
   const visibleGroups = navGroups
@@ -46,9 +46,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
         ];
       }
-      if (g.title === "Dashboards" && isBde) {
+      if (g.title === "HR & Employees" && isBde) {
         items = [
-          { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
+          { title: "Directory", url: "/employees", icon: UsersRound }
         ];
       }
       return { ...g, items };

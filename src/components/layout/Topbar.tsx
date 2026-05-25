@@ -167,8 +167,12 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 rounded-full logo-mark text-[hsl(var(--primary-foreground))] flex items-center justify-center text-xs font-bold hover:opacity-90">
-                {initials}
+              <button className="h-8 w-8 rounded-full logo-mark text-[hsl(var(--primary-foreground))] flex items-center justify-center text-xs font-bold hover:opacity-90 overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </button>
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, User as UserIcon } from "lucide-react";
 import { worldCurrencies } from "@/lib/currencies";
 
 export default function Settings() {
@@ -22,6 +22,10 @@ export default function Settings() {
   const [timezone, setTimezone] = useState("ist");
   const [signatureUrl, setSignatureUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  // Personal Profile
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Document Numbering State
   const [invPrefix, setInvPrefix] = useState("INV-");
@@ -57,6 +61,9 @@ export default function Settings() {
         if (data.smtp_user) setSmtpUser(data.smtp_user);
         if (data.from_email) setFromEmail(data.from_email);
       }
+      if (profile?.avatar_url) {
+        setAvatarUrl(profile.avatar_url);
+      }
       setLoading(false);
     };
     fetchCompany();
@@ -73,13 +80,13 @@ export default function Settings() {
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('logos')
+        .from('chat-attachments')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('logos')
+        .from('chat-attachments')
         .getPublicUrl(filePath);
 
       setSignatureUrl(publicUrl);
@@ -89,6 +96,45 @@ export default function Settings() {
       toast.error("Upload failed: " + error.message);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${profile.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments') // Reusing the public 'chat-attachments' bucket
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      // Save to profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success("Profile picture updated successfully!");
+      // reload auth context if needed, but we rely on realtime or local state
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error("Avatar upload failed: " + error.message);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -148,6 +194,27 @@ export default function Settings() {
       <PageHeader title="Settings" description="Workspace preferences" breadcrumbs={[{ label: "System" }, { label: "Settings" }]}
         actions={<Button size="sm" onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>} />
       <div className="space-y-4 max-w-3xl">
+        <Section title="Personal Profile">
+          <FormGrid>
+            <FormRow label="Profile Picture">
+              <div className="flex flex-col gap-3">
+                {avatarUrl ? (
+                  <div className="w-16 h-16 rounded-full overflow-hidden border">
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border">
+                    <UserIcon className="h-6 w-6" />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploadingAvatar} className="max-w-xs" />
+                  {uploadingAvatar && <Loader2 className="h-4 w-4 animate-spin" />}
+                </div>
+              </div>
+            </FormRow>
+          </FormGrid>
+        </Section>
         <Section title="Company">
           <FormGrid>
             <FormRow label="Company name"><Input value={name} onChange={e => setName(e.target.value)} /></FormRow>

@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-// Clean email addresses — strips display names and angle brackets
-// "John Doe <john@example.com>" → "john@example.com"
-const cleanEmail = (email: string): string => {
-  if (!email) return email;
-  const match = email.match(/<([^>]+)>/);
-  return match ? match[1].trim() : email.trim();
+const cleanEmail = (emailStr: string): string => {
+  if (!emailStr) return emailStr;
+  return emailStr.split(',').map(email => {
+    const match = email.match(/<([^>]+)>/);
+    return match ? match[1].trim() : email.trim();
+  }).filter(Boolean).join(',');
 };
 
 Deno.serve(async (req) => {
@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
       body_text: text,
       attachments,
       company_id: companyId,
-      account_id: accountId
+      account_id: accountId,
+      cc_address: cc,
+      bcc_address: bcc
     } = record;
 
     emailId = id;
@@ -183,6 +185,9 @@ Deno.serve(async (req) => {
       content: html || text || " ",
       mailFormat: html ? "html" : "text",
     };
+
+    if (cc) mailData.ccAddress = cleanEmail(cc);
+    if (bcc) mailData.bccAddress = cleanEmail(bcc);
 
     if (processedAttachments.length > 0) {
       mailData.attachments = processedAttachments;

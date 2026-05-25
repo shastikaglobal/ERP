@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, MessageCircle, X, Paperclip, Loader2 } from "lucide-react";
+import { Send, MessageCircle, X, Paperclip, Loader2, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export function TeamChatPanel() {
@@ -150,7 +150,7 @@ export function TeamChatPanel() {
     });
 
     const fetchTeam = async () => {
-      const { data } = await supabase.from('profiles').select('full_name, id');
+      const { data } = await supabase.from('profiles').select('full_name, id, avatar_url');
       if (isMounted && data) setTeamMembers(data);
     };
     fetchTeam();
@@ -694,23 +694,49 @@ export function TeamChatPanel() {
           {/* MESSAGES AREA */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#111111]">
             {messages.map((msg, idx) => {
+              const prevMsg = idx > 0 ? messages[idx - 1] : null;
+              const msgDateObj = new Date(msg.created_at);
+              const msgDate = msgDateObj.toLocaleDateString();
+              const prevDate = prevMsg ? new Date(prevMsg.created_at).toLocaleDateString() : null;
+              const showDate = msgDate !== prevDate;
+              
+              let dateDisplay = msgDate;
+              const today = new Date().toLocaleDateString();
+              const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+              if (msgDate === today) dateDisplay = "Today";
+              else if (msgDate === yesterday) dateDisplay = "Yesterday";
+              else dateDisplay = msgDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
               const isMe = currentUser && (msg.sender_id === currentUser.id || msg.sender_name === currentUser.email);
               const senderDisplay = msg.sender_name?.includes('@')
                 ? msg.sender_name.split('@')[0]
                 : msg.sender_name || 'Unknown';
               const hasMention = currentUserFirstName && msg.message?.includes(`@${currentUserFirstName}`);
+              const senderProfile = teamMembers.find((m) => m.id === msg.sender_id);
+              const senderAvatar = senderProfile?.avatar_url;
               
               return (
-                <div 
-                  key={msg.id || idx} 
-                  id={`msg-${msg.id}`}
-                  className={`flex w-full transition-colors duration-500 ${isMe ? 'justify-end' : 'justify-start'} ${(hasMention && !isMe) || highlightMessageId === msg.id ? 'border-l-[3px] border-[#f0a500] pl-2' : ''} ${highlightMessageId === msg.id ? 'bg-[#f0a500]/10 py-1' : ''}`}
-                >
+                <div key={msg.id || idx} className="flex flex-col w-full gap-4">
+                  {showDate && (
+                    <div className="flex justify-center my-2">
+                      <span className="text-[10px] font-medium bg-black/40 text-white/60 px-3 py-1 rounded-full border border-white/5 shadow-sm">
+                        {dateDisplay}
+                      </span>
+                    </div>
+                  )}
+                  <div 
+                    id={`msg-${msg.id}`}
+                    className={`flex w-full transition-colors duration-500 ${isMe ? 'justify-end' : 'justify-start'} ${(hasMention && !isMe) || highlightMessageId === msg.id ? 'border-l-[3px] border-[#f0a500] pl-2' : ''} ${highlightMessageId === msg.id ? 'bg-[#f0a500]/10 py-1' : ''}`}
+                  >
                   <div className={`group flex max-w-[85%] gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                     {/* Avatar */}
                     <div className="shrink-0 flex items-end">
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10 ${isMe ? 'bg-[#f0a500] text-black' : 'bg-[#444] text-white'}`}>
-                        {getInitials(senderDisplay || "U")}
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10 overflow-hidden ${isMe ? 'bg-[#f0a500] text-black' : 'bg-[#444] text-white'}`}>
+                        {senderAvatar ? (
+                          <img src={senderAvatar} alt="avatar" className="h-full w-full object-cover" />
+                        ) : (
+                          getInitials(senderDisplay || "U")
+                        )}
                       </div>
                     </div>
 
@@ -831,11 +857,13 @@ export function TeamChatPanel() {
                         <div className="text-[10px] mt-1 text-white/50">(edited)</div>
                       )}
 
-                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'text-black/60' : 'text-white/40'}`}>
-                        {formatTime(msg.created_at)}
+                      <div className={`flex items-center justify-end gap-1 text-[9px] mt-1 ${isMe ? 'text-black/60' : 'text-white/40'}`}>
+                        <span>{formatTime(msg.created_at)}</span>
+                        {isMe && <CheckCheck className="h-3 w-3" />}
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
               );
             })}

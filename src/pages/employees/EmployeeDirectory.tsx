@@ -81,51 +81,53 @@ export default function EmployeeDirectory() {
         description="All team members across departments" 
         breadcrumbs={[{ label: "Employees" }]}
         actions={
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Add Employee
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Invite New Employee</DialogTitle>
-                <DialogDescription>
-                  For security reasons, new employees must create their own credentials. Share the registration link with them to get started.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col space-y-4 py-4">
-                <div className="bg-muted p-4 rounded-md text-sm text-muted-foreground border border-border/50">
-                  <ol className="list-decimal list-inside space-y-2">
-                    <li>Copy the registration link below.</li>
-                    <li>Send the link to the new employee.</li>
-                    <li>They will create an account and verify their email.</li>
-                    <li>Once registered, go to the <strong>User Approvals</strong> tab to approve them and assign their role.</li>
-                  </ol>
+          isAdminOrManager ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Add Employee
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Invite New Employee</DialogTitle>
+                  <DialogDescription>
+                    For security reasons, new employees must create their own credentials. Share the registration link with them to get started.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col space-y-4 py-4">
+                  <div className="bg-muted p-4 rounded-md text-sm text-muted-foreground border border-border/50">
+                    <ol className="list-decimal list-inside space-y-2">
+                      <li>Copy the registration link below.</li>
+                      <li>Send the link to the new employee.</li>
+                      <li>They will create an account and verify their email.</li>
+                      <li>Once registered, go to the <strong>User Approvals</strong> tab to approve them and assign their role.</li>
+                    </ol>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Input 
+                      readOnly 
+                      value={`${window.location.origin}/auth`} 
+                      className="flex-1 bg-muted/50 cursor-copy"
+                      onClick={handleCopyLink}
+                    />
+                    <Button size="icon" onClick={handleCopyLink} variant="secondary">
+                      {copied ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    readOnly 
-                    value={`${window.location.origin}/auth`} 
-                    className="flex-1 bg-muted/50 cursor-copy"
-                    onClick={handleCopyLink}
-                  />
-                  <Button size="icon" onClick={handleCopyLink} variant="secondary">
-                    {copied ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <DialogFooter className="sm:justify-start">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">
-                    Close
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        } 
+                <DialogFooter className="sm:justify-start">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Close
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : undefined
+        }  
       />
 
       <div className="flex items-center gap-2 mb-4">

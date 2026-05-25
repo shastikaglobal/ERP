@@ -479,17 +479,25 @@ export default function Mailbox() {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      return toast.error("Invalid email address");
+    const isValidEmailStr = (str: string) => {
+      const email = str.trim();
+      const match = email.match(/<([^>]+)>/);
+      const emailToTest = match ? match[1].trim() : email;
+      return emailRegex.test(emailToTest);
+    };
+    
+    // Validate To field (allow multiple comma-separated emails)
+    if (!to.split(',').every(isValidEmailStr)) {
+      return toast.error("Invalid email address in To field");
     }
 
     // Validate CC if provided
-    if (cc && !cc.split(',').every(email => emailRegex.test(email.trim()))) {
+    if (cc && !cc.split(',').every(isValidEmailStr)) {
       return toast.error("Invalid CC email address");
     }
 
     // Validate BCC if provided
-    if (bcc && !bcc.split(',').every(email => emailRegex.test(email.trim()))) {
+    if (bcc && !bcc.split(',').every(isValidEmailStr)) {
       return toast.error("Invalid BCC email address");
     }
 
