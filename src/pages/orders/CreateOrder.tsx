@@ -243,6 +243,40 @@ export default function CreateOrder() {
   const [portOfDischarge, setPortOfDischarge] = useState("");
   const [modeOfTransport, setModeOfTransport] = useState("Sea");
 
+  // New Shipment details states
+  const [containerType, setContainerType] = useState("");
+  const [loadingType, setLoadingType] = useState("");
+  const [qtyPerCarton, setQtyPerCarton] = useState<number | "">("");
+  const [grossWeightPerCarton, setGrossWeightPerCarton] = useState<number | "">("");
+  const [totalNetWeight, setTotalNetWeight] = useState<number | "">("");
+  const [totalGrossWeight, setTotalGrossWeight] = useState<number | "">("");
+
+  // New Bank details states
+  const [bankName, setBankName] = useState("State Bank of India");
+  const [bankBranch, setBankBranch] = useState("Erode, Tamil Nadu");
+  const [accountNo, setAccountNo] = useState("43841179923");
+  const [ifscCode, setIfscCode] = useState("SBIN02278");
+  const [swiftCode, setSwiftCode] = useState("SBININBB");
+
+  // Auto-calculate Total Net Weight & Total Gross Weight
+  useEffect(() => {
+    if (totalCartons && unitNetWeight) {
+      const calculatedNet = Number(totalCartons) * Number(unitNetWeight) * (Number(qtyPerCarton) || 1);
+      setTotalNetWeight(Number(calculatedNet.toFixed(2)));
+    } else {
+      setTotalNetWeight("");
+    }
+  }, [totalCartons, unitNetWeight, qtyPerCarton]);
+
+  useEffect(() => {
+    if (totalCartons && grossWeightPerCarton) {
+      const calculatedGross = Number(totalCartons) * Number(grossWeightPerCarton);
+      setTotalGrossWeight(Number(calculatedGross.toFixed(2)));
+    } else {
+      setTotalGrossWeight("");
+    }
+  }, [totalCartons, grossWeightPerCarton]);
+
   const totalAmount = (Number(quantity) || 0) * (Number(unitPrice) || 0);
 
   const handleSave = async () => {
@@ -288,6 +322,17 @@ export default function CreateOrder() {
         port_of_loading: portOfLoading || null,
         port_of_discharge: portOfDischarge || null,
         mode_of_transport: modeOfTransport || null,
+        container_type: containerType || null,
+        loading_type: loadingType || null,
+        qty_per_carton: qtyPerCarton ? Number(qtyPerCarton) : null,
+        gross_weight_per_carton: grossWeightPerCarton ? Number(grossWeightPerCarton) : null,
+        total_net_weight: totalNetWeight ? Number(totalNetWeight) : null,
+        total_gross_weight: totalGrossWeight ? Number(totalGrossWeight) : null,
+        bank_name: bankName || null,
+        bank_branch: bankBranch || null,
+        account_no: accountNo || null,
+        ifsc_code: ifscCode || null,
+        swift_code: swiftCode || null,
         created_by: userId,
         status: 'pending',
         payment_status: 'unpaid'
@@ -500,12 +545,36 @@ export default function CreateOrder() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Container Type</Label>
+              <Select value={containerType} onValueChange={setContainerType}>
+                <SelectTrigger><SelectValue placeholder="Select Container Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20ft FCL">20ft FCL</SelectItem>
+                  <SelectItem value="40ft FCL">40ft FCL</SelectItem>
+                  <SelectItem value="40ft HQ">40ft HQ</SelectItem>
+                  <SelectItem value="LCL">LCL</SelectItem>
+                  <SelectItem value="—">— (None)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Loading Type</Label>
+              <Select value={loadingType} onValueChange={setLoadingType}>
+                <SelectTrigger><SelectValue placeholder="Select Loading Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FCL">FCL (Full Container Load)</SelectItem>
+                  <SelectItem value="LCL">LCL (Less than Container Load)</SelectItem>
+                  <SelectItem value="—">— (None)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">Packing Details</CardTitle>
+            <CardTitle className="text-lg">Packing & Weight Details</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -521,14 +590,59 @@ export default function CreateOrder() {
               <Input value={portOfDischarge} onChange={e => setPortOfDischarge(e.target.value)} placeholder="e.g. Jebel Ali Port" />
             </div>
             <div className="space-y-2">
-              <Label>Total Cartons</Label>
-              <Input type="number" value={totalCartons} onChange={e => setTotalCartons(Number(e.target.value) || "")} placeholder="e.g. 100" />
+              <Label>Packing Type</Label>
+              <Input value={packingDetails} onChange={e => setPackingDetails(e.target.value)} placeholder="e.g. Cartons, Bags, Pallets" />
             </div>
             <div className="space-y-2">
-              <Label>Net Weight per Carton (Kg)</Label>
-              <Input type="number" step="0.01" value={unitNetWeight} onChange={e => setUnitNetWeight(Number(e.target.value) || "")} placeholder="e.g. 13.50" />
+              <Label>Total Cartons</Label>
+              <Input type="number" value={totalCartons} onChange={e => setTotalCartons(e.target.value === "" ? "" : Number(e.target.value))} placeholder="e.g. 100" />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
+              <Label>Qty per Carton</Label>
+              <Input type="number" value={qtyPerCarton} onChange={e => setQtyPerCarton(e.target.value === "" ? "" : Number(e.target.value))} placeholder="e.g. 24" />
+            </div>
+            <div className="space-y-2">
+              <Label>Net Wt / Unit (Kg)</Label>
+              <Input type="number" step="0.001" value={unitNetWeight} onChange={e => setUnitNetWeight(e.target.value === "" ? "" : Number(e.target.value))} placeholder="e.g. 13.50" />
+            </div>
+            <div className="space-y-2">
+              <Label>Gross Wt / Carton (Kg)</Label>
+              <Input type="number" step="0.001" value={grossWeightPerCarton} onChange={e => setGrossWeightPerCarton(e.target.value === "" ? "" : Number(e.target.value))} placeholder="e.g. 14.20" />
+            </div>
+            <div className="space-y-2">
+              <Label>Total Net Weight (Kg)</Label>
+              <Input type="number" step="0.01" value={totalNetWeight} onChange={e => setTotalNetWeight(e.target.value === "" ? "" : Number(e.target.value))} placeholder="Calculated automatically" />
+            </div>
+            <div className="space-y-2">
+              <Label>Total Gross Weight (Kg)</Label>
+              <Input type="number" step="0.01" value={totalGrossWeight} onChange={e => setTotalGrossWeight(e.target.value === "" ? "" : Number(e.target.value))} placeholder="Calculated automatically" />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2 pt-4 border-t">
+              <h4 className="font-bold text-sm text-primary">Bank & Payment details (Optional)</h4>
+            </div>
+            <div className="space-y-2">
+              <Label>Bank Name</Label>
+              <Input value={bankName} onChange={e => setBankName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Branch</Label>
+              <Input value={bankBranch} onChange={e => setBankBranch(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Account No</Label>
+              <Input value={accountNo} onChange={e => setAccountNo(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>IFSC Code</Label>
+              <Input value={ifscCode} onChange={e => setIfscCode(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Swift Code</Label>
+              <Input value={swiftCode} onChange={e => setSwiftCode(e.target.value)} />
+            </div>
+
+            <div className="space-y-2 md:col-span-2 pt-4 border-t">
               <Label>Terms of Payment</Label>
               <Textarea value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="e.g. 90% advance..." className="h-20" />
             </div>

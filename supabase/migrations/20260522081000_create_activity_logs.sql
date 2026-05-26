@@ -249,5 +249,3 @@ DROP TRIGGER IF EXISTS trg_log_activity ON public.activities;
 CREATE TRIGGER trg_log_activity
   AFTER INSERT OR UPDATE OF completed OR DELETE ON public.activities
   FOR EACH ROW EXECUTE FUNCTION public.trg_log_activity_changes();
-
-
