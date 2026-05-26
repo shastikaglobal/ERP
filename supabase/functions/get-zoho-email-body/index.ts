@@ -166,10 +166,10 @@ serve(async (req) => {
                 if (cid) {
                   const cleanCid = String(cid).replace(/[<>]/g, '');
                   // match src=cid:..., src="cid:...", src='cid:...'
-                  const cidRegex = new RegExp(`cid:?<?${cleanCid}>?`, 'gi');
-                  htmlContent = htmlContent.replace(new RegExp(`src=["']?cid:?<?${cleanCid}>?["']?`, 'gi'), `src="${dataUri}"`);
+                  const srcRegex = new RegExp(`src=["']?cid:?<?${cleanCid}[^"'\\s>]*>?(["']?)`, "gi"); htmlContent = htmlContent.replace(srcRegex, `src="${dataUri}"`); const rawRegex = new RegExp(`cid:?<?${cleanCid}[^"'\\s>]*>?`, "gi");
+                  
                   // Also replace plain cid references without src= (rare)
-                  htmlContent = htmlContent.replace(cidRegex, dataUri);
+                  htmlContent = htmlContent.replace(rawRegex, dataUri);
                 }
               } catch (err) {
                 console.error("Failed to base64 encode inline attachment", err);

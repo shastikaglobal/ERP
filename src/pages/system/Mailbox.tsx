@@ -13,9 +13,12 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
-import ReactQuill from "react-quill";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import ImageResize from "quill-image-resize-module-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+Quill.register("modules/imageResize", ImageResize);
 import {
   Dialog,
   DialogContent,
@@ -872,7 +875,10 @@ export default function Mailbox() {
                       value={content}
                       onChange={setContent}
                       className="mb-12 border-none"
-                      modules={{ toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","clean"]] }}
+                      modules={{ 
+                        toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","image","clean"]],
+                        imageResize: { parchment: Quill.import("parchment"), modules: ["Resize", "DisplaySize"] }
+                      }}
                     />
                   </div>
 
@@ -1190,7 +1196,10 @@ export default function Mailbox() {
                   value={signatureText}
                   onChange={setSignatureText}
                   className="border-none"
-                  modules={{ toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","clean"]] }}
+                  modules={{ 
+                    toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","image","clean"]],
+                    imageResize: { parchment: Quill.import("parchment"), modules: ["Resize", "DisplaySize"] }
+                  }}
                 />
               </div>
             </div>
