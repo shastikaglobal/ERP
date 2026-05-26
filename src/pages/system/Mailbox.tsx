@@ -71,28 +71,30 @@ const getDefaultSignature = (profile: any) => {
   return `
 <p><em><strong>Warm Regards,</strong></em></p>
 <p><br></p>
-<div style="display:inline-flex; align-items:center; font-family:Verdana,sans-serif; font-size:10pt;">
-  <div style="padding-right:14px;">
-    <img
-      src="${COMPANY_LOGO_URL}"
-      alt="logo"
-      width="72"
-      style="display:block; width:72px; height:auto; max-height:60px; object-fit:contain;"
-    />
-  </div>
-  <div style="width:2px; background-color:#cccccc; align-self:stretch; margin-right:14px;"></div>
-  <div>
-    <div style="font-weight:bold; font-size:11pt; color:#000000; margin-bottom:1px;">${name}</div>
-    <div style="font-size:9pt; color:#444444; margin-bottom:1px;">${role}</div>
-    <div style="font-weight:bold; font-size:9.5pt; color:#000000; margin-bottom:6px;">${company}</div>
-    <div style="font-size:9pt; color:#444444; line-height:1.6;">
-      WhatsApp: <a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="color:#7c3aed; text-decoration:underline;">${whatsapp}</a><br/>
-      Phone: ${phone}<br/>
-      Email : <a href="mailto:${email}" style="color:#7c3aed; text-decoration:underline;">${email}</a><br/>
-      Web: <a href="https://shastikaglobal.co.in" target="_blank" style="color:#7c3aed; text-decoration:underline;">https://shastikaglobal.co.in</a>
-    </div>
-  </div>
-</div>
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Verdana,sans-serif; font-size:10pt; line-height:1.4;">
+  <tr>
+    <td valign="middle" style="padding-right:14px; vertical-align:middle;">
+      <img
+        src="${COMPANY_LOGO_URL}"
+        alt="logo"
+        width="72"
+        style="display:block; width:72px; height:auto; max-height:60px; object-fit:contain;"
+      />
+    </td>
+    <td width="2" style="width:2px; background-color:#cccccc; padding:0; vertical-align:stretch;"></td>
+    <td valign="middle" style="padding-left:14px; vertical-align:middle; text-align:left;">
+      <div style="font-weight:bold; font-size:11pt; color:#000000; margin-bottom:1px;">${name}</div>
+      <div style="font-size:9pt; color:#444444; margin-bottom:1px;">${role}</div>
+      <div style="font-weight:bold; font-size:9.5pt; color:#000000; margin-bottom:6px;">${company}</div>
+      <div style="font-size:9pt; color:#444444; line-height:1.6;">
+        WhatsApp: <a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="color:#7c3aed; text-decoration:underline;">${whatsapp}</a><br/>
+        Phone: ${phone}<br/>
+        Email : <a href="mailto:${email}" style="color:#7c3aed; text-decoration:underline;">${email}</a><br/>
+        Web: <a href="https://shastikaglobal.co.in" target="_blank" style="color:#7c3aed; text-decoration:underline;">https://shastikaglobal.co.in</a>
+      </div>
+    </td>
+  </tr>
+</table>
 `;
 };
 
@@ -497,7 +499,66 @@ export default function Mailbox() {
         uploadedAttachments.push({ filename: file.name, path: filePath, contentType: file.type });
       }
 
-      const plainText = content.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
+      // Convert inline base64 images to uploaded URLs to avoid Gmail message clipping (link format)
+      let finalContent = content;
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "text/html");
+        const images = doc.querySelectorAll("img");
+        let hasBase64Images = false;
+
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          const src = img.getAttribute("src") || "";
+          if (src.startsWith("data:image/")) {
+            hasBase64Images = true;
+            try {
+              const parts = src.split(",");
+              const metadata = parts[0];
+              const base64Data = parts[1];
+              const mimeMatch = metadata.match(/data:([^;]+);/);
+              const contentType = mimeMatch ? mimeMatch[1] : "image/png";
+              const fileExt = contentType.split("/")[1] || "png";
+
+              // Convert base64 to Blob
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let j = 0; j < byteCharacters.length; j++) {
+                byteNumbers[j] = byteCharacters.charCodeAt(j);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: contentType });
+
+              const fileName = `inline-${Date.now()}-${i}.${fileExt}`;
+              const filePath = `mailbox-inline/${fileName}`;
+              const { error: uploadError } = await supabase.storage
+                .from("email-attachments")
+                .upload(filePath, blob, { contentType });
+
+              if (uploadError) {
+                console.error("Failed to upload inline image:", uploadError);
+                continue;
+              }
+
+              const { data: { publicUrl } } = supabase.storage
+                .from("email-attachments")
+                .getPublicUrl(filePath);
+
+              img.setAttribute("src", publicUrl);
+            } catch (err) {
+              console.error("Error processing inline image index " + i, err);
+            }
+          }
+        }
+
+        if (hasBase64Images) {
+          finalContent = doc.body.innerHTML;
+        }
+      } catch (domErr) {
+        console.error("DOMParser error:", domErr);
+      }
+
+      const plainText = finalContent.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
 
       const { data: emailRow, error: insertError } = await supabase
         .from("emails")
@@ -507,7 +568,7 @@ export default function Mailbox() {
           bcc_address:  bcc || null,
           from_address: account.account_email,
           subject,
-          body_html:    content,
+          body_html:    finalContent,
           body_text:    plainText,
           status:       "draft",
           folder:       "sent",
