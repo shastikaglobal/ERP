@@ -315,19 +315,8 @@ export default function LeadsList() {
 
   const openRemark = (lead: Lead) => {
     setSelectedRemarkLead(lead);
-
-    // Parse existing remark: "[Method]: Note"
-    if (lead.remark && lead.remark.includes(']: ')) {
-      const portions = lead.remark.split(']: ');
-      const method = portions[0].replace('[', '').replace(']', '');
-      const notePart = portions.slice(1).join(']: ');
-      setRemarkMethod(method);
-      setRemarkText(notePart);
-    } else {
-      setRemarkMethod("WhatsApp");
-      setRemarkText(lead.remark || "");
-    }
-
+    setRemarkMethod("WhatsApp");
+    setRemarkText(lead.remark || "");
     setIsRemarkOpen(true);
   };
 
@@ -335,8 +324,7 @@ export default function LeadsList() {
     if (!selectedRemarkLead) return;
     setSubmitting(true);
     try {
-      const trimmedText = remarkText.trim();
-      const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
+      const formattedRemark = remarkText ? `[${remarkMethod}]: ${remarkText}` : "";
 
       const { error } = await supabase
         .from("leads")
@@ -633,7 +621,7 @@ export default function LeadsList() {
               <div className="space-y-2">
                 <Label className="text-foreground">Remark / Notes</Label>
                 <Textarea
-                  value={remarkText}
+                  value={remarkText.includes(']: ') ? remarkText.split(']: ')[1] : remarkText}
                   onChange={(e) => setRemarkText(e.target.value)}
                   placeholder="e.g. Customer interested, follow up via WhatsApp..."
                   className="bg-background border-input min-h-[100px]"
