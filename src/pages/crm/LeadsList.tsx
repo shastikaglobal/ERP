@@ -59,9 +59,9 @@ const EMAIL_SEPARATOR_REGEX = /[;,\n]+/;
 const parseEmails = (value?: string | null) =>
   value
     ? value
-        .split(EMAIL_SEPARATOR_REGEX)
-        .map((email) => email.trim())
-        .filter(Boolean)
+      .split(EMAIL_SEPARATOR_REGEX)
+      .map((email) => email.trim())
+      .filter(Boolean)
     : [];
 
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -81,7 +81,7 @@ export default function LeadsList() {
   const [followUpNote, setFollowUpNote] = useState("");
   const bdTeam = ["Kaviya", "Gayathri"];
   const [followUpAssignedTo, setFollowUpAssignedTo] = useState(bdTeam[0]);
-  
+
   const [isRemarkOpen, setIsRemarkOpen] = useState(false);
   const [selectedRemarkLead, setSelectedRemarkLead] = useState<Lead | null>(null);
   const [remarkMethod, setRemarkMethod] = useState("WhatsApp");
@@ -152,11 +152,11 @@ export default function LeadsList() {
   useEffect(() => {
     fetchLeads();
     fetchTeam();
-    
+
     // Add realtime subscription for leads
     const channel = supabase
       .channel('leads-changes')
-      .on('postgres_changes', 
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'leads' },
         () => {
           fetchLeads();
@@ -290,12 +290,24 @@ export default function LeadsList() {
         is_notified: false,
       });
       if (error) throw error;
+
+      // Update the lead's assigned_to field to reflect the new assignment
+      const { error: updateError } = await supabase
+        .from("leads")
+        .update({ assigned_to: assignee })
+        .eq("id", selectedFollowUpLead.id);
+
+      if (updateError) throw updateError;
+
       toast.success("Follow-up saved successfully");
       setIsFollowUpOpen(false);
       setSelectedFollowUpLead(null);
       setFollowUpDate("");
       setFollowUpNote("");
       setFollowUpAssignedTo(bdTeam[0]);
+
+      // Refresh the leads list to show the updated assigned_to value
+      await fetchLeads();
     } catch (error: any) {
       toast.error(error.message || "Failed to save follow-up");
     }
@@ -303,8 +315,19 @@ export default function LeadsList() {
 
   const openRemark = (lead: Lead) => {
     setSelectedRemarkLead(lead);
-    setRemarkMethod("WhatsApp");
-    setRemarkText(lead.remark || "");
+
+    // Parse existing remark: "[Method]: Note"
+    if (lead.remark && lead.remark.includes(']: ')) {
+      const portions = lead.remark.split(']: ');
+      const method = portions[0].replace('[', '').replace(']', '');
+      const notePart = portions.slice(1).join(']: ');
+      setRemarkMethod(method);
+      setRemarkText(notePart);
+    } else {
+      setRemarkMethod("WhatsApp");
+      setRemarkText(lead.remark || "");
+    }
+
     setIsRemarkOpen(true);
   };
 
@@ -312,7 +335,9 @@ export default function LeadsList() {
     if (!selectedRemarkLead) return;
     setSubmitting(true);
     try {
-      const formattedRemark = remarkText ? `[${remarkMethod}]: ${remarkText}` : "";
+      const trimmedText = remarkText.trim();
+      const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
+
       const { error } = await supabase
         .from("leads")
         .update({ remark: formattedRemark })
@@ -405,7 +430,7 @@ export default function LeadsList() {
                   className="bg-background border-input"
                 />
               </div>
-              
+
               {/* Contact Name */}
               <div className="space-y-2">
                 <Label className="text-foreground">Contact Name</Label>
@@ -608,15 +633,15 @@ export default function LeadsList() {
               <div className="space-y-2">
                 <Label className="text-foreground">Remark / Notes</Label>
                 <Textarea
-                  value={remarkText.includes(']: ') ? remarkText.split(']: ')[1] : remarkText}
+                  value={remarkText}
                   onChange={(e) => setRemarkText(e.target.value)}
                   placeholder="e.g. Customer interested, follow up via WhatsApp..."
                   className="bg-background border-input min-h-[100px]"
                 />
               </div>
               <div className="flex gap-2">
-                <Button 
-                  onClick={saveRemark} 
+                <Button
+                  onClick={saveRemark}
                   disabled={submitting}
                   className="w-full bg-primary hover:bg-primary/90"
                 >

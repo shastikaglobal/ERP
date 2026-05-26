@@ -173,6 +173,14 @@ export default function FollowUps() {
         toast.success("Follow-up created successfully");
       }
 
+      // Update the lead's assigned_to field to reflect the new assignment
+      const { error: updateError } = await supabase
+        .from("leads")
+        .update({ assigned_to: assignee })
+        .eq("id", selectedLeadId);
+      
+      if (updateError) throw updateError;
+
       setIsDialogOpen(false);
       resetForm();
       fetchFollowUps();
