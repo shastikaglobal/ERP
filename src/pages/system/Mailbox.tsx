@@ -1029,7 +1029,7 @@ export default function Mailbox() {
                 </div>
 
                 {/* Email body */}
-                <div className="pt-2 pl-12 text-sm leading-relaxed text-gray-700 min-h-[300px]">
+                <div className="pt-2 pl-12 text-sm leading-relaxed text-gray-700 min-h-[300px] w-full overflow-x-auto">
                   {loadingBody ? (
                     <div className="flex flex-col items-center justify-center py-20 text-gray-500 space-y-4">
                       <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
@@ -1038,11 +1038,11 @@ export default function Mailbox() {
                   ) : selectedEmail.body_html ? (
                     <div
                       ref={emailBodyRef}
-                      className="email-body-content bg-gray-100/40 p-8 rounded-2xl border border-gray-300 shadow-inner"
+                      className="email-body-content bg-gray-100/40 p-8 rounded-2xl border border-gray-300 shadow-inner w-full overflow-x-auto"
                       dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }}
                     />
                   ) : selectedEmail.body_text ? (
-                    <div className="font-sans whitespace-pre-wrap bg-gray-100/40 p-8 rounded-2xl border border-gray-300 shadow-inner text-gray-700 leading-relaxed">
+                    <div className="font-sans whitespace-pre-wrap bg-gray-100/40 p-8 rounded-2xl border border-gray-300 shadow-inner text-gray-700 leading-relaxed w-full overflow-x-auto">
                       {selectedEmail.body_text}
                     </div>
                   ) : (
@@ -1314,6 +1314,11 @@ export default function Mailbox() {
         }
         .email-body-content * {
           max-width: 100%;
+        }
+        .email-body-content table,
+        .email-body-content pre,
+        .email-body-content code {
+          max-width: none !important;
         }
         .email-body-content a {
           color: #d97706;
