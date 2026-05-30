@@ -107,11 +107,11 @@ export const notifications = [
 ];
 
 export const activityLogs = [
-  { id: "A-1", actor: "John Doe", action: "Created quotation QT-2025-0142", entity: "quotation", time: "2025-04-15 10:23" },
-  { id: "A-2", actor: "Sara Kim", action: "Updated lead L-1041 status to Warm", entity: "lead", time: "2025-04-17 14:08" },
-  { id: "A-3", actor: "David Park", action: "Approved invoice INV-2025-0156", entity: "invoice", time: "2025-04-16 09:42" },
-  { id: "A-4", actor: "Maria Lopez", action: "Marked SH-2025-0044 as Delivered", entity: "shipment", time: "2025-04-18 16:55" },
-  { id: "A-5", actor: "System", action: "Auto-generated PO-2025-0076 from low stock", entity: "po", time: "2025-04-15 03:00" },
+  { id: "A-1", actor: "John Doe", action: "Created quotation QT-2025-0142", entity: "quotation", time: "2025-04-15 10:23", team: "Sales" },
+  { id: "A-2", actor: "Sara Kim", action: "Updated lead L-1041 status to Warm", entity: "lead", time: "2025-04-17 14:08", team: "Sales" },
+  { id: "A-3", actor: "David Park", action: "Approved invoice INV-2025-0156", entity: "invoice", time: "2025-04-16 09:42", team: "Finance" },
+  { id: "A-4", actor: "Maria Lopez", action: "Marked SH-2025-0044 as Delivered", entity: "shipment", time: "2025-04-18 16:55", team: "Logistics" },
+  { id: "A-5", actor: "System", action: "Auto-generated PO-2025-0076 from low stock", entity: "po", time: "2025-04-15 03:00", team: "System" },
 ];
 
 export const salesByMonth = [

@@ -108,6 +108,7 @@ import RolesPermissions from "./pages/employees/RolesPermissions";
 // System
 import Notifications from "./pages/system/Notifications";
 import ActivityLogs from "./pages/system/ActivityLogs";
+import AuditLogs from "./pages/system/AuditLogs";
 import Subscriptions from "./pages/system/Subscriptions";
 import Settings from "./pages/system/Settings";
 import Maintenance from "./pages/system/Maintenance";
@@ -275,6 +276,7 @@ const App = () => (
               {/* System */}
               <Route path="/system/notifications" element={<Notifications />} />
               <Route path="/system/logs" element={<ActivityLogs />} />
+              <Route path="/system/audit-logs" element={<AuditLogs />} />
               <Route path="/system/subscriptions" element={<Subscriptions />} />
               <Route path="/system/settings" element={<Settings />} />
               <Route path="/system/maintenance" element={<Maintenance />} />

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { logAudit } from "@/lib/auditLog";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -445,10 +446,39 @@ export default function CreateQuotation() {
       }
 
       toast.success("Quotation created successfully!");
+      try {
+        await logAudit({
+          action: "create",
+          team: profile?.department,
+          resourceType: "quotation",
+          resourceId: quoteData.id,
+          resourceName: finalQuoteNumber,
+          newValues: quoteData,
+          status: "success",
+        });
+      } catch (e) {
+        console.debug("Audit log failed:", e);
+      }
       nav("/quotations");
     } catch (err: unknown) {
       const error = err as Error;
       console.error(error);
+      try {
+        await logAudit({
+          action: "create",
+          team: profile?.department,
+          resourceType: "quotation",
+          newValues: {
+            customerName,
+            items,
+            totalAmount,
+          },
+          status: "failed",
+          errorMessage: error.message,
+        });
+      } catch (e) {
+        console.debug("Audit log failed:", e);
+      }
       toast.error(error.message || "Failed to create quotation");
     } finally {
       setSaving(false);

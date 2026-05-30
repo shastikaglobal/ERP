@@ -22,11 +22,15 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
   actor_name TEXT NOT NULL,
   entity TEXT NOT NULL,
   action TEXT NOT NULL,
+  team TEXT,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+
+-- Index team for faster filtering
+CREATE INDEX IF NOT EXISTS idx_activity_logs_team ON public.activity_logs(team);
 
 -- Create policy for select
 DROP POLICY IF EXISTS "company_access_activity_logs" ON public.activity_logs;
@@ -48,6 +52,7 @@ DECLARE
   _my_company UUID;
   _actor_id UUID;
   _actor_name TEXT;
+  _actor_team TEXT;
 BEGIN
   -- Determine company_id
   IF _company_id IS NULL THEN
@@ -65,12 +70,29 @@ BEGIN
   IF _actor_id IS NOT NULL THEN
     SELECT COALESCE(full_name, email, 'Unknown User') INTO _actor_name
     FROM public.profiles WHERE id = _actor_id;
+
+    SELECT department INTO _actor_team
+    FROM public.profiles WHERE id = _actor_id;
+
+    IF _actor_team IS NULL THEN
+      SELECT CASE
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%gayathri%' THEN 'BDE'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%kaviya%' THEN 'BDE'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%jayasri%' THEN 'Data Analyst'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%madhumitha%' THEN 'Accounts'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%karunya%' THEN 'IT'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%swathi%' THEN 'IT'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%nethra%' THEN 'IT'
+        WHEN lower(regexp_replace(_actor_name, '\s+', '', 'g')) LIKE '%narmatha%' THEN 'IT'
+        ELSE NULL
+      END INTO _actor_team;
+    END IF;
   ELSE
     _actor_name := 'System';
   END IF;
 
-  INSERT INTO public.activity_logs (company_id, actor_id, actor_name, entity, action)
-  VALUES (_my_company, _actor_id, _actor_name, _entity, _action);
+  INSERT INTO public.activity_logs (company_id, actor_id, actor_name, entity, action, team)
+  VALUES (_my_company, _actor_id, _actor_name, _entity, _action, _actor_team);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -216,13 +238,13 @@ BEGIN
     v_actor_4 := COALESCE(v_actor_4, 'Kaviya');
 
     -- Insert dynamic activity logs
-    INSERT INTO public.activity_logs (company_id, actor_name, entity, action, created_at)
+    INSERT INTO public.activity_logs (company_id, actor_name, entity, action, team, created_at)
     VALUES 
-      (v_company_id, v_actor_1, 'QUOTATION', 'Created quotation QT-2025-0142', now() - interval '3 hours'),
-      (v_company_id, v_actor_2, 'LEAD', 'Updated lead Osaka Electronics stage to Warm', now() - interval '2 hours'),
-      (v_company_id, v_actor_3, 'INVOICE', 'Approved invoice PI-2025-0156', now() - interval '1 hour'),
-      (v_company_id, v_actor_4, 'SHIPMENT', 'Marked shipment SH-2025-0044 as Delivered', now() - interval '30 minutes'),
-      (v_company_id, 'System', 'PO', 'Auto-generated PO-2025-0076 from low stock', now() - interval '10 minutes');
+      (v_company_id, v_actor_1, 'QUOTATION', 'Created quotation QT-2025-0142', 'IT', now() - interval '3 hours'),
+      (v_company_id, v_actor_2, 'LEAD', 'Updated lead Osaka Electronics stage to Warm', 'BDE', now() - interval '2 hours'),
+      (v_company_id, v_actor_3, 'INVOICE', 'Approved invoice PI-2025-0156', 'IT', now() - interval '1 hour'),
+      (v_company_id, v_actor_4, 'SHIPMENT', 'Marked shipment SH-2025-0044 as Delivered', 'BDE', now() - interval '30 minutes'),
+      (v_company_id, 'System', 'PO', 'Auto-generated PO-2025-0076 from low stock', NULL, now() - interval '10 minutes');
   END IF;
 END $$;
 

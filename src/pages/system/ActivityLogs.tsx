@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { inferTeamFromActorName } from "@/lib/teamMapping";
 
 interface ActivityLog {
   id: string;
@@ -14,6 +15,7 @@ interface ActivityLog {
   actor_name: string;
   entity: string;
   action: string;
+  team?: string | null;
   created_at: string;
 }
 
@@ -88,7 +90,7 @@ export default function ActivityLogs() {
       ) : (
         <DataTable
           data={logs}
-          searchKeys={["actor_name", "action", "entity"]}
+          searchKeys={["actor_name", "action", "entity", "team"]}
           columns={[
             { 
               key: "created_at", 
@@ -99,6 +101,14 @@ export default function ActivityLogs() {
               key: "actor_name", 
               header: "Actor", 
               render: (r) => <span className="font-medium text-foreground">{r.actor_name}</span> 
+            },
+            {
+              key: "team",
+              header: "Team",
+              render: (r) => {
+                const displayTeam = r.team || inferTeamFromActorName(r.actor_name);
+                return <span className="text-sm text-muted-foreground">{displayTeam || "—"}</span>;
+              },
             },
             { 
               key: "entity", 
