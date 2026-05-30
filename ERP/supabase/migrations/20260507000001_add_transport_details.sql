@@ -1,2 +1,0 @@
-ALTER TABLE quotations ADD COLUMN IF NOT EXISTS transport_method TEXT;
-ALTER TABLE quotations ADD COLUMN IF NOT EXISTS transport_charges NUMERIC DEFAULT 0;
