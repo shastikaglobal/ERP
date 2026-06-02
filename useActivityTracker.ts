@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 // Session ID unique to this tab session
 const SESSION_ID = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -18,12 +18,12 @@ export function useActivityTracker(moduleName: string) {
   useEffect(() => {
     if (!user) return;
 
-    const userName = profile?.full_name || user.email || "Unknown";
+    const userName = profile?.full_name || user.email || "Unknown BDE";
     const userId = user.id;
 
     // 1. Log page_visit on mount
     const logPageVisit = async () => {
-      await (supabase.from("activity_logs") as any).insert({
+      await supabase.from("activity_logs").insert({
         user_id: userId,
         user_name: userName,
         module: moduleName,
@@ -35,15 +35,14 @@ export function useActivityTracker(moduleName: string) {
     logPageVisit();
 
     // 2. Throttle Logging Functions
-    const logEvent = async (eventType: string) => {
-      const { error } = await (supabase.from("activity_logs") as any).insert({
+    const logEvent = async (eventType: "mouse_move" | "keypress" | "idle") => {
+      await supabase.from("activity_logs").insert({
         user_id: userId,
         user_name: userName,
         module: moduleName,
         event_type: eventType,
         session_id: SESSION_ID,
       });
-      if (error) console.error(`[ActivityTracker] ${eventType} error:`, error.message);
     };
 
     // 3. Reset Idle Timeout helper

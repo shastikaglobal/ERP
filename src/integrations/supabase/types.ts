@@ -69,6 +69,9 @@ export type Database = {
           rejection_reason: string | null
           email_signature: string | null
           phone: string | null
+          biometric_id: string | null
+          monthly_salary: number | null
+          punch_deadline: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -83,6 +86,9 @@ export type Database = {
           rejection_reason?: string | null
           email_signature?: string | null
           phone?: string | null
+          biometric_id?: string | null
+          monthly_salary?: number | null
+          punch_deadline?: string | null
         }
         Update: {
           id?: string
@@ -95,6 +101,54 @@ export type Database = {
           rejection_reason?: string | null
           email_signature?: string | null
           phone?: string | null
+          biometric_id?: string | null
+          monthly_salary?: number | null
+          punch_deadline?: string | null
+        }
+        Relationships: []
+      }
+      attendance_logs: {
+        Row: {
+          id: string
+          employee_id: string
+          company_id: string
+          date: string
+          status: string
+          clock_in: string | null
+          clock_out: string | null
+          notes: string | null
+          is_manual: boolean
+          is_excused: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          company_id: string
+          date?: string
+          status?: string
+          clock_in?: string | null
+          clock_out?: string | null
+          notes?: string | null
+          is_manual?: boolean
+          is_excused?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          company_id?: string
+          date?: string
+          status?: string
+          clock_in?: string | null
+          clock_out?: string | null
+          notes?: string | null
+          is_manual?: boolean
+          is_excused?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }

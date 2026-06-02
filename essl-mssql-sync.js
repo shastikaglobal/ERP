@@ -174,12 +174,19 @@ async function runSync() {
       const clockInIso = clockIn.toISOString();
       const clockOutIso = clockOut ? clockOut.toISOString() : null;
 
-      console.log(`🔄 Syncing: [${group.empCode}] for Date ${group.dateStr} -> In: ${clockInIso.substring(11, 19)}${clockOutIso ? ', Out: ' + clockOutIso.substring(11, 19) : ''}`);
+      // Helper to display time in local timezone in the console logs
+      const getLocalTimeDisplay = (dateObj) => {
+        if (!dateObj) return '';
+        const localDate = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60 * 1000));
+        return localDate.toISOString().substring(11, 19);
+      };
+
+      console.log(`🔄 Syncing: [${group.empCode}] for Date ${group.dateStr} -> In: ${getLocalTimeDisplay(clockIn)}${clockOut ? ', Out: ' + getLocalTimeDisplay(clockOut) : ''}`);
 
       // Check if attendance log already exists in Supabase
       const { data: existing, error: existErr } = await supabase
         .from('attendance_logs')
-        .select('id')
+        .select('id, clock_in, clock_out')
         .eq('employee_id', emp.id)
         .eq('date', group.dateStr)
         .maybeSingle();
@@ -190,12 +197,38 @@ async function runSync() {
       }
 
       if (existing) {
-        // Update existing log
+        // CRITICAL FIX: Always keep the EARLIEST clock_in.
+        // When a new sync batch only contains a later punch (e.g. lunch-out),
+        // the new clockIn would wrongly overwrite the real morning clock_in.
+        let finalClockIn = clockInIso;
+        if (existing.clock_in) {
+          const existingClockInMs = new Date(existing.clock_in).getTime();
+          if (existingClockInMs < clockIn.getTime()) {
+            // Existing clock_in is earlier — keep it
+            finalClockIn = existing.clock_in;
+            console.log(`🔒 Keeping earlier clock_in [${existing.clock_in}] over new [${clockInIso}]`);
+          }
+        }
+
+        // For clock_out: keep the LATEST punch if it's more than 15 mins after finalClockIn
+        let finalClockOut = clockOutIso;
+        if (!finalClockOut && existing.clock_out) {
+          // No new clock_out in this batch — preserve the existing one
+          finalClockOut = existing.clock_out;
+        } else if (existing.clock_out && clockOutIso) {
+          // Both exist — keep the later one
+          const existingClockOutMs = new Date(existing.clock_out).getTime();
+          const newClockOutMs = new Date(clockOutIso).getTime();
+          if (existingClockOutMs > newClockOutMs) {
+            finalClockOut = existing.clock_out;
+          }
+        }
+
         const { error: updateErr } = await supabase
           .from('attendance_logs')
           .update({
-            clock_in: clockInIso,
-            clock_out: clockOutIso || null,
+            clock_in: finalClockIn,
+            clock_out: finalClockOut || null,
             status: 'present'
           })
           .eq('id', existing.id);

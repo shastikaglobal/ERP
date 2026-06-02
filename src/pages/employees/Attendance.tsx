@@ -3,12 +3,13 @@ import { Section } from "@/components/shared/FormShell";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, differenceInDays, addDays, parseISO, startOfMonth } from "date-fns";
-import { Loader2, Fingerprint, CheckCircle } from "lucide-react";
+import { Loader2, Fingerprint, CheckCircle, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EsslUploader } from "./EsslUploader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const generateDateArray = (startStr: string, endStr: string) => {
   try {
@@ -22,6 +23,199 @@ const generateDateArray = (startStr: string, endStr: string) => {
   } catch (e) {
     return [];
   }
+};
+
+const salaryMap: Record<string, number> = {
+  'Gayathri': 12000,
+  'Jayasri S': 12000,
+  'karunya': 12000,
+  'Kaviya': 12000,
+  'Lakshmana Gokul': 30000,
+  'Madhumitha': 12000,
+  'Narmatha Subramaniyam': 8000,
+  'Nethra Sree': 8000,
+  'Preethi M': 30000,
+  'sathpreethika': 12000,
+  'Swathi Swathi': 8000,
+  'uma parameshwari': 17000
+};
+
+const getEmpSalary = (fullName: string) => {
+  if (!fullName) return 0;
+  const name = fullName.trim().toLowerCase();
+  for (const [key, value] of Object.entries(salaryMap)) {
+    if (key.trim().toLowerCase() === name) {
+      return value;
+    }
+  }
+  return 0;
+};
+
+// Grace period and shift duration helper
+const getLateMinutes = (clockInStr: string, deadlineStr: string | null) => {
+  const deadline = deadlineStr || '08:00:00';
+  const [dHours, dMinutes, dSeconds = 0] = deadline.split(':').map(Number);
+  const punchDate = new Date(clockInStr);
+  
+  const deadlineDate = new Date(punchDate);
+  deadlineDate.setHours(dHours, dMinutes, dSeconds, 0);
+  
+  if (punchDate.getTime() <= deadlineDate.getTime()) {
+    return 0;
+  }
+  
+  const diffMs = punchDate.getTime() - deadlineDate.getTime();
+  return Math.floor(diffMs / (1000 * 60));
+};
+
+const getEmployeeMonthStats = (
+  empId: string,
+  monthStr: string, // 'yyyy-MM'
+  emp: any,
+  allLogs: Record<string, Record<string, any>>, // employee_id -> date -> log
+  upToDateStr?: string // optional target date to calculate up to (e.g. endDate or today)
+) => {
+  const empLogs = allLogs[empId] || {};
+  const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
+  const perDay = Math.round(monthlySalary / 30);
+  const halfDay = Math.round(perDay / 2);
+  const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
+
+  let calculationEnd: Date;
+  if (upToDateStr && upToDateStr.startsWith(monthStr)) {
+    calculationEnd = parseISO(upToDateStr);
+  } else {
+    // End of the month
+    const [year, month] = monthStr.split('-').map(Number);
+    calculationEnd = new Date(year, month, 0);
+  }
+  
+  // Start of month
+  const [year, month] = monthStr.split('-').map(Number);
+  const calculationStart = new Date(year, month - 1, 1);
+  
+  // Generate all dates in the month up to calculationEnd
+  const days: string[] = [];
+  let curr = calculationStart;
+  while (curr <= calculationEnd) {
+    days.push(format(curr, 'yyyy-MM-dd'));
+    curr = addDays(curr, 1);
+  }
+
+  let paidLeavesUsed = 0;
+  let unpaidLeavesUsed = 0;
+  let excusedPermissionsUsed = 0; // cumulative excused late minutes
+  let totalCut = 0;
+
+  const dailyDetails: Record<string, {
+    status: 'present' | 'late_on_time' | 'late_cut' | 'paid_leave' | 'unpaid_leave' | 'absent';
+    cut: number;
+    isExcused: boolean;
+    minutesLate: number;
+    explanation: string;
+  }> = {};
+
+  days.forEach(dateStr => {
+    const log = empLogs[dateStr];
+    
+    if (log) {
+      if (log.status === 'on_leave') {
+        paidLeavesUsed++;
+        if (paidLeavesUsed <= 1) {
+          dailyDetails[dateStr] = {
+            status: 'paid_leave',
+            cut: 0,
+            isExcused: false,
+            minutesLate: 0,
+            explanation: 'Paid Leave (Within monthly 1-day limit)'
+          };
+        } else {
+          totalCut += perDay;
+          unpaidLeavesUsed++;
+          dailyDetails[dateStr] = {
+            status: 'unpaid_leave',
+            cut: perDay,
+            isExcused: false,
+            minutesLate: 0,
+            explanation: 'Unpaid Leave (Monthly 1-day paid leave limit exceeded)'
+          };
+        }
+      } else if (log.clock_in) {
+        const minutesLate = getLateMinutes(log.clock_in, deadline);
+        const isLate = minutesLate >= 2;
+
+        if (isLate) {
+          if (log.is_excused) {
+            // Check cumulative pool limit of 120 minutes (2 hours)
+            if (excusedPermissionsUsed + minutesLate <= 120) {
+              excusedPermissionsUsed += minutesLate;
+              dailyDetails[dateStr] = {
+                status: 'present',
+                cut: 0,
+                isExcused: true,
+                minutesLate,
+                explanation: `Late (Excused: 2 Hours Permission used: ${minutesLate} mins. Total used: ${excusedPermissionsUsed}/120 min)`
+              };
+            } else {
+              totalCut += halfDay;
+              dailyDetails[dateStr] = {
+                status: 'late_cut',
+                cut: halfDay,
+                isExcused: true,
+                minutesLate,
+                explanation: `Late (Permission checked, but exceeds monthly 120 min pool. Total used if approved: ${excusedPermissionsUsed + minutesLate} mins)`
+              };
+            }
+          } else {
+            totalCut += halfDay;
+            dailyDetails[dateStr] = {
+              status: 'late_cut',
+              cut: halfDay,
+              isExcused: false,
+              minutesLate,
+              explanation: 'Late (No permission)'
+            };
+          }
+        } else {
+          dailyDetails[dateStr] = {
+            status: 'present',
+            cut: 0,
+            isExcused: false,
+            minutesLate,
+            explanation: 'On Time'
+          };
+        }
+      } else {
+        // Absent (log exists but no clock_in and not on_leave)
+        totalCut += perDay;
+        dailyDetails[dateStr] = {
+          status: 'absent',
+          cut: perDay,
+          isExcused: false,
+          minutesLate: 0,
+          explanation: 'Absent (No clock in)'
+        };
+      }
+    } else {
+      // Absent / No record
+      totalCut += perDay;
+      dailyDetails[dateStr] = {
+        status: 'absent',
+        cut: perDay,
+        isExcused: false,
+        minutesLate: 0,
+        explanation: 'Absent (No record)'
+      };
+    }
+  });
+
+  return {
+    paidLeavesUsed,
+    unpaidLeavesUsed,
+    excusedPermissionsUsed,
+    totalCut,
+    dailyDetails
+  };
 };
 
 export default function Attendance() {
@@ -38,9 +232,228 @@ export default function Attendance() {
   const [endDate, setEndDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [preset, setPreset] = useState("14days");
 
+  // Settings Modal States
+  const [settingsEmp, setSettingsEmp] = useState<any | null>(null);
+  const [settingsSalary, setSettingsSalary] = useState<string>("0");
+  const [settingsDeadline, setSettingsDeadline] = useState<string>("08:00");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Manual Time Entry States
+  const [enteringTimeEmpId, setEnteringTimeEmpId] = useState<string | null>(null);
+  const [manualTime, setManualTime] = useState<string>("09:00");
+  const [savingManualTime, setSavingManualTime] = useState(false);
+
   const daysInRange = useMemo(() => {
     return generateDateArray(startDate, endDate);
   }, [startDate, endDate]);
+
+  // Dynamic Summary calculations for the active endDate
+  const summaryStats = useMemo(() => {
+    let total = employees.length;
+    let onTime = 0;
+    let late = 0;
+    let totalCut = 0;
+    const todayStr = endDate;
+
+    employees.forEach(emp => {
+      const stats = getEmployeeMonthStats(emp.id, todayStr.substring(0, 7), emp, attendanceData, todayStr);
+      const detail = stats.dailyDetails[todayStr];
+
+      if (detail) {
+        totalCut += detail.cut;
+        if (detail.status === 'paid_leave' || detail.status === 'present') {
+          onTime++;
+        } else if (detail.status === 'late_cut') {
+          late++;
+        }
+      }
+    });
+
+    return {
+      total,
+      onTime,
+      late,
+      totalCut
+    };
+  }, [employees, attendanceData, endDate]);
+
+  const openSettings = (emp: any) => {
+    setSettingsEmp(emp);
+    setSettingsSalary(String(emp.monthly_salary ?? getEmpSalary(emp.full_name) ?? 0));
+    const defaultDeadline = emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00";
+    setSettingsDeadline((emp.punch_deadline ?? defaultDeadline).slice(0, 5));
+  };
+
+  const saveSettings = async () => {
+    if (!settingsEmp) return;
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          monthly_salary: Number(settingsSalary) || 0,
+          punch_deadline: settingsDeadline + ":00"
+        })
+        .eq('id', settingsEmp.id);
+
+      if (error) throw error;
+      toast.success("Settings updated successfully!");
+      setSettingsEmp(null);
+      await loadData(startDate, endDate);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update settings");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleSaveManualTime = async (emp: any) => {
+    if (!manualTime) return;
+    setSavingManualTime(true);
+    const todayStr = endDate;
+    try {
+      const empCompanyId = emp.company_id || companyId || '00000000-0000-0000-0000-00000000ae01';
+      const clockInIso = new Date(`${todayStr}T${manualTime}`).toISOString();
+      
+      const { error } = await supabase.from('attendance_logs').upsert({
+        employee_id: emp.id,
+        company_id: empCompanyId,
+        date: todayStr,
+        clock_in: clockInIso,
+        is_manual: true,
+        status: 'present'
+      });
+
+      if (error) throw error;
+      toast.success("Attendance saved successfully!");
+      setEnteringTimeEmpId(null);
+      await loadData(startDate, endDate);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save attendance");
+    } finally {
+      setSavingManualTime(false);
+    }
+  };
+
+  const handleMarkOnLeave = async (emp: any) => {
+    const todayStr = endDate;
+    try {
+      const empCompanyId = emp.company_id || companyId || '00000000-0000-0000-0000-00000000ae01';
+      const { error } = await supabase.from('attendance_logs').upsert({
+        employee_id: emp.id,
+        company_id: empCompanyId,
+        date: todayStr,
+        status: 'on_leave',
+        is_manual: true
+      });
+
+      if (error) throw error;
+      toast.success("Marked as Paid Leave");
+      await loadData(startDate, endDate);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to mark leave");
+    }
+  };
+
+  const handleToggleExcused = async (logId: string, checked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('attendance_logs')
+        .update({ is_excused: checked })
+        .eq('id', logId);
+
+      if (error) throw error;
+      toast.success(checked ? "2 Hours Permission applied (No salary cut)" : "Removed permission status");
+      await loadData(startDate, endDate);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update permission");
+    }
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    try {
+      const { error } = await supabase
+        .from('attendance_logs')
+        .delete()
+        .eq('id', logId);
+
+      if (error) throw error;
+      toast.success("Record cleared");
+      await loadData(startDate, endDate);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to clear record");
+    }
+  };
+
+  const downloadReport = () => {
+    const todayStr = endDate;
+    
+    // CSV Header
+    const headers = [
+      "Employee Name",
+      "Role",
+      "Bio ID",
+      "Punch Deadline",
+      "Punch In Time",
+      "Status",
+      "Explanation",
+      "Monthly Salary",
+      "Per Day Salary",
+      "Cut Amount (INR)"
+    ];
+    
+    const rows = employees.map(emp => {
+      const log = attendanceData[emp.id]?.[todayStr];
+      const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
+      const perDay = Math.round(monthlySalary / 30);
+      const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
+      
+      const stats = getEmployeeMonthStats(emp.id, todayStr.substring(0, 7), emp, attendanceData, todayStr);
+      const detail = stats.dailyDetails[todayStr] || { status: 'absent', cut: perDay, explanation: 'Absent', isExcused: false, minutesLate: 0 };
+      
+      let punchInTime = "—";
+      if (log && log.clock_in) {
+        punchInTime = format(new Date(log.clock_in), 'hh:mm a');
+      }
+      
+      let displayStatus = "Absent";
+      if (detail.status === 'paid_leave') displayStatus = "Paid Leave";
+      else if (detail.status === 'unpaid_leave') displayStatus = "Unpaid Leave";
+      else if (detail.status === 'present') {
+        displayStatus = log?.is_manual ? "Manual (On Time)" : (detail.isExcused ? "Late (Excused)" : "On Time");
+      } else if (detail.status === 'late_cut') {
+        displayStatus = log?.is_manual ? "Manual (Late)" : "Late";
+      }
+
+      return [
+        emp.full_name,
+        emp.requested_role?.replace('_', ' ') || 'Employee',
+        emp.biometric_id || '—',
+        deadline.slice(0, 5),
+        punchInTime,
+        displayStatus,
+        detail.explanation,
+        monthlySalary,
+        perDay,
+        detail.cut
+      ];
+    });
+    
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `attendance_report_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const loadData = async (startVal: string, endVal: string) => {
     setLoading(true);
@@ -52,7 +465,7 @@ export default function Attendance() {
     // Fetch approved profiles
     const { data: profiles, error: profErr } = await supabase
       .from('profiles')
-      .select('id, full_name, requested_role, company_id, biometric_id')
+      .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline')
       .eq('status', 'approved')
       .order('full_name');
 
@@ -62,17 +475,24 @@ export default function Attendance() {
       return;
     }
 
-    setEmployees(profiles || []);
+    // Exclude owner (Lakshmana Gokul) from the attendance board
+    const filtered = (profiles || []).filter(p => !p.full_name?.toLowerCase().includes("lakshmana gokul"));
+    setEmployees(filtered);
     
     const myProfile = profiles?.find(p => p.id === user?.id);
     if (myProfile?.company_id) setCompanyId(myProfile.company_id);
 
-    // Fetch attendance logs within dynamic range
+    // Fetch attendance logs within dynamic range expanded to full calendar month boundaries
+    const firstDayOfMonth = format(startOfMonth(parseISO(startVal)), 'yyyy-MM-dd');
+    const endOfMonthDate = new Date(parseISO(endVal));
+    const nextMonth = new Date(endOfMonthDate.getFullYear(), endOfMonthDate.getMonth() + 1, 1);
+    const lastDayOfMonth = format(subDays(nextMonth, 1), 'yyyy-MM-dd');
+
     const { data: logs, error: logsErr } = await supabase
       .from('attendance_logs')
       .select('*')
-      .gte('date', startVal)
-      .lte('date', endVal);
+      .gte('date', firstDayOfMonth)
+      .lte('date', lastDayOfMonth);
 
     if (!logsErr && logs) {
       const grouped: Record<string, any> = {};
@@ -231,8 +651,35 @@ export default function Attendance() {
         title="Attendance" 
         description="Track team presence and punch in for the day" 
         breadcrumbs={[{ label: "Employees" }, { label: "Attendance" }]} 
-        actions={<EsslUploader employees={employees} onUploadComplete={() => loadData(startDate, endDate)} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button onClick={downloadReport} variant="outline" size="sm">
+              Download Report
+            </Button>
+            <EsslUploader employees={employees} onUploadComplete={() => loadData(startDate, endDate)} />
+          </div>
+        }
       />
+
+      {/* Summary Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card p-4 rounded-xl border shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Employees</span>
+          <span className="text-2xl font-bold mt-1">{summaryStats.total}</span>
+        </div>
+        <div className="bg-card p-4 rounded-xl border shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-emerald-600 dark:text-emerald-400">On Time</span>
+          <span className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{summaryStats.onTime}</span>
+        </div>
+        <div className="bg-card p-4 rounded-xl border shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-amber-500">Late</span>
+          <span className="text-2xl font-bold mt-1 text-amber-500">{summaryStats.late}</span>
+        </div>
+        <div className="bg-card p-4 rounded-xl border shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-rose-500">Total Salary Cut</span>
+          <span className="text-2xl font-bold mt-1 text-rose-500">₹{summaryStats.totalCut.toLocaleString()}</span>
+        </div>
+      </div>
       
       {/* Date Range Selector Toolbar */}
       <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-xl border shadow-sm">
@@ -300,6 +747,8 @@ export default function Attendance() {
             {employees.map((emp) => {
               const todayStr = endDate;
               const log = attendanceData[emp.id]?.[todayStr];
+              const stats = getEmployeeMonthStats(emp.id, todayStr.substring(0, 7), emp, attendanceData, todayStr);
+              const detail = stats.dailyDetails[todayStr] || { status: 'absent', cut: 0, explanation: '', isExcused: false, minutesLate: 0 };
               
               let statusBadge = (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
@@ -308,7 +757,27 @@ export default function Attendance() {
               );
               
               if (log) {
-                if (log.clock_out) {
+                if (log.status === 'on_leave') {
+                  if (detail.status === 'paid_leave') {
+                    statusBadge = (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Paid Leave
+                      </span>
+                    );
+                  } else {
+                    statusBadge = (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        Unpaid Leave
+                      </span>
+                    );
+                  }
+                } else if (log.is_manual) {
+                  statusBadge = (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      Manual
+                    </span>
+                  );
+                } else if (log.clock_out) {
                   statusBadge = (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                       Punched Out
@@ -337,7 +806,17 @@ export default function Attendance() {
                       {initials}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-semibold truncate text-foreground">{emp.full_name}</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-semibold truncate text-foreground flex-1">{emp.full_name}</h4>
+                        <button 
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                          onClick={() => openSettings(emp)}
+                          title="Settings"
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       <p className="text-[10px] text-muted-foreground truncate capitalize">
                         {emp.requested_role?.replace('_', ' ') || 'Employee'}
                         {emp.biometric_id && ` • Bio ID: ${emp.biometric_id}`}
@@ -345,23 +824,155 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                  <div className="pt-2 border-t border-border/50 flex flex-col space-y-1 text-[11px]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      {statusBadge}
+                  <div className="pt-2 border-t border-border/50 flex flex-col space-y-1 text-[11px] flex-1 justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Status:</span>
+                        {statusBadge}
+                      </div>
+                      {log?.clock_in && log.status !== 'on_leave' && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">In:</span>
+                            <span className="font-medium text-foreground">{format(new Date(log.clock_in), 'hh:mm a')}</span>
+                          </div>
+                          {(() => {
+                            const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
+                            const minutesLate = getLateMinutes(log.clock_in, deadline);
+                            const isLate = minutesLate >= 2;
+                            
+                            if (isLate) {
+                              const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
+                              const perDay = Math.round(monthlySalary / 30);
+                              const halfDay = Math.round(perDay / 2);
+                              const isExcusedAndWithinPool = log.is_excused && detail.cut === 0;
+
+                              let warningText = "";
+                              if (log.is_excused) {
+                                if (minutesLate > 120) {
+                                  warningText = "⚠ Exceeds 2 hours limit (Cut applies)";
+                                } else if (detail.cut > 0) {
+                                  warningText = "⚠ Monthly 2h pool exceeded (Cut applies)";
+                                }
+                              }
+
+                              return (
+                                <div className="flex flex-col items-end mt-1">
+                                  <div className={`${isExcusedAndWithinPool ? 'text-emerald-500 dark:text-emerald-400 line-through' : 'text-rose-500'} text-[10px] font-semibold mt-0.5`}>
+                                    ⚠ Half Day Cut: ₹{halfDay}
+                                  </div>
+                                  {warningText && (
+                                    <div className="text-[9px] text-rose-500 font-medium text-right max-w-[150px] leading-tight mt-0.5">
+                                      {warningText}
+                                    </div>
+                                  )}
+                                  <label className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!log.is_excused}
+                                      onChange={(e) => handleToggleExcused(log.id, e.target.checked)}
+                                      className="h-3 w-3 rounded border-border text-primary focus:ring-primary bg-background"
+                                    />
+                                    Excused (Told Admin)
+                                  </label>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </>
+                      )}
+                      {log?.clock_out && log.status !== 'on_leave' && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Out:</span>
+                          <span className="font-medium text-foreground">{format(new Date(log.clock_out), 'hh:mm a')}</span>
+                        </div>
+                      )}
                     </div>
-                    {log?.clock_in && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">In:</span>
-                        <span className="font-medium text-foreground">{format(new Date(log.clock_in), 'hh:mm a')}</span>
+
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      {log?.status === 'on_leave' && (
+                        <div className="flex flex-col items-end">
+                          {detail.status === 'unpaid_leave' && (
+                            <div className="text-rose-500 text-[10px] font-semibold mb-1">
+                              ⚠ Unpaid Leave Cut: ₹{detail.cut}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLog(log.id)}
+                            className="text-[10px] font-semibold text-rose-500 hover:underline"
+                          >
+                            Cancel Paid Leave
+                          </button>
+                        </div>
+                      )}
+                      {log && log.status !== 'on_leave' && log.is_manual && (
+                        <div className="mt-1 pt-1 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLog(log.id)}
+                            className="text-[10px] font-semibold text-rose-500 hover:underline"
+                          >
+                            Clear Manual Time
+                          </button>
+                        </div>
+                      )}
+                      {!log && (
+                        <div className="flex items-center justify-between w-full">
+                          <button
+                            type="button"
+                            onClick={() => handleMarkOnLeave(emp)}
+                            className="text-[10px] font-semibold text-purple-600 hover:underline"
+                          >
+                            Mark Paid Leave
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEnteringTimeEmpId(emp.id);
+                              setManualTime("09:00");
+                            }}
+                            className="text-[10px] font-semibold text-primary hover:underline"
+                          >
+                            Enter Time
+                          </button>
+                        </div>
+                      )}
+                      {!log && enteringTimeEmpId === emp.id && (
+                        <div className="flex items-center gap-1.5 w-full mt-2 pt-2 border-t border-border/30">
+                          <Input
+                            type="time"
+                            value={manualTime}
+                            onChange={(e) => setManualTime(e.target.value)}
+                            className="h-7 text-[10px] py-0 px-1 w-24 bg-background"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveManualTime(emp)}
+                            disabled={savingManualTime}
+                            className="text-[10px] font-semibold px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/95 transition-colors disabled:opacity-50"
+                          >
+                            {savingManualTime ? "..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEnteringTimeEmpId(null)}
+                            className="text-[10px] font-semibold px-2 py-1 rounded border hover:bg-muted/50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Monthly statistics summary */}
+                      <div className="pt-2 mt-2 border-t border-border/30 flex items-center justify-between text-[9px] text-muted-foreground font-medium">
+                        <span>This Month:</span>
+                        <span>
+                          {stats.paidLeavesUsed}/1 Paid Leave • {stats.excusedPermissionsUsed}m Permission
+                        </span>
                       </div>
-                    )}
-                    {log?.clock_out && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Out:</span>
-                        <span className="font-medium text-foreground">{format(new Date(log.clock_out), 'hh:mm a')}</span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               );
@@ -385,44 +996,102 @@ export default function Attendance() {
             <table className="w-full text-sm">
               <thead><tr className="border-b border-border">
                 <th className="text-left text-xs uppercase font-medium text-muted-foreground px-3 py-2">Employee</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-2 py-2">Salary</th>
                 {daysInRange.map((dateStr) => (
                   <th key={dateStr} className="text-center text-xs font-medium text-muted-foreground px-1 py-2">
                     {format(parseISO(dateStr), 'dd')}
                   </th>
                 ))}
-                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-3 py-2">%</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-2 py-2">Paid Leaves</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-2 py-2">Unpaid Leaves</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-2 py-2">Permissions</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-2 py-2">Total Cut</th>
+                <th className="text-right text-xs uppercase font-medium text-muted-foreground px-3 py-2">Total Salary</th>
               </tr></thead>
               <tbody>
                 {employees.map((e) => {
-                  const empLogs = attendanceData[e.id] || {};
-                  
-                  let presentCount = 0;
+                  let rangePaidLeaves = 0;
+                  let rangeUnpaidLeaves = 0;
+                  let rangePermissionsMins = 0;
+                  let rangeTotalCut = 0;
+                  let rangePresentCount = 0;
+
+                  const monthStatsCache: Record<string, any> = {};
+                  const getCachedMonthStats = (monthStr: string) => {
+                    const key = `${e.id}-${monthStr}`;
+                    if (!monthStatsCache[key]) {
+                      monthStatsCache[key] = getEmployeeMonthStats(e.id, monthStr, e, attendanceData);
+                    }
+                    return monthStatsCache[key];
+                  };
+
                   const dayElements = daysInRange.map(dateStr => {
-                    const log = empLogs[dateStr];
-                    const status = log?.status;
+                    const monthStr = dateStr.substring(0, 7);
+                    const stats = getCachedMonthStats(monthStr);
+                    const detail = stats.dailyDetails[dateStr] || { status: 'absent', cut: 0, explanation: '', isExcused: false, minutesLate: 0 };
                     
-                    if (status === 'present') { presentCount += 1; }
-                    else if (status === 'half_day') { presentCount += 0.5; }
+                    const log = attendanceData[e.id]?.[dateStr];
+                    
+                    if (detail.status === 'paid_leave') {
+                      rangePaidLeaves++;
+                      rangePresentCount += 1;
+                    } else if (detail.status === 'unpaid_leave') {
+                      rangeUnpaidLeaves++;
+                      rangeTotalCut += detail.cut;
+                    } else if (detail.status === 'present') {
+                      rangePresentCount += 1;
+                      if (detail.isExcused) {
+                        rangePermissionsMins += detail.minutesLate;
+                      }
+                    } else if (detail.status === 'late_cut') {
+                      rangePresentCount += 0.5;
+                      rangeTotalCut += detail.cut;
+                    } else {
+                      rangeTotalCut += detail.cut;
+                    }
 
                     const clockInStr = log?.clock_in ? format(new Date(log.clock_in), 'hh:mm a') : null;
                     const clockOutStr = log?.clock_out ? format(new Date(log.clock_out), 'hh:mm a') : null;
-                    const tooltip = status 
-                      ? `${format(parseISO(dateStr), 'MMM dd')} - ${status.toUpperCase()}\nIn: ${clockInStr || '--:--'}\nOut: ${clockOutStr || '--:--'}`
-                      : `${format(parseISO(dateStr), 'MMM dd')}: No Record`;
+                    
+                    let cellBg = "bg-muted/40 border-border/40";
+                    let statusLabel = "";
+                    if (detail.status === 'paid_leave') {
+                      cellBg = "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400";
+                      statusLabel = "PAID LEAVE";
+                    } else if (detail.status === 'unpaid_leave') {
+                      cellBg = "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400";
+                      statusLabel = "UNPAID LEAVE";
+                    } else if (detail.status === 'absent') {
+                      cellBg = "bg-rose-500/5 border-rose-500/10 text-rose-500/50";
+                      statusLabel = "ABSENT";
+                    } else if (detail.status === 'late_cut') {
+                      cellBg = "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400";
+                      statusLabel = "LATE";
+                    }
+
+                    const tooltip = log 
+                      ? `${format(parseISO(dateStr), 'MMM dd')} - ${statusLabel || 'PRESENT'}\nIn: ${clockInStr || '--:--'}\nOut: ${clockOutStr || '--:--'}\n${detail.explanation}`
+                      : `${format(parseISO(dateStr), 'MMM dd')}: No Record (Absent)`;
 
                     return (
                       <td key={dateStr} className="text-center px-1 py-1.5" title={tooltip}>
                         {log ? (
-                          <div className="inline-flex flex-col items-center justify-center gap-0.5 min-w-[65px] py-1 px-1.5 rounded bg-muted/40 border border-border/40 text-[9px] font-medium leading-none">
-                            {clockInStr ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{clockInStr}</span>
+                          <div className={`inline-flex flex-col items-center justify-center gap-0.5 min-w-[65px] py-1 px-1.5 rounded border text-[9px] font-medium leading-none ${cellBg}`}>
+                            {statusLabel ? (
+                              <span className="font-semibold py-1">{statusLabel}</span>
                             ) : (
-                              <span className="text-muted-foreground/40">--:--</span>
-                            )}
-                            {clockOutStr ? (
-                              <span className="text-blue-600 dark:text-blue-400 font-semibold">{clockOutStr}</span>
-                            ) : (
-                              <span className="text-muted-foreground/40">--:--</span>
+                              <>
+                                {clockInStr ? (
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{clockInStr}</span>
+                                ) : (
+                                  <span className="text-muted-foreground/40">--:--</span>
+                                )}
+                                {clockOutStr ? (
+                                  <span className="text-blue-600 dark:text-blue-400 font-semibold">{clockOutStr}</span>
+                                ) : (
+                                  <span className="text-muted-foreground/40">--:--</span>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : (
@@ -432,7 +1101,8 @@ export default function Attendance() {
                     );
                   });
 
-                  const pct = daysInRange.length > 0 ? Math.round((presentCount / daysInRange.length) * 100) : 0;
+                  const monthlySalary = Number(e.monthly_salary) || getEmpSalary(e.full_name) || 0;
+                  const totalSalary = monthlySalary - rangeTotalCut;
 
                   return (
                     <tr key={e.id} className="border-b last:border-0 border-border hover:bg-muted/30">
@@ -440,14 +1110,19 @@ export default function Attendance() {
                         <div className="text-sm font-medium">{e.full_name || "Unknown"}</div>
                         <div className="text-xs text-muted-foreground capitalize">{e.requested_role?.replace('_', ' ') || "Employee"}</div>
                       </td>
+                      <td className="text-right px-2 py-2 font-medium">₹{monthlySalary.toLocaleString()}</td>
                       {dayElements}
-                      <td className="text-right px-3 py-2 tabular-nums font-medium">{pct}%</td>
+                      <td className="text-right px-2 py-2 font-medium">{rangePaidLeaves}</td>
+                      <td className="text-right px-2 py-2 font-medium">{rangeUnpaidLeaves}</td>
+                      <td className="text-right px-2 py-2 font-medium">{rangePermissionsMins}m</td>
+                      <td className="text-right px-2 py-2 font-medium text-rose-500">₹{rangeTotalCut.toLocaleString()}</td>
+                      <td className="text-right px-3 py-2 font-semibold text-emerald-600 dark:text-emerald-400">₹{Math.max(0, totalSalary).toLocaleString()}</td>
                     </tr>
                   );
                 })}
                 {employees.length === 0 && (
                   <tr>
-                    <td colSpan={daysInRange.length + 2} className="text-center py-8 text-muted-foreground">No approved employees found.</td>
+                    <td colSpan={daysInRange.length + 7} className="text-center py-8 text-muted-foreground">No approved employees found.</td>
                   </tr>
                 )}
               </tbody>
@@ -455,6 +1130,48 @@ export default function Attendance() {
           )}
         </div>
       </Section>
+
+      {/* Settings Modal Dialog */}
+      <Dialog open={!!settingsEmp} onOpenChange={(open) => !open && setSettingsEmp(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-background border">
+          <DialogHeader>
+            <DialogTitle>Attendance Settings</DialogTitle>
+            <DialogDescription>
+              Configure monthly salary and punch deadline settings for {settingsEmp?.full_name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="monthly_salary" className="text-sm font-medium">Monthly Salary (₹)</label>
+              <Input
+                id="monthly_salary"
+                type="number"
+                value={settingsSalary}
+                onChange={(e) => setSettingsSalary(e.target.value)}
+                placeholder="e.g. 15000"
+                className="bg-background"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="punch_deadline" className="text-sm font-medium">Punch Deadline (HH:MM)</label>
+              <Input
+                id="punch_deadline"
+                type="time"
+                step="60"
+                value={settingsDeadline}
+                onChange={(e) => setSettingsDeadline(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setSettingsEmp(null)}>Cancel</Button>
+            <Button onClick={saveSettings} disabled={savingSettings}>
+              {savingSettings ? "Saving..." : "Save Settings"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

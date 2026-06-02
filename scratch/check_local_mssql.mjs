@@ -28,11 +28,11 @@ async function run() {
       .query(`
         SELECT EmployeeCode, LogDateTime, Direction, DeviceId 
         FROM Attlogs 
-        WHERE LogDateTime >= '2026-05-30 00:00:00'
+        WHERE LogDateTime >= '2026-06-01 00:00:00'
         ORDER BY LogDateTime ASC
       `);
       
-    console.log("Punches in local MS SQL Attlogs for 2026-05-30:");
+    console.log("Punches in local MS SQL Attlogs for 2026-06-01:");
     console.log(result.recordset);
     
     await pool.close();
