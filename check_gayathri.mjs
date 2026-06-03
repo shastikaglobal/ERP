@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 
-// Try to find .env file
+// Try to find  file
 const envPath = 'd:/ERP4/.env';
 let supabaseUrl, supabaseAnonKey;
 
@@ -32,7 +32,7 @@ async function check() {
             requested_role,
             user_roles(roles(slug))
         `);
-    
+
     if (error) {
         console.error(error);
         return;
