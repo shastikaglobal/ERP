@@ -88,7 +88,6 @@ export default function ActivityLogs() {
 
       const rawLogs = (logsData || []) as ActivityLog[];
 
-      // Fetch profiles for role enrichment
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, requested_role");
