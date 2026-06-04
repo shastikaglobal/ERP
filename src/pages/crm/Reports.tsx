@@ -80,6 +80,8 @@ export default function Reports() {
     followUps: any[];
     quotations: any[];
     exportOrders: any[];
+    dailyReports: any[];
+    acquisitions: any[];
   } | null>(null);
 
   // Filters
@@ -92,28 +94,42 @@ export default function Reports() {
     setLoading(true);
     try {
       const [
-        { data: profiles },
-        { data: leads },
-        { data: activities },
-        { data: followUps },
-        { data: quotations },
-        { data: exportOrders }
+        { data: profilesData },
+        { data: leadsData },
+        { data: activitiesData },
+        { data: followUpsData },
+        { data: quotationsData },
+        { data: exportOrdersData },
+        { data: dailyReportsData },
+        { data: acquisitionsData }
       ] = await Promise.all([
         supabase.from("profiles" as any).select("id, full_name, avatar_url"),
         supabase.from("leads" as any).select("*"),
         supabase.from("activities" as any).select("*, leads(company_name, country)"),
         supabase.from("follow_ups" as any).select("*"),
         supabase.from("quotations" as any).select("*"),
-        supabase.from("export_orders" as any).select("*")
+        supabase.from("export_orders" as any).select("*"),
+        supabase.from("bde_daily_reports" as any).select("*"),
+        supabase.from("client_acquisition" as any).select("*")
       ]);
 
+      const profiles = (profilesData || []) as any[];
+      const leads = (leadsData || []) as any[];
+      const activities = (activitiesData || []) as any[];
+      const followUps = (followUpsData || []) as any[];
+      const quotations = (quotationsData || []) as any[];
+      const exportOrders = (exportOrdersData || []) as any[];
+      const dailyReports = (dailyReportsData || []) as any[];
+
       setData({
-        profiles: ((profiles || []) as any[]).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")),
-        leads: (leads || []) as any[],
-        activities: (activities || []) as any[],
-        followUps: (followUps || []) as any[],
-        quotations: (quotations || []) as any[],
-        exportOrders: (exportOrders || []) as any[]
+        profiles: profiles.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")),
+        leads,
+        activities,
+        followUps,
+        quotations,
+        exportOrders,
+        dailyReports,
+        acquisitions: (acquisitionsData || []) as any[]
       });
     } catch (error) {
       console.error(error);
@@ -134,6 +150,28 @@ export default function Reports() {
     toast.success("Analytics re-compiled successfully");
   };
 
+  // --- Helper Functions ---
+  const isInDateRange = (dateStr: string) => {
+    if (!dateStr) return false;
+    try {
+      const d = parseISO(dateStr);
+      return isWithinInterval(d, { start: startDate, end: endDate });
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isEmpMatch = (dbValue: any, employeeId: string) => {
+    if (employeeId === 'all') return true;
+    if (!dbValue || !data) return false;
+    const val = String(dbValue).trim().toLowerCase();
+    const empId = employeeId.trim().toLowerCase();
+    if (val === empId) return true;
+    const employee = data.profiles.find(p => p.id === employeeId);
+    const empName = employee?.full_name?.trim().toLowerCase();
+    return empName && val === empName;
+  };
+
   // --- Analytical Calculations ---
   
   const stats = useMemo(() => {
@@ -152,7 +190,7 @@ export default function Reports() {
       .reduce((sum, q) => sum + (Number(q.amount) || Number(q.total_amount) || 0), 0);
 
     const activeBDEs = data.profiles.length;
-    const totalReports = data.activities.length + data.quotations.length + data.exportOrders.length;
+    const totalReports = data.activities.length + data.quotations.length + data.exportOrders.length + data.dailyReports.length;
     
     const growth = leadsPrevMonth > 0 ? ((leadsThisMonth - leadsPrevMonth) / leadsPrevMonth) * 100 : 100;
 
@@ -168,23 +206,6 @@ export default function Reports() {
   const activityAnalytics = useMemo(() => {
     if (!data) return [];
 
-    const isInDateRange = (dateStr: string) => {
-      if (!dateStr) return false;
-      const d = parseISO(dateStr);
-      return isWithinInterval(d, { start: startDate, end: endDate });
-    };
-
-    const isEmpMatch = (dbValue: any, employeeId: string) => {
-      if (employeeId === 'all') return true;
-      if (!dbValue) return false;
-      const val = String(dbValue).trim().toLowerCase();
-      const empId = employeeId.trim().toLowerCase();
-      if (val === empId) return true;
-      const employee = data.profiles.find(p => p.id === employeeId);
-      const empName = employee?.full_name?.trim().toLowerCase();
-      return empName && val === empName;
-    };
-
     const newLeads = data.leads.filter(l => 
       isInDateRange(l.created_at) && 
       isEmpMatch(l.assigned_to, selectedBDE)
@@ -195,9 +216,23 @@ export default function Reports() {
       isEmpMatch(a.created_by, selectedBDE)
     );
 
-    const calls = activities.filter(a => ['call', 'Call', 'phone', 'Phone'].includes(a.type)).length;
-    const emails = activities.filter(a => ['email', 'Email'].includes(a.type)).length;
-    const linkedin = activities.filter(a => ['linkedin', 'LinkedIn'].includes(a.type)).length;
+    const filteredDailyReports = data.dailyReports.filter(dr => 
+      isInDateRange(dr.report_date) && 
+      isEmpMatch(dr.bde_id, selectedBDE)
+    );
+
+    const individualCalls = activities.filter(a => ['call', 'Call', 'phone', 'Phone'].includes(a.type)).length;
+    const reportedCalls = filteredDailyReports.reduce((sum, dr) => sum + (Number(dr.total_calls) || 0), 0);
+    const calls = Math.max(individualCalls, reportedCalls);
+
+    const individualEmails = activities.filter(a => ['email', 'Email'].includes(a.type)).length;
+    const reportedEmails = filteredDailyReports.reduce((sum, dr) => sum + (Number(dr.emails_sent) || 0), 0);
+    const emails = Math.max(individualEmails, reportedEmails);
+
+    const individualLinkedin = activities.filter(a => ['linkedin', 'LinkedIn'].includes(a.type)).length;
+    const reportedLinkedin = filteredDailyReports.reduce((sum, dr) => sum + (Number(dr.linkedin_messages) || 0), 0);
+    const linkedin = Math.max(individualLinkedin, reportedLinkedin);
+
     const whatsapp = activities.filter(a => ['whatsapp', 'WhatsApp'].includes(a.type)).length;
     const meetings = activities.filter(a => ['meeting', 'Meeting', 'visit', 'Visit'].includes(a.type)).length;
 
@@ -353,20 +388,28 @@ export default function Reports() {
     const report = data.profiles
       .filter(p => selectedBDE === 'all' || p.id === selectedBDE)
       .map(emp => {
-        const empLeads = data.leads.filter(l => isEmployeeMatch(l.assigned_to, emp));
+        const empLeads = data.leads.filter(l => 
+          isEmployeeMatch(l.assigned_to, emp) && 
+          isInDateRange(l.created_at)
+        );
         const leadIds = new Set(empLeads.map(l => l.id));
         
         const contacted = empLeads.filter(l => l.stage !== 'New').length;
-        const followUps = data.followUps.filter(f => isEmployeeMatch(f.assigned_to, emp) && f.is_notified).length;
-        const quotes = data.quotations.filter(q => q.lead_id && leadIds.has(q.lead_id)).length;
+        const indFollowUps = data.followUps.filter(f => isEmployeeMatch(f.assigned_to, emp) && f.is_notified && isInDateRange(f.created_at)).length;
+        const quotes = data.quotations.filter(q => q.lead_id && leadIds.has(q.lead_id) && isInDateRange(q.created_at)).length;
         const won = empLeads.filter(l => ['won', 'closed won', 'closed_won'].includes(l.stage?.toLowerCase())).length;
         const conv = empLeads.length > 0 ? ((won / empLeads.length) * 100).toFixed(1) : "0";
+
+        // Aggregate daily reports
+        const empDaily = data.dailyReports.filter(dr => isEmployeeMatch(dr.bde_id, emp) && isInDateRange(dr.report_date));
+        const totalCalls = empDaily.reduce((sum, dr) => sum + (Number(dr.total_calls) || 0), 0);
+        const reportedAttended = empDaily.reduce((sum, dr) => sum + (Number(dr.calls_attended) || 0), 0);
 
         return {
           Employee: emp.full_name,
           Leads: empLeads.length,
-          Contacted: contacted,
-          FollowUps: followUps,
+          Calls_Made: totalCalls,
+          Calls_Attended: Math.max(reportedAttended, indFollowUps),
           Quotes: quotes,
           Won: won,
           Conv: `${conv}%`
@@ -375,8 +418,8 @@ export default function Reports() {
 
     if (format === 'csv') exportCSV(report, "BDE_Conversion");
     else {
-      const headers = ["Employee", "Leads", "Contacted", "FollowUps", "Quotes", "Won", "Conv%"];
-      const rows = report.map(r => [r.Employee, r.Leads, r.Contacted, r.FollowUps, r.Quotes, r.Won, r.Conv]);
+      const headers = ["Employee", "Leads", "Calls", "Attended", "Quotes", "Won", "Conv%"];
+      const rows = report.map(r => [r.Employee, r.Leads, r.Calls_Made, r.Calls_Attended, r.Quotes, r.Won, r.Conv]);
       exportPDF("BDE Conversion Analysis", headers, rows, "BDE_Conversion");
     }
   };
@@ -412,25 +455,29 @@ export default function Reports() {
 
   const handleMeetingAudit = async (formatType: 'csv' | 'pdf') => {
     // 1. Query activities specifically for meetings
-    const { data: activitiesData } = await supabase
+    const { data: actRaw } = await supabase
       .from('activities' as any)
       .select('id, type, title, description, created_at, created_by, lead_id')
       .eq('type', 'meeting');
 
     // 2. Separately fetch profiles for name mapping
-    const { data: profilesData } = await supabase
+    const { data: profRaw } = await supabase
       .from('profiles' as any)
       .select('id, full_name');
 
     // 3. Separately fetch leads for company mapping
-    const { data: leadsData } = await supabase
+    const { data: leadsRaw } = await supabase
       .from('leads' as any)
       .select('id, company_name');
 
+    const activitiesData = (actRaw || []) as any[];
+    const profilesData = (profRaw || []) as any[];
+    const leadsData = (leadsRaw || []) as any[];
+
     // 4. In JavaScript, join and format the data
-    const meetings = (activitiesData || []).map((activity: any) => {
-      const bdeName = (profilesData || []).find((p: any) => p.id === activity.created_by)?.full_name || 'Unknown';
-      const clientName = (leadsData || []).find((l: any) => l.id === activity.lead_id)?.company_name || activity.title || 'N/A';
+    const meetings = activitiesData.map((activity: any) => {
+      const bdeName = profilesData.find((p: any) => p.id === activity.created_by)?.full_name || 'Unknown';
+      const clientName = leadsData.find((l: any) => l.id === activity.lead_id)?.company_name || activity.title || 'N/A';
       const dateStr = activity.created_at ? new Date(activity.created_at).toLocaleDateString() : 'N/A';
 
       return {
@@ -467,6 +514,27 @@ export default function Reports() {
       const headers = ["Order ID", "Order Date", "Amount (USD)", "Fulfillment Status"];
       const rows = revenue.map(r => [r.Order, r.Date, r.Value, r.Status]);
       exportPDF("Revenue Pipeline Trend", headers, rows, "Revenue_Pipeline");
+    }
+  };
+
+  const handleAcquisitionFunnelReport = (formatType: 'csv' | 'pdf') => {
+    if (!data) return;
+    const report = data.acquisitions
+      .filter(a => isInDateRange(a.acquisition_date || a.created_at))
+      .map(a => ({
+        Client: a.client_name,
+        Date: format(parseISO(a.acquisition_date || a.created_at), 'yyyy-MM-dd'),
+        Source: a.inquiry_source || "N/A",
+        BDE: data.profiles.find(p => p.id === a.assigned_bde || p.full_name === a.assigned_bde)?.full_name || "Unassigned",
+        Stage: a.status,
+        Value: `$${(Number(a.deal_value) || 0).toLocaleString()}`
+      }));
+
+    if (formatType === 'csv') exportCSV(report, "Acquisition_Funnel");
+    else {
+      const headers = ["Client", "Date", "Source", "BDE", "Current Stage", "Value"];
+      const rows = report.map(r => [r.Client, r.Date, r.Source, r.BDE, r.Stage, r.Value]);
+      exportPDF("Client Acquisition Strategy Audit", headers, rows, "Acquisition_Funnel");
     }
   };
 
@@ -829,6 +897,16 @@ export default function Reports() {
             onPdf: () => handleRevenueTrends('pdf'),
             onCsv: () => handleRevenueTrends('excel'),
             csvLabel: "Excel Data"
+          },
+          { 
+            title: "Client Acquisition Intel", 
+            icon: Globe, 
+            color: "text-amber-500", 
+            bg: "bg-amber-500/10", 
+            border: "hover:border-amber-500/30",
+            desc: "End-to-end tracking of the client acquisition funnel, auditing every stage from lead generated to successfully acquired partner.",
+            onPdf: () => handleAcquisitionFunnelReport('pdf'),
+            onCsv: () => handleAcquisitionFunnelReport('csv')
           }
         ].map((report, idx) => (
           <Card key={idx} className={cn("bg-neutral-900/40 p-8 border-white/5 shadow-xl transition-all duration-500 overflow-hidden group flex flex-col h-full", report.border)}>

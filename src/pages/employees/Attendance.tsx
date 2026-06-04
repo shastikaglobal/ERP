@@ -37,6 +37,7 @@ const salaryMap: Record<string, number> = {
   'Preethi M': 30000,
   'sathpreethika': 12000,
   'Swathi Swathi': 8000,
+  'Vemula Navya lahari': 12000,
   'uma parameshwari': 17000
 };
 

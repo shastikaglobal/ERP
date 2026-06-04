@@ -108,17 +108,29 @@ export default function LeadsList() {
   const [team, setTeam] = useState<any[]>([]);
   const [assignedTo, setAssignedTo] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("All Countries");
 
-  const filteredLeads = leads.filter(lead => {
+  const uniqueCountries = Array.from(
+    new Set(leads
+      .map((lead) => lead.country?.trim() || "")
+      .filter(Boolean))
+  ).sort();
+
+  const filteredLeads = leads.filter((lead) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       lead.company_name?.toLowerCase().includes(query) ||
       lead.country?.toLowerCase().includes(query) ||
       lead.product_type?.toLowerCase().includes(query) ||
       lead.assigned_to?.toLowerCase().includes(query) ||
       lead.business_category?.toLowerCase().includes(query) ||
-      lead.mobile?.toLowerCase().includes(query)
-    );
+      lead.mobile?.toLowerCase().includes(query);
+
+    const matchesCountry =
+      selectedCountry === "All Countries" ||
+      lead.country === selectedCountry;
+
+    return matchesSearch && matchesCountry;
   });
 
   const fetchLeads = async () => {
@@ -264,6 +276,7 @@ export default function LeadsList() {
           company_id: companyId,
           name: lead.company_name,
           country: lead.country,
+          email: lead.email,
         })
         .select()
         .single();
@@ -682,15 +695,33 @@ export default function LeadsList() {
         </Dialog>
       </div>
 
-      {/* Search Box */}
-      <div className="relative w-full max-w-2xl">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by company, country, product, assigned to..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-card border-border focus-visible:ring-primary h-11"
-        />
+      {/* Search and Country Filter */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full max-w-4xl">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by company, country, product, assigned to..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-card border-border focus-visible:ring-primary h-11"
+          />
+        </div>
+        <div className="w-full max-w-xs">
+          <Label className="sr-only">Country filter</Label>
+          <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+            <SelectTrigger className="h-11 w-full bg-card border-border">
+              <SelectValue placeholder="All Countries" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="All Countries">All Countries</SelectItem>
+              {uniqueCountries.map((country) => (
+                <SelectItem key={country} value={country}>
+                  {country}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}

@@ -30,6 +30,8 @@ import CrmCommunication from "./pages/crm/Communication";
 import CrmCustomerDatabase from "./pages/crm/CustomerDatabase";
 import CrmEmployeeActivity from "./pages/crm/EmployeeActivity";
 import CrmScreenMonitor from "./pages/crm/ScreenMonitor";
+import CrmConvert from "./pages/crm/Convert";
+import CrmCustomersList from "./pages/crm/CustomersList";
 
 // Mobile CRM
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -269,6 +271,8 @@ const App = () => (
               <Route path="/crm/customer-database" element={<CrmCustomerDatabase />} />
               <Route path="/crm/employee-activity" element={<CrmEmployeeActivity />} />
               <Route path="/crm/screen-monitor" element={<CrmScreenMonitor />} />
+              <Route path="/crm/convert" element={<CrmConvert />} />
+              <Route path="/crm/customers" element={<CrmCustomersList />} />
 
               {/* Mobile pages */}
               <Route path="/mobile/login" element={<MobileLogin />} />

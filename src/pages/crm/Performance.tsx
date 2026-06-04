@@ -10,19 +10,38 @@ import {
   Download, 
   Loader2, 
   User,
-  Calendar,
+  Calendar as CalendarIcon,
   BarChart3,
   Trophy,
   Award,
-  Clock
+  Clock,
+  Mail,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfDay, startOfWeek, startOfMonth, subDays, isAfter, differenceInMinutes } from "date-fns";
+import { format, startOfDay, startOfWeek, subDays, isAfter, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsAdminOrManager } from "@/hooks/useAuth";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import Papa from "papaparse";
+import { startOfMonth, isWithinInterval, parseISO } from "date-fns";
 
 export default function Performance() {
   const { profile: currentUser, roleSlugs } = useAuth();
@@ -35,7 +54,13 @@ export default function Performance() {
     activities: any[];
     followUps: any[];
     quotations: any[];
+    dailyReports: any[];
   } | null>(null);
+
+  // Filters
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [selectedBDE, setSelectedBDE] = useState<string>("all");
 
   const isAdminOrManager = useIsAdminOrManager();
 
@@ -48,14 +73,16 @@ export default function Performance() {
         { data: activities },
         { data: followUps },
         { data: quotations },
-        { data: userRoles }
+        { data: userRoles },
+        { data: dailyReports }
       ] = await Promise.all([
         supabase.from("profiles" as any).select("id, full_name, avatar_url, monthly_target"),
         supabase.from("leads" as any).select("id, assigned_to, stage, created_at"),
         supabase.from("activities" as any).select("*"),
         supabase.from("follow_ups" as any).select("id, assigned_to, is_notified, created_at"),
         supabase.from("quotations" as any).select("*"),
-        supabase.from("user_roles" as any).select("user_id, roles(name)")
+        supabase.from("user_roles" as any).select("user_id, roles(name)"),
+        supabase.from("bde_daily_reports" as any).select("*")
       ]);
 
       // Manually attach roles to profiles
@@ -72,7 +99,8 @@ export default function Performance() {
         leads: (leads || []) as any[],
         activities: (activities || []) as any[],
         followUps: (followUps || []) as any[],
-        quotations: (quotations || []) as any[]
+        quotations: (quotations || []) as any[],
+        dailyReports: (dailyReports || []) as any[]
       });
     } catch (error: any) {
       toast.error("Failed to load performance data");
@@ -89,7 +117,7 @@ export default function Performance() {
   const performanceStats = useMemo(() => {
     if (!data) return [];
 
-    const { profiles, leads, activities, followUps, quotations } = data;
+    const { profiles, leads, activities, followUps, quotations, dailyReports } = data;
 
     const isEmployeeMatch = (dbValue: any, employee: any) => {
       if (!dbValue || !employee) return false;
@@ -100,21 +128,45 @@ export default function Performance() {
       return val === empId || (empName && val === empName);
     };
 
-    const stats = profiles.filter(p => !['admin', 'manager'].includes(p.role_name.toLowerCase())).map(employee => {
+    const isInDateRange = (dateStr: string) => {
+      if (!dateStr) return false;
+      try {
+        const d = parseISO(dateStr);
+        return isWithinInterval(d, { start: startDate, end: endDate });
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const stats = profiles
+      .filter(p => !['admin', 'manager'].includes((p.role_name || "").toLowerCase()))
+      .map(employee => {
+        if (selectedBDE !== 'all' && employee.id !== selectedBDE) return null;
+
       const role = employee.role_name;
-      const employeeLeads = leads.filter(l => isEmployeeMatch(l.assigned_to, employee));
+      const employeeLeads = leads.filter(l => 
+        isEmployeeMatch(l.assigned_to, employee) && 
+        isInDateRange(l.created_at)
+      );
       const employeeLeadIds = new Set(employeeLeads.map(l => l.id));
 
-      const employeeActivities = activities.filter(a => 
-        isEmployeeMatch(a.created_by, employee) || 
-        (a.lead_id && employeeLeadIds.has(a.lead_id))
+      const employeeQuotes = quotations.filter(q => 
+        (isEmployeeMatch(q.created_by, employee) || (q.lead_id && employeeLeadIds.has(q.lead_id))) &&
+        isInDateRange(q.created_at)
       );
 
-      const employeeFollowUps = followUps.filter(f => isEmployeeMatch(f.assigned_to, employee) && f.is_notified);
+      const employeeActivities = activities.filter(a => 
+        (isEmployeeMatch(a.created_by, employee) || (a.lead_id && employeeLeadIds.has(a.lead_id))) &&
+        isInDateRange(a.created_at)
+      );
 
-      const employeeQuotes = quotations.filter(q => 
-        isEmployeeMatch(q.created_by, employee) || 
-        (q.lead_id && employeeLeadIds.has(q.lead_id))
+      const employeeFollowUps = followUps.filter(f => 
+        isEmployeeMatch(f.assigned_to, employee) && f.is_notified && 
+        isInDateRange(f.created_at)
+      );
+      const employeeDailyReports = dailyReports.filter(dr => 
+        isEmployeeMatch(dr.bde_id, employee) &&
+        isInDateRange(dr.report_date)
       );
 
       const responseTimes: number[] = [];
@@ -147,10 +199,32 @@ export default function Performance() {
       };
 
       const leadsHandled = employeeLeads.length;
-      const callsMade = employeeActivities.filter(a => 
+      
+      // Aggregate calls from both activities AND daily reports
+      const individualCalls = employeeActivities.filter(a => 
         ['call', 'phone'].includes(a.type?.toLowerCase()?.trim())
       ).length;
-      const followUpsCompleted = employeeFollowUps.length;
+      const reportedCalls = employeeDailyReports.reduce((sum, dr) => sum + (Number(dr.total_calls) || 0), 0);
+      const callsMade = Math.max(individualCalls, reportedCalls);
+
+      // Aggregate follow-ups from both types
+      const individualFollowUps = employeeFollowUps.length;
+      const reportedAttended = employeeDailyReports.reduce((sum, dr) => sum + (Number(dr.calls_attended) || 0), 0);
+      const followUpsCompleted = Math.max(individualFollowUps, reportedAttended);
+
+      // Aggregate Emails
+      const individualEmails = employeeActivities.filter(a => 
+        ['email'].includes(a.type?.toLowerCase()?.trim())
+      ).length;
+      const reportedEmails = employeeDailyReports.reduce((sum, dr) => sum + (Number(dr.emails_sent) || 0), 0);
+      const emailsSent = Math.max(individualEmails, reportedEmails);
+
+      // Aggregate LinkedIn
+      const individualLinkedin = employeeActivities.filter(a => 
+        ['linkedin'].includes(a.type?.toLowerCase()?.trim())
+      ).length;
+      const reportedLinkedin = employeeDailyReports.reduce((sum, dr) => sum + (Number(dr.linkedin_messages) || 0), 0);
+      const linkedinMessages = Math.max(individualLinkedin, reportedLinkedin);
       
       const dealsClosed = employeeLeads.filter(l => 
         ['won', 'closed won', 'closed_won', 'won', 'Closed Won'].includes(l.stage?.toLowerCase()?.trim())
@@ -177,13 +251,15 @@ export default function Performance() {
         leadsHandled,
         callsMade,
         followUpsCompleted,
+        emailsSent,
+        linkedinMessages,
         dealsClosed,
         revenueGenerated,
         conversionRatio,
         avgResponseTime: formatResponseTime(avgMinutes),
         monthlyTarget: Number(employee.monthly_target) || 0
       };
-    });
+    }).filter(Boolean);
 
     const maxLeads = Math.max(...stats.map(s => s.leadsHandled), 0);
 
@@ -191,7 +267,7 @@ export default function Performance() {
       ...s,
       isTopPerformer: maxLeads > 0 && s.leadsHandled === maxLeads
     })).sort((a, b) => b.revenueGenerated - a.revenueGenerated);
-  }, [data]);
+  }, [data, startDate, endDate, selectedBDE]);
 
   const handleUpdateTarget = async (employeeId: string) => {
     const val = parseFloat(targetValue);
@@ -216,34 +292,10 @@ export default function Performance() {
     }
   };
 
-  const downloadCSV = (data: any[], filename: string) => {
-    if (data.length === 0) {
-      toast.error("No data available for this report");
-      return;
-    }
-    
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(","),
-      ...data.map(row => headers.map(header => `"${row[header]}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${filename}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleReportDownload = (type: string) => {
+  const exportReport = (type: string, fileFormat: 'csv' | 'pdf' | 'excel') => {
     if (!data) return;
     const { profiles, leads, activities, followUps, quotations } = data;
-    const today = startOfDay(new Date());
-
+    
     const getEmployeeName = (dbValue: any) => {
       if (!dbValue) return "Unknown";
       const val = String(dbValue).trim().toLowerCase();
@@ -256,56 +308,100 @@ export default function Performance() {
 
     let reportData: any[] = [];
     let fileName = "";
+    let title = "";
 
     switch (type) {
       case 'daily':
         fileName = "Daily_Activity_Report";
+        title = "Daily Sales Activity Logs";
         reportData = (activities || [])
-          .filter(a => isAfter(new Date(a.created_at), today))
+          .filter(a => isWithinInterval(parseISO(a.created_at), { start: startDate, end: endDate }))
           .map(a => ({
+            Date: format(parseISO(a.created_at), 'yyyy-MM-dd'),
             Employee: getEmployeeName(a.created_by),
             Type: a.type,
-            Time: format(new Date(a.created_at), 'hh:mm a')
+            Log: a.description || a.title || "Interaction log"
           }));
         break;
 
       case 'weekly':
-        fileName = "Weekly_Performance_Report";
-        reportData = performanceStats.map(s => ({
+        fileName = "Performance_Summary";
+        title = "Periodic Performance Summary";
+        reportData = performanceStats.map((s: any) => ({
           Employee: s.name,
           Leads: s.leadsHandled,
           Calls: s.callsMade,
           FollowUps: s.followUpsCompleted,
+          Emails: s.emailsSent,
+          LinkedIn: s.linkedinMessages,
+          Revenue: s.revenueGenerated,
           Conversion: `${s.conversionRatio}%`
         }));
         break;
 
       case 'monthly':
-        fileName = "Monthly_Sales_Report";
-        const firstOfMonth = startOfMonth(new Date());
+        fileName = "Sales_Revenue_Report";
+        title = "Sales & Revenue Audit";
         reportData = (quotations || [])
-          .filter(q => isAfter(new Date(q.created_at), firstOfMonth))
+          .filter(q => isWithinInterval(parseISO(q.created_at), { start: startDate, end: endDate }))
           .map(q => ({
+            Date: format(parseISO(q.created_at), 'yyyy-MM-dd'),
             Employee: getEmployeeName(q.created_by),
             Amount: Number(q.total_amount) || Number(q.amount) || 0,
-            Date: format(new Date(q.created_at), 'yyyy-MM-dd')
+            Status: q.status || "Draft"
           }));
         break;
 
       case 'ranking':
-        fileName = "Employee_Ranking_Report";
+        fileName = "Employee_Leaderboard";
+        title = "BDE Performance Leaderboard";
         reportData = [...performanceStats]
           .sort((a, b) => b.leadsHandled - a.leadsHandled)
-          .map((s, idx) => ({
+          .map((s: any, idx) => ({
             Rank: idx + 1,
             Employee: s.name,
-            Leads_Handled: s.leadsHandled,
-            Revenue: `${s.revenueGenerated.toLocaleString()}`
+            Leads: s.leadsHandled,
+            Revenue: s.revenueGenerated,
+            Response: s.avgResponseTime
           }));
         break;
     }
 
-    downloadCSV(reportData, fileName);
+    if (fileFormat === 'csv') {
+      const csv = Papa.unparse(reportData);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `${fileName}.csv`);
+      link.click();
+    } else if (fileFormat === 'excel') {
+      const ws = XLSX.utils.json_to_sheet(reportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Report");
+      XLSX.writeFile(wb, `${fileName}.xlsx`);
+    } else {
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text("SHASTIKA GLOBAL ERP", 14, 22);
+      doc.setFontSize(14);
+      doc.text(title, 14, 32);
+      doc.setFontSize(10);
+      doc.text(`Period: ${format(startDate, 'PP')} - ${format(endDate, 'PP')}`, 14, 40);
+      
+      let y = 50;
+      const headers = Object.keys(reportData[0] || {});
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 14 + (i * 35), y));
+      
+      doc.setFont("helvetica", "normal");
+      reportData.forEach(row => {
+        y += 8;
+        if (y > 280) { doc.addPage(); y = 20; }
+        headers.forEach((h, i) => doc.text(String(row[h]).substring(0, 15), 14 + (i * 35), y));
+      });
+      doc.save(`${fileName}.pdf`);
+    }
+    toast.success(`${fileFormat.toUpperCase()} exported successfully`);
   };
 
   if (loading) {
@@ -320,13 +416,66 @@ export default function Performance() {
     <div className="space-y-8 animate-fade-in text-foreground pb-10">
       <SectionHeader
         title="Employee Performance Monitoring"
-        sub="Measures employee productivity and sales efficiency"
+        sub="Measures employee productivity and sales efficiency using live database metrics."
       />
+
+      {/* Unified Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-neutral-900/60 p-6 rounded-3xl border border-white/5 backdrop-blur-xl mb-8">
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Timeframe From</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start bg-black/40 border-white/10 text-white font-mono h-11 rounded-xl">
+                {format(startDate, "MMM dd, yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-neutral-900 border-white/10">
+              <Calendar mode="single" selected={startDate} onSelect={(d) => d && setStartDate(d)} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Timeframe To</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start bg-black/40 border-white/10 text-white font-mono h-11 rounded-xl">
+                {format(endDate, "MMM dd, yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-neutral-900 border-white/10">
+              <Calendar mode="single" selected={endDate} onSelect={(d) => d && setEndDate(d)} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase font-black text-muted-foreground ml-1">BDE Associate</label>
+          <Select value={selectedBDE} onValueChange={setSelectedBDE}>
+            <SelectTrigger className="w-full bg-black/40 border-white/10 text-white h-11 rounded-xl">
+              <SelectValue placeholder="All Associates" />
+            </SelectTrigger>
+            <SelectContent className="bg-neutral-900 border-white/10">
+              <SelectItem value="all">Every Associate</SelectItem>
+              {data?.profiles.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-end">
+          <Button 
+            variant="ghost" 
+            className="w-full h-11 text-[10px] uppercase font-black text-muted-foreground hover:bg-white/5 rounded-xl underline"
+            onClick={() => { setStartDate(startOfMonth(new Date())); setEndDate(new Date()); setSelectedBDE('all'); }}
+          >
+            Clear Filters
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="h-5 w-5 text-[#c8a84b]" />
-          <h2 className="text-xl font-bold text-[#c8a84b] uppercase tracking-wider">KPIs</h2>
+          <h2 className="text-xl font-bold text-[#c8a84b] uppercase tracking-wider">KPIs Breakdown</h2>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -382,11 +531,23 @@ export default function Performance() {
                        <CheckCircle2 className="h-4 w-4 text-emerald-400" /> {emp.followUpsCompleted}
                     </div>
                   </div>
-
                   <div className="space-y-1 text-right">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Response</div>
                     <div className="text-xl font-black font-mono text-white flex items-center gap-2 justify-end">
                        {emp.avgResponseTime} <Clock className="h-4 w-4 text-blue-400" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Emails Sent</div>
+                    <div className="text-xl font-black font-mono text-white flex items-center gap-2">
+                       <Mail className="h-4 w-4 text-orange-400" /> {emp.emailsSent}
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">LinkedIn</div>
+                    <div className="text-xl font-black font-mono text-white flex items-center gap-2 justify-end">
+                       {emp.linkedinMessages} <Globe className="h-4 w-4 text-blue-500" />
                     </div>
                   </div>
 
@@ -396,7 +557,6 @@ export default function Performance() {
                        <DollarSign className="h-4 w-4" /> {emp.revenueGenerated.toLocaleString()}
                     </div>
                   </div>
-
                   <div className="space-y-1 text-right">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Deals Won</div>
                     <div className="text-xl font-black font-mono text-white flex items-center gap-2 justify-end">
@@ -471,53 +631,77 @@ export default function Performance() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button 
-            variant="outline" 
-            className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
-            onClick={() => handleReportDownload('daily')}
-          >
-            <Calendar className="h-6 w-6 text-blue-400 group-hover:scale-110 transition-transform" />
-            <div className="text-center">
-              <div className="text-xs font-black uppercase tracking-widest">Daily Activity</div>
-              <div className="text-[10px] text-muted-foreground mt-1">Today's logs per employee</div>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
+            >
+              <CalendarIcon className="h-6 w-6 text-blue-400 group-hover:scale-110 transition-transform" />
+              <div className="text-center">
+                <div className="text-xs font-black uppercase tracking-widest">Daily Activity</div>
+                <div className="text-[10px] text-muted-foreground mt-1">Activity logs in range</div>
+              </div>
+            </Button>
+            <div className="flex gap-1">
+              {['csv', 'pdf', 'excel'].map((fmt: any) => (
+                <Button key={fmt} size="sm" variant="ghost" className="flex-1 text-[9px] uppercase font-black bg-white/5 hover:bg-white/10" onClick={() => exportReport('daily', fmt)}>{fmt}</Button>
+              ))}
             </div>
-          </Button>
+          </div>
 
-          <Button 
-            variant="outline" 
-            className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
-            onClick={() => handleReportDownload('weekly')}
-          >
-            <TrendingUp className="h-6 w-6 text-purple-400 group-hover:scale-110 transition-transform" />
-            <div className="text-center">
-              <div className="text-xs font-black uppercase tracking-widest">Weekly Performance</div>
-              <div className="text-[10px] text-muted-foreground mt-1">Last 7 days metrics</div>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
+            >
+              <TrendingUp className="h-6 w-6 text-purple-400 group-hover:scale-110 transition-transform" />
+              <div className="text-center">
+                <div className="text-xs font-black uppercase tracking-widest">Performance summary</div>
+                <div className="text-[10px] text-muted-foreground mt-1">KPIS in date range</div>
+              </div>
+            </Button>
+            <div className="flex gap-1">
+              {['csv', 'pdf', 'excel'].map((fmt: any) => (
+                <Button key={fmt} size="sm" variant="ghost" className="flex-1 text-[9px] uppercase font-black bg-white/5 hover:bg-white/10" onClick={() => exportReport('weekly', fmt)}>{fmt}</Button>
+              ))}
             </div>
-          </Button>
+          </div>
 
-          <Button 
-            variant="outline" 
-            className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
-            onClick={() => handleReportDownload('monthly')}
-          >
-            <DollarSign className="h-6 w-6 text-emerald-400 group-hover:scale-110 transition-transform" />
-            <div className="text-center">
-              <div className="text-xs font-black uppercase tracking-widest">Monthly Sales</div>
-              <div className="text-[10px] text-muted-foreground mt-1">Revenue generation summary</div>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
+            >
+              <DollarSign className="h-6 w-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <div className="text-center">
+                <div className="text-xs font-black uppercase tracking-widest">Revenue Forecast</div>
+                <div className="text-[10px] text-muted-foreground mt-1">Quotations & Deals</div>
+              </div>
+            </Button>
+            <div className="flex gap-1">
+              {['csv', 'pdf', 'excel'].map((fmt: any) => (
+                <Button key={fmt} size="sm" variant="ghost" className="flex-1 text-[9px] uppercase font-black bg-white/5 hover:bg-white/10" onClick={() => exportReport('monthly', fmt)}>{fmt}</Button>
+              ))}
             </div>
-          </Button>
+          </div>
 
-          <Button 
-            variant="outline" 
-            className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
-            onClick={() => handleReportDownload('ranking')}
-          >
-            <Award className="h-6 w-6 text-[#c8a84b] group-hover:scale-110 transition-transform" />
-            <div className="text-center">
-              <div className="text-xs font-black uppercase tracking-widest">Employee Ranking</div>
-              <div className="text-[10px] text-muted-foreground mt-1">Leads handled leaderboard</div>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto py-6 flex flex-col gap-3 bg-neutral-900/40 border-white/10 hover:border-[#c8a84b] hover:bg-[#c8a84b]/5 text-white transition-all group"
+            >
+              <Award className="h-6 w-6 text-[#c8a84b] group-hover:scale-110 transition-transform" />
+              <div className="text-center">
+                <div className="text-xs font-black uppercase tracking-widest">Leaderboard</div>
+                <div className="text-[10px] text-muted-foreground mt-1">Ranking by handled leads</div>
+              </div>
+            </Button>
+            <div className="flex gap-1">
+              {['csv', 'pdf', 'excel'].map((fmt: any) => (
+                <Button key={fmt} size="sm" variant="ghost" className="flex-1 text-[9px] uppercase font-black bg-white/5 hover:bg-white/10" onClick={() => exportReport('ranking', fmt)}>{fmt}</Button>
+              ))}
             </div>
-          </Button>
+          </div>
         </div>
       </div>
     </div>

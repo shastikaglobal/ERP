@@ -1,139 +1,90 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { UserCheck, ArrowRight, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Section } from "@/components/shared/FormShell";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, CheckCircle2, Globe, Calendar } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
-
-type Lead = {
-  id: string;
-  company_name: string;
-  contact_name: string;
-  country: string;
-  interested_product: string;
-  stage: string;
-};
-
-export default function ConvertLead() {
-  const { roleSlugs } = useAuth();
-  const isAdmin = roleSlugs.has("admin");
-  const nav = useNavigate();
-
-  const [eligible, setEligible] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [converting, setConverting] = useState<string | null>(null);
-
-  const fetchEligibleLeads = async () => {
-    try {
+export default function CrmConvert() {
+  const { data: conversions, isLoading } = useQuery({
+    queryKey: ["crm-conversions"],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .in("stage", ["negotiation", "qualified"])
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setEligible(data as unknown as Lead[]);
-    } catch (error: any) {
-      toast.error("Failed to load eligible leads");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEligibleLeads();
-  }, []);
-
-  const handleConvert = async (lead: any) => {
-    setConverting(lead.id);
-    try {
-      // 1. First, create the official Customer record
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .insert({
-          name: lead.company_name,
-          email: lead.email || null,
-          phone: lead.phone || null,
-          country: lead.country || null,
-          company_id: lead.company_id,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select()
-        .single();
-
-      if (customerError) {
-        if (customerError.code === '23505') {
-          throw new Error("This customer already exists in your directory.");
-        }
-        throw customerError;
-      }
-
-      // 2. Mark the lead as won
-      const { error: leadError } = await supabase
-        .from("leads")
-        .update({ stage: "won" })
-        .eq("id", lead.id);
-
-      if (leadError) throw leadError;
+        .eq("stage", "Won")
+        .order("updated_at", { ascending: false });
       
-      toast.success(`${lead.company_name} is now an official Customer!`);
-      // Remove from list
-      setEligible(eligible.filter(l => l.id !== lead.id));
-    } catch (error: any) {
-      console.error("Conversion error:", error);
-      toast.error(error.message || "Failed to convert lead");
-    } finally {
-      setConverting(null);
-    }
-  };
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
-    <div>
+    <div className="p-6 space-y-6">
       <PageHeader 
-        title="Convert Lead to Customer" 
-        description="Promote qualified leads into your customer database" 
-        breadcrumbs={[{ label: "CRM" }, { label: "Convert" }]} 
+        title="Successful Conversions" 
+        description="Monitor leads that have been successfully converted into customers"
+        breadcrumbs={[{ label: "CRM", to: "/crm/dashboard" }, { label: "Conversions" }]}
       />
-      <Section title="Eligible Leads">
-        {loading ? (
-          <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : eligible.length === 0 ? (
-          <div className="text-center p-6 text-muted-foreground">No leads eligible for conversion right now. (Only 'qualified' or 'negotiation' leads appear here)</div>
-        ) : (
-          <div className="space-y-2">
-            {eligible.map((l) => (
-              <div key={l.id} className="flex items-center justify-between p-3 border border-border rounded-md hover:bg-muted/40 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-primary-muted text-primary flex items-center justify-center text-xs font-semibold">
-                    {l.company_name.split(" ").map(n => n[0]).slice(0, 2).join("")}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{l.company_name}</div>
-                    <div className="text-xs text-muted-foreground">{l.contact_name || "No contact"} · {l.country || "Unknown location"} · {l.interested_product || "No product"}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={l.stage} />
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleConvert(l)}
-                    disabled={converting === l.id || !isAdmin}
-                  >
 
-                    {converting === l.id ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5 mr-1.5" />}
-                    Convert <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      <div className="border rounded-xl bg-card overflow-hidden shadow-sm border-border">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow>
+              <TableHead className="font-bold">Conversion Date</TableHead>
+              <TableHead className="font-bold">Company Name</TableHead>
+              <TableHead className="font-bold">Country</TableHead>
+              <TableHead className="font-bold">Product</TableHead>
+              <TableHead className="text-right font-bold">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary opacity-50" />
+                  <p className="mt-2 text-sm text-muted-foreground">Loading conversions...</p>
+                </TableCell>
+              </TableRow>
+            ) : conversions?.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-20">
+                  <div className="max-w-xs mx-auto space-y-2">
+                    <CheckCircle2 className="h-10 w-10 mx-auto text-muted-foreground opacity-20" />
+                    <p className="text-muted-foreground font-medium">No successful conversions yet.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              conversions?.map((conversion) => (
+                <TableRow key={conversion.id} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      {format(new Date(conversion.updated_at), "dd MMM yyyy")}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-bold">{conversion.company_name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-3.5 w-3.5 text-blue-500/70" />
+                      {conversion.country}
+                    </div>
+                  </TableCell>
+                  <TableCell>{conversion.product_type}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 uppercase text-[10px]">
+                      Won
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
