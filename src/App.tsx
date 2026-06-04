@@ -151,7 +151,7 @@ const DashboardRedirect = () => {
   const isBde = slugs.includes("bd") ||
     slugs.includes("bde") ||
     (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
-    
+
   if (isAdmin) return <Navigate to="/dashboards/executive" replace />;
   if (isSecretary) return <Navigate to="/dashboards/finance-tally" replace />;
   if (isBde) return <Navigate to="/dashboards/bde" replace />;
@@ -207,7 +207,7 @@ const App = () => (
               <Route path="/dashboards/sales" element={<SalesAnalytics />} />
               <Route path="/dashboards/shipments" element={<ShipmentAnalytics />} />
               <Route path="/dashboards/financial" element={<FinancialOverview />} />
-              <Route path="/dashboards/employees" element={<EmployeeProductivity />} /> 
+              <Route path="/dashboards/employees" element={<EmployeeProductivity />} />
 
               {/* Farmers */}
               <Route path="/farmers" element={<FarmersList />} />

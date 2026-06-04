@@ -1,7 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchBdeProfiles } from "@/lib/bde";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Loader2, Plus, Trash2, MessageSquare, Search } from "lucide-react";
+import { Loader2, Plus, Trash2, MessageSquare, Search, FileDown, FileSpreadsheet, ShieldCheck, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -21,8 +20,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 
+// CRM Security Imports
+import { useCRMPermissions } from "@/hooks/useCRMPermissions";
+import { exportCRMtoPDF, exportCRMtoExcel } from "@/utils/crmExport";
+import { useCRMPageTracking } from "@/hooks/useCRMPageTracking";
 
 type Lead = {
+
   id: string;
   date: string;
   business_category: string;
@@ -36,6 +40,7 @@ type Lead = {
   stage: string;
   assigned_to: string | null;
   remark?: string | null;
+  source_id?: string | null;
 };
 
 const STAGES = ["New", "Contacted", "Negotiation", "Qualified", "Won", "Lost"];
@@ -68,7 +73,11 @@ const parseEmails = (value?: string | null) =>
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 export default function LeadsList() {
+  useCRMPageTracking(); // STEP 5: Add page tracking
   const { roleSlugs } = useAuth();
+
+  const { isAdmin, isManager, isPrivileged, canExportPDF, canExportExcel, isLoading: permissionsLoading } = useCRMPermissions();
+
   // Allow admin, manager and bde to edit lead stage
   const canEditStage = ["admin", "manager", "bde"].some((r) => roleSlugs.has(r));
   const nav = useNavigate();
@@ -80,8 +89,8 @@ export default function LeadsList() {
   const [selectedFollowUpLead, setSelectedFollowUpLead] = useState<Lead | null>(null);
   const [followUpDate, setFollowUpDate] = useState("");
   const [followUpNote, setFollowUpNote] = useState("");
-  const [bdeMembers, setBdeMembers] = useState<any[]>([]);
-  const [followUpAssignedTo, setFollowUpAssignedTo] = useState("");
+  const bdTeam = ["Gayathri"];
+  const [followUpAssignedTo, setFollowUpAssignedTo] = useState(bdTeam[0]);
 
   const [isRemarkOpen, setIsRemarkOpen] = useState(false);
   const [selectedRemarkLead, setSelectedRemarkLead] = useState<Lead | null>(null);
@@ -106,7 +115,9 @@ export default function LeadsList() {
 
   // Assignment state
   const [team, setTeam] = useState<any[]>([]);
+  const [sources, setSources] = useState<any[]>([]);
   const [assignedTo, setAssignedTo] = useState("");
+  const [sourceId, setSourceId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredLeads = leads.filter(lead => {
@@ -124,7 +135,7 @@ export default function LeadsList() {
   const fetchLeads = async () => {
     try {
       const { data, error } = await supabase
-        .from("leads" as any)
+        .from("leads")
         .select(`*`)
         .order("created_at", { ascending: false });
 
@@ -134,19 +145,6 @@ export default function LeadsList() {
       toast.error(error.message || "Failed to fetch leads");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchBdeMembers = async () => {
-    try {
-      const filtered = await fetchBdeProfiles(supabase);
-
-      setBdeMembers(filtered);
-      if (filtered.length > 0 && !followUpAssignedTo) {
-        setFollowUpAssignedTo(filtered[0].full_name || "");
-      }
-    } catch (err) {
-      console.error("Failed to fetch BDE members:", err);
     }
   };
 
@@ -163,10 +161,15 @@ export default function LeadsList() {
     }
   };
 
+  const fetchSources = async () => {
+    const { data } = await supabase.from('acquisition_channels').select('id, channel_name').order('channel_name');
+    if (data) setSources(data);
+  };
+
   useEffect(() => {
     fetchLeads();
     fetchTeam();
-    fetchBdeMembers();
+    fetchSources();
 
     // Add realtime subscription for leads
     const channel = supabase
@@ -195,6 +198,7 @@ export default function LeadsList() {
     setEmail("");
     setWebsite("");
     setAssignedTo("");
+    setSourceId("");
   };
 
   const handleAddLead = async (e: React.FormEvent) => {
@@ -224,7 +228,7 @@ export default function LeadsList() {
         throw new Error("You must be logged in to create a lead");
       }
 
-      const { error } = await supabase.from("leads" as any).insert({
+      const { error } = await supabase.from("leads").insert({
         date: date || null,
         business_category: businessCategory,
         company_name: companyName,
@@ -235,7 +239,8 @@ export default function LeadsList() {
         email: parsedEmails.join(", "),
         website: website,
         stage: "New",
-        assigned_to: String(assignedTo || "")
+        assigned_to: String(assignedTo || ""),
+        source_id: sourceId && sourceId !== "none" ? sourceId : null
       } as any);
 
       if (error) throw error;
@@ -270,7 +275,7 @@ export default function LeadsList() {
 
       if (customerError) throw customerError;
 
-      await supabase.from("leads" as any).update({ stage: "Won" }).eq("id", lead.id);
+      await supabase.from("leads").update({ stage: "Won" }).eq("id", lead.id);
 
       toast.success(`${lead.company_name} is now a registered Customer!`);
       fetchLeads();
@@ -283,7 +288,7 @@ export default function LeadsList() {
     setSelectedFollowUpLead(lead);
     setFollowUpDate(new Date().toISOString().slice(0, 10));
     setFollowUpNote("");
-    setFollowUpAssignedTo(lead.assigned_to || (bdeMembers[0]?.full_name || ""));
+    setFollowUpAssignedTo(bdTeam[0]);
     setIsFollowUpOpen(true);
   };
 
@@ -308,7 +313,7 @@ export default function LeadsList() {
 
       // Update the lead's assigned_to field to reflect the new assignment
       const { error: updateError } = await supabase
-        .from("leads" as any)
+        .from("leads")
         .update({ assigned_to: assignee })
         .eq("id", selectedFollowUpLead.id);
 
@@ -319,7 +324,7 @@ export default function LeadsList() {
       setSelectedFollowUpLead(null);
       setFollowUpDate("");
       setFollowUpNote("");
-      setFollowUpAssignedTo(bdeMembers[0]?.full_name || "");
+      setFollowUpAssignedTo(bdTeam[0]);
 
       // Refresh the leads list to show the updated assigned_to value
       await fetchLeads();
@@ -356,7 +361,7 @@ export default function LeadsList() {
       const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
 
       const { error } = await supabase
-        .from("leads" as any)
+        .from("leads")
         .update({ remark: formattedRemark })
         .eq("id", selectedRemarkLead.id);
 
@@ -381,7 +386,7 @@ export default function LeadsList() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("leads" as any).delete().eq("id", deleteId);
+      const { error } = await supabase.from("leads").delete().eq("id", deleteId);
       if (error) throw error;
       toast.success("Lead deleted successfully");
       fetchLeads();
@@ -393,159 +398,239 @@ export default function LeadsList() {
     }
   };
 
+  const handleExportPDF = () => {
+    exportCRMtoPDF("crm-table", isPrivileged, filteredLeads.length);
+  };
+
+  const handleExportExcel = () => {
+    exportCRMtoExcel(filteredLeads, isPrivileged);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Leads</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" /> Add Lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Create New Lead</DialogTitle>
-              <DialogDescription className="text-muted-foreground/60 text-xs">
-                Enter company and contact details to add a new lead to the CRM.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleAddLead} className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Leads</h1>
+          {isAdmin ? (
+            <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 px-3 py-1">
+              <ShieldCheck className="h-3 w-3" /> Admin
+            </Badge>
+          ) : isManager ? (
+            <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1 px-3 py-1">
+              <ShieldCheck className="h-3 w-3" /> Manager
+            </Badge>
+          ) : (
+            <Badge className="bg-slate-500/10 text-slate-500 border-slate-500/20 gap-1 px-3 py-1">
+              <ShieldAlert className="h-3 w-3" /> View Only
+            </Badge>
+          )}
+        </div>
 
-              {/* DATE */}
-              <div className="space-y-2">
-                <Label className="text-foreground">DATE *</Label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  className="bg-background border-input"
-                />
-              </div>
+        <div className="flex items-center gap-3">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportPDF}
+                    disabled={!canExportPDF}
+                    className={!canExportPDF ? "opacity-40 cursor-not-allowed" : ""}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" /> Export PDF
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canExportPDF && <TooltipContent>Privileged access required</TooltipContent>}
+            </Tooltip>
+          </TooltipProvider>
 
-              {/* Business Category */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Business Category *</Label>
-                <Input
-                  value={businessCategory}
-                  onChange={(e) => setBusinessCategory(e.target.value)}
-                  placeholder="Enter Business Category"
-                  required
-                  className="bg-background border-input"
-                />
-              </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportExcel}
+                    disabled={!canExportExcel}
+                    className={!canExportExcel ? "opacity-40 cursor-not-allowed" : ""}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export Excel
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canExportExcel && <TooltipContent>Privileged access required</TooltipContent>}
+            </Tooltip>
+          </TooltipProvider>
 
-              {/* Company Name */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Company Name *</Label>
-                <Input
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Enter Company Name"
-                  required
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Contact Name */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Contact Name</Label>
-                <Input
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  placeholder="Enter contact person name"
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Product Type */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Product_Type *</Label>
-                <Input
-                  value={productType}
-                  onChange={(e) => setProductType(e.target.value)}
-                  placeholder="Enter Product_Type"
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Country */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Country *</Label>
-                <Input
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Enter Country"
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Mobile */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Mobile *</Label>
-                <Input
-                  type="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  placeholder="Enter Mobile Number"
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Email *</Label>
-                <Textarea
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter one or more emails, separated by commas, semicolons, or new lines."
-                  className="bg-background border-input min-h-[70px]"
-                  autoComplete="off"
-                  name="emails"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  You can paste or type many emails, separated by commas, semicolons, or new lines.
-                </p>
-              </div>
-
-              {/* Website */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Website</Label>
-                <Input
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="Enter Website"
-                  className="bg-background border-input"
-                />
-              </div>
-
-              {/* Assigned To */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Assigned To *</Label>
-                <Select value={assignedTo} onValueChange={setAssignedTo} required>
-                  <SelectTrigger className="h-10 bg-background border-input">
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bdeMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.full_name}>
-                        {member.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Submit */}
-              <Button type="submit" disabled={submitting} className="w-full bg-primary hover:bg-primary/90">
-                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save Lead
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" /> Add Lead
               </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Create New Lead</DialogTitle>
+                <DialogDescription className="text-muted-foreground/60 text-xs">
+                  Enter company and contact details to add a new lead to the CRM.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddLead} className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto pr-2">
 
-            </form>
-          </DialogContent>
-        </Dialog>
+                {/* DATE */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">DATE *</Label>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Business Category */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Business Category *</Label>
+                  <Input
+                    value={businessCategory}
+                    onChange={(e) => setBusinessCategory(e.target.value)}
+                    placeholder="Enter Business Category"
+                    required
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Company Name */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Company Name *</Label>
+                  <Input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Enter Company Name"
+                    required
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Contact Name */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Contact Name</Label>
+                  <Input
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="Enter contact person name"
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Product Type */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Product_Type *</Label>
+                  <Input
+                    value={productType}
+                    onChange={(e) => setProductType(e.target.value)}
+                    placeholder="Enter Product_Type"
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Country *</Label>
+                  <Input
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="Enter Country"
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Mobile */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Mobile *</Label>
+                  <Input
+                    type="tel"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    placeholder="Enter Mobile Number"
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Email *</Label>
+                  <Textarea
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter one or more emails, separated by commas, semicolons, or new lines."
+                    className="bg-background border-input min-h-[70px]"
+                    autoComplete="off"
+                    name="emails"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    You can paste or type many emails, separated by commas, semicolons, or new lines.
+                  </p>
+                </div>
+
+                {/* Website */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Website</Label>
+                  <Input
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="Enter Website"
+                    className="bg-background border-input"
+                  />
+                </div>
+
+                {/* Assigned To */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Assigned To *</Label>
+                  <Select value={assignedTo} onValueChange={setAssignedTo} required>
+                    <SelectTrigger className="h-10 bg-background border-input">
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bdTeam.map((member) => (
+                        <SelectItem key={member} value={member}>
+                          {member}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Lead Source */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Lead Source</Label>
+                  <Select value={sourceId} onValueChange={setSourceId}>
+                    <SelectTrigger className="h-10 bg-background border-input">
+                      <SelectValue placeholder="Select acquisition channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None / Direct</SelectItem>
+                      {sources.map((source) => (
+                        <SelectItem key={source.id} value={source.id}>
+                          {source.channel_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Submit */}
+                <Button type="submit" disabled={submitting} className="w-full bg-primary hover:bg-primary/90">
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Save Lead
+                </Button>
+
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
         <Dialog open={isFollowUpOpen} onOpenChange={(open) => { if (!open) setIsFollowUpOpen(open); }}>
           <DialogContent className="bg-card border-border max-w-lg">
@@ -587,9 +672,9 @@ export default function LeadsList() {
                     <SelectValue placeholder="Select team member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bdeMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.full_name}>
-                        {member.full_name}
+                    {bdTeam.map((member) => (
+                      <SelectItem key={member} value={member}>
+                        {member}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -693,8 +778,8 @@ export default function LeadsList() {
         />
       </div>
 
-      {/* Table */}
-      <div className="border border-border rounded-lg bg-card overflow-hidden shadow-sm">
+      {/* Table - Wrapped with id for export and select-none to discourage scraping */}
+      <div id="crm-table" className="border border-border rounded-lg bg-card overflow-hidden shadow-sm select-none">
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent border-border">
@@ -705,7 +790,9 @@ export default function LeadsList() {
               <TableHead className="text-foreground font-bold">Product Type</TableHead>
               <TableHead className="text-foreground font-bold">Country</TableHead>
               <TableHead className="text-foreground font-bold">Mobile</TableHead>
+              <TableHead className="text-foreground font-bold">Email</TableHead>
               <TableHead className="text-foreground font-bold">Stage</TableHead>
+
               <TableHead className="text-foreground font-bold">Assigned To</TableHead>
               <TableHead className="text-right text-foreground font-bold">Actions</TableHead>
             </TableRow>
@@ -752,14 +839,38 @@ export default function LeadsList() {
                   <TableCell className="text-sm">{lead.business_category || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.product_type || "-"}</TableCell>
                   <TableCell className="text-sm">{lead.country || "-"}</TableCell>
-                  <TableCell className="text-sm">{lead.mobile || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-sm font-mono tracking-wider">
+                    {isPrivileged ? (
+                      lead.mobile || "-"
+                    ) : (
+                      <div className="group relative cursor-help">
+                        <span className="block group-hover:hidden">*******</span>
+                        <span className="hidden group-hover:block bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded font-bold transition-all">
+                          {lead.mobile || "-"}
+                        </span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {isPrivileged ? (
+                      lead.email || "-"
+                    ) : (
+                      <div className="group relative cursor-help">
+                        <span className="block group-hover:hidden text-xs opacity-50">*******@***.com</span>
+                        <span className="hidden group-hover:block bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded transition-all">
+                          {lead.email || "-"}
+                        </span>
+                      </div>
+                    )}
+                  </TableCell>
+
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {canEditStage ? (
                       <Select
                         defaultValue={lead.stage}
                         onValueChange={async (newStage) => {
                           try {
-                            const { error } = await supabase.from("leads" as any).update({ stage: newStage }).eq("id", lead.id);
+                            const { error } = await supabase.from("leads").update({ stage: newStage }).eq("id", lead.id);
                             if (error) throw error;
                             toast.success(`Lead moved to ${newStage}`);
                             fetchLeads();
@@ -784,7 +895,7 @@ export default function LeadsList() {
                   <TableCell className="text-xs text-muted-foreground font-medium">
                     {lead.assigned_to || "Unassigned"}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"

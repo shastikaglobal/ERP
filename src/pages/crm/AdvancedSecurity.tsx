@@ -1,15 +1,101 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
-import { ShieldAlert, Globe, Server, Activity, Lock, CheckCircle, RefreshCw, Terminal } from "lucide-react";
+import { ShieldAlert, Globe, Server, Activity, Lock, CheckCircle, RefreshCw, Terminal, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function AdvancedSecurity() {
-  const [threats] = useState([
-    { id: "THR-102", type: "Anomalous VPN Detected", details: "Employee Rajesh Kumar logged from Germany VPN", severity: "Medium", status: "Mitigated" },
-    { id: "THR-101", type: "Brute Force Attempt", details: "12 failed login attempts on endpoint /api/mobile", severity: "High", status: "IP Blocked" },
-    { id: "THR-98", type: "Multiple Concurrent Pairings", details: "Swathi Swathi paired 3 active mobile sessions", severity: "Low", status: "Approved" }
-  ]);
+  const { profile } = useAuth();
+  const [isAddingSubnet, setIsAddingSubnet] = useState(false);
+  const [newSubnetIp, setNewSubnetIp] = useState("");
+  const [newSubnetLabel, setNewSubnetLabel] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fetch Whitelisted Subnets
+  const { data: subnets = [], refetch: refetchSubnets, isLoading: loadingSubnets } = useQuery({
+    queryKey: ['corporate_subnets', profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return [];
+      const { data, error } = await supabase
+        .from('corporate_subnets')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!profile?.company_id
+  });
+
+  // Fetch Threat Logs (from audit_logs where resource_type='security')
+  const { data: threatLogs = [], refetch: refetchLogs, isLoading: loadingLogs } = useQuery({
+    queryKey: ['threat_logs', profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return [];
+      // We assume audit_logs row has user_id, which we can join with profiles to filter by company
+      // However, we can simply fetch security logs for now. If company_id is available in audit_logs, we filter by it.
+      // Let's assume we fetch recent security logs (we can filter on client side if needed, or if we can't join)
+      // Since audit_logs is RLS protected, we will only get what we are allowed to see.
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('id, action, resource_type, user_agent, timestamp, status')
+        .eq('resource_type', 'security')
+        .order('timestamp', { ascending: false })
+        .limit(20);
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!profile?.company_id
+  });
+
+  const handleRescan = () => {
+    refetchSubnets();
+    refetchLogs();
+  };
+
+  const handleAddSubnet = async () => {
+    if (!newSubnetIp || !newSubnetLabel) return toast.error("Please fill all fields");
+    if (!profile?.company_id) return toast.error("Company ID not found");
+
+    setIsSubmitting(true);
+    const { error } = await supabase.from('corporate_subnets').insert({
+      company_id: profile.company_id,
+      ip_cidr: newSubnetIp,
+      label: newSubnetLabel,
+      is_active: true
+    });
+    
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Subnet added successfully");
+      setIsAddingSubnet(false);
+      setNewSubnetIp("");
+      setNewSubnetLabel("");
+      refetchSubnets();
+    }
+  };
+
+  const handleDeleteSubnet = async (id: string) => {
+    const { error } = await supabase.from('corporate_subnets').delete().eq('id', id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Subnet removed");
+      refetchSubnets();
+    }
+  };
+
+  const unmitigatedAlerts = threatLogs.filter((log: any) => log.status === 'Blocked' || log.status === 'failed').length;
 
   return (
     <div className="space-y-6 animate-fade-in text-foreground">
@@ -17,8 +103,9 @@ export default function AdvancedSecurity() {
         title="AI Advanced Security & Threat Intel"
         sub="Monitor real-time network scans, Whitelist secure corporate subnets, and configure automatic token-revoking engines"
         actions={
-          <Button size="sm" className="btn-gold shadow-md">
-            <RefreshCw className="h-4 w-4 mr-1.5" /> Re-Scan Network
+          <Button size="sm" className="btn-gold shadow-md" onClick={handleRescan} disabled={loadingLogs || loadingSubnets}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${(loadingLogs || loadingSubnets) ? 'animate-spin' : ''}`} /> 
+            {(loadingLogs || loadingSubnets) ? 'Scanning...' : 'Re-Scan Network'}
           </Button>
         }
       />
@@ -31,7 +118,7 @@ export default function AdvancedSecurity() {
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Active Threat Alerts</div>
-            <div className="text-2xl font-bold font-mono mt-0.5">0 Warnings</div>
+            <div className="text-2xl font-bold font-mono mt-0.5">{unmitigatedAlerts} Warnings</div>
           </div>
         </Card>
         <Card className="flex items-center gap-4 p-5 bg-card/60 backdrop-blur-md">
@@ -65,25 +152,60 @@ export default function AdvancedSecurity() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Whitelists */}
-        <Card className="lg:col-span-1 space-y-4">
-          <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-            <Terminal className="h-4 w-4 text-primary" /> Corporate Subnets Whitelist
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Allow BDE mobile CRM synchronizations only from approved CIDR blocks.
-          </p>
+        <Card className="col-span-1 md:col-span-2 p-5 bg-card/60 backdrop-blur-md flex flex-col justify-between border-border">
+          <div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> Corporate Subnets Whitelist</h3>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] uppercase font-bold tracking-wider" onClick={() => setIsAddingSubnet(!isAddingSubnet)}>
+                <Plus className="h-3 w-3 mr-1" /> Add Subnet
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 max-w-sm">
+              Allow BDE mobile CRM synchronizations only from approved CIDR blocks.
+            </p>
+          </div>
+          
           <div className="space-y-2 font-mono text-xs pt-2">
-            {[
-              { ip: "192.168.1.0/24", label: "Chennai Headquarters", active: true },
-              { ip: "106.51.28.0/22", label: "Coimbatore Regional Office", active: true },
-              { ip: "49.37.192.0/24", label: "Tiruppur Procurement Hub", active: true }
-            ].map((subnet, i) => (
-              <div key={i} className="p-2.5 rounded-lg bg-neutral-900 border border-border flex items-center justify-between">
+            {isAddingSubnet && (
+              <div className="p-3 rounded-lg bg-neutral-900 border border-primary/30 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="192.168.1.0/24" 
+                    className="h-8 bg-black/50 border-border text-xs" 
+                    value={newSubnetIp} onChange={e => setNewSubnetIp(e.target.value)} 
+                  />
+                  <Input 
+                    placeholder="HQ Office" 
+                    className="h-8 bg-black/50 border-border text-xs" 
+                    value={newSubnetLabel} onChange={e => setNewSubnetLabel(e.target.value)} 
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setIsAddingSubnet(false)}>Cancel</Button>
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddSubnet} disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {subnets.length === 0 && !loadingSubnets && !isAddingSubnet && (
+              <div className="text-muted-foreground p-4 text-center bg-neutral-900 rounded-lg">No subnets whitelisted. Click 'Add Subnet' to add one.</div>
+            )}
+            {subnets.map((subnet: any) => (
+              <div key={subnet.id} className="p-2.5 rounded-lg bg-neutral-900 border border-border flex items-center justify-between group">
                 <div>
-                  <div className="text-foreground font-semibold">{subnet.ip}</div>
+                  <div className="text-foreground font-semibold">{subnet.ip_cidr}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5 font-sans">{subnet.label}</div>
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-sans font-bold">Active</span>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[9px] font-sans font-bold ${subnet.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20'}`}>
+                    {subnet.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <button onClick={() => handleDeleteSubnet(subnet.id)} className="text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -108,25 +230,30 @@ export default function AdvancedSecurity() {
                 </tr>
               </thead>
               <tbody>
-                {threats.map((t) => (
-                  <tr key={t.id} className="border-b border-border/40 hover:bg-neutral-900/30 transition-colors">
-                    <td className="p-3 font-mono text-muted-foreground">{t.id}</td>
-                    <td className="p-3 font-bold text-foreground">{t.type}</td>
-                    <td className="p-3 text-muted-foreground leading-normal">{t.details}</td>
+                {threatLogs.length === 0 && !loadingLogs && (
+                  <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No recent security threats detected.</td></tr>
+                )}
+                {threatLogs.map((log: any) => (
+                  <tr key={log.id} className="border-b border-border/40 hover:bg-neutral-900/30 transition-colors">
+                    <td className="p-3 font-mono text-muted-foreground">{log.id.split('-')[0]}...</td>
+                    <td className="p-3 font-bold text-foreground">{log.action || 'Security Event'}</td>
+                    <td className="p-3 text-muted-foreground leading-normal max-w-[300px] truncate" title={log.user_agent}>
+                      {log.user_agent || 'Unknown Client'}
+                    </td>
                     <td className="p-3">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[10px] ${
-                        t.severity === "High"
+                        log.status === "Blocked"
                           ? "bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse"
-                          : t.severity === "Medium"
-                          ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                          : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
                       }`}>
-                        {t.severity}
+                        {log.status === "Blocked" ? "High" : "Medium"}
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-semibold text-[10px]">
-                        {t.status}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[10px] ${
+                        log.status === "Blocked" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                      }`}>
+                        {log.status}
                       </span>
                     </td>
                   </tr>

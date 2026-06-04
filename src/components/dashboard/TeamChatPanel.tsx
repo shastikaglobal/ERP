@@ -888,7 +888,7 @@ export function TeamChatPanel() {
                         </div>
                       ) : (
                         <p 
-                          className="text-[13px] leading-snug whitespace-pre-wrap word-break-words break-words"
+                          className="text-[13px] leading-snug whitespace-pre-wrap break-words break-all"
                           dangerouslySetInnerHTML={renderMessage(msg.message, Boolean(isMe))}
                         />
                       )}
