@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, UsersRound, Settings } from "lucide-react";
+import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
+import { AIChatPanel } from "./AIChatPanel";
 
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
@@ -12,14 +13,16 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   const isAdmin = slugs.includes("admin");
   const isSecretary = slugs.includes("secretary");
-  const isBde = slugs.includes("bd") || 
-                slugs.includes("bde") || 
-                (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
+  const isBde = slugs.includes("bd") ||
+    slugs.includes("bde") ||
+    (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
     const active = navGroups.find((g) => g.items.some((i) => location.pathname.startsWith(i.url)));
     return active ? [active.title] : [navGroups[0].title];
   });
+
+  const [aiOpen, setAiOpen] = useState(false);
 
   const toggleGroup = (title: string) =>
     setOpenGroups((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
@@ -27,7 +30,6 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const allowedSecretaryGroups = new Set(["dashboards", "quotations", "documents", "finance", "tally", "accounts"]);
   const allowedBdeGroups = new Set(["dashboards", "crm", "mobile crm", "quotations", "documents", "system"]);
 
-  // Filter items by permission (if no permission set, always visible)
   const visibleGroups = navGroups
     .map((g) => {
       const groupTitleLower = g.title.toLowerCase();
@@ -43,16 +45,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         ];
       }
       if (g.title === "Dashboards" && isBde && !isAdmin) {
-        items = [
-          { title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }
-        ];
+        items = [{ title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }];
       }
       if (g.title === "System" && isBde && !isAdmin) {
-        items = [
-          { title: "Settings", url: "/system/settings", icon: Settings }
-        ];
+        items = [{ title: "Settings", url: "/system/settings", icon: Settings }];
       }
-
       return { ...g, items };
     })
     .filter((g) => g.items.length > 0)
@@ -67,12 +64,10 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <>
       {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
-      <aside
-        className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-transform lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+      <aside className={cn(
+        "fixed lg:sticky top-0 left-0 z-50 h-screen w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-transform lg:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full"
+      )}>
         <div className="h-14 flex items-center gap-2 px-4 border-b border-sidebar-border shrink-0">
           <div className="h-8 w-8 rounded-md logo-mark flex items-center justify-center shadow-sm">
             <Sprout className="h-4 w-4 text-[hsl(var(--primary-foreground))]" />
@@ -83,9 +78,6 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             </div>
             <div className="text-[10px] text-sidebar-muted uppercase tracking-wider">Impex · Agri Export ERP</div>
           </div>
-
-
-
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
@@ -119,9 +111,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                           className={({ isActive }) =>
                             cn(
                               "flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors border-l-[3px] border-transparent",
-                              isActive
-                                ? "nav-active font-medium"
-                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
+                              isActive ? "nav-active font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
                             )
                           }
                         >
@@ -135,12 +125,26 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
               </div>
             );
           })}
+
+          <div>
+            <button
+              onClick={() => setAiOpen(true)}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-xs font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+            >
+              <Bot className="h-4 w-4" />
+              <span className="flex-1 text-left uppercase tracking-wide text-[11px]">AI Assistant</span>
+            </button>
+          </div>
         </nav>
 
         <div className="border-t border-sidebar-border p-3 shrink-0">
           <div className="flex items-center gap-2 px-1">
-            <div className="h-8 w-8 rounded-full logo-mark flex items-center justify-center text-xs font-bold text-[hsl(var(--primary-foreground))]">
-              {(profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase()}
+            <div className="h-8 w-8 rounded-full logo-mark flex items-center justify-center text-xs font-bold text-[hsl(var(--primary-foreground))] overflow-hidden">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                (profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-foreground truncate">
@@ -148,15 +152,17 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
               </div>
               <div className="text-[10px] text-sidebar-muted truncate capitalize">
                 {roleSlugs.size > 0
-                ? Array.from(roleSlugs).map(s =>
-                    s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-                  ).join(", ")
-                : "No role assigned"}
+                  ? Array.from(roleSlugs).map(s =>
+                      s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                    ).join(", ")
+                  : "No role assigned"}
               </div>
             </div>
           </div>
         </div>
       </aside>
+
+      <AIChatPanel open={aiOpen} onClose={() => setAiOpen(false)} />
     </>
   );
 }

@@ -69,13 +69,17 @@ export type Database = {
           rejection_reason: string | null
           email_signature: string | null
           phone: string | null
+<<<<<<< HEAD
           biometric_id: string | null
           monthly_salary: number | null
           punch_deadline: string | null
+=======
+>>>>>>> 75a1f13 (screen tracking)
           created_at?: string | null
           updated_at?: string | null
         }
         Insert: {
+<<<<<<< HEAD
           id: string
           company_id?: string | null
           full_name?: string | null
@@ -149,6 +153,30 @@ export type Database = {
           is_excused?: boolean
           created_at?: string
           updated_at?: string
+=======
+          id: string
+          company_id?: string | null
+          full_name?: string | null
+          email?: string | null
+          avatar_url?: string | null
+          status?: string | null
+          requested_role?: string | null
+          rejection_reason?: string | null
+          email_signature?: string | null
+          phone?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string | null
+          full_name?: string | null
+          email?: string | null
+          avatar_url?: string | null
+          status?: string | null
+          requested_role?: string | null
+          rejection_reason?: string | null
+          email_signature?: string | null
+          phone?: string | null
+>>>>>>> 75a1f13 (screen tracking)
         }
         Relationships: []
       }
