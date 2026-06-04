@@ -30,7 +30,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
       setScreenStatus("requesting");
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { displaySurface: "monitor", frameRate: 5 },
+          video: { displaySurface: "browser", frameRate: 5 },
           audio: false,
         });
 
@@ -139,7 +139,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
           </div>
           <h2 className="text-lg font-bold text-foreground">Screen Sharing Required</h2>
           <p className="text-sm text-muted-foreground">
-            Screen sharing is mandatory to use the ERP system. Please allow screen sharing to continue.
+            Screen sharing is mandatory to use the ERP system. For privacy, please select <strong>Chrome Tab</strong> or <strong>This Tab</strong> when prompted.
           </p>
           <button
             onClick={async () => {
@@ -147,9 +147,10 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
               setScreenStatus("requesting");
               try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
-                  video: { displaySurface: "monitor", frameRate: 5 },
+                  video: { displaySurface: "browser", frameRate: 5 },
                   audio: false,
                 });
+
                 streamRef.current = stream;
                 setActiveStream(stream);
                 (window as any).__screenStream = stream; // ← globally store
