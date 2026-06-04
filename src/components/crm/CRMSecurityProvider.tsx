@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useCRMPermissions } from "@/hooks/useCRMPermissions";
@@ -30,7 +29,7 @@ const WatermarkOverlay = ({ profile }: { profile: any }) => {
             flexWrap: 'wrap',
             justifyContent: 'center',
             alignContent: 'center',
-            opacity: 0.15, // TEMPORARILY BOOSTED TO 15% SO YOU CAN SEE IT EASILY
+            opacity: 0, // completely invisible
             userSelect: 'none',
             mixBlendMode: 'difference' // Helps it stand out when contrast is edited
         }}>
@@ -190,9 +189,9 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
     return (
         <div className={isShielded ? 'shield-active' : ''}>
             {/* INVISIBLE WATERMARK - TEMPORARILY VISIBLE TO ADMINS FOR DEMO */}
-            {protectionEnabled && (
+            {/* {protectionEnabled && (
                 <WatermarkOverlay profile={profile} />
-            )}
+            )} */}
 
             <div className="privacy-shield">
                 <div className="shield-message">
