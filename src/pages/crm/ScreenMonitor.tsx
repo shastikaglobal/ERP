@@ -174,8 +174,11 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
   );
 }
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 34f36497af536b6d4d1adf816ab2ac609bf7f490
 // ── Main ScreenMonitor Page ───────────────────────────────────────────────────
 export default function ScreenMonitor() {
   const [bdes, setBdes] = useState<BdeStatus[]>([]);
@@ -184,8 +187,11 @@ export default function ScreenMonitor() {
   const [loading, setLoading] = useState(true);
   const [watchingUser, setWatchingUser] = useState<BdeStatus | null>(null);
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 34f36497af536b6d4d1adf816ab2ac609bf7f490
   const fetchInitialData = async () => {
     try {
       setLoading(true);

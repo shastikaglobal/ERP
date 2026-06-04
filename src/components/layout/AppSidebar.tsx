@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { AIChatPanel } from "./AIChatPanel";
 
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -23,6 +24,41 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   });
 
   const [aiOpen, setAiOpen] = useState(false);
+
+  const [counts, setCounts] = useState({ clientAcq: 0, conversions: 0, customers: 0 });
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchCounts = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        let companyFilter: any = null;
+        if (userId) {
+          const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', userId).single();
+          companyFilter = profile?.company_id || null;
+        }
+
+        const [acqRes, convRes, custRes] = await Promise.all([
+          supabase.from('client_acquisition' as any).select('id', { count: 'exact', head: true }).maybeSingle(),
+          supabase.from('leads' as any).select('id', { count: 'exact', head: true }).in('stage', ['Won', 'Client Successfully Acquired']).maybeSingle(),
+          supabase.from('customers' as any).select('id', { count: 'exact', head: true }).maybeSingle()
+        ]);
+
+        if (!mounted) return;
+        setCounts({
+          clientAcq: acqRes?.count || 0,
+          conversions: convRes?.count || 0,
+          customers: custRes?.count || 0
+        });
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   const toggleGroup = (title: string) =>
     setOpenGroups((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
@@ -102,6 +138,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                   <div className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
                     {group.items.map((item) => {
                       const ItemIcon = item.icon;
+                      const badgeCount = item.url === '/crm/client-acquisition' ? counts.clientAcq : item.url === '/crm/convert' ? counts.conversions : item.url === '/crm/customers' ? counts.customers : 0;
                       return (
                         <NavLink
                           key={item.url}
@@ -117,6 +154,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                         >
                           <ItemIcon className="h-3.5 w-3.5 shrink-0" />
                           <span className="truncate">{item.title}</span>
+                          {badgeCount > 0 && (
+                            <span className="ml-auto text-[11px] bg-white/5 text-white px-2 py-0.5 rounded-full font-semibold">{badgeCount}</span>
+                          )}
                         </NavLink>
                       );
                     })}

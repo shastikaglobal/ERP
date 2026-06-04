@@ -41,7 +41,15 @@ import {
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import { startOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { 
+  startOfMonth, 
+  endOfMonth, 
+  startOfYear, 
+  endOfYear, 
+  endOfDay, 
+  isWithinInterval, 
+  parseISO 
+} from "date-fns";
 
 export default function Performance() {
   const { profile: currentUser, roleSlugs } = useAuth();
@@ -62,6 +70,7 @@ export default function Performance() {
   const [startDate, setStartDate] = useState<Date>(new Date(2020, 0, 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedBDE, setSelectedBDE] = useState<string>("all");
+  const [timeframe, setTimeframe] = useState<"daily" | "monthly" | "yearly" | "custom">("monthly");
 
   const isAdminOrManager = useIsAdminOrManager();
 
@@ -175,7 +184,7 @@ export default function Performance() {
     };
 
     const stats = profiles
-      .filter(p => !['admin', 'manager'].includes((p.role_name || "").toLowerCase()))
+      .filter(p => (p.role_name || "").toLowerCase().trim() === "bde")
       .map(employee => {
         if (selectedBDE !== 'all' && employee.id !== selectedBDE) return null;
 
@@ -343,6 +352,21 @@ export default function Performance() {
     }
   };
 
+  const handleTimeframeChange = (tf: "daily" | "monthly" | "yearly") => {
+    setTimeframe(tf);
+    const now = new Date();
+    if (tf === "daily") {
+      setStartDate(startOfDay(now));
+      setEndDate(endOfDay(now));
+    } else if (tf === "monthly") {
+      setStartDate(startOfMonth(now));
+      setEndDate(endOfMonth(now));
+    } else if (tf === "yearly") {
+      setStartDate(startOfYear(now));
+      setEndDate(endOfYear(now));
+    }
+  };
+
   const exportReport = (type: string, fileFormat: 'csv' | 'pdf' | 'excel') => {
     if (!data) return;
     const { profiles, leads, activities, followUps, quotations, exportOrders } = data;
@@ -471,7 +495,35 @@ export default function Performance() {
       />
 
       {/* Unified Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-neutral-900/60 p-6 rounded-3xl border border-white/5 backdrop-blur-xl mb-8">
+      <div className="space-y-4 mb-8">
+        <div className="flex items-center gap-2 bg-neutral-900/60 p-1 w-fit rounded-xl border border-white/5">
+          <Button 
+            variant={timeframe === "daily" ? "default" : "ghost"} 
+            size="sm" 
+            className={cn("text-[10px] uppercase font-black px-4 h-9 rounded-lg transition-all", timeframe === "daily" ? "bg-[#c8a84b] text-black hover:bg-[#b0933d]" : "text-muted-foreground")}
+            onClick={() => handleTimeframeChange("daily")}
+          >
+            Daily
+          </Button>
+          <Button 
+            variant={timeframe === "monthly" ? "default" : "ghost"} 
+            size="sm" 
+            className={cn("text-[10px] uppercase font-black px-4 h-9 rounded-lg transition-all", timeframe === "monthly" ? "bg-[#c8a84b] text-black hover:bg-[#b0933d]" : "text-muted-foreground")}
+            onClick={() => handleTimeframeChange("monthly")}
+          >
+            Monthly
+          </Button>
+          <Button 
+            variant={timeframe === "yearly" ? "default" : "ghost"} 
+            size="sm" 
+            className={cn("text-[10px] uppercase font-black px-4 h-9 rounded-lg transition-all", timeframe === "yearly" ? "bg-[#c8a84b] text-black hover:bg-[#b0933d]" : "text-muted-foreground")}
+            onClick={() => handleTimeframeChange("yearly")}
+          >
+            Yearly
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-neutral-900/60 p-6 rounded-3xl border border-white/5 backdrop-blur-xl">
         <div className="space-y-2">
           <label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Timeframe From</label>
           <Popover>
@@ -505,10 +557,12 @@ export default function Performance() {
               <SelectValue placeholder="All Associates" />
             </SelectTrigger>
             <SelectContent className="bg-neutral-900 border-white/10">
-              <SelectItem value="all">Every Associate</SelectItem>
-              {data?.profiles.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-              ))}
+              <SelectItem value="all">Every BDE Associate</SelectItem>
+              {data?.profiles
+                .filter(p => (p.role_name || "").toLowerCase().trim() === "bde")
+                .map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -516,11 +570,21 @@ export default function Performance() {
           <Button
             variant="ghost"
             className="w-full h-11 text-[10px] uppercase font-black text-muted-foreground hover:bg-white/5 rounded-xl underline"
+<<<<<<< HEAD
             onClick={() => { setStartDate(new Date(2020, 0, 1)); setEndDate(new Date()); setSelectedBDE('all'); }}
+=======
+            onClick={() => { 
+              setTimeframe("monthly");
+              setStartDate(startOfMonth(new Date())); 
+              setEndDate(new Date()); 
+              setSelectedBDE('all'); 
+            }}
+>>>>>>> 34f36497af536b6d4d1adf816ab2ac609bf7f490
           >
             Clear Filters
           </Button>
         </div>
+      </div>
       </div>
 
       <div className="space-y-4">

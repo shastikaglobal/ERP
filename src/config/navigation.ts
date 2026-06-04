@@ -73,7 +73,6 @@ export const navGroups: NavGroup[] = [
       { title: "Security", url: "/crm/security", icon: ShieldCheck, permission: "farmers.view" },
       { title: "Advanced Security", url: "/crm/advanced-security", icon: ShieldAlert, permission: "farmers.view" },
       { title: "Zoho API Sync", url: "/system/integrations/zoho", icon: Mail, permission: "farmers.view" },
-      { title: "Screen Monitor", url: "/crm/screen-monitor", icon: Monitor, permission: "farmers.view" },
       { title: "Employee Activity", url: "/crm/employee-activity", icon: Activity, permission: "farmers.view" },
     ],
   },

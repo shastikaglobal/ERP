@@ -1,7 +1,8 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
-import { DollarSign, Package, Ship, TrendingUp, Users, AlertCircle, Bell } from "lucide-react";
+import { DollarSign, Package, Ship, TrendingUp, Users, AlertCircle, Bell, Clock } from "lucide-react";
+import ScreenMonitor from "@/pages/crm/ScreenMonitor";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -232,6 +233,15 @@ export default function ExecutiveDashboard() {
             )}
           </div>
         </Section>
+      </div>
+      
+      {/* Screen Monitor Integration */}
+      <div className="pt-10 border-t border-white/5 space-y-6 animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+        <div className="flex items-center gap-3">
+          <Clock className="h-6 w-6 text-[#c8a84b]" />
+          <h2 className="text-2xl font-black text-white tracking-tight uppercase">Live Terminal Monitoring</h2>
+        </div>
+        <ScreenMonitor />
       </div>
     </div>
   );

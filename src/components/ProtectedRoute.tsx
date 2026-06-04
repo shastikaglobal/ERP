@@ -12,6 +12,10 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   const hasStarted = useRef(false);
 
+<<<<<<< HEAD
+=======
+  // Broadcast this user's screen if requested by an admin
+>>>>>>> 34f36497af536b6d4d1adf816ab2ac609bf7f490
   useScreenBroadcaster(profile?.id, activeStream);
 
   useEffect(() => {

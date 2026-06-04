@@ -43,7 +43,7 @@ type Lead = {
   source_id?: string | null;
 };
 
-const STAGES = ["New", "Contacted", "Negotiation", "Qualified", "Won", "Lost"];
+const STAGES = ["New", "Contacted", "Negotiation", "Qualified", "Won", "Client Successfully Acquired", "Lost"];
 
 const STAGE_COLORS: Record<string, string> = {
   new: "bg-slate-500",
@@ -51,12 +51,14 @@ const STAGE_COLORS: Record<string, string> = {
   negotiation: "bg-yellow-500",
   qualified: "bg-purple-500",
   won: "bg-green-500",
+  "client successfully acquired": "bg-emerald-500",
   lost: "bg-red-500",
   New: "bg-slate-500",
   Contacted: "bg-blue-500",
   Negotiation: "bg-yellow-500",
   Qualified: "bg-purple-500",
   Won: "bg-green-500",
+  "Client Successfully Acquired": "bg-emerald-500",
   Lost: "bg-red-500",
 };
 
@@ -780,6 +782,10 @@ export default function LeadsList() {
         </Dialog>
       </div>
 
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">Total Leads: <span className="font-bold text-foreground">{leads.length}</span></div>
+      </div>
+
       {/* Search and Country Filter */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full max-w-4xl">
         <div className="relative flex-1 min-w-0">
@@ -814,6 +820,7 @@ export default function LeadsList() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent border-border">
+              <TableHead className="text-foreground font-bold">#</TableHead>
               <TableHead className="text-foreground font-bold">Date</TableHead>
               <TableHead className="text-foreground font-bold">Company</TableHead>
               <TableHead className="text-foreground font-bold">Contact Name</TableHead>
@@ -831,23 +838,24 @@ export default function LeadsList() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" />
                 </TableCell>
               </TableRow>
             ) : filteredLeads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground italic">
+                <TableCell colSpan={11} className="text-center py-12 text-muted-foreground italic">
                   {searchQuery ? `No leads matching "${searchQuery}"` : "No leads found."}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredLeads.map((lead) => (
+              filteredLeads.map((lead, idx) => (
                 <TableRow
                   key={lead.id}
                   className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => nav(`/crm/leads/${lead.id}`)}
                 >
+                  <TableCell className="text-sm font-mono text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell className="text-sm">{lead.date || "-"}</TableCell>
                   <TableCell className="font-bold text-foreground">
                     <div className="flex items-center gap-2">
