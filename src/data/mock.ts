@@ -95,6 +95,7 @@ export const employees = [
   { id: "E-007", name: "Narmatha", role: "Software Developer Intern", department: "IT", email: "narmatha@acme.com", phone: "+91 98765 00007", status: "Active", joinedAt: "2024-01-10" },
   { id: "E-008", name: "Jaya Sri", role: "Data Analyst", department: "Data", email: "jayasri@acme.com", phone: "+91 98765 00008", status: "Active", joinedAt: "2023-04-12" },
   { id: "E-009", name: "Gayathri", role: "BDE", department: "Sales", email: "gayathrishanmugam813@gmail.com", phone: "+91 98765 00009", status: "Active", joinedAt: "2022-08-25" },
+  { id: "E-010", name: "Vemula Navya lahari", role: "BDE", department: "Sales", email: "vemulanavyalahari009@gmail.com", phone: "+91 98765 00010", status: "Active", joinedAt: "2024-05-01" },
 ];
 
 export const notifications = [
