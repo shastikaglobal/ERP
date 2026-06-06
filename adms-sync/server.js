@@ -155,7 +155,6 @@ app.post('/iclock/cdata', async (req, res) => {
             .from('attendance_logs')
             .insert({
               employee_id: emp.id,
-              company_id: emp.company_id,
               date: dateStr,
               status: 'present',
               clock_in: punchTimeIso,

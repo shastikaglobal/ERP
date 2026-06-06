@@ -19,10 +19,10 @@ async function restoreFromAttLogs() {
 
   console.log("Fetching logs from AttLogs for today...");
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  // Optional: if they want from the start of the month for 'daily' attendance, uncomment below:
-  // today.setDate(1); 
-  const dynamicDateStr = today.toISOString().split('T')[0];
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const dynamicDateStr = `${year}-${month}-${day}`;
   
   const { data: attLogs, error: attErr } = await supabase
     .from('AttLogs')

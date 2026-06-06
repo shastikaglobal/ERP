@@ -343,8 +343,12 @@ export function TeamChatPanel() {
       message: messageText
     });
 
-    if (error) console.error('Send error:', error);
-    else setInputText("");
+    if (error) {
+      console.error('Send error:', error);
+      toast.error('Failed to send message: ' + error.message);
+    } else {
+      setInputText("");
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

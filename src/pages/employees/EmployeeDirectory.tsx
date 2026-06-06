@@ -207,6 +207,38 @@ export default function EmployeeDirectory() {
     }
   };
 
+  const handleSendPasswordReset = async (email: string | null) => {
+    if (!email) {
+      toast.error("User does not have an email address");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      toast.success(`Password reset email sent to ${email}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset email");
+    }
+  };
+
+  const handleDeleteAccount = async (userId: string, fullName: string | null) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${fullName || 'this user'}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.rpc('delete_user', { target_user_id: userId });
+      if (error) throw error;
+      
+      toast.success(`${fullName || 'User'} has been removed.`);
+      setEmployees(prev => prev.filter(e => e.id !== userId));
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to delete user. Please ensure the database function is installed.");
+    }
+  };
 
   const filteredEmployees = employees.filter(
     (e) =>
@@ -291,8 +323,8 @@ export default function EmployeeDirectory() {
           No employees found matching your search.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredEmployees.map((e) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEmployees.map((e, index) => {
             const initials = e.full_name
               ? e.full_name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
               : "?";
@@ -314,22 +346,44 @@ export default function EmployeeDirectory() {
             const displayWorkStr = isCurrentUser ? formatMins(activeMinutes) : (stats?.workStr || "0m");
 
             return (
-              <Section key={e.id} className="hover:border-primary/50 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="relative shrink-0">
-                    <div className="h-14 w-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xl overflow-hidden border border-amber-500/20 shadow-lg">
-                      {e.avatar_url ? (
-                        <img src={e.avatar_url} alt={e.full_name || "Avatar"} className="h-full w-full object-cover" />
-                      ) : (
-                        initials
+              <div 
+                key={e.id} 
+                className="group relative animate-bubbly h-full"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="h-full cute-card p-5 flex flex-col relative">
+                  
+                  {/* Cuteness Elements */}
+                  <span className="flower-decor -top-3 -right-3 text-3xl" style={{ animationDirection: 'reverse' }}>🌸</span>
+                  <span className="flower-decor bottom-10 -left-4 text-2xl">🌼</span>
+                  <span className="butterfly-decor top-4 left-3 text-2xl">🦋</span>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="relative shrink-0 z-10 avatar-cute">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="h-16 w-16 rounded-[1.25rem] bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold text-2xl overflow-hidden shadow-sm cursor-pointer border border-amber-500/20">
+                            {e.avatar_url ? (
+                              <img src={e.avatar_url} alt={e.full_name || "Avatar"} className="h-full w-full object-cover" />
+                            ) : (
+                              initials
+                            )}
+                          </div>
+                        </DialogTrigger>
+                      {e.avatar_url && (
+                        <DialogContent className="max-w-[400px] p-0 overflow-visible bg-transparent border-none shadow-none animate-in zoom-in-75 duration-500 ease-out fill-mode-both">
+                          <span className="butterfly-fly-across">🦋</span>
+                          <img src={e.avatar_url} alt={e.full_name || "Avatar"} className="w-full h-auto max-h-[80vh] object-contain rounded-2xl drop-shadow-2xl ring-1 ring-white/10 relative z-10" />
+                        </DialogContent>
                       )}
-                    </div>
+                    </Dialog>
                     {isAdminOrManager && (
                       <span className={`absolute -bottom-1 -right-1 block h-4 w-4 rounded-full border-2 border-[#0a0a0a] shadow-sm ${
                         currentStatus === 'Active' ? 'bg-green-500' : 
                         currentStatus === 'Idle' ? 'bg-yellow-500' : 'bg-gray-600'
                       }`} title={currentStatus} />
                     )}
+                  </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -405,8 +459,27 @@ export default function EmployeeDirectory() {
                       </div>
                     )}
 
-                    {isAdminOrManager && (
+                    {isAdmin && (
                       <div className="mt-4 pt-4 border-t border-white/5 opacity-50 hover:opacity-100 transition-opacity">
+                        <div className="flex justify-between items-center mb-3">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-[10px] h-7 px-2 border-white/10 hover:bg-white/5"
+                            onClick={() => handleSendPasswordReset(e.email)}
+                          >
+                            Send Password Reset
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-[10px] h-7 px-2 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:text-rose-400"
+                            onClick={() => handleDeleteAccount(e.id, e.full_name)}
+                          >
+                            Remove Account
+                          </Button>
+                        </div>
                         <div className="text-[10px] uppercase font-bold text-gray-500 mb-1.5 flex justify-between items-center px-1">
                            <span>eSSL ID</span>
                            <span className="text-[9px] font-normal lowercase opacity-50 italic">biometric reference</span>
@@ -429,7 +502,7 @@ export default function EmployeeDirectory() {
                     )}
                   </div>
                 </div>
-              </Section>
+              </div>
             );
           })}
         </div>

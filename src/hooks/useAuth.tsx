@@ -16,6 +16,10 @@ type Profile = {
   rejection_reason: string | null;
   email_signature: string | null;
   phone: string | null;
+  dob: string | null;
+  joining_date: string | null;
+  system_mode: string | null;
+  city: string | null;
 };
 
 type AuthCtx = {
@@ -156,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 1. Fetch Profile
     const { data: prof } = await supabase
       .from("profiles")
-      .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone")
+      .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city")
       .eq("id", userId)
       .maybeSingle();
 

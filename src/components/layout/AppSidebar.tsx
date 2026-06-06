@@ -120,8 +120,8 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         )}
       >
         <div className="h-14 flex items-center gap-2 px-4 border-b border-sidebar-border shrink-0">
-          <div className="h-8 w-8 rounded-md logo-mark flex items-center justify-center shadow-sm">
-            <Sprout className="h-4 w-4 text-[hsl(var(--primary-foreground))]" />
+          <div className="h-8 w-8 rounded-md flex items-center justify-center shadow-sm overflow-hidden bg-white">
+            <img src="/logo.webp" alt="Company Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-foreground leading-tight truncate">
