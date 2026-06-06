@@ -1,0 +1,39 @@
+Executing: pm2 delete adms-sync
+[PM2] Applying action deleteProcessId on app [adms-sync](ids: [ 0 ])
+[PM2] [adms-sync](0) ✓
+┌────┬─────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name    │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 1  │ adms    │ default     │ N/A     │ fork    │ 57038    │ 3D     │ 2    │ online    │ 0%       │ 36.2mb   │ root     │ disabled │
+└────┴─────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+
+Executing: pm2 delete adms
+[PM2] Applying action deleteProcessId on app [adms](ids: [ 1 ])
+[PM2] [adms](1) ✓
+┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+
+Executing: cd /var/www/adms-sync && npm install ws dotenvx node-fetch@2
+npm error code E404
+npm error 404 Not Found - GET https://registry.npmjs.org/dotenvx - Not found
+npm error 404
+npm error 404  'dotenvx@*' is not in this registry.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-06-06T04_03_05_853Z-debug-0.log
+
+Executing: cd /var/www/adms-sync && pm2 start server.js --name adms-sync
+[PM2] Starting /var/www/adms-sync/server.js in fork_mode (1 instance)
+[PM2] Done.
+┌────┬──────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name         │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼──────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ adms-sync    │ default     │ 1.0.0   │ fork    │ 914327   │ 0s     │ 0    │ online    │ 0%       │ 9.5mb    │ root     │ disabled │
+└────┴──────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+
+Executing: pm2 save
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+

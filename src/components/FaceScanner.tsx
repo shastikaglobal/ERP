@@ -42,6 +42,8 @@ const FaceScanner = forwardRef<FaceScannerRef, FaceScannerProps>(
         if (!streamRef.current) {
           startCamera().then(() => {
             triggerScanLoop();
+          }).catch(() => {
+            // error is handled inside startCamera
           });
         } else {
           triggerScanLoop();

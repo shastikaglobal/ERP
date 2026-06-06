@@ -17,11 +17,17 @@ async function restoreFromAttLogs() {
   const { data: profiles, error: profErr } = await supabase.from('profiles').select('id, company_id, biometric_id');
   if (profErr) throw new Error(profErr.message);
 
-  console.log("Fetching logs from AttLogs for June 2026 (including today)...");
+  console.log("Fetching logs from AttLogs for today...");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Optional: if they want from the start of the month for 'daily' attendance, uncomment below:
+  // today.setDate(1); 
+  const dynamicDateStr = today.toISOString().split('T')[0];
+  
   const { data: attLogs, error: attErr } = await supabase
     .from('AttLogs')
     .select('*')
-    .gte('LogDateTime', '2026-06-01')
+    .gte('LogDateTime', dynamicDateStr)
     .order('LogDateTime', { ascending: true });
 
   if (attErr) throw new Error(attErr.message);

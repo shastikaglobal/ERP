@@ -1,5 +1,3 @@
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 globalThis.WebSocket = WebSocket;
 
@@ -7,6 +5,9 @@ globalThis.WebSocket = WebSocket;
 if (!globalThis.fetch) {
   globalThis.fetch = require('node-fetch');
 }
+
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
 
 require('dotenv').config();
 
@@ -214,6 +215,25 @@ app.post('/iclock/cdata', async (req, res) => {
             processedCount++;
           }
         }
+        
+        // --- IMMUTABLE RAW PUNCH STORAGE ---
+        // Insert the raw punch log into the 'AttLogs' table so no one can erase the raw data
+        const { error: rawLogErr } = await supabase
+          .from('AttLogs')
+          .insert({
+            EmployeeCode: biometricId,
+            LogDateTime: punchTimeIso,
+            DownloadDateTime: new Date().toISOString(),
+            Direction: parts[2]?.trim() === '0' ? 'in' : (parts[2]?.trim() === '1' ? 'out' : parts[2]?.trim()),
+            DeviceId: sn
+          });
+
+        if (rawLogErr) {
+          console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
+        } else {
+          console.log(`🔒 Safely stored immutable raw punch in AttLogs for [${biometricId}] at ${punchTimeIso}`);
+        }
+        
       }
 
       console.log(`🎉 Sync completed. Successfully processed ${processedCount} punch(es).`);

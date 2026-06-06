@@ -1,0 +1,35 @@
+     1	const WebSocket = require('ws');
+     2	globalThis.WebSocket = WebSocket;
+     3	
+     4	// Polyfill fetch for older Node.js versions
+     5	if (!globalThis.fetch) {
+     6	  globalThis.fetch = require('node-fetch');
+     7	}
+     8	
+     9	const express = require('express');
+    10	const { createClient } = require('@supabase/supabase-js');
+    11	
+    12	require('dotenv').config();
+    13	
+    14	const app = express();
+    15	const PORT = process.env.PORT || 8082;
+    16	
+    17	// Initialize Supabase Client
+    18	const SUPABASE_URL = process.env.SUPABASE_URL;
+    19	const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    20	
+    21	if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    22	  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables.");
+    23	  process.exit(1);
+    24	}
+    25	
+    26	const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    27	  realtime: {
+    28	    transport: WebSocket
+    29	  }
+    30	});
+    31	
+    32	// Use raw text body parser to handle the tab-separated values sent by ZKTeco devices
+    33	app.use(express.text({ type: '*/*', limit: '10mb' }));
+    34	
+    35	console.log("🚀 Starting ADMS Sync Server...");
