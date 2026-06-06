@@ -19,7 +19,7 @@ export default function AuthCallback() {
     }
 
     if (session) {
-      navigate("/dashboard", { replace: true });
+      navigate("/employees/face-attendance?mode=checkin", { replace: true });
     }
   }, [session, navigate, searchParams]);
 

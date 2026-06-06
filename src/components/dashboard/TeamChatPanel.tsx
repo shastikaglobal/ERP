@@ -685,13 +685,21 @@ export function TeamChatPanel() {
         </button>
       )}
 
-      {/* CHAT POPUP */}
+      {/* BACKDROP OVERLAY */}
       {isOpen && (
         <div 
-          ref={popupRef}
-          className="fixed bottom-[90px] right-6 w-[360px] h-[500px] bg-[#1a1a1a] rounded-2xl flex flex-col z-50 overflow-hidden animate-in slide-in-from-bottom-8 duration-200"
-          style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-        >
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* SLIDING SIDEBAR PANEL */}
+      <div 
+        ref={popupRef}
+        className={`fixed top-0 right-0 w-[380px] h-screen bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col z-50 overflow-hidden shadow-2xl transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
           {/* HEADER */}
           <div className="h-[60px] shrink-0 bg-[#f0a500] flex flex-col justify-center px-4 relative">
             <div className="flex items-center justify-between gap-3">
@@ -1047,7 +1055,6 @@ export function TeamChatPanel() {
             </div>
           )}
         </div>
-      )}
     </>
   );
 }

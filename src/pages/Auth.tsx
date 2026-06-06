@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useSearchParams, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { Sprout, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,11 +9,12 @@ import { signInWithGoogle } from "@/lib/googleAuth";
 
 export default function Auth() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { session, loading } = useAuth();
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [busyGithub, setBusyGithub] = useState(false);
 
-  const from = (location.state as { from?: string })?.from || "/dashboard";
+  const from = (location.state as { from?: string })?.from || "/employees/face-attendance";
 
   if (!loading && session) return <Navigate to={from} replace />;
 

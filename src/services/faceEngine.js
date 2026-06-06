@@ -67,7 +67,6 @@ export async function loadModels(modelUrl = MODEL_URL) {
         faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl),
         faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
         faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl),
-        faceapi.nets.faceExpressionNet.loadFromUri(modelUrl), // optional – used for liveness hint
     ]);
 
     modelsLoaded = true;
@@ -242,7 +241,11 @@ export function findBestMatch(
     let bestMatch = null;
 
     for (const row of storedEmbeddings) {
-        const stored = row.face_embedding; // JSON array from Supabase
+        let stored = row.face_embedding;
+        // Convert string "[...]" to number array if needed
+        if (typeof stored === 'string') {
+            stored = stored.replace(/[\[\]]/g, '').split(',').map(Number);
+        }
         const distance = euclideanDistance(liveDescriptor, stored);
 
         if (distance < bestDistance) {
@@ -254,10 +257,7 @@ export function findBestMatch(
     const confidence = distanceToConfidence(bestDistance);
     const matched = bestDistance <= threshold;
 
-    console.log(
-        `[faceEngine] Best match: ${bestMatch?.employees?.name ?? 'unknown'} ` +
-        `| distance=${bestDistance.toFixed(4)} | confidence=${confidence}% | matched=${matched}`
-    );
+    console.log(`[faceEngine] Best match: ${bestMatch?.employees?.full_name ?? 'unknown'} | distance=${bestDistance.toFixed(4)} | confidence=${confidence}% | matched=${matched}`);
 
     return {
         matched,

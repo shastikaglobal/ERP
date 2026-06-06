@@ -25,7 +25,6 @@ export async function loadFaceModels(modelPath = '/models') {
     faceapi.nets.tinyFaceDetector.loadFromUri(modelPath),
     faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
     faceapi.nets.faceRecognitionNet.loadFromUri(modelPath),
-    faceapi.nets.faceExpressionNet.loadFromUri(modelPath),
   ])
   modelsLoaded = true
   console.log('[FaceEngine] Models loaded ✓')
