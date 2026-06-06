@@ -109,8 +109,13 @@ export async function recordCheckIn(employeeId, confidenceScore) {
     const now = new Date().toISOString();
     const hour = new Date().getHours();
     const mins = new Date().getMinutes();
-    const status = (hour > 9 || (hour === 9 && mins > 0)) ? 'late' : 'present';
+    const status = (hour > 8 || (hour === 8 && mins > 0)) ? 'late' : 'present';
 
+    // Verify employee exists to satisfy foreign key constraint
+    const employee = await getEmployee(employeeId);
+    if (!employee) {
+        throw new Error(`Employee with ID ${employeeId} does not exist`);
+    }
     const payload = {
         employee_id: employeeId,
         date: today,
@@ -119,10 +124,9 @@ export async function recordCheckIn(employeeId, confidenceScore) {
         is_manual: false,
         notes: confidenceScore ? `Face match: ${(confidenceScore * 100).toFixed(1)}%` : null,
     };
-
     const { data, error } = await supabase
         .from('attendance_logs')
-        .upsert([payload], { onConflict: 'employee_id,date', ignoreDuplicates: true })
+        .upsert([payload], { onConflict: 'employee_id,date', ignoreDuplicates: false })
         .select()
         .single();
     if (error) throw error;
@@ -132,6 +136,19 @@ export async function recordCheckIn(employeeId, confidenceScore) {
 export async function recordCheckOut(employeeId) {
     const today = new Date().toISOString().slice(0, 10);
     const now = new Date().toISOString();
+
+        // Verify employee exists to satisfy foreign key constraint using safe query
+    const { data: empData, error: empError } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('id', employeeId)
+        .maybeSingle();
+    if (empError) {
+        throw empError;
+    }
+    if (!empData) {
+        throw new Error(`Employee with ID ${employeeId} does not exist`);
+    }
 
     const { data, error } = await supabase
         .from('attendance_logs')

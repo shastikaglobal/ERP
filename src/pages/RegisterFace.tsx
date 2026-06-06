@@ -1,20 +1,5 @@
-/**
- * RegisterFace.jsx
- * ----------------
- * Admin-only page to register an employee's face.
- *
- * Flow:
- *   1. Admin selects / creates an employee
- *   2. Camera opens and shows live preview
- *   3. Admin captures 5 face samples (with quality feedback)
- *   4. Averaged embedding is saved to Supabase (face_embeddings table)
- *   5. Success confirmation shown
- *
- * Props: none (self-contained page component)
- */
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import FaceScanner from './FaceScanner';
+import FaceScanner from '../components/FaceScanner';
 import {
   getEmployees,
   createEmployee,
@@ -81,7 +66,7 @@ export default function RegisterFace() {
 
   // New employee form
   const [showNewForm, setShowNewForm] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({ name: '', email: '', department: '' });
+  const [newEmployee, setNewEmployee] = useState({ full_name: '', email: '', department: '' });
   const [creatingEmployee, setCreatingEmployee] = useState(false);
 
   // Registration state
@@ -138,7 +123,7 @@ export default function RegisterFace() {
 
   async function handleCreateEmployee(e) {
     e.preventDefault();
-    if (!newEmployee.name || !newEmployee.email) {
+    if (!newEmployee.full_name || !newEmployee.email) {
       setMessage({ type: 'error', text: 'Name and email are required.' });
       return;
     }
@@ -148,9 +133,9 @@ export default function RegisterFace() {
       setEmployees((prev) => [...prev, created]);
       setSelectedEmployee(created);
       setExistingSamples(0);
-      setNewEmployee({ name: '', email: '', department: '' });
+      setNewEmployee({ full_name: '', email: '', department: '' });
       setShowNewForm(false);
-      setMessage({ type: 'success', text: `Employee "${created.name}" created successfully.` });
+      setMessage({ type: 'success', text: `Employee "${created.full_name}" created successfully.` });
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to create employee: ' + err.message });
     } finally {
@@ -223,7 +208,7 @@ export default function RegisterFace() {
         setPhase('done');
         setMessage({
           type: 'success',
-          text: `✓ Face registered successfully for ${selectedEmployee.name}. ${allSamples.length} samples saved.`,
+          text: `✓ Face registered successfully for ${selectedEmployee.full_name}. ${allSamples.length} samples saved.`,
         });
         setExistingSamples(allSamples.length);
         scannerRef.current?.stopCamera();
@@ -298,10 +283,10 @@ export default function RegisterFace() {
                       onClick={() => handleSelectEmployee(emp)}
                     >
                       <div style={styles.empAvatar}>
-                        {emp.name.charAt(0).toUpperCase()}
+                        {emp.full_name.charAt(0).toUpperCase()}
                       </div>
                       <div style={styles.empInfo}>
-                        <span style={styles.empName}>{emp.name}</span>
+                        <span style={styles.empName}>{emp.full_name}</span>
                         <span style={styles.empDept}>{emp.department || 'No dept'}</span>
                       </div>
                     </button>
@@ -323,7 +308,7 @@ export default function RegisterFace() {
                       Create New Employee
                     </h3>
                     {[
-                      { key: 'name', label: 'Full Name *', type: 'text' },
+                      { key: 'full_name', label: 'Full Name *', type: 'text' },
                       { key: 'email', label: 'Email *', type: 'email' },
                       { key: 'department', label: 'Department', type: 'text' },
                     ].map(({ key, label, type }) => (
@@ -354,10 +339,10 @@ export default function RegisterFace() {
             {selectedEmployee && (
               <div style={styles.selectedInfo}>
                 <div style={styles.selectedAvatar}>
-                  {selectedEmployee.name.charAt(0).toUpperCase()}
+                  {selectedEmployee.full_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div style={styles.selectedName}>{selectedEmployee.name}</div>
+                  <div style={styles.selectedName}>{selectedEmployee.full_name}</div>
                   <div style={styles.selectedMeta}>
                     {selectedEmployee.department} &nbsp;·&nbsp;
                     {existingSamples > 0
@@ -387,7 +372,7 @@ export default function RegisterFace() {
             <div style={styles.captureHeader}>
               <h2 style={styles.sectionTitle}>
                 <span style={styles.stepBadge}>2</span>
-                Capture Samples for <em>{selectedEmployee?.name}</em>
+                Capture Samples for <em>{selectedEmployee?.full_name}</em>
               </h2>
               <button style={styles.btnGhost} onClick={handleStopCamera}>
                 ✕ Cancel
@@ -452,7 +437,7 @@ export default function RegisterFace() {
               <div style={styles.successIcon}>✓</div>
               <h3 style={styles.successTitle}>Registration Complete</h3>
               <p style={styles.muted}>
-                {selectedEmployee?.name}'s face has been registered with {captureIndex} samples.
+                {selectedEmployee?.full_name}'s face has been registered with {captureIndex} samples.
                 They can now use face recognition for attendance.
               </p>
               <div style={{ display: 'flex', gap: '12px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>

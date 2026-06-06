@@ -220,6 +220,8 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Directory", url: "/employees", icon: UsersRound, permission: "hr.view" },
       { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck, permission: "hr.view" },
+      { title: "Face Attendance", url: "/employees/face-attendance", icon: ScanLine },
+      { title: "Register Face", url: "/employees/register-face", icon: UserCheck, permission: "hr.view" },
     ],
   },
   {

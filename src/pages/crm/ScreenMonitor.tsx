@@ -226,7 +226,7 @@ function useScreenBroadcaster(userId: string | undefined, stream: MediaStream | 
     if (!userId || !stream) return;
 
     const channel = supabase
-      .channel(`broadcaster_${userId}`)
+      .channel(`broadcaster_${userId}_${Math.random().toString(36).substring(7)}`)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
