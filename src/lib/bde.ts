@@ -46,6 +46,17 @@ export async function fetchBdeProfiles(supabase: any) {
 
       if (!pError && profiles) {
         finalProfiles = profiles;
+        // If no profiles found via user_roles, query profiles with direct role column 'bde'
+        if (finalProfiles.length === 0) {
+          const { data: roleProfiles, error: rpError } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, requested_role')
+            .eq('role', 'bde')
+            .order('full_name');
+          if (!rpError && roleProfiles) {
+            finalProfiles = roleProfiles;
+          }
+        }
       }
     }
 
@@ -54,9 +65,9 @@ export async function fetchBdeProfiles(supabase: any) {
     if (finalProfiles.length === 0) {
       const { data: fallbackProfiles, error: fError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, requested_role')
+        .select('id, full_name, email, role, requested_role')
         .or('role.ilike.bde,requested_role.ilike.bde')
-        .eq('status', 'approved')
+
         .order('full_name');
       
       if (!fError && fallbackProfiles) {
@@ -84,9 +95,6 @@ export async function fetchBdeProfiles(supabase: any) {
   } catch (error) {
     console.error("Error in fetchBdeProfiles:", error);
     // Even on error, return the requested names
-    return [
-      { id: 'gayathri', full_name: 'Gayathri', email: 'gayathri@example.com', requested_role: 'bde' },
-      { id: 'vemula', full_name: 'Vemula Navya lahari', email: 'vemula@example.com', requested_role: 'bde' }
-    ];
+    return [];
   }
 }

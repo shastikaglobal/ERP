@@ -154,6 +154,7 @@ export const navGroups: NavGroup[] = [
     title: "Shipments",
     icon: Ship,
     items: [
+      { title: "Dispatch", url: "/shipments/dispatch", icon: Truck, permission: "shipments.manage" },
       { title: "Shipment Register", url: "/shipments", icon: Ship, permission: "shipments.view" },
       { title: "Create Shipment", url: "/shipments/create", icon: FilePlus, permission: "shipments.manage" },
       { title: "Container Tracking", url: "/shipments/containers", icon: Container, permission: "shipments.view" },

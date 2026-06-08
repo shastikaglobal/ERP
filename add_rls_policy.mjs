@@ -9,14 +9,21 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 async function main() {
   const { data, error } = await supabase.rpc('execute_sql', {
-    sql_query: `
-      DROP POLICY IF EXISTS "Users can update own session" ON user_sessions;
-      
-      CREATE POLICY "Users can update own session"
-      ON user_sessions FOR UPDATE
-      USING (auth.uid() = user_id)
-      WITH CHECK (auth.uid() = user_id);
-    `
+      sql_query: `
+        DROP POLICY IF EXISTS "Users can update own session" ON user_sessions;
+
+        CREATE POLICY "Users can update own session"
+        ON user_sessions FOR UPDATE
+        USING (auth.uid() = user_id)
+        WITH CHECK (auth.uid() = user_id);
+
+        DROP POLICY IF EXISTS "profiles_bde_select" ON profiles;
+
+        CREATE POLICY "profiles_bde_select"
+        ON profiles FOR SELECT
+        TO authenticated
+        USING (role ILIKE 'bde' AND company_id = current_company_id());
+      `
   });
   
   if (error) {

@@ -110,6 +110,7 @@ import CreateShipment from "./pages/shipments/CreateShipment";
 import ShipmentDetail from "./pages/shipments/ShipmentDetail";
 import ContainerTracking from "./pages/shipments/ContainerTracking";
 import DeliveryStatus from "./pages/shipments/DeliveryStatus";
+import Dispatch from "./pages/shipments/Dispatch";
 
 // Documents
 import Invoices from "./pages/documents/Invoices";
@@ -296,6 +297,7 @@ const App = () => (
               <Route path="/shipments/:id" element={<ShipmentDetail />} />
               <Route path="/shipments/containers" element={<ContainerTracking />} />
               <Route path="/shipments/delivery" element={<DeliveryStatus />} />
+              <Route path="/shipments/dispatch" element={<Dispatch />} />
 
               {/* Documents */}
               <Route path="/documents" element={<Navigate to="/documents/invoices" replace />} />
