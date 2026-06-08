@@ -1,0 +1,65 @@
+[TAILING] Tailing last 30 lines for [adms-sync] process (change the value with --lines option)
+/root/.pm2/logs/adms-sync-error.log last 30 lines:
+0|adms-syn | Error: Node.js 20 detected without native WebSocket support.
+0|adms-syn | 
+0|adms-syn | Suggested solution: For Node.js < 22, install "ws" package and provide it via the transport option:
+0|adms-syn | import ws from "ws"
+0|adms-syn | new RealtimeClient(url, { transport: ws })
+0|adms-syn |     at Function.getWebSocketConstructor (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/lib/websocket-factory.ts:178:11)
+0|adms-syn |     at RealtimeClient._initializeOptions (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/RealtimeClient.ts:805:63)
+0|adms-syn |     at new RealtimeClient (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/RealtimeClient.ts:284:39)
+0|adms-syn |     at SupabaseClient._initRealtimeClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:629:12)
+0|adms-syn |     at new SupabaseClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:366:26)
+0|adms-syn |     at createClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/index.ts:65:10)
+0|adms-syn |     at Object.<anonymous> (/var/www/adms-sync/server.js:17:18)
+0|adms-syn |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|adms-syn |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|adms-syn |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|adms-syn | Error: Node.js 20 detected without native WebSocket support.
+0|adms-syn | 
+0|adms-syn | Suggested solution: For Node.js < 22, install "ws" package and provide it via the transport option:
+0|adms-syn | import ws from "ws"
+0|adms-syn | new RealtimeClient(url, { transport: ws })
+0|adms-syn |     at Function.getWebSocketConstructor (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/lib/websocket-factory.ts:178:11)
+0|adms-syn |     at RealtimeClient._initializeOptions (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/RealtimeClient.ts:805:63)
+0|adms-syn |     at new RealtimeClient (/var/www/adms-sync/node_modules/@supabase/realtime-js/src/RealtimeClient.ts:284:39)
+0|adms-syn |     at SupabaseClient._initRealtimeClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:629:12)
+0|adms-syn |     at new SupabaseClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:366:26)
+0|adms-syn |     at createClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/index.ts:65:10)
+0|adms-syn |     at Object.<anonymous> (/var/www/adms-sync/server.js:17:18)
+0|adms-syn |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|adms-syn |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|adms-syn |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+
+/root/.pm2/logs/adms-sync-out.log last 30 lines:
+0|adms-syn | 
+0|adms-syn | 🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: TEST
+0|adms-syn | Params: [Object: null prototype] { SN: 'TEST' }
+0|adms-syn | ◇ injected env (4) from .env // tip: ⌘ override existing { override: true }
+0|adms-syn | 🚀 Starting ADMS Sync Server...
+0|adms-syn | 🔗 Supabase Target URL: https://sxebygxpjzntogzpjnga.supabase.co
+0|adms-syn | 
+0|adms-syn | 🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: TEST
+0|adms-syn | Params: [Object: null prototype] { SN: 'TEST' }
+0|adms-syn | ◇ injected env (4) from .env // tip: ⌘ enable debugging { debug: true }
+0|adms-syn | 🚀 Starting ADMS Sync Server...
+0|adms-syn | 🔗 Supabase Target URL: https://sxebygxpjzntogzpjnga.supabase.co
+0|adms-syn | 
+0|adms-syn | 🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: TEST
+0|adms-syn | Params: [Object: null prototype] { SN: 'TEST' }
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: UNKNOWN
+0|adms-syn | Params: [Object: null prototype] {}
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: UNKNOWN
+0|adms-syn | Params: [Object: null prototype] {}
+0|adms-syn | 
+0|adms-syn | 📡 [GET /iclock/cdata] Handshake received from device SN: UNKNOWN
+0|adms-syn | Params: [Object: null prototype] {}
+

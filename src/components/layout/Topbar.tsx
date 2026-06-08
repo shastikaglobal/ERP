@@ -185,7 +185,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => nav("/system/settings")}>
+            <DropdownMenuItem onClick={() => nav("/system/account")}>
               <UserIcon className="h-4 w-4 mr-2" /> Account settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />

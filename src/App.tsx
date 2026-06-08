@@ -168,6 +168,7 @@ import ActivityLogs from "./pages/system/ActivityLogs";
 import AuditLogs from "./pages/system/AuditLogs";
 import Subscriptions from "./pages/system/Subscriptions";
 import Settings from "./pages/system/Settings";
+import AccountSettings from "./pages/system/AccountSettings";
 import Maintenance from "./pages/system/Maintenance";
 import ZohoIntegration from "./pages/system/ZohoIntegration";
 import Mailbox from "./pages/system/Mailbox";
@@ -391,6 +392,7 @@ const App = () => (
               <Route path="/system/audit-logs" element={<AuditLogs />} />
               <Route path="/system/subscriptions" element={<Subscriptions />} />
               <Route path="/system/settings" element={<Settings />} />
+              <Route path="/system/account" element={<AccountSettings />} />
               <Route path="/system/maintenance" element={<Maintenance />} />
               <Route path="/system/integrations/zoho" element={<ZohoIntegration />} />
               <Route path="/system/mailbox" element={<Mailbox />} />

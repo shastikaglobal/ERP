@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -12,13 +13,24 @@ export default function AuthCallback() {
   useEffect(() => {
     const error = searchParams.get('error');
     const error_description = searchParams.get('error_description');
+    const code = searchParams.get('code');
 
     if (error) {
       setErrorMsg(error_description || "Authentication failed.");
       return;
     }
 
-    if (session) {
+    if (code) {
+      // Exchange the code for a session
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          setErrorMsg(error.message);
+        } else {
+          // Navigation happens when session updates from useAuth, but we can force it here just in case
+          navigate("/employees/face-attendance?mode=checkin", { replace: true });
+        }
+      });
+    } else if (session) {
       navigate("/employees/face-attendance?mode=checkin", { replace: true });
     }
   }, [session, navigate, searchParams]);

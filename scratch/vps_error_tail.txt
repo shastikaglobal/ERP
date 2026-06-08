@@ -1,9 +1,4 @@
 ==> /root/.pm2/logs/adms-error.log <==
-122.183.50.114 - - [06/Jun/2026 02:33:59] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
-122.183.50.114 - - [06/Jun/2026 02:34:29] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
-122.183.50.114 - - [06/Jun/2026 02:34:59] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
-122.183.50.114 - - [06/Jun/2026 02:35:29] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
-122.183.50.114 - - [06/Jun/2026 02:35:59] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 122.183.50.114 - - [06/Jun/2026 02:36:29] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 122.183.50.114 - - [06/Jun/2026 02:36:59] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 122.183.50.114 - - [06/Jun/2026 02:37:29] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
@@ -49,6 +44,11 @@
 122.183.50.114 - - [06/Jun/2026 03:59:07] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 122.183.50.114 - - [06/Jun/2026 03:59:37] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 122.183.50.114 - - [06/Jun/2026 04:00:07] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
+122.183.50.114 - - [06/Jun/2026 04:00:37] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
+122.183.50.114 - - [06/Jun/2026 04:01:07] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
+122.183.50.114 - - [06/Jun/2026 04:01:37] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
+122.183.50.114 - - [06/Jun/2026 04:02:07] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
+122.183.50.114 - - [06/Jun/2026 04:02:37] "GET /iclock/getrequest.aspx?SN=NFZ8250603096 HTTP/1.1" 200 -
 
 ==> /root/.pm2/logs/adms-sync-error.log <==
     at createClient (/var/www/adms-sync/node_modules/@supabase/supabase-js/src/index.ts:65:10)

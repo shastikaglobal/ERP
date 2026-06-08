@@ -24,29 +24,40 @@ export default function Auth() {
     e.preventDefault();
     setBusyEmail(true);
 
-    let loginEmail = email.trim();
+    try {
+      let loginEmail = email.trim();
 
-    // If it doesn't look like an email, assume it's an Employee ID or eSSL/Biometric ID
-    if (!loginEmail.includes('@')) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('email')
-        .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
-        .maybeSingle();
+      // If it doesn't look like an email, assume it's an Employee ID or eSSL/Biometric ID
+      if (!loginEmail.includes('@')) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('email')
+          .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
+          .maybeSingle();
 
-      if (error || !data || !data.email) {
-        toast.error("Employee ID not found. Please check your ID or contact Admin.");
-        setBusyEmail(false);
-        return;
+        if (error || !data || !data.email) {
+          toast.error("Employee ID not found. Please check your ID or contact Admin.");
+          setBusyEmail(false);
+          return;
+        }
+        
+        // Use the found email to log in
+        loginEmail = data.email;
       }
-      
-      // Use the found email to log in
-      loginEmail = data.email;
-    }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-    if (error) {
-      toast.error(error.message || "Invalid login credentials");
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      
+      if (error) {
+        toast.error(error.message || "Invalid login credentials");
+        setBusyEmail(false);
+      } else if (!data.session) {
+        toast.error("Please confirm your email address before logging in.");
+        setBusyEmail(false);
+      }
+      // If success and we have a session, the onAuthStateChange listener in useAuth will trigger the redirect
+    } catch (err: any) {
+      console.error("Login exception:", err);
+      toast.error(err?.message || "An unexpected error occurred during login.");
       setBusyEmail(false);
     }
   };

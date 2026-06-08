@@ -1,27 +1,31 @@
-import mssql from 'mssql';
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-const pool = await mssql.connect({
-  server: 'localhost',
-  user: 'sa',
-  password: 'essl@123',
-  database: 'etimetracklite1',
-  options: { encrypt: false, trustServerCertificate: true, instanceName: 'SQLEXPRESS' }
-});
-
-const today = new Date().toISOString().slice(0, 10); // e.g. "2026-06-02"
-
-const r = await pool.request().query(`
-  SELECT EmployeeCode, LogDateTime, Direction 
-  FROM Attlogs 
-  WHERE CAST(LogDateTime AS DATE) = '${today}' 
-  ORDER BY EmployeeCode, LogDateTime
-`);
-
-console.log(`Total punches today: ${r.recordset.length}`);
-for (const row of r.recordset) {
-  const dt = new Date(row.LogDateTime);
-  const time = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  console.log(`  EmpCode: ${row.EmployeeCode}  |  ${time}  |  Direction: ${row.Direction}`);
+const envPath = 'd:/ERP1/ERP/.env';
+const envContent = fs.readFileSync(envPath, 'utf-8');
+const envLines = envContent.split('\n');
+let supabaseUrl = '';
+let supabaseKey = '';
+for (const line of envLines) {
+  if (line.includes('VITE_SUPABASE_URL=')) supabaseUrl = line.split('VITE_SUPABASE_URL=')[1].trim().replace(/"/g, '').replace(/'/g, '');
+  if (line.includes('SUPABASE_SERVICE_ROLE_KEY=')) supabaseKey = line.split('SUPABASE_SERVICE_ROLE_KEY=')[1].trim().replace(/"/g, '').replace(/'/g, '');
 }
 
-await pool.close();
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkLogs() {
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
+    
+  if (error) console.error('Error:', error);
+  else {
+    console.log('Recent punches:');
+    console.log(JSON.stringify(data, null, 2));
+  }
+}
+
+checkLogs();

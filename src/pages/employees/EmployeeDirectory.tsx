@@ -1,4 +1,4 @@
-import { Plus, Mail, Phone, Loader2, Search, Copy, CheckCircle2 } from "lucide-react";
+import { Plus, Mail, Phone, Loader2, Search, Copy, CheckCircle2, MapPin, Calendar, Briefcase, Monitor } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
@@ -20,6 +20,10 @@ type ProfileRow = {
   is_active: boolean;
   avatar_url: string | null;
   biometric_id: string | null;
+  dob?: string | null;
+  joining_date?: string | null;
+  system_mode?: string | null;
+  city?: string | null;
 };
 
 const ROLE_NAMES: Record<string, string> = {
@@ -47,7 +51,7 @@ export default function EmployeeDirectory() {
     setLoading(true);
     const { data: empls, error: empErr } = await supabase
       .from("profiles")
-      .select("id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id")
+      .select("id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id, dob, joining_date, system_mode, city")
       .eq("status", "approved")
       .order("full_name");
 
@@ -405,6 +409,30 @@ export default function EmployeeDirectory() {
                         <Phone className="h-3.5 w-3.5 shrink-0 group-hover:text-amber-500 transition-colors" />
                         <span>{e.phone || "N/A"}</span>
                       </div>
+                      {e.city && (
+                        <div className="flex items-center gap-2.5 text-gray-400 group">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 group-hover:text-amber-500 transition-colors" />
+                          <span className="truncate" title={e.city}>{e.city}</span>
+                        </div>
+                      )}
+                      {e.system_mode && (
+                        <div className="flex items-center gap-2.5 text-gray-400 group">
+                          <Monitor className="h-3.5 w-3.5 shrink-0 group-hover:text-amber-500 transition-colors" />
+                          <span className="capitalize">{e.system_mode === 'wfh' ? 'Work from Home' : e.system_mode}</span>
+                        </div>
+                      )}
+                      {e.joining_date && (
+                        <div className="flex items-center gap-2.5 text-gray-400 group">
+                          <Briefcase className="h-3.5 w-3.5 shrink-0 group-hover:text-amber-500 transition-colors" />
+                          <span>Joined: {new Date(e.joining_date).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      {e.dob && (
+                        <div className="flex items-center gap-2.5 text-gray-400 group">
+                          <Calendar className="h-3.5 w-3.5 shrink-0 group-hover:text-amber-500 transition-colors" />
+                          <span>DOB: {new Date(e.dob).toLocaleDateString()}</span>
+                        </div>
+                      )}
                     </div>
 
                     {isAdmin && (

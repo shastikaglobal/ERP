@@ -175,24 +175,36 @@ const getEmployeeMonthStats = (
         }
       } else {
         // Absent (log exists but no clock_in and not on_leave)
-        totalCut += perDay;
+        const isSunday = new Date(dateStr).getDay() === 0;
+        const isTodayOrFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
+        const isPenaltyFree = isSunday || isTodayOrFuture;
+        
+        if (!isPenaltyFree) {
+          totalCut += perDay;
+        }
         dailyDetails[dateStr] = {
-          status: 'absent',
-          cut: perDay,
+          status: isSunday ? 'present' : 'absent',
+          cut: isPenaltyFree ? 0 : perDay,
           isExcused: false,
           minutesLate: 0,
-          explanation: 'Absent (No clock in)'
+          explanation: isSunday ? 'Sunday (Holiday)' : (isTodayOrFuture ? 'Pending / Today' : 'Absent (No clock in)')
         };
       }
     } else {
       // Absent / No record
-      totalCut += perDay;
+      const isSunday = new Date(dateStr).getDay() === 0;
+      const isTodayOrFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
+      const isPenaltyFree = isSunday || isTodayOrFuture;
+      
+      if (!isPenaltyFree) {
+        totalCut += perDay;
+      }
       dailyDetails[dateStr] = {
-        status: 'absent',
-        cut: perDay,
+        status: isSunday ? 'present' : 'absent',
+        cut: isPenaltyFree ? 0 : perDay,
         isExcused: false,
         minutesLate: 0,
-        explanation: 'Absent (No record)'
+        explanation: isSunday ? 'Sunday (Holiday)' : (isTodayOrFuture ? 'Pending / Today' : 'Absent (No record)')
       };
     }
   });
