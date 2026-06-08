@@ -108,12 +108,19 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Warehouse",
+    title: "Warehouse & Inventory",
     icon: Warehouse,
     items: [
-      { title: "Dashboard", url: "/warehouse/dashboard", icon: LayoutDashboard },
       { title: "Receiving Goods", url: "/warehouse/receiving", icon: PackageCheck },
+      { title: "Dashboard", url: "/warehouse/dashboard", icon: LayoutDashboard },
       { title: "Packing Management", url: "/warehouse/packing", icon: Package },
+      { title: "Available Stock Management", url: "/inventory/available-stock", icon: CheckSquare },
+      { title: "Reserved Stock Tracking", url: "/inventory/reserved-stock", icon: Lock },
+      { title: "Export Ready Inventory", url: "/inventory/export-ready", icon: Plane },
+      { title: "Batch-wise Stock Tracking", url: "/inventory/batch-wise", icon: Layers },
+      { title: "Damaged Stock Management", url: "/inventory/damaged-stock-management", icon: AlertOctagon },
+      { title: "Expiry Monitoring", url: "/inventory/expiry-monitoring", icon: Timer },
+      { title: "Multi-Warehouse Management", url: "/inventory/multi-warehouse", icon: Warehouse },
     ],
   },
   {
