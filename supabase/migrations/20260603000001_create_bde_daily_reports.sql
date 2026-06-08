@@ -1,4 +1,3 @@
--- Create BDE Daily Reports table
 CREATE TABLE IF NOT EXISTS public.bde_daily_reports (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     bde_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -15,10 +14,8 @@ CREATE TABLE IF NOT EXISTS public.bde_daily_reports (
     created_at timestamp with time zone DEFAULT now()
 );
 
--- Enable RLS
 ALTER TABLE public.bde_daily_reports ENABLE ROW LEVEL SECURITY;
 
--- Policies
 CREATE POLICY "Users can insert their own reports" ON public.bde_daily_reports
     FOR INSERT WITH CHECK (auth.uid() = bde_id);
 

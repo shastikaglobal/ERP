@@ -44,7 +44,7 @@ const statusColor = (s: string) => {
   return map[s] || COLORS.textSecondary;
 };
 
-export default function EmployeeActivity() {
+export default function EmployeeActivity({ hideHeader = false }: { hideHeader?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<any[]>([]);
   const [stats, setStats] = useState({ online: 0, idle: 0, offline: 0, avgWorkHrs: "0h" });
@@ -78,7 +78,7 @@ export default function EmployeeActivity() {
         
         if (session) {
           lastSeen = new Date(session.last_active);
-          const diffMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
+          const diffMinutes = Math.max(0, (now.getTime() - lastSeen.getTime()) / (1000 * 60));
           
           if (diffMinutes < 5) {
             status = "Online";
@@ -129,8 +129,30 @@ export default function EmployeeActivity() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+
+    // Subscribe to active_sessions changes in real-time
+    const channel = supabase
+      .channel("active_sessions_realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "active_sessions"
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Fallback polling (every 60s)
+    const interval = setInterval(fetchData, 60000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading) {
@@ -144,7 +166,9 @@ export default function EmployeeActivity() {
 
   return (
     <div style={{ animation: "slideIn 0.3s ease" }} className="pb-20">
-      <SectionHeader title="Employee Activity Tracking" sub="Real-time monitoring: login, IP, device, work duration, and live session status." />
+      {!hideHeader && (
+        <SectionHeader title="Employee Activity Tracking" sub="Real-time monitoring: login, IP, device, work duration, and live session status." />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Online Now" value={stats.online.toString()} color={COLORS.green} icon="🟢" />

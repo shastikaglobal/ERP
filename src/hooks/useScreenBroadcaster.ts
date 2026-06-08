@@ -7,8 +7,9 @@ export function useScreenBroadcaster(userId: string | undefined, stream: MediaSt
   useEffect(() => {
     if (!userId || !stream) return;
 
+    const channelName = `broadcaster_${userId}_${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`broadcaster_${userId}`)
+      .channel(channelName)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -18,47 +19,58 @@ export function useScreenBroadcaster(userId: string | undefined, stream: MediaSt
         const sig = payload.new;
         if (sig.to_user_id !== userId) return;
 
-        if (sig.signal_type === "watch_request") {
-          const adminId = sig.from_user_id;
+        try {
+          if (sig.signal_type === "watch_request") {
+            const adminId = sig.from_user_id;
 
-          const pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-          });
-          pcsRef.current.set(adminId, pc);
+            const pc = new RTCPeerConnection({
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+            pcsRef.current.set(adminId, pc);
 
-          // Add screen tracks
-          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            // Add screen tracks
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-          pc.onicecandidate = async (e) => {
-            if (e.candidate) {
+            pc.onicecandidate = async (e) => {
+              if (e.candidate) {
+                await (supabase.from("screen_signals") as any).insert({
+                  from_user_id: userId,
+                  to_user_id: adminId,
+                  signal_type: "candidate",
+                  payload: JSON.stringify(e.candidate),
+                });
+              }
+            };
+
+            // Create and set offer only in stable state
+            if (pc.signalingState === "stable") {
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+
               await (supabase.from("screen_signals") as any).insert({
                 from_user_id: userId,
                 to_user_id: adminId,
-                signal_type: "candidate",
-                payload: JSON.stringify(e.candidate),
+                signal_type: "offer",
+                payload: JSON.stringify(offer),
               });
             }
-          };
 
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+          } else if (sig.signal_type === "answer") {
+            const pc = pcsRef.current.get(sig.from_user_id);
+            if (pc && pc.signalingState === "have-local-offer") {
+              await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sig.payload)));
+            }
 
-          await (supabase.from("screen_signals") as any).insert({
-            from_user_id: userId,
-            to_user_id: adminId,
-            signal_type: "offer",
-            payload: JSON.stringify(offer),
-          });
-
-        } else if (sig.signal_type === "answer") {
-          const pc = pcsRef.current.get(sig.from_user_id);
-          if (pc) await pc.setRemoteDescription(JSON.parse(sig.payload));
-
-        } else if (sig.signal_type === "candidate") {
-          const pc = pcsRef.current.get(sig.from_user_id);
-          if (pc) {
-            try { await pc.addIceCandidate(JSON.parse(sig.payload)); } catch { }
+          } else if (sig.signal_type === "candidate") {
+            const pc = pcsRef.current.get(sig.from_user_id);
+            if (pc) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sig.payload)));
+              } catch { }
+            }
           }
+        } catch (err) {
+          console.error("[useScreenBroadcaster] WebRTC signaling error:", err);
         }
       })
       .subscribe();

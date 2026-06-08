@@ -41,17 +41,17 @@ const getDefaultSignature = (profile: any) => {
   let role = "Business Development Executive";
   if (profile.requested_role) {
     const matched = [
-      { slug: "admin",        label: "Admin" },
-      { slug: "manager",      label: "Manager" },
-      { slug: "bd",           label: "Business Development Executive" },
-      { slug: "bde",          label: "Business Development Executive" },
-      { slug: "accounts",     label: "Accounts Manager" },
-      { slug: "operations",   label: "Operations Executive" },
-      { slug: "qc",           label: "Quality Control Specialist" },
-      { slug: "procurement",  label: "Procurement Specialist" },
+      { slug: "admin", label: "Admin" },
+      { slug: "manager", label: "Manager" },
+      { slug: "bd", label: "Business Development Executive" },
+      { slug: "bde", label: "Business Development Executive" },
+      { slug: "accounts", label: "Accounts Manager" },
+      { slug: "operations", label: "Operations Executive" },
+      { slug: "qc", label: "Quality Control Specialist" },
+      { slug: "procurement", label: "Procurement Specialist" },
       { slug: "data_analyst", label: "Data Analyst" },
-      { slug: "marketing",    label: "Marketing Specialist" },
-      { slug: "hr",           label: "HR Manager" },
+      { slug: "marketing", label: "Marketing Specialist" },
+      { slug: "hr", label: "HR Manager" },
     ].find(r => r.slug === profile.requested_role.toLowerCase());
 
     if (matched) {
@@ -63,9 +63,9 @@ const getDefaultSignature = (profile: any) => {
     }
   }
 
-  const company  = profile.company_name || "Shastika Global Impex Private Limited";
-  const email    = profile.email || "bde@shastikaglobalimpex.co.in";
-  const phone    = "+91 95662 66228";
+  const company = profile.company_name || "Shastika Global Impex Private Limited";
+  const email = profile.email || "bde@shastikaglobalimpex.co.in";
+  const phone = "+91 95662 66228";
   const whatsapp = "+91 95662 66241";
 
   return `
@@ -111,9 +111,9 @@ function fixEmailBodyImages(el: HTMLDivElement | null) {
     }
 
     img.referrerPolicy = "no-referrer";
-    img.loading        = "lazy";
+    img.loading = "lazy";
     img.style.maxWidth = "100%";
-    img.style.height   = "auto";
+    img.style.height = "auto";
 
     img.onerror = () => {
       img.style.display = "none";
@@ -124,30 +124,33 @@ function fixEmailBodyImages(el: HTMLDivElement | null) {
 export default function Mailbox() {
   const { profile, refresh, roleSlugs } = useAuth();
 
-  const [accounts,        setAccounts       ] = useState<any[]>([]);
+  const canDownloadAttachments = roleSlugs?.has("admin") || roleSlugs?.has("manager") ||
+    (profile?.requested_role && ["admin", "manager"].includes(profile.requested_role.toLowerCase()));
+
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
-  const [loading,         setLoading        ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Compose
-  const [to,          setTo         ] = useState("");
-  const [cc,          setCc         ] = useState("");
-  const [bcc,         setBcc        ] = useState("");
-  const [subject,     setSubject    ] = useState("");
-  const [content,     setContent    ] = useState("");
-  const [sending,     setSending    ] = useState(false);
+  const [to, setTo] = useState("");
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [subject, setSubject] = useState("");
+  const [content, setContent] = useState("");
+  const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
 
   // History & Views
-  const [sentEmails,    setSentEmails   ] = useState<any[]>([]);
+  const [sentEmails, setSentEmails] = useState<any[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
-  const [loadingBody,   setLoadingBody  ] = useState(false);
-  const [activeFolder,  setActiveFolder ] = useState("inbox");
-  const [isComposing,   setIsComposing  ] = useState(false);
-  const [searchQuery,   setSearchQuery  ] = useState("");
+  const [loadingBody, setLoadingBody] = useState(false);
+  const [activeFolder, setActiveFolder] = useState("inbox");
+  const [isComposing, setIsComposing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Mail Settings Dialog
-  const [isSettingsOpen,  setIsSettingsOpen ] = useState(false);
-  const [signatureText,   setSignatureText  ] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [signatureText, setSignatureText] = useState("");
   const [savingSignature, setSavingSignature] = useState(false);
 
   // Zoho Office Integrator
@@ -173,10 +176,10 @@ export default function Mailbox() {
     try {
       const { data, error } = await supabase.functions.invoke("zoho-office-integrator", {
         body: {
-          path:        att.path,
-          filename:    att.filename,
+          path: att.path,
+          filename: att.filename,
           displayName: profile?.full_name || profile?.email || "User",
-          userId:      profile?.id || "user-id",
+          userId: profile?.id || "user-id",
         }
       });
 
@@ -208,7 +211,7 @@ export default function Mailbox() {
     } else if (profile) {
       setSignatureText(getDefaultSignature(profile));
     }
-  }, [profile?.email_signature, isSettingsOpen]);
+  }, [profile?.email_signature, isSettingsOpen, profile]);
 
   // Run image fixes every time selectedEmail body changes
   useEffect(() => {
@@ -240,9 +243,9 @@ export default function Mailbox() {
 
   // Search Filters
   const [filterHasAttachment, setFilterHasAttachment] = useState(false);
-  const [filterUnreadOnly,    setFilterUnreadOnly   ] = useState(false);
-  const [filterDateRange,     setFilterDateRange    ] = useState("all");
-  const [showSearchOptions,   setShowSearchOptions  ] = useState(false);
+  const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);
+  const [filterDateRange, setFilterDateRange] = useState("all");
+  const [showSearchOptions, setShowSearchOptions] = useState(false);
 
   // Live status tracking
   const [emailStatuses, setEmailStatuses] = useState<Record<string, string>>({});
@@ -251,7 +254,7 @@ export default function Mailbox() {
   const [isConnected, setIsConnected] = useState(false);
 
   // Syncing state
-  const [isSyncing,       setIsSyncing      ] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
 
   const handleSelectEmail = async (email: any) => {
@@ -271,9 +274,9 @@ export default function Mailbox() {
       try {
         const { data } = await supabase.functions.invoke("get-zoho-email-body", {
           body: {
-            accountId:  email.account_id,
-            messageId:  email.zoho_message_id,
-            emailId:    email.id,
+            accountId: email.account_id,
+            messageId: email.zoho_message_id,
+            emailId: email.id,
             folderName: email.folder
           }
         });
@@ -305,9 +308,9 @@ export default function Mailbox() {
     try {
       const { data } = await supabase.functions.invoke("get-zoho-email-body", {
         body: {
-          accountId:  email.account_id,
-          messageId:  email.zoho_message_id,
-          emailId:    email.id,
+          accountId: email.account_id,
+          messageId: email.zoho_message_id,
+          emailId: email.id,
           folderName: email.folder
         }
       });
@@ -341,8 +344,11 @@ export default function Mailbox() {
     }
   };
 
+  // Memoizing fetchAccounts is recommended if used as dependency, but since it's defined in the component, it will trigger often.
+  // Instead, just pass `profile?.id` as the only dependency, as we only want it to run when profile id changes.
   useEffect(() => {
     if (profile?.id) fetchAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
   async function fetchAccounts() {
@@ -370,7 +376,7 @@ export default function Mailbox() {
       if (data && data.length > 0) {
         setAccounts(data);
         const bdeAccount = data.find(acc => acc.account_email.toLowerCase().startsWith("bde@"));
-        const defaultId  = bdeAccount ? bdeAccount.id : data[0].id;
+        const defaultId = bdeAccount ? bdeAccount.id : data[0].id;
         setSelectedAccount(defaultId);
         await fetchHistory(defaultId);
       }
@@ -390,7 +396,7 @@ export default function Mailbox() {
       .limit(500);
 
     if (error) { toast.error(error.message); return; }
-    if (data)   setSentEmails(data);
+    if (data) setSentEmails(data);
   }
 
   async function syncEmails(accountId: string, isManual = false) {
@@ -428,6 +434,7 @@ export default function Mailbox() {
     syncEmails(selectedAccount, false);
     const interval = setInterval(() => syncEmails(selectedAccount, false), 60000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount]);
 
   // Realtime subscription
@@ -479,8 +486,8 @@ export default function Mailbox() {
       return emailRegex.test(emailToTest);
     };
 
-    if (!to.split(",").every(isValidEmailStr))  return toast.error("Invalid email address in To field");
-    if (cc  && !cc.split(",").every(isValidEmailStr))  return toast.error("Invalid CC email address");
+    if (!to.split(",").every(isValidEmailStr)) return toast.error("Invalid email address in To field");
+    if (cc && !cc.split(",").every(isValidEmailStr)) return toast.error("Invalid CC email address");
     if (bcc && !bcc.split(",").every(isValidEmailStr)) return toast.error("Invalid BCC email address");
 
     try {
@@ -563,19 +570,19 @@ export default function Mailbox() {
       const { data: emailRow, error: insertError } = await supabase
         .from("emails")
         .insert({
-          to_address:   to,
-          cc_address:   cc  || null,
-          bcc_address:  bcc || null,
+          to_address: to,
+          cc_address: cc || null,
+          bcc_address: bcc || null,
           from_address: account.account_email,
           subject,
-          body_html:    finalContent,
-          body_text:    plainText,
-          status:       "draft",
-          folder:       "sent",
-          received_at:  new Date().toISOString(),
-          company_id:   profile?.company_id,
-          account_id:   account.id,
-          attachments:  uploadedAttachments.length > 0 ? uploadedAttachments : null,
+          body_html: finalContent,
+          body_text: plainText,
+          status: "draft",
+          folder: "sent",
+          received_at: new Date().toISOString(),
+          company_id: profile?.company_id,
+          account_id: account.id,
+          attachments: uploadedAttachments.length > 0 ? uploadedAttachments : null,
         })
         .select()
         .single();
@@ -623,20 +630,20 @@ export default function Mailbox() {
   };
 
   const folders = [
-    { id: "inbox",   label: "Inbox",   icon: Inbox,    count: sentEmails.filter(e => (!e.folder || e.folder.toLowerCase() === "inbox") && !e.is_read).length },
+    { id: "inbox", label: "Inbox", icon: Inbox, count: sentEmails.filter(e => (!e.folder || e.folder.toLowerCase() === "inbox") && !e.is_read).length },
     { id: "starred", label: "Starred", icon: Star },
     { id: "snoozed", label: "Snoozed", icon: Clock },
-    { id: "sent",    label: "Sent",    icon: SendIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "sent").length },
-    { id: "drafts",  label: "Drafts",  icon: FileIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "draft" || e.folder?.toLowerCase() === "drafts").length },
+    { id: "sent", label: "Sent", icon: SendIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "sent").length },
+    { id: "drafts", label: "Drafts", icon: FileIcon, count: sentEmails.filter(e => e.folder?.toLowerCase() === "draft" || e.folder?.toLowerCase() === "drafts").length },
   ];
 
   const filteredEmails = sentEmails.filter(email => {
     const folderName = email.folder?.toLowerCase() || "inbox";
 
-    if (activeFolder === "inbox"   && folderName !== "inbox")   return false;
-    if (activeFolder === "sent"    && folderName !== "sent")    return false;
-    if (activeFolder === "drafts"  && folderName !== "draft" && folderName !== "drafts") return false;
-    if (activeFolder === "starred" && !email.is_starred)        return false;
+    if (activeFolder === "inbox" && folderName !== "inbox") return false;
+    if (activeFolder === "sent" && folderName !== "sent") return false;
+    if (activeFolder === "drafts" && folderName !== "draft" && folderName !== "drafts") return false;
+    if (activeFolder === "starred" && !email.is_starred) return false;
     if (activeFolder === "snoozed" && folderName !== "snoozed") return false;
 
     if (filterHasAttachment) {
@@ -647,17 +654,17 @@ export default function Mailbox() {
 
     if (filterDateRange !== "all") {
       const diffDays = (Date.now() - new Date(email.received_at || email.created_at).getTime()) / 86400000;
-      if (filterDateRange === "today" && diffDays > 1)  return false;
-      if (filterDateRange === "week"  && diffDays > 7)  return false;
+      if (filterDateRange === "today" && diffDays > 1) return false;
+      if (filterDateRange === "week" && diffDays > 7) return false;
       if (filterDateRange === "month" && diffDays > 30) return false;
     }
 
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
-      email.subject?.toLowerCase().includes(q)      ||
+      email.subject?.toLowerCase().includes(q) ||
       email.from_address?.toLowerCase().includes(q) ||
-      email.to_address?.toLowerCase().includes(q)   ||
+      email.to_address?.toLowerCase().includes(q) ||
       email.body_text?.toLowerCase().includes(q)
     );
   });
@@ -687,10 +694,9 @@ export default function Mailbox() {
             />
             <button
               onClick={() => setShowSearchOptions(!showSearchOptions)}
-              className={`absolute inset-y-0 right-0 pr-4 flex items-center text-gray-600 hover:text-amber-600 transition-colors ${
-                showSearchOptions || filterHasAttachment || filterUnreadOnly || filterDateRange !== "all"
-                  ? "text-amber-600 font-bold" : ""
-              }`}
+              className={`absolute inset-y-0 right-0 pr-4 flex items-center text-gray-600 hover:text-amber-600 transition-colors ${showSearchOptions || filterHasAttachment || filterUnreadOnly || filterDateRange !== "all"
+                ? "text-amber-600 font-bold" : ""
+                }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
             </button>
@@ -715,11 +721,10 @@ export default function Mailbox() {
                   <label className="text-xs font-semibold text-gray-600">Attachments</label>
                   <button
                     onClick={() => setFilterHasAttachment(!filterHasAttachment)}
-                    className={`flex items-center justify-center h-10 px-4 rounded-xl text-xs font-medium border transition-all ${
-                      filterHasAttachment
-                        ? "bg-amber-100 border-amber-600 text-amber-700 font-bold"
-                        : "border-gray-300 bg-gray-100/50 text-gray-600 hover:text-gray-900 hover:bg-gray-200"
-                    }`}
+                    className={`flex items-center justify-center h-10 px-4 rounded-xl text-xs font-medium border transition-all ${filterHasAttachment
+                      ? "bg-amber-100 border-amber-600 text-amber-700 font-bold"
+                      : "border-gray-300 bg-gray-100/50 text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                      }`}
                   >
                     {filterHasAttachment ? "✓ Has Attachment" : "Any Attachment"}
                   </button>
@@ -728,11 +733,10 @@ export default function Mailbox() {
                   <label className="text-xs font-semibold text-gray-600">Read Status</label>
                   <button
                     onClick={() => setFilterUnreadOnly(!filterUnreadOnly)}
-                    className={`flex items-center justify-center h-10 px-4 rounded-xl text-xs font-medium border transition-all ${
-                      filterUnreadOnly
-                        ? "bg-amber-100 border-amber-600 text-amber-700 font-bold"
-                        : "border-gray-300 bg-gray-100/50 text-gray-600 hover:text-gray-900 hover:bg-gray-200"
-                    }`}
+                    className={`flex items-center justify-center h-10 px-4 rounded-xl text-xs font-medium border transition-all ${filterUnreadOnly
+                      ? "bg-amber-100 border-amber-600 text-amber-700 font-bold"
+                      : "border-gray-300 bg-gray-100/50 text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+                      }`}
                   >
                     {filterUnreadOnly ? "✉ Unread Only" : "All Messages"}
                   </button>
@@ -744,9 +748,9 @@ export default function Mailbox() {
                     onChange={e => setFilterDateRange(e.target.value)}
                     className="h-10 px-3 rounded-xl text-xs font-medium border border-gray-300 bg-gray-100/50 text-gray-800 focus:ring-1 focus:ring-amber-500/50 cursor-pointer outline-none"
                   >
-                    <option value="all"   className="bg-white">Any time</option>
+                    <option value="all" className="bg-white">Any time</option>
                     <option value="today" className="bg-white">Last 24 hours</option>
-                    <option value="week"  className="bg-white">Last 7 days</option>
+                    <option value="week" className="bg-white">Last 7 days</option>
                     <option value="month" className="bg-white">Last 30 days</option>
                   </select>
                 </div>
@@ -818,11 +822,10 @@ export default function Mailbox() {
                   <button
                     key={folder.id}
                     onClick={() => { setActiveFolder(folder.id); setIsComposing(false); setSelectedEmail(null); }}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? "bg-amber-100 text-amber-700 font-semibold border-l-[3px] border-amber-600 rounded-l-none pl-3.5"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
-                    }`}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+                      ? "bg-amber-100 text-amber-700 font-semibold border-l-[3px] border-amber-600 rounded-l-none pl-3.5"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                      }`}
                   >
                     <div className="flex items-center gap-3.5">
                       <folder.icon className={`h-4 w-4 ${isActive ? "text-amber-600" : "text-gray-500"}`} />
@@ -858,9 +861,9 @@ export default function Mailbox() {
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-4 px-4">System Labels</h3>
               <div className="space-y-1 text-sm">
                 {[
-                  { label: "Work",     color: "bg-blue-500"    },
+                  { label: "Work", color: "bg-blue-500" },
                   { label: "Personal", color: "bg-emerald-500" },
-                  { label: "Clients",  color: "bg-amber-500"   },
+                  { label: "Clients", color: "bg-amber-500" },
                 ].map(l => (
                   <div key={l.label} className="flex items-center justify-between px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-200/40 text-gray-600 hover:text-gray-900 transition-colors">
                     <div className="flex items-center gap-3">
@@ -923,9 +926,9 @@ export default function Mailbox() {
               <div className="p-8 max-w-4xl mx-auto w-full">
                 <div className="space-y-5 bg-gray-100/30 p-6 rounded-2xl border border-gray-300 backdrop-blur-sm">
                   {[
-                    { label: "To",      value: to,      setter: setTo,      placeholder: "recipient@example.com" },
-                    { label: "CC",      value: cc,      setter: setCc,      placeholder: "cc@example.com (optional)" },
-                    { label: "BCC",     value: bcc,     setter: setBcc,     placeholder: "bcc@example.com (optional)" },
+                    { label: "To", value: to, setter: setTo, placeholder: "recipient@example.com" },
+                    { label: "CC", value: cc, setter: setCc, placeholder: "cc@example.com (optional)" },
+                    { label: "BCC", value: bcc, setter: setBcc, placeholder: "bcc@example.com (optional)" },
                     { label: "Subject", value: subject, setter: setSubject, placeholder: "Subject" },
                   ].map(field => (
                     <div key={field.label} className="flex items-center border-b border-gray-300 pb-3">
@@ -946,7 +949,7 @@ export default function Mailbox() {
                       onChange={setContent}
                       className="mb-12 border-none"
                       modules={{
-                        toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","image","clean"]],
+                        toolbar: [["bold", "italic", "underline"], [{ "list": "ordered" }, { "list": "bullet" }], ["link", "image", "clean"]],
                         imageResize: { parchment: Quill.import("parchment"), modules: ["Resize", "DisplaySize"] }
                       }}
                     />
@@ -1009,7 +1012,7 @@ export default function Mailbox() {
                         </div>
                         <div className="text-xs text-gray-600 mt-0.5 flex flex-col gap-0.5">
                           <div><span className="font-medium text-gray-400">To:</span> {selectedEmail.to_address}</div>
-                          {selectedEmail.cc_address  && <div><span className="font-medium text-gray-400">CC:</span>  {selectedEmail.cc_address}</div>}
+                          {selectedEmail.cc_address && <div><span className="font-medium text-gray-400">CC:</span>  {selectedEmail.cc_address}</div>}
                           {selectedEmail.bcc_address && <div><span className="font-medium text-gray-400">BCC:</span> {selectedEmail.bcc_address}</div>}
                         </div>
                       </div>
@@ -1021,9 +1024,9 @@ export default function Mailbox() {
                       <Button variant="ghost" size="icon" onClick={() => handleForceFetchEmail(selectedEmail)} title="Reload Message from Server" className="h-8 w-8 rounded-full text-amber-600 hover:text-amber-700 hover:bg-gray-200/50">
                         <RefreshCw className={`h-4 w-4 ${loadingBody ? "animate-spin" : ""}`} />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><Star         className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><Reply        className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><MoreVertical  className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><Star className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><Reply className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"><MoreVertical className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 </div>
@@ -1059,11 +1062,11 @@ export default function Mailbox() {
                     <div className="flex flex-wrap gap-3">
                       {selectedEmail.attachments.map((att: any, i: number) => {
                         const fname = att.filename?.toLowerCase() || "";
-                        const hasNoExtension  = !fname.includes(".");
-                        const isSpreadsheet   = hasNoExtension || fname.endsWith(".xlsx") || fname.endsWith(".xls")  || fname.endsWith(".csv") || fname.endsWith(".ods") || fname.endsWith(".tsv");
-                        const isDocument      = fname.endsWith(".doc")  || fname.endsWith(".docx") || fname.endsWith(".odt") || fname.endsWith(".rtf") || fname.endsWith(".txt") || fname.endsWith(".html");
-                        const isPresentation  = fname.endsWith(".ppt")  || fname.endsWith(".pptx") || fname.endsWith(".odp");
-                        const isPdf           = fname.endsWith(".pdf");
+                        const hasNoExtension = !fname.includes(".");
+                        const isSpreadsheet = hasNoExtension || fname.endsWith(".xlsx") || fname.endsWith(".xls") || fname.endsWith(".csv") || fname.endsWith(".ods") || fname.endsWith(".tsv");
+                        const isDocument = fname.endsWith(".doc") || fname.endsWith(".docx") || fname.endsWith(".odt") || fname.endsWith(".rtf") || fname.endsWith(".txt") || fname.endsWith(".html");
+                        const isPresentation = fname.endsWith(".ppt") || fname.endsWith(".pptx") || fname.endsWith(".odp");
+                        const isPdf = fname.endsWith(".pdf");
                         const isZohoSupported = isSpreadsheet || isDocument || isPresentation || isPdf;
 
                         return (
@@ -1080,30 +1083,62 @@ export default function Mailbox() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 border-l border-gray-300 pl-3">
-                              <Button
-                                size="icon" variant="ghost"
-                                className="h-8 w-8 rounded-lg hover:bg-gray-200 text-gray-600 hover:text-gray-900"
-                                onClick={async () => {
-                                  const { data } = await supabase.storage.from("email-attachments").createSignedUrl(att.path, 60);
-                                  if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                                }}
-                                title="Download Attachment"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              {isZohoSupported && (
+                              {canDownloadAttachments ? (
                                 <Button
-                                  size="sm" variant="outline"
-                                  className="rounded-lg border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900"
-                                  onClick={() => handleEditWithZoho(att, i)}
-                                  disabled={openingZohoIndex === i}
-                                  title={isSpreadsheet ? "Edit with Zoho Sheet" : "Edit with Zoho Writer"}
+                                  size="icon" variant="ghost"
+                                  className="h-8 w-8 rounded-lg hover:bg-gray-200 text-gray-600 hover:text-gray-900"
+                                  onClick={async () => {
+                                    const { data, error } = await supabase.storage.from("email-attachments").createSignedUrl(att.path, 60);
+                                    if (error) {
+                                      toast.error("Failed to generate download link. Access restricted.");
+                                    } else if (data?.signedUrl) {
+                                      window.open(data.signedUrl, "_blank");
+                                    }
+                                  }}
+                                  title="Download Attachment"
                                 >
-                                  {openingZohoIndex === i
-                                    ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600 mr-2" />
-                                    : <FileSpreadsheet className="h-4 w-4 mr-2" />}
-                                  <span>Edit with Zoho</span>
+                                  <Download className="h-4 w-4" />
                                 </Button>
+                              ) : (
+                                <Button
+                                  size="icon" variant="ghost"
+                                  className="h-8 w-8 rounded-lg text-gray-400 hover:bg-gray-100 cursor-not-allowed"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.error("You are not allowed to download this attachment.");
+                                  }}
+                                  title="Download Restricted"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {isZohoSupported && (
+                                canDownloadAttachments ? (
+                                  <Button
+                                    size="sm" variant="outline"
+                                    className="rounded-lg border-emerald-500 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900"
+                                    onClick={() => handleEditWithZoho(att, i)}
+                                    disabled={openingZohoIndex === i}
+                                    title={isSpreadsheet ? "Edit with Zoho Sheet" : "Edit with Zoho Writer"}
+                                  >
+                                    {openingZohoIndex === i
+                                      ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600 mr-2" />
+                                      : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                                    <span>Edit with Zoho</span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm" variant="outline"
+                                    className="rounded-lg border-gray-300 text-gray-400 hover:bg-gray-50 hover:text-gray-500 cursor-not-allowed"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toast.error("You are not allowed to edit this attachment.");
+                                    }}
+                                  >
+                                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                    <span>Edit Restricted</span>
+                                  </Button>
+                                )
                               )}
                             </div>
                           </div>
@@ -1183,7 +1218,7 @@ export default function Mailbox() {
                     sender = sender.replace(/"/g, "");
 
                     const liveStatus = emailStatuses[email.id] || email.status;
-                    const isUnread   = !email.is_read;
+                    const isUnread = !email.is_read;
 
                     return (
                       <div
@@ -1221,8 +1256,8 @@ export default function Mailbox() {
                         <div className="w-36 shrink-0 text-right text-xs pl-4 flex items-center justify-end gap-2 text-gray-600 font-semibold">
                           {liveStatus === "sending" && <span className="flex items-center gap-1 text-blue-600 font-bold"><Loader2 className="h-3 w-3 animate-spin" />Sending</span>}
                           {liveStatus === "pending" && <span className="flex items-center gap-1 text-amber-600 font-bold"><Clock className="h-3 w-3 animate-pulse" />Queued</span>}
-                          {liveStatus === "sent"    && <span className="text-emerald-600 font-bold text-sm">✓</span>}
-                          {liveStatus === "failed"  && <span className="text-rose-600 font-bold text-sm">✗</span>}
+                          {liveStatus === "sent" && <span className="text-emerald-600 font-bold text-sm">✓</span>}
+                          {liveStatus === "failed" && <span className="text-rose-600 font-bold text-sm">✗</span>}
                           <span className={`text-[11px] font-bold ${isUnread ? "text-amber-600" : "text-gray-600"}`}>
                             {format(new Date(email.received_at || email.created_at), "MMM d")}
                           </span>
@@ -1278,7 +1313,7 @@ export default function Mailbox() {
                   onChange={setSignatureText}
                   className="border-none"
                   modules={{
-                    toolbar: [["bold","italic","underline"], [{"list":"ordered"},{"list":"bullet"}], ["link","image","clean"]],
+                    toolbar: [["bold", "italic", "underline"], [{ "list": "ordered" }, { "list": "bullet" }], ["link", "image", "clean"]],
                     imageResize: { parchment: Quill.import("parchment"), modules: ["Resize", "DisplaySize"] }
                   }}
                 />
@@ -1305,7 +1340,8 @@ export default function Mailbox() {
       </Dialog>
 
       {/* ── Global Styles ── */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .email-body-content img {
           max-width: 100%;
           height: auto;

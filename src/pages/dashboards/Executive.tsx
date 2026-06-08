@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
-import { DollarSign, Package, Ship, TrendingUp, Users, AlertCircle, Bell } from "lucide-react";
+import { DollarSign, Package, Ship, TrendingUp, Users, AlertCircle, Bell, Clock } from "lucide-react";
+import ScreenMonitor from "@/pages/crm/ScreenMonitor";
+import EmployeeActivity from "@/pages/crm/EmployeeActivity";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -100,9 +102,9 @@ export default function ExecutiveDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Executive Dashboard"
+        title="Executive & Activities Dashboard"
         description="Real-time view of your export business performance"
-        breadcrumbs={[{ label: "Dashboards" }, { label: "Executive" }]}
+        breadcrumbs={[{ label: "Dashboards" }, { label: "Executive & Activities" }]}
       />
 
       {/* Welcome Hero */}
@@ -111,7 +113,7 @@ export default function ExecutiveDashboard() {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-glow/20 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Welcome back, <span className="text-gradient-gold">Executive</span></h2>
+            <h2 className="text-2xl font-bold text-foreground">Welcome back, <span className="text-gradient-gold">Executive & Activities</span></h2>
             <p className="text-muted-foreground mt-1">Here is what's happening with your export operations today.</p>
           </div>
           <div className="flex gap-3">
@@ -232,6 +234,24 @@ export default function ExecutiveDashboard() {
             )}
           </div>
         </Section>
+      </div>
+      
+      {/* Screen Monitor Integration */}
+      <div className="pt-10 border-t border-white/5 space-y-6 animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+        <div className="flex items-center gap-3">
+          <Clock className="h-6 w-6 text-[#c8a84b]" />
+          <h2 className="text-2xl font-black text-white tracking-tight uppercase">Live Terminal Monitoring</h2>
+        </div>
+        <ScreenMonitor />
+      </div>
+
+      {/* Employee Activity Integration */}
+      <div className="pt-10 border-t border-white/5 space-y-6 animate-fade-in" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
+        <div className="flex items-center gap-3">
+          <Users className="h-6 w-6 text-[#c8a84b]" />
+          <h2 className="text-2xl font-black text-white tracking-tight uppercase">Employee Activity Tracking</h2>
+        </div>
+        <EmployeeActivity hideHeader={true} />
       </div>
     </div>
   );

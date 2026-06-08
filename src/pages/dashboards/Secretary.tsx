@@ -74,7 +74,7 @@ const menuSections = [
   {
     label: "DASHBOARDS",
     items: [
-      { icon: LayoutDashboard, label: "Executive", active: true },
+      { icon: LayoutDashboard, label: "Executive & Activities", active: true },
       { icon: TrendingUp, label: "Sales Analytics" },
       { icon: Ship, label: "Shipment Analytics" },
       { icon: DollarSign, label: "Financial Overview" },
@@ -405,10 +405,10 @@ export default function SecretaryDashboard() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: 12, color: MUTED }}>Dashboards</span>
                 <ChevronRight size={12} color={MUTED} />
-                <span style={{ fontSize: 12, color: GOLD, fontWeight: 600 }}>Executive</span>
+                <span style={{ fontSize: 12, color: GOLD, fontWeight: 600 }}>Executive & Activities</span>
               </div>
               <h1 style={{ fontSize: 24, fontWeight: 700, color: TEXT, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.5px" }}>
-                Executive Dashboard
+                Executive & Activities Dashboard
               </h1>
               <p style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>Real-time view of your export business performance</p>
             </div>
@@ -418,7 +418,7 @@ export default function SecretaryDashboard() {
               borderRadius: 14, padding: "14px 22px"
             }}>
               <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: "0.5px" }}>WELCOME BACK</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: GOLD, fontFamily: "'Space Grotesk', sans-serif" }}>Executive</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: GOLD, fontFamily: "'Space Grotesk', sans-serif" }}>Executive & Activities</div>
               <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Here's what's happening today</div>
             </div>
           </div>

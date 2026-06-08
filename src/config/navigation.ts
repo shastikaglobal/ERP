@@ -13,7 +13,8 @@ import {
   Wallet, Receipt, AlertCircle, BarChart3, Coins,
   UsersRound, CalendarCheck, ShieldCheck,
   Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare, Trash2, Inbox,
-  Smartphone, Activity, ShieldAlert, Monitor, PhoneCall, Key, MessageSquare, Database, Globe
+  Smartphone, Activity, ShieldAlert, Monitor, PhoneCall, Key, MessageSquare, Database, Globe,
+  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -36,7 +37,7 @@ export const navGroups: NavGroup[] = [
     title: "Dashboards",
     icon: LayoutDashboard,
     items: [
-      { title: "Executive", url: "/dashboards/executive", icon: LayoutDashboard },
+      { title: "Executive & Activities", url: "/dashboards/executive", icon: LayoutDashboard },
       { title: "Sales Analytics", url: "/dashboards/sales", icon: TrendingUp },
       { title: "Shipment Analytics", url: "/dashboards/shipments", icon: Truck },
       { title: "Financial Overview", url: "/dashboards/financial", icon: DollarSign },
@@ -60,22 +61,29 @@ export const navGroups: NavGroup[] = [
       { title: "Dashboard", url: "/crm/dashboard", icon: LayoutDashboard, permission: "farmers.view" },
       { title: "Leads", url: "/crm/leads", icon: Users, permission: "farmers.view" },
       { title: "Pipelines", url: "/crm/pipeline", icon: GitBranch, permission: "farmers.view" },
+      { title: "Follow-Ups", url: "/crm/follow-ups", icon: CalendarCheck, permission: "farmers.view" },
+      { title: "Communication", url: "/crm/communication", icon: MessageSquare, permission: "farmers.view" },
       { title: "Client Acquisition", url: "/crm/client-acquisition", icon: UserPlus, permission: "farmers.view" },
       { title: "Successful Conversation", url: "/crm/convert", icon: BadgeCheck, permission: "farmers.view" },
       { title: "Client Success", url: "/crm/customers", icon: Award, permission: "farmers.view" },
       { title: "Follow-Ups", url: "/crm/follow-ups", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Customer Database", url: "/crm/customer-database", icon: Database, permission: "farmers.view" },
       { title: "Task", url: "/crm/tasks", icon: ClipboardCheck, permission: "farmers.view" },
-      { title: "Performance", url: "/crm/performance", icon: TrendingUp, permission: "farmers.view" },
-      { title: "Activities", url: "/crm/activities", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Report", url: "/crm/reports", icon: BarChart3, permission: "farmers.view" },
       { title: "Mail Box", url: "/system/mailbox", icon: Inbox, permission: "farmers.view" },
       { title: "Email Integration", url: "/crm/email", icon: Mail, permission: "farmers.view" },
       { title: "Security", url: "/crm/security", icon: ShieldCheck, permission: "farmers.view" },
       { title: "Advanced Security", url: "/crm/advanced-security", icon: ShieldAlert, permission: "farmers.view" },
       { title: "Zoho API Sync", url: "/system/integrations/zoho", icon: Mail, permission: "farmers.view" },
-      { title: "Employee Activity", url: "/crm/employee-activity", icon: Activity, permission: "farmers.view" },
     ],
+  },
+  {
+    title: "Revenue & Performance Analytics",
+    icon: TrendingUp,
+    items: [
+      { title: "Performance", url: "/crm/performance", icon: TrendingUp, permission: "farmers.view" },
+      { title: "Revenue Analytics", url: "/crm/revenue", icon: TrendingUp, permission: "farmers.view" },
+    ]
   },
   {
     title: "Mobile CRM",
@@ -122,12 +130,36 @@ export const navGroups: NavGroup[] = [
     title: "Inventory",
     icon: Boxes,
     items: [
-      { title: "Inventory Batches", url: "/inventory/stock", icon: Boxes, permission: "inventory.view" },
-      { title: "Product Catalog", url: "/inventory/products", icon: Package },
-      { title: "Add Product", url: "/inventory/products/create", icon: PackagePlus, permission: "inventory.manage" },
-      { title: "Stock Movements", url: "/inventory/movements", icon: History },
-      { title: "Warehouses", url: "/inventory/warehouses", icon: Warehouse },
-      { title: "Low Stock Alerts", url: "/inventory/alerts", icon: AlertTriangle },
+      { title: "Available Stock Management", url: "/inventory/available-stock", icon: CheckSquare },
+      { title: "Reserved Stock Tracking", url: "/inventory/reserved-stock", icon: Lock },
+      { title: "Export Ready Inventory", url: "/inventory/export-ready", icon: Plane },
+      { title: "Batch-wise Stock Tracking", url: "/inventory/batch-wise", icon: Layers },
+      { title: "Damaged Stock Management", url: "/inventory/damaged-stock-management", icon: AlertOctagon },
+      { title: "Expiry Monitoring", url: "/inventory/expiry-monitoring", icon: Timer },
+      { title: "Multi-Warehouse Management", url: "/inventory/multi-warehouse", icon: Warehouse },
+    ],
+  },
+  {
+    title: "Warehouse",
+    icon: Warehouse,
+    items: [
+      { title: "Dashboard", url: "/warehouse/dashboard", icon: LayoutDashboard },
+      { title: "Receiving Goods", url: "/warehouse/receiving", icon: PackageCheck },
+      { title: "Packing Management", url: "/warehouse/packing", icon: Package },
+    ],
+  },
+  {
+    title: "Reports & Analytics",
+    icon: BarChart3,
+    items: [
+      { title: "Dashboard", url: "/reports", icon: LayoutDashboard },
+      { title: "Stock Summary", url: "/reports/stock-summary", icon: Package },
+      { title: "Batch Tracking", url: "/reports/batch-tracking", icon: BarChart3 },
+      { title: "Dispatch Report", url: "/reports/dispatch", icon: Truck },
+      { title: "Container Loading", url: "/reports/container-loading", icon: Container },
+      { title: "Damage/Wastage", url: "/reports/damage-wastage", icon: AlertTriangle },
+      { title: "Inventory Aging", url: "/reports/inventory-aging", icon: CalendarCheck },
+      { title: "Export Ready Stock", url: "/reports/export-ready", icon: BadgeCheck },
     ],
   },
   {
@@ -221,6 +253,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Directory", url: "/employees", icon: UsersRound, permission: "hr.view" },
       { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck, permission: "hr.view" },
+      { title: "Salary Report", url: "/employees/salary", icon: Coins, permission: "hr.view" },
       { title: "Face Attendance", url: "/employees/face-attendance", icon: ScanLine },
       { title: "Register Face", url: "/employees/register-face", icon: UserCheck, permission: "hr.view" },
     ],

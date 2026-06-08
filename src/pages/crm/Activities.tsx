@@ -504,7 +504,7 @@ export default function LeadActivities() {
                       <SelectValue placeholder="Select member..." />
                     </SelectTrigger>
                     <SelectContent className="bg-neutral-900 border-white/10">
-                      {loadingMembers ? (
+                      {loading ? (
                         <div className="p-2 text-xs text-muted-foreground text-center">Loading members...</div>
                       ) : bdeMembers.length === 0 ? (
                         <div className="p-2 text-xs text-muted-foreground text-center">No BDE members found.</div>
@@ -735,14 +735,6 @@ export default function LeadActivities() {
         }}
       />
 
-      {/* Screen Monitor Integration */}
-      <div className="pt-10 border-t border-white/5 space-y-6">
-        <div className="flex items-center gap-3">
-          <Clock className="h-6 w-6 text-[#c8a84b]" />
-          <h2 className="text-2xl font-black text-white tracking-tight uppercase">Live Terminal Monitoring</h2>
-        </div>
-        <ScreenMonitor />
-      </div>
     </div>
   );
 }

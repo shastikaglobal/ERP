@@ -4,6 +4,7 @@ import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +28,10 @@ export default function Settings() {
   // Personal Profile
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [dob, setDob] = useState("");
+  const [joiningDate, setJoiningDate] = useState("");
+  const [systemMode, setSystemMode] = useState("");
+  const [city, setCity] = useState("");
 
   // Document Numbering State
   const [invPrefix, setInvPrefix] = useState("INV-");
@@ -65,6 +70,10 @@ export default function Settings() {
       if (profile?.avatar_url) {
         setAvatarUrl(profile.avatar_url);
       }
+      if (profile?.dob) setDob(profile.dob);
+      if (profile?.joining_date) setJoiningDate(profile.joining_date);
+      if (profile?.system_mode) setSystemMode(profile.system_mode);
+      if (profile?.city) setCity(profile.city);
       setLoading(false);
     };
     fetchCompany();
@@ -178,9 +187,22 @@ export default function Settings() {
 
     const { error } = await supabase.from("companies").update(updateData).eq("id", profile.company_id);
     
+    // Update personal profile
+    const profileUpdate: any = {};
+    if (dob) profileUpdate.dob = dob;
+    if (joiningDate) profileUpdate.joining_date = joiningDate;
+    if (systemMode) profileUpdate.system_mode = systemMode;
+    if (city) profileUpdate.city = city;
+    
+    let profileError = null;
+    if (Object.keys(profileUpdate).length > 0) {
+      const { error: pErr } = await supabase.from("profiles").update(profileUpdate).eq("id", profile.id);
+      profileError = pErr;
+    }
+    
     setSaving(false);
-    if (error) {
-      toast.error("Error saving: " + error.message);
+    if (error || profileError) {
+      toast.error("Error saving: " + (error?.message || profileError?.message));
     } else {
       toast.success("Settings saved successfully!");
     }
@@ -199,21 +221,63 @@ export default function Settings() {
           <FormGrid>
             <FormRow label="Profile Picture">
               <div className="flex flex-col gap-3">
-                {avatarUrl ? (
-                  <div className="w-16 h-16 rounded-full overflow-hidden border">
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                <div className="relative inline-flex cute-card p-5 group w-max border border-white/5">
+                  {/* Cuteness Elements */}
+                  <span className="flower-decor -top-2 -right-2 text-2xl" style={{ animationDirection: 'reverse' }}>🌸</span>
+                  <span className="flower-decor bottom-0 -left-2 text-xl">🌼</span>
+                  <span className="butterfly-decor top-1 left-0 text-xl">🦋</span>
+                  
+                  <div className="relative shrink-0 z-10 avatar-cute">
+                    {avatarUrl ? (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="w-20 h-20 rounded-[1.25rem] overflow-hidden shadow-sm cursor-pointer border border-amber-500/20 bg-amber-500/15">
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[400px] p-0 overflow-visible bg-transparent border-none shadow-none animate-in zoom-in-75 duration-500 ease-out fill-mode-both">
+                          <span className="butterfly-fly-across">🦋</span>
+                          <img src={avatarUrl} alt="Avatar" className="w-full h-auto max-h-[80vh] object-contain rounded-2xl drop-shadow-2xl ring-1 ring-white/10 relative z-10" />
+                        </DialogContent>
+                      </Dialog>
+                    ) : (
+                      <div className="w-20 h-20 rounded-[1.25rem] bg-amber-500/15 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                        <UserIcon className="h-8 w-8" />
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border">
-                    <UserIcon className="h-6 w-6" />
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
+                </div>
+                <div className="flex items-center gap-2 mt-1">
                   <Input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploadingAvatar} className="max-w-xs" />
                   {uploadingAvatar && <Loader2 className="h-4 w-4 animate-spin" />}
                 </div>
               </div>
             </FormRow>
+            
+            <FormRow label="Role">
+              <Input value={profile?.requested_role ? (profile.requested_role.charAt(0).toUpperCase() + profile.requested_role.slice(1)) : "Employee"} disabled className="bg-muted/50 cursor-not-allowed" />
+              <p className="text-xs text-muted-foreground mt-1">Contact your manager to change your role.</p>
+            </FormRow>
+            <FormRow label="Date of Birth">
+              <Input type="date" value={dob} onChange={e => setDob(e.target.value)} />
+            </FormRow>
+            <FormRow label="Joining Date">
+              <Input type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+            </FormRow>
+            <FormRow label="City">
+              <Input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai, New York" />
+            </FormRow>
+            <FormRow label="System Mode">
+              <Select value={systemMode || "office"} onValueChange={setSystemMode}>
+                <SelectTrigger><SelectValue placeholder="Select working mode" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="office">Office</SelectItem>
+                  <SelectItem value="wfh">Work from Home</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormRow>
+
           </FormGrid>
         </Section>
         

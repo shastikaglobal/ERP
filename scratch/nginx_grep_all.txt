@@ -1,0 +1,6 @@
+/etc/nginx/sites-available/globalairtech.co.in:4:        proxy_pass http://localhost:8082;
+/etc/nginx/sites-available/erp:13:        proxy_pass http://localhost:8082;
+/etc/nginx/sites-available/adms:2:    listen 8082;
+/etc/nginx/sites-available/adms:4:        proxy_pass http://localhost:8082;
+/etc/nginx/sites-available/default:11:        proxy_pass http://localhost:8082;
+/etc/nginx/sites-enabled/shastika:5:        proxy_pass http://localhost:8082;

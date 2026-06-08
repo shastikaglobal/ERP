@@ -26,6 +26,7 @@ import CrmClientAcquisition from "./pages/crm/ClientAcquisition";
 import CrmAdvancedSecurity from "./pages/crm/AdvancedSecurity";
 import CrmReports from "./pages/crm/Reports";
 import CrmPerformance from "./pages/crm/Performance";
+import CrmRevenue from "./pages/crm/RevenueAnalytics";
 import CrmCommunication from "./pages/crm/Communication";
 import CrmCustomerDatabase from "./pages/crm/CustomerDatabase";
 import CrmEmployeeActivity from "./pages/crm/EmployeeActivity";
@@ -82,10 +83,35 @@ import BarcodeDetail from "./pages/barcodes/BarcodeDetail";
 // Inventory
 import ProductCatalog from "./pages/inventory/ProductCatalog";
 import CreateProduct from "./pages/inventory/CreateProduct";
-import StockDashboard from "./pages/inventory/StockDashboard";
+import InventoryBatches from "./pages/inventory/InventoryBatches";
 import StockMovements from "./pages/inventory/StockMovements";
 import Warehouses from "./pages/inventory/Warehouses";
 import LowStockAlerts from "./pages/inventory/LowStockAlerts";
+import DamagedStock from "./pages/inventory/DamagedStock";
+import AvailableStock from "./pages/inventory/AvailableStock";
+import ReservedStock from "./pages/inventory/ReservedStock";
+import ExportReady from "./pages/inventory/ExportReady";
+import BatchWiseStock from "./pages/inventory/BatchWiseStock";
+import DamagedStockManagement from "./pages/inventory/DamagedStockManagement";
+import ExpiryMonitoring from "./pages/inventory/ExpiryMonitoring";
+import MultiWarehouse from "./pages/inventory/MultiWarehouse";
+
+// Warehouse
+import WarehouseDashboard from "./pages/warehouse/WarehouseDashboard";
+import WarehouseRacks from "./pages/warehouse/WarehouseRacks";
+import WarehouseZones from "./pages/warehouse/WarehouseZones";
+import ReceivingGoods from "./pages/warehouse/ReceivingGoods";
+import PackingManagement from "./pages/warehouse/PackingManagement";
+
+// Reports
+import ReportsHub from "./pages/reports/ReportsHub";
+import StockSummaryReport from "./pages/reports/StockSummaryReport";
+import BatchTrackingReport from "./pages/reports/BatchTrackingReport";
+import DispatchReport from "./pages/reports/DispatchReport";
+import ContainerLoadingReport from "./pages/reports/ContainerLoadingReport";
+import DamageWastageReport from "./pages/reports/DamageWastageReport";
+import InventoryAgingReport from "./pages/reports/InventoryAgingReport";
+import ExportReadyStockReport from "./pages/reports/ExportReadyStockReport";
 
 // Quotations
 import QuotationsList from "./pages/quotations/QuotationsList";
@@ -240,10 +266,36 @@ const App = () => (
               {/* Inventory */}
               <Route path="/inventory/products" element={<ProductCatalog />} />
               <Route path="/inventory/products/create" element={<CreateProduct />} />
-              <Route path="/inventory/stock" element={<StockDashboard />} />
+              <Route path="/inventory/stock" element={<InventoryBatches />} />
               <Route path="/inventory/movements" element={<StockMovements />} />
               <Route path="/inventory/warehouses" element={<Warehouses />} />
               <Route path="/inventory/alerts" element={<LowStockAlerts />} />
+              <Route path="/inventory/damaged" element={<DamagedStock />} />
+              <Route path="/inventory/available-stock" element={<AvailableStock />} />
+              <Route path="/inventory/reserved-stock" element={<ReservedStock />} />
+              <Route path="/inventory/export-ready" element={<ExportReady />} />
+              <Route path="/inventory/batch-wise" element={<BatchWiseStock />} />
+              <Route path="/inventory/damaged-stock-management" element={<DamagedStockManagement />} />
+              <Route path="/inventory/expiry-monitoring" element={<ExpiryMonitoring />} />
+              <Route path="/inventory/multi-warehouse" element={<MultiWarehouse />} />
+
+              {/* Warehouse */}
+              <Route path="/warehouse/dashboard" element={<WarehouseDashboard />} />
+              <Route path="/warehouse/racks" element={<WarehouseRacks />} />
+              <Route path="/warehouse/zones" element={<WarehouseZones />} />
+              <Route path="/warehouse/receiving" element={<ReceivingGoods />} />
+              <Route path="/warehouse/packing" element={<PackingManagement />} />
+              <Route path="/warehouse" element={<Navigate to="/warehouse/dashboard" replace />} />
+
+              {/* Reports */}
+              <Route path="/reports" element={<ReportsHub />} />
+              <Route path="/reports/stock-summary" element={<StockSummaryReport />} />
+              <Route path="/reports/batch-tracking" element={<BatchTrackingReport />} />
+              <Route path="/reports/dispatch" element={<DispatchReport />} />
+              <Route path="/reports/container-loading" element={<ContainerLoadingReport />} />
+              <Route path="/reports/damage-wastage" element={<DamageWastageReport />} />
+              <Route path="/reports/inventory-aging" element={<InventoryAgingReport />} />
+              <Route path="/reports/export-ready" element={<ExportReadyStockReport />} />
 
               {/* Quotations */}
               <Route path="/quotations" element={<QuotationsList />} />
@@ -270,6 +322,7 @@ const App = () => (
               <Route path="/crm/advanced-security" element={<CrmAdvancedSecurity />} />
               <Route path="/crm/reports" element={<CrmReports />} />
               <Route path="/crm/performance" element={<CrmPerformance />} />
+              <Route path="/crm/revenue" element={<CrmRevenue />} />
               <Route path="/crm/communication" element={<CrmCommunication />} />
               <Route path="/crm/customer-database" element={<CrmCustomerDatabase />} />
               <Route path="/crm/employee-activity" element={<CrmEmployeeActivity />} />

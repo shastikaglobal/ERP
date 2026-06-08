@@ -19,10 +19,7 @@ def main():
     print("🔧 Shastika ADMS Sync Server Automated Auto-Fix Script")
     print("=" * 60)
 
-    password = getpass.getpass(f"🔐 Enter root password for Hostinger VPS ({VPS_IP}): ")
-    if not password:
-        print("❌ Error: Password cannot be empty.")
-        sys.exit(1)
+    password = "SHASTIKARAM#@97may"
 
     # Establish SSH connection
     print(f"\n📡 Connecting to VPS at {VPS_IP}:{VPS_PORT}...")

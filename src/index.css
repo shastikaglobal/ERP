@@ -240,4 +240,101 @@
   .ql-snow.ql-toolbar button.ql-active .ql-fill {
     @apply fill-primary;
   }
+
+  /* --- Cute & Friendly Animations --- */
+  @keyframes pop-wiggle {
+    0% { transform: scale(1); }
+    20% { transform: scale(1.3) rotate(-15deg); }
+    40% { transform: scale(1.3) rotate(15deg); }
+    60% { transform: scale(1.3) rotate(-10deg); }
+    80% { transform: scale(1.3) rotate(10deg); }
+    100% { transform: scale(1.2) rotate(0deg); }
+  }
+
+  @keyframes bubbly-enter {
+    0% { opacity: 0; transform: translateY(40px) scale(0.8); }
+    50% { opacity: 1; transform: translateY(-20px) scale(1.05); }
+    75% { transform: translateY(10px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .animate-bubbly {
+    animation: bubbly-enter 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .cute-card {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 2rem; /* extremely soft corners */
+    background: #2a211c; /* warm, chocolatey dark background */
+    position: relative;
+    overflow: hidden;
+    border: 3px solid rgba(251, 191, 36, 0.15);
+  }
+
+  .cute-card:hover {
+    transform: translateY(-15px) scale(1.03);
+    box-shadow: 0 30px 40px -10px rgba(251, 191, 36, 0.35), 0 15px 20px -10px rgba(251, 191, 36, 0.5);
+    border-color: rgba(251, 191, 36, 0.8);
+  }
+
+  .avatar-cute {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .cute-card:hover .avatar-cute {
+    animation: pop-wiggle 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Flora & Fauna */
+  @keyframes fly-butterfly {
+    0% { transform: translate(0, 0) rotate(-15deg) scale(0.9); }
+    50% { transform: translate(12px, -15px) rotate(10deg) scale(1.1); }
+    100% { transform: translate(0, 0) rotate(-15deg) scale(0.9); }
+  }
+  @keyframes spin-slow {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  .cute-card .flower-decor {
+    position: absolute;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .cute-card:hover .flower-decor {
+    animation: spin-slow 6s linear infinite;
+  }
+
+  .cute-card .butterfly-decor {
+    position: absolute;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .cute-card:hover .butterfly-decor {
+    animation: fly-butterfly 2.5s ease-in-out infinite;
+  }
+
+  /* Fly across screen when clicked */
+  @keyframes fly-across {
+    0% { transform: translate(-100px, 100px) rotate(30deg) scale(0.5); opacity: 0; }
+    15% { opacity: 1; transform: translate(10vw, -10vh) rotate(-10deg) scale(1); }
+    30% { transform: translate(30vw, -30vh) rotate(20deg) scale(1.5); }
+    50% { transform: translate(50vw, -50vh) rotate(-15deg) scale(2); }
+    70% { transform: translate(70vw, -70vh) rotate(15deg) scale(2.5); }
+    85% { opacity: 1; transform: translate(90vw, -90vh) rotate(-10deg) scale(3); }
+    100% { transform: translate(110vw, -110vh) rotate(20deg) scale(3.5); opacity: 0; }
+  }
+
+  .butterfly-fly-across {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 99999;
+    font-size: 6rem;
+    animation: fly-across 4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
 }

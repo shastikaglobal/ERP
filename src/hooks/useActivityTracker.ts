@@ -22,6 +22,52 @@ export function useActivityTracker(moduleName: string) {
     const userName = profile?.full_name || user.email || "Unknown";
     const userId = user.id;
 
+    const updateActiveSession = async (isIdle: boolean = false) => {
+      try {
+        const { data: existing, error: findError } = await supabase
+          .from("active_sessions" as any)
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (findError) {
+          console.error("[ActivityTracker] Error finding active session:", findError.message);
+          return;
+        }
+
+        const role = profile?.requested_role || "BDE";
+        const device = navigator.userAgent;
+        const lastActiveTime = isIdle 
+          ? new Date(Date.now() - 5 * 60 * 1000).toISOString()
+          : new Date().toISOString();
+
+        if (existing) {
+          await supabase
+            .from("active_sessions" as any)
+            .update({
+              profile_name: userName,
+              profile_role: role,
+              last_active: lastActiveTime,
+              device_info: device
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase
+            .from("active_sessions" as any)
+            .insert({
+              user_id: userId,
+              profile_name: userName,
+              profile_role: role,
+              login_at: new Date().toISOString(),
+              last_active: lastActiveTime,
+              device_info: device
+            });
+        }
+      } catch (err) {
+        console.error("[ActivityTracker] Exception updating active session:", err);
+      }
+    };
+
     // Log page_visit on mount
     const logPageVisit = async () => {
       await (supabase.from("activity_logs") as any).insert({
@@ -31,6 +77,7 @@ export function useActivityTracker(moduleName: string) {
         event_type: "page_visit",
         session_id: SESSION_ID,
       });
+      await updateActiveSession(false);
     };
 
     logPageVisit();
@@ -44,7 +91,11 @@ export function useActivityTracker(moduleName: string) {
         event_type: eventType,
         session_id: SESSION_ID,
       });
-      if (error) console.error(`[ActivityTracker] ${eventType} error:`, error.message);
+      if (error) {
+        console.error(`[ActivityTracker] ${eventType} error:`, error.message);
+      } else {
+        await updateActiveSession(eventType === "idle");
+      }
     };
 
     const resetIdleTimer = () => {

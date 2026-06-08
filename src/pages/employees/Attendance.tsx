@@ -78,7 +78,7 @@ const getEmployeeMonthStats = (
 ) => {
   const empLogs = allLogs[empId] || {};
   const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
-  const perDay = Math.round(monthlySalary / 30);
+  const perDay = Math.round(monthlySalary / 26); // 26 working days (Sundays excluded)
   const halfDay = Math.round(perDay / 2);
   const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
 
@@ -147,26 +147,13 @@ const getEmployeeMonthStats = (
 
         if (isLate) {
           if (log.is_excused) {
-            // Check cumulative pool limit of 120 minutes (2 hours)
-            if (excusedPermissionsUsed + minutesLate <= 120) {
-              excusedPermissionsUsed += minutesLate;
-              dailyDetails[dateStr] = {
-                status: 'present',
-                cut: 0,
-                isExcused: true,
-                minutesLate,
-                explanation: `Late (Excused: 2 Hours Permission used: ${minutesLate} mins. Total used: ${excusedPermissionsUsed}/120 min)`
-              };
-            } else {
-              totalCut += halfDay;
-              dailyDetails[dateStr] = {
-                status: 'late_cut',
-                cut: halfDay,
-                isExcused: true,
-                minutesLate,
-                explanation: `Late (Permission checked, but exceeds monthly 120 min pool. Total used if approved: ${excusedPermissionsUsed + minutesLate} mins)`
-              };
-            }
+            dailyDetails[dateStr] = {
+              status: 'present',
+              cut: 0,
+              isExcused: true,
+              minutesLate,
+              explanation: `Late (Admin Excused)`
+            };
           } else {
             totalCut += halfDay;
             dailyDetails[dateStr] = {
@@ -229,9 +216,9 @@ export default function Attendance() {
   const [companyId, setCompanyId] = useState<string | null>(null);
 
   // Dynamic Date States
-  const [startDate, setStartDate] = useState(() => format(subDays(new Date(), 13), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
-  const [preset, setPreset] = useState("14days");
+  const [preset, setPreset] = useState("this_month");
 
   // Settings Modal States
   const [settingsEmp, setSettingsEmp] = useState<any | null>(null);
@@ -313,12 +300,10 @@ export default function Attendance() {
     setSavingManualTime(true);
     const todayStr = endDate;
     try {
-      const empCompanyId = emp.company_id || companyId || '00000000-0000-0000-0000-00000000ae01';
       const clockInIso = new Date(`${todayStr}T${manualTime}`).toISOString();
       
       const { error } = await supabase.from('attendance_logs').upsert({
         employee_id: emp.id,
-        company_id: empCompanyId,
         date: todayStr,
         clock_in: clockInIso,
         is_manual: true,
@@ -339,10 +324,8 @@ export default function Attendance() {
   const handleMarkOnLeave = async (emp: any) => {
     const todayStr = endDate;
     try {
-      const empCompanyId = emp.company_id || companyId || '00000000-0000-0000-0000-00000000ae01';
       const { error } = await supabase.from('attendance_logs').upsert({
         employee_id: emp.id,
-        company_id: empCompanyId,
         date: todayStr,
         status: 'on_leave',
         is_manual: true
@@ -364,7 +347,7 @@ export default function Attendance() {
         .eq('id', logId);
 
       if (error) throw error;
-      toast.success(checked ? "2 Hours Permission applied (No salary cut)" : "Removed permission status");
+      toast.success(checked ? "Excused status applied (No salary cut)" : "Removed excused status");
       await loadData(startDate, endDate);
     } catch (e: any) {
       toast.error(e.message || "Failed to update permission");
@@ -406,7 +389,7 @@ export default function Attendance() {
     const rows = employees.map(emp => {
       const log = attendanceData[emp.id]?.[todayStr];
       const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
-      const perDay = Math.round(monthlySalary / 30);
+      const perDay = Math.round(monthlySalary / 26); // 26 working days (Sundays excluded)
       const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
       
       const stats = getEmployeeMonthStats(emp.id, todayStr.substring(0, 7), emp, attendanceData, todayStr);
@@ -476,9 +459,25 @@ export default function Attendance() {
       return;
     }
 
-    // Exclude owner (Lakshmana Gokul) from the attendance board
-    const filtered = (profiles || []).filter(p => !p.full_name?.toLowerCase().includes("lakshmana gokul"));
-    setEmployees(filtered);
+    // Exclude owners and users without a biometric ID
+    const filtered = (profiles || []).filter(p => 
+      !p.full_name?.toLowerCase().includes("lakshmana gokul") &&
+      !!p.biometric_id
+    );
+
+    // Deduplicate by full_name — prefer entry with a biometric_id
+    const seen = new Map<string, any>();
+    filtered.forEach(p => {
+      const key = (p.full_name || '').trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, p);
+      } else if (p.biometric_id && !seen.get(key)?.biometric_id) {
+        // Upgrade to the one that has a biometric_id
+        seen.set(key, p);
+      }
+    });
+    const deduplicated = Array.from(seen.values());
+    setEmployees(deduplicated);
     
     const myProfile = profiles?.find(p => p.id === user?.id);
     if (myProfile?.company_id) setCompanyId(myProfile.company_id);
@@ -613,7 +612,7 @@ export default function Attendance() {
   };
 
   const handlePunch = async () => {
-    if (!userId || !companyId) return toast.error("User or Company ID missing");
+    if (!userId) return toast.error("User ID missing");
     
     setPunching(true);
     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -623,7 +622,6 @@ export default function Attendance() {
         // Punch In
         const { error } = await supabase.from('attendance_logs').insert({
           employee_id: userId,
-          company_id: companyId,
           date: todayStr,
           status: 'present',
           clock_in: new Date().toISOString()
@@ -844,29 +842,15 @@ export default function Attendance() {
                             
                             if (isLate) {
                               const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
-                              const perDay = Math.round(monthlySalary / 30);
+                              const perDay = Math.round(monthlySalary / 26);
                               const halfDay = Math.round(perDay / 2);
-                              const isExcusedAndWithinPool = log.is_excused && detail.cut === 0;
-
-                              let warningText = "";
-                              if (log.is_excused) {
-                                if (minutesLate > 120) {
-                                  warningText = "⚠ Exceeds 2 hours limit (Cut applies)";
-                                } else if (detail.cut > 0) {
-                                  warningText = "⚠ Monthly 2h pool exceeded (Cut applies)";
-                                }
-                              }
+                              const isExcused = log.is_excused;
 
                               return (
                                 <div className="flex flex-col items-end mt-1">
-                                  <div className={`${isExcusedAndWithinPool ? 'text-emerald-500 dark:text-emerald-400 line-through' : 'text-rose-500'} text-[10px] font-semibold mt-0.5`}>
+                                  <div className={`${isExcused ? 'text-emerald-500 dark:text-emerald-400 line-through' : 'text-rose-500'} text-[10px] font-semibold mt-0.5`}>
                                     ⚠ Half Day Cut: ₹{halfDay}
                                   </div>
-                                  {warningText && (
-                                    <div className="text-[9px] text-rose-500 font-medium text-right max-w-[150px] leading-tight mt-0.5">
-                                      {warningText}
-                                    </div>
-                                  )}
                                   <label className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground cursor-pointer select-none">
                                     <input
                                       type="checkbox"
@@ -1026,29 +1010,33 @@ export default function Attendance() {
                     return monthStatsCache[key];
                   };
 
+                  const currentMonthStr = endDate.substring(0, 7);
                   const dayElements = daysInRange.map(dateStr => {
                     const monthStr = dateStr.substring(0, 7);
                     const stats = getCachedMonthStats(monthStr);
                     const detail = stats.dailyDetails[dateStr] || { status: 'absent', cut: 0, explanation: '', isExcused: false, minutesLate: 0 };
                     
                     const log = attendanceData[e.id]?.[dateStr];
+                    const isCurrentMonth = monthStr === currentMonthStr;
                     
-                    if (detail.status === 'paid_leave') {
-                      rangePaidLeaves++;
-                      rangePresentCount += 1;
-                    } else if (detail.status === 'unpaid_leave') {
-                      rangeUnpaidLeaves++;
-                      rangeTotalCut += detail.cut;
-                    } else if (detail.status === 'present') {
-                      rangePresentCount += 1;
-                      if (detail.isExcused) {
-                        rangePermissionsMins += detail.minutesLate;
+                    if (isCurrentMonth) {
+                      if (detail.status === 'paid_leave') {
+                        rangePaidLeaves++;
+                        rangePresentCount += 1;
+                      } else if (detail.status === 'unpaid_leave') {
+                        rangeUnpaidLeaves++;
+                        rangeTotalCut += detail.cut;
+                      } else if (detail.status === 'present') {
+                        rangePresentCount += 1;
+                        if (detail.isExcused) {
+                          rangePermissionsMins += detail.minutesLate;
+                        }
+                      } else if (detail.status === 'late_cut') {
+                        rangePresentCount += 0.5;
+                        rangeTotalCut += detail.cut;
+                      } else {
+                        rangeTotalCut += detail.cut;
                       }
-                    } else if (detail.status === 'late_cut') {
-                      rangePresentCount += 0.5;
-                      rangeTotalCut += detail.cut;
-                    } else {
-                      rangeTotalCut += detail.cut;
                     }
 
                     const clockInStr = log?.clock_in ? format(new Date(log.clock_in), 'hh:mm a') : null;
@@ -1103,7 +1091,7 @@ export default function Attendance() {
                   });
 
                   const monthlySalary = Number(e.monthly_salary) || getEmpSalary(e.full_name) || 0;
-                  const totalSalary = monthlySalary - rangeTotalCut;
+                  const totalSalary = Math.max(0, monthlySalary - rangeTotalCut);
 
                   return (
                     <tr key={e.id} className="border-b last:border-0 border-border hover:bg-muted/30">

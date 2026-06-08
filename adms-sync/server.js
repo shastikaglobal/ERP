@@ -1,7 +1,14 @@
+const WebSocket = require('ws');
+globalThis.WebSocket = WebSocket;
+
+// Polyfill fetch for older Node.js versions
+if (!globalThis.fetch) {
+  globalThis.fetch = require('node-fetch');
+}
+
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
-const ws = require('ws');
-globalThis.WebSocket = ws;
+
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +23,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  realtime: {
+    transport: WebSocket
+  }
+});
 
 // Use raw text body parser to handle the tab-separated values sent by ZKTeco devices
 app.use(express.text({ type: '*/*', limit: '10mb' }));
@@ -144,7 +155,6 @@ app.post('/iclock/cdata', async (req, res) => {
             .from('attendance_logs')
             .insert({
               employee_id: emp.id,
-              company_id: emp.company_id,
               date: dateStr,
               status: 'present',
               clock_in: punchTimeIso,
@@ -204,6 +214,25 @@ app.post('/iclock/cdata', async (req, res) => {
             processedCount++;
           }
         }
+        
+        // --- IMMUTABLE RAW PUNCH STORAGE ---
+        // Insert the raw punch log into the 'AttLogs' table so no one can erase the raw data
+        const { error: rawLogErr } = await supabase
+          .from('AttLogs')
+          .insert({
+            EmployeeCode: biometricId,
+            LogDateTime: punchTimeIso,
+            DownloadDateTime: new Date().toISOString(),
+            Direction: parts[2]?.trim() === '0' ? 'in' : (parts[2]?.trim() === '1' ? 'out' : parts[2]?.trim()),
+            DeviceId: sn
+          });
+
+        if (rawLogErr) {
+          console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
+        } else {
+          console.log(`🔒 Safely stored immutable raw punch in AttLogs for [${biometricId}] at ${punchTimeIso}`);
+        }
+        
       }
 
       console.log(`🎉 Sync completed. Successfully processed ${processedCount} punch(es).`);
@@ -241,6 +270,69 @@ app.post('/iclock/devicecmd', (req, res) => {
 
   res.setHeader('Content-Type', 'text/plain');
   res.status(200).send('OK');
+});
+
+app.options('/force-logout', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
+
+/**
+ * 5. POST /force-logout - Admin Force Logout
+ * Called from frontend to securely punch out a user (bypasses RLS)
+ */
+app.post('/force-logout', express.json(), async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  const { userId, sessionId } = req.body;
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
+  
+  const nowIso = new Date().toISOString();
+  let updatedSession = false;
+  let updatedAttendance = false;
+
+  // 1. Update user_sessions
+  if (sessionId) {
+    const { error: sessErr } = await supabase
+      .from('user_sessions')
+      .update({ logout_time: nowIso })
+      .eq('id', sessionId);
+    if (!sessErr) updatedSession = true;
+  } else {
+    // find open session
+    const { error: sessErr } = await supabase
+      .from('user_sessions')
+      .update({ logout_time: nowIso })
+      .eq('user_id', userId)
+      .is('logout_time', null);
+    if (!sessErr) updatedSession = true;
+  }
+
+  // 2. Update attendance_logs
+  const today = nowIso.split('T')[0];
+  const { error: attErr } = await supabase
+    .from('attendance_logs')
+    .update({ clock_out: nowIso })
+    .eq('employee_id', userId)
+    .eq('date', today)
+    .is('clock_out', null);
+    
+  if (!attErr) updatedAttendance = true;
+
+  // 3. Log them out of the actual application (bypassing auth tokens)
+  let loggedOutApp = false;
+  const { error: authErr } = await supabase.auth.admin.signOut(userId, 'global');
+  if (!authErr) {
+    loggedOutApp = true;
+  } else {
+    console.error("Auth sign out error:", authErr);
+  }
+
+  res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
 });
 
 // Start Server

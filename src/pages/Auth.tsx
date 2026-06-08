@@ -6,16 +6,53 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { signInWithGoogle } from "@/lib/googleAuth";
+import { SetPasswordModal } from "@/components/SetPasswordModal";
+
+import { Input } from "@/components/ui/input";
 
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, profile, loading } = useAuth();
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [busyGithub, setBusyGithub] = useState(false);
+  const [busyEmail, setBusyEmail] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusyEmail(true);
+
+    let loginEmail = email.trim();
+
+    // If it doesn't look like an email, assume it's an Employee ID or eSSL/Biometric ID
+    if (!loginEmail.includes('@')) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
+        .maybeSingle();
+
+      if (error || !data || !data.email) {
+        toast.error("Employee ID not found. Please check your ID or contact Admin.");
+        setBusyEmail(false);
+        return;
+      }
+      
+      // Use the found email to log in
+      loginEmail = data.email;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+    if (error) {
+      toast.error(error.message || "Invalid login credentials");
+      setBusyEmail(false);
+    }
+  };
 
   const from = (location.state as { from?: string })?.from || "/employees/face-attendance";
-
+  
   if (!loading && session) return <Navigate to={from} replace />;
 
   const handleGoogle = async () => {
@@ -62,8 +99,45 @@ export default function Auth() {
           <div className="text-center space-y-1">
             <h1 className="text-lg font-semibold">Sign in to continue</h1>
             <p className="text-sm text-muted-foreground">
-              New employees need approval from an Admin or Manager before access.
+              Enter your credentials or use a social login.
             </p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                type="text"
+                placeholder="User ID / Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-white/5"
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white/5"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={busyEmail}
+            >
+              {busyEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-muted" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
           </div>
 
           {/* Google */}

@@ -20,7 +20,7 @@ export default function BdeDashboard() {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('company_id', profile.company_id);
+        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
       if (error) throw error;
       return data || [];
     },
@@ -35,7 +35,7 @@ export default function BdeDashboard() {
       const { data, error } = await supabase
         .from('quotations')
         .select('*')
-        .eq('company_id', profile.company_id);
+        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
       if (error) throw error;
       return data || [];
     },
@@ -50,7 +50,7 @@ export default function BdeDashboard() {
       const { data, error } = await supabase
         .from('export_orders')
         .select('*')
-        .eq('company_id', profile.company_id);
+        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
       if (error) throw error;
       return data || [];
     },

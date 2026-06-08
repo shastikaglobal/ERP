@@ -28,7 +28,7 @@ async function main() {
       WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name='users' AND ccu.table_schema='auth';
     `
   });
-  
+
   if (error) console.log("RPC failed:", error.message);
   else console.log("FKs:", data);
 }

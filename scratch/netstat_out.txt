@@ -1,0 +1,14 @@
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 127.0.0.54:53           0.0.0.0:*               LISTEN      306996/systemd-reso 
+tcp        0      0 0.0.0.0:8082            0.0.0.0:*               LISTEN      306579/nginx: maste 
+tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      306996/systemd-reso 
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1/systemd           
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      306579/nginx: maste 
+tcp        0      0 0.0.0.0:443             0.0.0.0:*               LISTEN      306579/nginx: maste 
+tcp        0      0 127.0.0.1:5000          0.0.0.0:*               LISTEN      307201/python3      
+tcp        0      0 127.0.0.1:5001          0.0.0.0:*               LISTEN      307078/python3      
+tcp6       0      0 :::22                   :::*                    LISTEN      1/systemd           
+tcp6       0      0 :::80                   :::*                    LISTEN      306579/nginx: maste 
+udp        0      0 127.0.0.54:53           0.0.0.0:*                           306996/systemd-reso 
+udp        0      0 127.0.0.53:53           0.0.0.0:*                           306996/systemd-reso 

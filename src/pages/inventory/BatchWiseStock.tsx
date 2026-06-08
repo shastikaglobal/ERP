@@ -1,0 +1,492 @@
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
+import { Search, Plus, Edit2, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { format, parseISO, differenceInDays } from "date-fns";
+
+const initialFormState = {
+  id: "",
+  batch_number: "",
+  product_name: "",
+  total_quantity: "",
+  remaining_quantity: "",
+  unit: "kg",
+  received_date: new Date().toISOString().slice(0, 10),
+  expiry_date: new Date().toISOString().slice(0, 10),
+  status: "In Stock",
+  warehouse: "",
+  notes: "",
+};
+
+const statusColorMap: Record<string, string> = {
+  "In Stock": "bg-green-50 text-green-800 border-green-200",
+  Reserved: "bg-yellow-50 text-yellow-800 border-yellow-200",
+  Dispatched: "bg-blue-50 text-blue-800 border-blue-200",
+  Damaged: "bg-red-50 text-red-800 border-red-200",
+};
+
+export default function BatchWiseStock() {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formState, setFormState] = useState(initialFormState);
+  const [selectedBatch, setSelectedBatch] = useState<any>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null);
+
+  const { data: batches = [], isLoading: isBatchesLoading } = useQuery({
+    queryKey: ["inventory-batches"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_batches")
+        .select("*")
+        .order("received_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (payload: any) => {
+      if (payload.id) {
+        const { error } = await supabase
+          .from("inventory_batches")
+          .update({
+            batch_number: payload.batch_number,
+            product_name: payload.product_name,
+            total_quantity: payload.total_quantity,
+            remaining_quantity: payload.remaining_quantity,
+            unit: payload.unit,
+            received_date: payload.received_date,
+            expiry_date: payload.expiry_date,
+            status: payload.status,
+            warehouse: payload.warehouse,
+            notes: payload.notes,
+          })
+          .eq("id", payload.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("inventory_batches").insert([
+          {
+            batch_number: payload.batch_number,
+            product_name: payload.product_name,
+            total_quantity: payload.total_quantity,
+            remaining_quantity: payload.remaining_quantity,
+            unit: payload.unit,
+            received_date: payload.received_date,
+            expiry_date: payload.expiry_date,
+            status: payload.status,
+            warehouse: payload.warehouse,
+            notes: payload.notes,
+          },
+        ]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-batches"] });
+      setIsModalOpen(false);
+      setSelectedBatch(null);
+      setFormState(initialFormState);
+      toast.success("Batch saved successfully.");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to save batch."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("inventory_batches").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-batches"] });
+      toast.success("Batch deleted successfully.");
+      setIsConfirmOpen(false);
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to delete batch."),
+  });
+
+  const today = new Date();
+
+  const filteredBatches = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return (batches || []).filter((batch: any) => {
+      const batchNum = batch.batch_number?.toLowerCase() || "";
+      const productName = batch.product_name?.toLowerCase() || "";
+      const statusMatch = statusFilter === "all" || batch.status === statusFilter;
+      const searchMatch = !query || batchNum.includes(query) || productName.includes(query);
+      return statusMatch && searchMatch;
+    });
+  }, [batches, searchTerm, statusFilter]);
+
+  const summary = useMemo(() => {
+    const totalBatches = (batches || []).length;
+    const inStockCount = (batches || []).filter((b: any) => b.status === "In Stock").length;
+    const expiringCount = (batches || []).filter((b: any) => {
+      if (!b.expiry_date) return false;
+      const daysUntilExpiry = differenceInDays(parseISO(b.expiry_date), today);
+      return daysUntilExpiry <= 7 && daysUntilExpiry >= 0;
+    }).length;
+    const lowStockCount = (batches || []).filter((b: any) => {
+      const percentRemaining = (Number(b.remaining_quantity) / Number(b.total_quantity)) * 100;
+      return percentRemaining < 20;
+    }).length;
+
+    return { totalBatches, inStockCount, expiringCount, lowStockCount };
+  }, [batches, today]);
+
+  const openAddModal = () => {
+    setSelectedBatch(null);
+    setFormState(initialFormState);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (batch: any) => {
+    setSelectedBatch(batch);
+    setFormState({
+      id: batch.id,
+      batch_number: batch.batch_number || "",
+      product_name: batch.product_name || "",
+      total_quantity: String(batch.total_quantity || ""),
+      remaining_quantity: String(batch.remaining_quantity || ""),
+      unit: batch.unit || "kg",
+      received_date: batch.received_date || new Date().toISOString().slice(0, 10),
+      expiry_date: batch.expiry_date || new Date().toISOString().slice(0, 10),
+      status: batch.status || "In Stock",
+      warehouse: batch.warehouse || "",
+      notes: batch.notes || "",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formState.batch_number || !formState.product_name || !formState.total_quantity || !formState.remaining_quantity) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    mutation.mutate({
+      ...formState,
+      total_quantity: Number(formState.total_quantity),
+      remaining_quantity: Number(formState.remaining_quantity),
+    });
+  };
+
+  const openConfirm = (id: string) => {
+    setConfirmTargetId(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirm = () => {
+    if (!confirmTargetId) return;
+    deleteMutation.mutate(confirmTargetId);
+  };
+
+  const isLowStock = (batch: any) => {
+    const percentRemaining = (Number(batch.remaining_quantity) / Number(batch.total_quantity)) * 100;
+    return percentRemaining < 20;
+  };
+
+  const isExpiringBatch = (batch: any) => {
+    if (!batch.expiry_date) return false;
+    const daysUntilExpiry = differenceInDays(parseISO(batch.expiry_date), today);
+    return daysUntilExpiry <= 7 && daysUntilExpiry >= 0;
+  };
+
+  const isExpired = (batch: any) => {
+    if (!batch.expiry_date) return false;
+    return differenceInDays(parseISO(batch.expiry_date), today) < 0;
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Batch-wise Stock Tracking"
+        description="Track inventory by individual batches"
+        breadcrumbs={[{ label: "Inventory", to: "/inventory" }, { label: "Batch-wise Stock Tracking" }]}
+        actions={
+          <Button onClick={openAddModal} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Batch
+          </Button>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Batches</p>
+            <p className="text-3xl font-bold">{summary.totalBatches}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">In Stock Batches</p>
+            <p className="text-3xl font-bold">{summary.inStockCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Expiring Soon</p>
+            <p className="text-3xl font-bold text-amber-500">{summary.expiringCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Low Stock Batches</p>
+            <p className="text-3xl font-bold text-red-500">{summary.lowStockCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-10"
+                placeholder="Search by batch number or product name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="In Stock">In Stock</SelectItem>
+                <SelectItem value="Reserved">Reserved</SelectItem>
+                <SelectItem value="Dispatched">Dispatched</SelectItem>
+                <SelectItem value="Damaged">Damaged</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch No</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">Total Qty</TableHead>
+                <TableHead className="text-right">Remaining Qty</TableHead>
+                <TableHead>Received Date</TableHead>
+                <TableHead>Expiry Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isBatchesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10">
+                    <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" /> Loading batches...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredBatches.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                    No batches found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredBatches.map((batch: any) => (
+                  <TableRow
+                    key={batch.id}
+                    className={cn(
+                      "hover:bg-muted/50",
+                      isLowStock(batch) && "bg-red-50/30",
+                      isExpired(batch) && "bg-red-100/50"
+                    )}
+                  >
+                    <TableCell className="font-mono font-semibold">{batch.batch_number}</TableCell>
+                    <TableCell className="font-medium">{batch.product_name}</TableCell>
+                    <TableCell className="text-right">{Number(batch.total_quantity).toLocaleString()} {batch.unit}</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {Number(batch.remaining_quantity).toLocaleString()} {batch.unit}
+                    </TableCell>
+                    <TableCell>{batch.received_date ? format(parseISO(batch.received_date), "MMM d, yyyy") : "-"}</TableCell>
+                    <TableCell>
+                      {batch.expiry_date ? (
+                        <div className="flex items-center gap-2">
+                          <span>{format(parseISO(batch.expiry_date), "MMM d, yyyy")}</span>
+                          {isExpiringBatch(batch) && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                          {isExpired(batch) && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn("border px-2", statusColorMap[batch.status] || statusColorMap["In Stock"])}>
+                        {batch.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button size="sm" variant="ghost" onClick={() => openEditModal(batch)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => openConfirm(batch.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedBatch ? "Edit Batch" : "Add New Batch"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Batch Number *</Label>
+                <Input
+                  value={formState.batch_number}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, batch_number: e.target.value }))}
+                  placeholder="e.g., BATCH-001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Product Name *</Label>
+                <Input
+                  value={formState.product_name}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, product_name: e.target.value }))}
+                  placeholder="e.g., Tender Coconut"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Total Quantity *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formState.total_quantity}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, total_quantity: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Remaining Quantity *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formState.remaining_quantity}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, remaining_quantity: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Input
+                  value={formState.unit}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, unit: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Warehouse</Label>
+                <Input
+                  value={formState.warehouse}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, warehouse: e.target.value }))}
+                  placeholder="e.g., Main Warehouse"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Received Date</Label>
+                <Input
+                  type="date"
+                  value={formState.received_date}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, received_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Expiry Date</Label>
+                <Input
+                  type="date"
+                  value={formState.expiry_date}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, expiry_date: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={formState.status} onValueChange={(value) => setFormState((prev) => ({ ...prev, status: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="In Stock">In Stock</SelectItem>
+                    <SelectItem value="Reserved">Reserved</SelectItem>
+                    <SelectItem value="Dispatched">Dispatched</SelectItem>
+                    <SelectItem value="Damaged">Damaged</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea
+                  rows={4}
+                  value={formState.notes}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={mutation.isLoading}>
+              {mutation.isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Delete Batch"
+        description="Are you sure you want to delete this batch? This action cannot be undone."
+        onConfirm={handleConfirm}
+        isLoading={deleteMutation.isLoading}
+      />
+    </div>
+  );
+}

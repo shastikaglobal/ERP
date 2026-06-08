@@ -13,7 +13,7 @@ export default function CrmConvert() {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .eq("stage", "Won")
+        .in("stage", ["Won", "Client Successfully Acquired"])
         .order("updated_at", { ascending: false });
       
       if (error) throw error;

@@ -111,7 +111,6 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
         } else {
           await supabase.from('attendance_logs').insert({
             employee_id: emp.id,
-            company_id: emp.company_id,
             date: punchDateStr,
             status: 'present',
             clock_in: clockInIso,

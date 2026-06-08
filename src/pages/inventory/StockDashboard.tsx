@@ -27,6 +27,8 @@ export default function StockDashboard() {
   const [quantity, setQuantity] = useState("");
   const [grade, setGrade] = useState("A");
   const [moisture, setMoisture] = useState("12.5");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [isExportReady, setIsExportReady] = useState(false);
 
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
@@ -60,12 +62,15 @@ export default function StockDashboard() {
             grade, 
             moisture_pct, 
             received_date, 
+            expiry_date,
+            quantity_reserved_kg,
+            is_export_ready,
             status,
             product:products(name, sku),
             warehouse:warehouses(name)
           `)
           .order("received_date", { ascending: false });
-          
+
         if (error) throw error;
         return data || [];
       } catch (err) {
@@ -86,7 +91,7 @@ export default function StockDashboard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
-      
+
       // Get company_id from profile
       const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', userId).single();
 
@@ -99,6 +104,8 @@ export default function StockDashboard() {
         quantity_remaining_kg: Number(quantity),
         grade,
         moisture_pct: Number(moisture),
+        expiry_date: expiryDate || null,
+        is_export_ready: isExportReady,
         status: 'pending_qc',
         received_date: new Date().toISOString().split('T')[0]
       });
@@ -108,7 +115,7 @@ export default function StockDashboard() {
       toast.success("Batch added to inventory");
       setIsDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["inventory_batches"] });
-      
+
       // Reset form
       setQuantity("");
       setLotNumber(`LOT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`);
@@ -157,7 +164,7 @@ export default function StockDashboard() {
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Lot Number *</Label>
                   <Input value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} className="bg-white/5 border-white/10" />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Product *</Label>
@@ -205,10 +212,27 @@ export default function StockDashboard() {
                     <Input value={grade} onChange={(e) => setGrade(e.target.value)} className="bg-white/5 border-white/10" />
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Moisture (%)</Label>
-                  <Input type="number" step="0.1" value={moisture} onChange={(e) => setMoisture(e.target.value)} className="bg-white/5 border-white/10" />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Moisture (%)</Label>
+                    <Input type="number" step="0.1" value={moisture} onChange={(e) => setMoisture(e.target.value)} className="bg-white/5 border-white/10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Expiry Date</Label>
+                    <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="bg-white/5 border-white/10" />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="is_export_ready"
+                    checked={isExportReady}
+                    onChange={(e) => setIsExportReady(e.target.checked)}
+                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-primary"
+                  />
+                  <Label htmlFor="is_export_ready" className="text-xs font-semibold cursor-pointer">Mark as Export Ready</Label>
                 </div>
               </div>
               <DialogFooter>
@@ -239,35 +263,60 @@ export default function StockDashboard() {
           data={data}
           searchKeys={["lot_number", "product.name"]}
           columns={[
-            { 
-              key: "lot", 
-              header: "Lot #", 
-              render: (r: any) => <span className="font-mono text-xs font-bold">{r.lot_number}</span> 
+            {
+              key: "lot",
+              header: "Lot #",
+              render: (r: any) => <span className="font-mono text-xs font-bold">{r.lot_number}</span>
             },
-            { 
-              key: "product", 
-              header: "Product", 
-              render: (r: any) => <span className="font-semibold">{r.product?.name || "—"}</span> 
+            {
+              key: "product",
+              header: "Product",
+              render: (r: any) => <span className="font-semibold">{r.product?.name || "—"}</span>
             },
-            { 
-              key: "wh", 
-              header: "Warehouse", 
-              render: (r: any) => <span className="text-sm text-muted-foreground">{r.warehouse?.name || "—"}</span> 
+            {
+              key: "wh",
+              header: "Warehouse",
+              render: (r: any) => <span className="text-sm text-muted-foreground">{r.warehouse?.name || "—"}</span>
             },
-            { 
-              key: "qty", 
-              header: "Remaining (kg)", 
-              render: (r: any) => <span className="tabular-nums font-bold">{Number(r.quantity_remaining_kg).toLocaleString()}</span> 
+            {
+              key: "qty",
+              header: "Physical (kg)",
+              render: (r: any) => (
+                <div className="flex flex-col">
+                  <span className="tabular-nums font-bold">{Number(r.quantity_remaining_kg).toLocaleString()}</span>
+                  {r.quantity_reserved_kg > 0 && (
+                    <span className="text-[10px] text-orange-400 font-medium">Reserved: {Number(r.quantity_reserved_kg).toLocaleString()}</span>
+                  )}
+                </div>
+              )
             },
-            { 
-              key: "received", 
-              header: "Received", 
-              render: (r: any) => <span className="text-xs text-muted-foreground">{r.received_date ? format(new Date(r.received_date), "MMM dd, yyyy") : "—"}</span> 
+            {
+              key: "available",
+              header: "Available (kg)",
+              render: (r: any) => <span className="tabular-nums font-bold text-emerald-500">{Number(r.quantity_remaining_kg - (r.quantity_reserved_kg || 0)).toLocaleString()}</span>
             },
-            { 
-              key: "status", 
-              header: "Status", 
-              render: (r: any) => <StatusBadge status={r.status} /> 
+            {
+              key: "expiry",
+              header: "Expiry",
+              render: (r: any) => {
+                const isExpired = r.expiry_date && new Date(r.expiry_date) < new Date();
+                const isNearExpiry = r.expiry_date && new Date(r.expiry_date) < new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+                return (
+                  <span className={`text-xs font-mono font-bold ${isExpired ? 'text-red-500' : isNearExpiry ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                    {r.expiry_date ? format(new Date(r.expiry_date), "MMM dd, yyyy") : "—"}
+                  </span>
+                );
+              }
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (r: any) => (
+                <div className="flex flex-col gap-1">
+                  <StatusBadge status={r.status} />
+                  {r.is_export_ready && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold uppercase w-fit">Export Ready</span>}
+                </div>
+              )
             },
           ]}
         />
