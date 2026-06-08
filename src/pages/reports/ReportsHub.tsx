@@ -1,16 +1,20 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { 
-  BarChart3, 
-  Package, 
-  Truck, 
-  Container, 
-  AlertTriangle, 
-  Calendar, 
+import {
+  BarChart3,
+  Package,
+  Truck,
+  Container,
+  AlertTriangle,
+  Calendar,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 
 const reports = [
@@ -74,6 +78,90 @@ const reports = [
 
 export default function ReportsHub() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  // Live stats from Supabase
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["reports-hub-stats", profile?.company_id],
+    queryFn: async () => {
+      const companyId = profile?.company_id;
+      if (!companyId) return null;
+
+      const [batchRes, shipmentRes, damageRes, exportReadyRes] = await Promise.all([
+        supabase
+          .from("inventory_batches")
+          .select("id, quantity_kg, quantity_remaining_kg, status")
+          .eq("company_id", companyId),
+        supabase
+          .from("export_shipments")
+          .select("id, status, total_quantity_kg")
+          .eq("company_id", companyId),
+        supabase
+          .from("inventory_batches")
+          .select("id, quantity_kg")
+          .eq("company_id", companyId)
+          .in("status", ["damaged", "rejected", "quarantine"]),
+        supabase
+          .from("inventory_batches")
+          .select("id, quantity_remaining_kg")
+          .eq("company_id", companyId)
+          .eq("is_export_ready", true)
+          .eq("status", "qc_passed"),
+      ]);
+
+      const batches = batchRes.data || [];
+      const shipments = shipmentRes.data || [];
+      const damaged = damageRes.data || [];
+      const exportReady = exportReadyRes.data || [];
+
+      return {
+        totalBatches: batches.length,
+        totalStockKg: batches.reduce((s, b) => s + (b.quantity_remaining_kg || 0), 0),
+        totalShipments: shipments.length,
+        inTransit: shipments.filter((s) => s.status === "in_transit").length,
+        damagedCount: damaged.length,
+        damagedKg: damaged.reduce((s, b) => s + (b.quantity_kg || 0), 0),
+        exportReadyKg: exportReady.reduce((s, b) => s + (b.quantity_remaining_kg || 0), 0),
+        exportReadyCount: exportReady.length,
+      };
+    },
+    enabled: !!profile?.company_id,
+  });
+
+  const summaryCards = [
+    {
+      label: "Total Stock",
+      value: stats ? `${(stats.totalStockKg || 0).toFixed(0)} kg` : "—",
+      sub: `${stats?.totalBatches || 0} batches`,
+      color: "text-blue-600",
+      bg: "bg-blue-500/10",
+      icon: Package,
+    },
+    {
+      label: "Total Shipments",
+      value: stats?.totalShipments ?? "—",
+      sub: `${stats?.inTransit || 0} in transit`,
+      color: "text-green-600",
+      bg: "bg-green-500/10",
+      icon: Truck,
+    },
+    {
+      label: "Damaged/Wastage",
+      value: stats ? `${(stats.damagedKg || 0).toFixed(0)} kg` : "—",
+      sub: `${stats?.damagedCount || 0} incidents`,
+      color: "text-red-600",
+      bg: "bg-red-500/10",
+      icon: AlertTriangle,
+    },
+    {
+      label: "Export Ready",
+      value: stats ? `${(stats.exportReadyKg || 0).toFixed(0)} kg` : "—",
+      sub: `${stats?.exportReadyCount || 0} batches`,
+      color: "text-emerald-600",
+      bg: "bg-emerald-500/10",
+      icon: CheckCircle,
+    },
+  ];
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -82,6 +170,33 @@ export default function ReportsHub() {
         description="Comprehensive warehouse and inventory insights. Monitor inventory movements, track stock availability, analyze warehouse performance, and generate operational reports."
         breadcrumbs={[{ label: "Reports" }, { label: "Dashboard" }]}
       />
+
+      {/* Live Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Card key={card.label} className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{card.label}</p>
+                  {statsLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-1" />
+                  ) : (
+                    <>
+                      <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+                    </>
+                  )}
+                </div>
+                <div className={`p-2.5 rounded-lg ${card.bg}`}>
+                  <Icon className={`h-5 w-5 ${card.color}`} />
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
       <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <h3 className="font-semibold mb-2">Available Reports</h3>
@@ -95,8 +210,8 @@ export default function ReportsHub() {
         {reports.map((report) => {
           const Icon = report.icon;
           return (
-            <Card 
-              key={report.id} 
+            <Card
+              key={report.id}
               className="p-6 hover:border-primary/50 transition-all cursor-pointer group"
               onClick={() => navigate(report.path)}
             >
@@ -125,49 +240,24 @@ export default function ReportsHub() {
         })}
       </div>
 
-      {/* Quick Stats Section */}
+      {/* Features */}
       <Card className="p-6">
         <h3 className="font-semibold mb-4">Report Features</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <h4 className="font-medium flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary"></span>
-              Advanced Filtering
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              Filter reports by date range, warehouse, product, status, and more to focus on the data that matters most.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-medium flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary"></span>
-              Export to CSV
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              Export all report data to CSV format for analysis in spreadsheet applications and data tools.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-medium flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary"></span>
-              Real-time Data
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              All reports display real-time data from your warehouse management system with automatic updates.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-medium flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary"></span>
-              Summary Analytics
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              View key metrics, charts, and breakdowns to quickly understand warehouse performance.
-            </p>
-          </div>
+          {[
+            { title: "Advanced Filtering", desc: "Filter reports by date range, warehouse, product, status, and more to focus on the data that matters most." },
+            { title: "Export to CSV", desc: "Export all report data to CSV format for analysis in spreadsheet applications and data tools." },
+            { title: "Real-time Data", desc: "All reports display real-time data from your warehouse management system with automatic updates." },
+            { title: "Summary Analytics", desc: "View key metrics, charts, and breakdowns to quickly understand warehouse performance." },
+          ].map((f) => (
+            <div key={f.title} className="space-y-2">
+              <h4 className="font-medium flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary"></span>
+                {f.title}
+              </h4>
+              <p className="text-sm text-muted-foreground">{f.desc}</p>
+            </div>
+          ))}
         </div>
       </Card>
     </div>
