@@ -5,53 +5,110 @@ import { BarChart3, TrendingUp } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { format, parse, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
 
 export default function SalesAnalytics() {
-  // Query 1: Sales from database view
-  const { data: realSales } = useQuery({
-    queryKey: ['dashboard_sales'],
-    queryFn: async () => {
-      return [];
-    },
-    retry: false
-  });
+  const { profile } = useAuth();
 
-  // Query 2: Leads from CRM
+  // Query 1: Leads from CRM
   const { data: leads = [] } = useQuery({
-    queryKey: ['sales_analytics_leads'],
+    queryKey: ['sales_analytics_leads', profile?.company_id],
     queryFn: async () => {
-      return [];
+      if (!profile?.company_id) return [];
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, company_name, country, assigned_to, stage, created_at, status')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching leads:', error);
+        return [];
+      }
+      return data || [];
     },
-    retry: false
+    enabled: !!profile?.company_id,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000
   });
 
-  // Query 3: Export Orders
+  // Query 2: Export Orders
   const { data: orders = [] } = useQuery({
-    queryKey: ['sales_analytics_orders'],
+    queryKey: ['sales_analytics_orders', profile?.company_id],
     queryFn: async () => {
-      return [];
+      if (!profile?.company_id) return [];
+      const { data, error } = await supabase
+        .from('export_orders')
+        .select('id, order_number, customer_name, customer_country, total_amount, order_date, created_at, status')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (error) {
+        console.error('Error fetching orders:', error);
+        return [];
+      }
+      return data || [];
     },
-    retry: false
+    enabled: !!profile?.company_id,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000
+  });
+
+  // Query 3: Quotations
+  const { data: quotations = [] } = useQuery({
+    queryKey: ['sales_analytics_quotations', profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return [];
+      const { data, error } = await supabase
+        .from('quotations')
+        .select('id, lead_id, total_amount, amount, created_by, created_at, status')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (error) {
+        console.error('Error fetching quotations:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!profile?.company_id,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000
   });
 
   // Calculations
-  const chartSales = [];
-  const totalRevenue = 0;
-  
-  const totalLeads = 0;
-  const wonLeads = 0;
-  const lostLeads = 0;
-  
-  const conversionRate = 0;
-  
-  const closedLeads = 0;
-  const winRate = 0;
+  const chartSales = (() => {
+    const monthlyData: Record<string, { month: string; orders: number; revenue: number }> = {};
+    
+    orders.forEach(order => {
+      const date = new Date(order.created_at);
+      const monthKey = format(date, 'MMM');
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { month: monthKey, orders: 0, revenue: 0 };
+      }
+      monthlyData[monthKey].orders += 1;
+      monthlyData[monthKey].revenue += order.total_amount || 0;
+    });
 
-  const totalOrders = 0;
-  const totalOrderAmount = 0;
-  const avgDealSize = 0;
+    return Object.values(monthlyData).slice(-6);
+  })();
 
-  const isLive = false;
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+  
+  const totalLeads = leads.length;
+  const wonLeads = leads.filter(l => l.stage === 'closed_won').length;
+  const lostLeads = leads.filter(l => l.stage === 'closed_lost').length;
+  
+  const conversionRate = totalLeads > 0 ? (orders.length / totalLeads) * 100 : 0;
+  
+  const closedLeads = wonLeads;
+  const winRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
+
+  const totalOrders = orders.length;
+  const totalOrderAmount = totalRevenue;
+  const avgDealSize = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  const isLive = profile?.company_id ? true : false;
 
   return (
     <div>
