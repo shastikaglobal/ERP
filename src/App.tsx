@@ -68,7 +68,7 @@ import PurchaseOrdersListLive from "./pages/procurement/PurchaseOrdersListLive";
 import CreatePOLive from "./pages/procurement/CreatePOLive";
 import SuppliersList from "./pages/procurement/SuppliersList";
 import SupplierDetail from "./pages/procurement/SupplierDetail";
-import SupplierAnalytics from "./pages/procurement/SupplierAnalytics";
+import ProcurementDashboard from "./pages/procurement/ProcurementDashboard";
 
 import InspectionsList from "./pages/qc/InspectionsList";
 import QualityControlWarehouse from "./pages/inventory/QualityControl";
@@ -254,7 +254,8 @@ const App = () => (
               <Route path="/procurement/orders/create" element={<CreatePOLive />} />
               <Route path="/procurement/suppliers" element={<SuppliersList />} />
               <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
-              <Route path="/procurement/analytics" element={<SupplierAnalytics />} />
+              <Route path="/procurement/dashboard" element={<ProcurementDashboard />} />
+              <Route path="/procurement/analytics" element={<ProcurementDashboard />} />
 
               {/* Quality Control */}
               <Route path="/qc/inspections" element={<InspectionsList />} />

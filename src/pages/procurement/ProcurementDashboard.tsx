@@ -4,14 +4,16 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingUp, Users } from "lucide-react";
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { toast } from "sonner";
 import { startOfMonth } from "date-fns";
 
-export default function SupplierAnalytics() {
+import { PageHeader } from "@/components/shared/PageHeader";
+
+export default function ProcurementDashboard() {
   const { profile } = useAuth();
   const [stats, setStats] = useState({
 
@@ -27,14 +29,14 @@ export default function SupplierAnalytics() {
       try {
         if (!profile?.company_id) return;
 
-        const { count: supCount, error: supErr } = await supabase
+        const { count: supCount, error: supErr } = await (supabase as any)
           .from("farmers")
           .select("*", { count: "exact", head: true })
           .eq("company_id", profile.company_id);
-        
+
         if (supErr) throw supErr;
 
-        const { data: pos, error: poErr } = await supabase
+        const { data: pos, error: poErr } = await (supabase as any)
           .from("purchase_orders")
           .select("id, status, total, order_date, farmers(full_name)")
           .eq("company_id", profile.company_id);
@@ -53,12 +55,12 @@ export default function SupplierAnalytics() {
         });
 
         // Calculate top 5 suppliers
-        const supplierTotals: Record<string, {name: string, value: number}> = {};
+        const supplierTotals: Record<string, { name: string, value: number }> = {};
         pos?.forEach(po => {
           // Handle both object and array response for the relation
           const farmerData = Array.isArray(po.farmers) ? po.farmers[0] : po.farmers;
           const supName = (farmerData as any)?.full_name || "Unknown Supplier";
-          
+
           if (!supplierTotals[supName]) supplierTotals[supName] = { name: supName, value: 0 };
           supplierTotals[supName].value += Number(po.total) || 0;
         });
@@ -76,9 +78,9 @@ export default function SupplierAnalytics() {
           statusCounts[po.status] = (statusCounts[po.status] || 0) + 1;
         });
 
-        const statusChartData = Object.entries(statusCounts).map(([name, value]) => ({ 
-          name: name.charAt(0).toUpperCase() + name.slice(1), 
-          value 
+        const statusChartData = Object.entries(statusCounts).map(([name, value]) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          value
         }));
 
         setStatusData(statusChartData);
@@ -104,8 +106,12 @@ export default function SupplierAnalytics() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Procurement Analytics</h1>
-      
+      <PageHeader
+        title="Procurement Dashboard"
+        description="Monitor suppliers and purchase orders performance"
+        breadcrumbs={[{ label: "Procurement" }, { label: "Dashboard" }]}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -142,7 +148,7 @@ export default function SupplierAnalytics() {
                 <BarChart data={topSuppliers} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
                   <RechartsTooltip formatter={(value) => `₹ ${value.toLocaleString()}`} />
                   <Bar dataKey="value" fill="#22c55e" radius={[0, 4, 4, 0]} />
                 </BarChart>
