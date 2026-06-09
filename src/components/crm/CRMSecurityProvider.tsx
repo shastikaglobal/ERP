@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { logCRMAction } from "@/services/crmAudit";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isMobileOrTablet } from "@/utils/device";
 import "@/pages/crm/crm-security.css";
 
 const WatermarkOverlay = ({ profile }: { profile: any }) => {
@@ -99,8 +100,8 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
             location.pathname.startsWith("/system/integrations/zoho") ||
             location.pathname.startsWith("/system/mailbox");
 
-        // EXEMPTIONS: Admins/Managers, Non-CRM Routes, or if Protection is toggled OFF in DB
-        if (isLoadingPermissions || !isCRMRoute || isPrivileged || !protectionEnabled) {
+        // EXEMPTIONS: Admins/Managers, Non-CRM Routes, or if Protection is toggled OFF in DB, or on Mobile/Tablet
+        if (isLoadingPermissions || !isCRMRoute || isPrivileged || !protectionEnabled || isMobileOrTablet()) {
             setIsShielded(false);
             document.body.classList.remove('lockdown-active');
             return;

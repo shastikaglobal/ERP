@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScreenBroadcaster } from "@/hooks/useScreenBroadcaster";
+import { isMobileOrTablet } from "@/utils/device";
 
 export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { session, profile, loading, refresh, roleSlugs } = useAuth();
@@ -26,6 +27,13 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   useEffect(() => {
     if (!profile || hasStarted.current) return;
     hasStarted.current = true;
+
+    // Mobile/tablet browsers do not support getDisplayMedia for screen sharing.
+    // Bypass screen sharing requirement on mobile/tablet to avoid locking users out.
+    if (isMobileOrTablet()) {
+      setScreenStatus("sharing");
+      return;
+    }
 
     const startShare = async () => {
       setScreenStatus("requesting");
