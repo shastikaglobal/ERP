@@ -89,13 +89,13 @@ export default function Performance() {
         { data: exportOrders }
       ] = await Promise.all([
         supabase.from("profiles" as any).select("id, full_name, avatar_url, monthly_target").eq("company_id", currentUser.company_id),
-        supabase.from("leads" as any).select("id, assigned_to, stage, created_at, company_name").or(`company_id.eq.${currentUser.company_id},company_id.is.null`),
-        supabase.from("activities" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`),
-        supabase.from("follow_ups" as any).select("id, assigned_to, is_notified, created_at").or(`company_id.eq.${currentUser.company_id},company_id.is.null`),
-        supabase.from("quotations" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`),
+          supabase.from("leads" as any).select("id, assigned_to, stage, created_at, company_name").or(`company_id.eq.${currentUser.company_id},company_id.is.null`).neq('is_deleted', true),
+          supabase.from("activities" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`).neq('is_deleted', true),
+          supabase.from("follow_ups" as any).select("id, assigned_to, is_notified, created_at").or(`company_id.eq.${currentUser.company_id},company_id.is.null`).neq('is_deleted', true),
+          supabase.from("quotations" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`).neq('is_deleted', true),
         supabase.from("user_roles" as any).select("user_id, roles(name)"),
-        supabase.from("bde_daily_reports" as any).select("*").eq("company_id", currentUser.company_id),
-        supabase.from("export_orders" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`)
+          supabase.from("bde_daily_reports" as any).select("*").eq("company_id", currentUser.company_id).neq('is_deleted', true),
+          supabase.from("export_orders" as any).select("*").or(`company_id.eq.${currentUser.company_id},company_id.is.null`).neq('is_deleted', true)
       ]);
 
       // Manually attach roles to profiles

@@ -69,6 +69,7 @@ export default function QuotationsList() {
           )
         `)
         .eq('company_id', profile.company_id)
+        .neq('is_deleted', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -152,9 +153,10 @@ export default function QuotationsList() {
     if (!window.confirm(`Delete quotation ${quotation.quotation_number}? This cannot be undone.`)) return;
     setDeletingId(quotation.id);
     try {
-      const { error } = await supabase.from('quotations').delete().eq('id', quotation.id);
+      // Soft-delete the quotation
+      const { error } = await supabase.from('quotations').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', quotation.id);
       if (error) throw error;
-      toast.success(`Quotation ${quotation.quotation_number} deleted`);
+      toast.success(`Quotation ${quotation.quotation_number} removed from view (soft-deleted)`);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     } catch (err: any) {
       toast.error(err.message || "Failed to delete quotation");

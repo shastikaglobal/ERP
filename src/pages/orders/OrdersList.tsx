@@ -34,10 +34,12 @@ export default function OrdersList() {
     if (!confirm("Are you sure you want to delete this order?")) return;
     
     try {
-      const { error } = await supabase.from("export_orders").delete().eq("id", id);
+      // Soft-delete: mark the record as deleted instead of removing it
+      const { error } = await supabase.from("export_orders").update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
+      // Update local state to hide the deleted item from UI
       setOrders(orders.filter(o => o.id !== id));
-      toast.success("Order deleted successfully");
+      toast.success("Order removed from view (soft-deleted)");
     } catch (err: any) {
       toast.error("Failed to delete order");
     }
@@ -51,6 +53,7 @@ export default function OrdersList() {
           .from("export_orders")
           .select("*")
           .eq("company_id", profile.company_id)
+          .neq("is_deleted", true)
           .order("order_date", { ascending: false });
 
         if (error) throw error;

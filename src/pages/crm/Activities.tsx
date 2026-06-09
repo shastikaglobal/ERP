@@ -145,10 +145,12 @@ export default function LeadActivities() {
         supabase
           .from("activities" as any)
           .select(`id, lead_id, type, title, due_date, completed, leads(company_name)`)
+          .neq('is_deleted', true)
           .order("due_date", { ascending: true }),
         supabase
           .from("leads" as any)
           .select("id, company_name, country")
+          .neq('is_deleted', true)
           .order("company_name", { ascending: true })
       ]);
 
@@ -183,12 +185,13 @@ export default function LeadActivities() {
   const handleDeleteReport = async () => {
     if (!reportToDelete) return;
     try {
-      const { error } = await supabase.from('bde_daily_reports' as any).delete().eq('id', reportToDelete);
+      // Soft-delete the report instead of permanent removal
+      const { error } = await supabase.from('bde_daily_reports' as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', reportToDelete);
       if (error) throw error;
-      
-      // Successfully deleted from DB, now remove from local state permanently
+
+      // Remove from local state view
       setDailyReports(prev => prev.filter(r => (r as any).id !== reportToDelete));
-      toast.success("Report deleted successfully");
+      toast.success("Report removed from view (soft-deleted)");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete report");
       fetchDailyReports(); // Restore state if server delete failed
@@ -206,7 +209,8 @@ export default function LeadActivities() {
     try {
       let query = supabase
         .from('bde_daily_reports' as any)
-        .select('*');
+        .select('*')
+        .neq('is_deleted', true);
       
       if (!isAdminOrManager && isBDE) {
         query = query.eq('bde_id', currentUser.id);
@@ -325,9 +329,10 @@ export default function LeadActivities() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("activities" as any).delete().eq("id", deleteId);
+      // Soft-delete activity instead of permanent removal
+      const { error } = await supabase.from("activities" as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", deleteId);
       if (error) throw error;
-      toast.success("Activity deleted");
+      toast.success("Activity removed from view (soft-deleted)");
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete activity");

@@ -90,6 +90,7 @@ export default function FollowUps() {
       const { data, error } = await supabase
         .from("leads" as any)
         .select("id, company_name, contact_name, business_category, product_type, country, mobile, email, website")
+        .neq('is_deleted', true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -105,6 +106,7 @@ export default function FollowUps() {
       const { data, error } = await supabase
         .from("follow_ups" as any)
         .select("id, lead_id, company_name, contact_name, follow_up_date, reminder_time, note, assigned_to, is_notified, business_category, product_type, country, mobile, email, website")
+        .neq('is_deleted', true)
         .order("follow_up_date", { ascending: false });
 
       if (error) throw error;
@@ -259,9 +261,10 @@ export default function FollowUps() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase.from("follow_ups" as any).delete().eq("id", id);
+      // Soft-delete the follow-up instead of permanent deletion
+      const { error } = await supabase.from("follow_ups" as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
-      toast.success("Follow-up deleted");
+      toast.success("Follow-up removed from view (soft-deleted)");
       fetchFollowUps();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete follow-up");

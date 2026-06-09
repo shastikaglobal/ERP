@@ -163,7 +163,7 @@ export default function LeadsList() {
       const { data, error } = await supabase
         .from("leads")
         .select(`*`)
-        .not('is_deleted', 'eq', true)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -414,12 +414,11 @@ export default function LeadsList() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase
-        .from("leads")
-        .update({ is_deleted: true })
-        .eq("id", deleteId);
+      // Soft-delete lead instead of permanent deletion
+      const { error } = await supabase.from("leads").update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", deleteId);
       if (error) throw error;
-      toast.success("Lead deleted successfully");
+      toast.success("Lead removed from view (soft-deleted)");
+      // Refresh list to hide it
       fetchLeads();
     } catch (error: any) {
       toast.error(error.message || "Delete failed");

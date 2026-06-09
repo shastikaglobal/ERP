@@ -40,9 +40,9 @@ export default function RevenueAnalytics() {
                 { data: exportOrders }
             ] = await Promise.all([
                 supabase.from("profiles" as any).select("id, full_name").eq("company_id", profile.company_id),
-                supabase.from("leads" as any).select("id, company_name, country, assigned_to, stage, created_at").eq('company_id', profile.company_id),
-                supabase.from("quotations" as any).select("id, lead_id, total_amount, amount, created_by, created_at, status").eq('company_id', profile.company_id),
-                supabase.from("export_orders" as any).select("id, order_number, customer_name, customer_country, total_amount, order_date, created_at").eq('company_id', profile.company_id)
+                supabase.from("leads" as any).select("id, company_name, country, assigned_to, stage, created_at").eq('company_id', profile.company_id).neq('is_deleted', true),
+                supabase.from("quotations" as any).select("id, lead_id, total_amount, amount, created_by, created_at, status").eq('company_id', profile.company_id).neq('is_deleted', true),
+                supabase.from("export_orders" as any).select("id, order_number, customer_name, customer_country, total_amount, order_date, created_at").eq('company_id', profile.company_id).neq('is_deleted', true)
             ]);
 
             const rawOrders = exportOrders || [];
