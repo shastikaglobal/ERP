@@ -1,4 +1,4 @@
-option-- Migration: Add soft-delete columns to analytics-related tables
+-- Migration: Add soft-delete columns to analytics-related tables
 -- Run this in your Postgres (Supabase) database using psql or Supabase SQL editor
 
 BEGIN;
