@@ -79,7 +79,7 @@ const getEmployeeMonthStats = (
   const empLogs = allLogs[empId] || {};
   const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
   const isPreethi = emp.full_name?.toLowerCase().includes("preethi");
-    const perDay = Math.round(monthlySalary / (isPreethi ? 22 : 26)); // 22 for Preethi, 26 for others
+  const perDay = isPreethi ? Math.round(monthlySalary / 22) : Math.floor(monthlySalary / 30); // 22 for Preethi, 30 for others
   const halfDay = Math.round(perDay / 2);
   const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
 
@@ -120,29 +120,60 @@ const getEmployeeMonthStats = (
   days.forEach(dateStr => {
     const log = empLogs[dateStr];
     
+    const systemStartStr = emp.joining_date || '2026-06-01';
+    if (dateStr < systemStartStr) {
+      const d = new Date(dateStr);
+      const isSunday = d.getDay() === 0 || (isPreethi && d.getDay() === 6);
+      
+      dailyDetails[dateStr] = {
+        status: 'absent',
+        cut: 0,
+        isExcused: false,
+        minutesLate: 0,
+        explanation: 'Not Joined'
+      };
+      return;
+    }
+
+    if (log && log.status === 'on_leave') {
+      paidLeavesUsed++;
+      if (paidLeavesUsed <= 1) {
+        dailyDetails[dateStr] = {
+          status: 'paid_leave',
+          cut: 0,
+          isExcused: false,
+          minutesLate: 0,
+          explanation: 'Paid Leave (Within monthly 1-day limit)'
+        };
+      } else {
+        totalCut += perDay;
+        unpaidLeavesUsed++;
+        dailyDetails[dateStr] = {
+          status: 'unpaid_leave',
+          cut: perDay,
+          isExcused: false,
+          minutesLate: 0,
+          explanation: 'Unpaid Leave (Monthly 1-day paid leave limit exceeded)'
+        };
+      }
+      return;
+    }
+
+    const isWfh = emp.system_mode === 'wfh' || emp.full_name?.toLowerCase().includes("vemula") || emp.full_name?.toLowerCase().includes("aditi");
+
+    if (isWfh) {
+      dailyDetails[dateStr] = {
+        status: 'present',
+        cut: 0,
+        isExcused: false,
+        minutesLate: 0,
+        explanation: 'Work from Home'
+      };
+      return;
+    }
+
     if (log) {
-      if (log.status === 'on_leave') {
-        paidLeavesUsed++;
-        if (paidLeavesUsed <= 1) {
-          dailyDetails[dateStr] = {
-            status: 'paid_leave',
-            cut: 0,
-            isExcused: false,
-            minutesLate: 0,
-            explanation: 'Paid Leave (Within monthly 1-day limit)'
-          };
-        } else {
-          totalCut += perDay;
-          unpaidLeavesUsed++;
-          dailyDetails[dateStr] = {
-            status: 'unpaid_leave',
-            cut: perDay,
-            isExcused: false,
-            minutesLate: 0,
-            explanation: 'Unpaid Leave (Monthly 1-day paid leave limit exceeded)'
-          };
-        }
-      } else if (log.clock_in) {
+      if (log.clock_in) {
         const minutesLate = getLateMinutes(log.clock_in, deadline);
         const isLate = minutesLate >= 2;
 
@@ -178,8 +209,8 @@ const getEmployeeMonthStats = (
         // Absent (log exists but no clock_in and not on_leave)
         const d = new Date(dateStr);
         const isSunday = d.getDay() === 0 || (isPreethi && d.getDay() === 6);
-        const isTodayOrFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
-        const isPenaltyFree = isSunday || isTodayOrFuture;
+        const isFuture = dateStr > format(new Date(), 'yyyy-MM-dd');
+        const isPenaltyFree = isSunday || isFuture;
         
         if (!isPenaltyFree) {
           totalCut += perDay;
@@ -189,15 +220,15 @@ const getEmployeeMonthStats = (
           cut: isPenaltyFree ? 0 : perDay,
           isExcused: false,
           minutesLate: 0,
-          explanation: isSunday ? 'Weekend (Holiday)' : (isTodayOrFuture ? 'Pending / Today' : 'Absent (No clock in)')
+          explanation: isSunday ? 'Weekend (Holiday)' : (isFuture ? 'Pending' : 'Absent (No clock in)')
         };
       }
     } else {
       // Absent / No record
       const d = new Date(dateStr);
         const isSunday = d.getDay() === 0 || (isPreethi && d.getDay() === 6);
-      const isTodayOrFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
-      const isPenaltyFree = isSunday || isTodayOrFuture;
+      const isFuture = dateStr > format(new Date(), 'yyyy-MM-dd');
+      const isPenaltyFree = isSunday || isFuture;
       
       if (!isPenaltyFree) {
         totalCut += perDay;
@@ -207,7 +238,7 @@ const getEmployeeMonthStats = (
         cut: isPenaltyFree ? 0 : perDay,
         isExcused: false,
         minutesLate: 0,
-        explanation: isSunday ? 'Weekend (Holiday)' : (isTodayOrFuture ? 'Pending / Today' : 'Absent (No record)')
+        explanation: isSunday ? 'Weekend (Holiday)' : (isFuture ? 'Pending' : 'Absent (No record)')
       };
     }
   });
@@ -490,7 +521,7 @@ export default function Attendance() {
     // Fetch approved profiles
     const { data: profiles, error: profErr } = await supabase
       .from('profiles')
-      .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline')
+      .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline, system_mode, joining_date')
       .eq('status', 'approved')
       .order('full_name');
 
@@ -1098,15 +1129,28 @@ export default function Attendance() {
                     
                     let cellBg = "bg-muted/40 border-border/40";
                     let statusLabel = "";
-                    if (detail.status === 'paid_leave') {
+                    if (detail.explanation === 'Not Joined') {
+                      cellBg = "bg-muted/40 border-border/40 text-muted-foreground/30";
+                      statusLabel = "—";
+                    } else if (detail.explanation === 'Work from Home') {
+                      cellBg = "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400";
+                      statusLabel = "WFH";
+                    } else if (detail.explanation === 'Weekend (Holiday)') {
+                      cellBg = "bg-muted/40 border-border/40 text-muted-foreground";
+                      statusLabel = "WEEKEND";
+                    } else if (detail.status === 'paid_leave') {
                       cellBg = "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400";
                       statusLabel = "PAID LEAVE";
                     } else if (detail.status === 'unpaid_leave') {
                       cellBg = "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400";
                       statusLabel = "UNPAID LEAVE";
                     } else if (detail.status === 'absent') {
-                      cellBg = "bg-rose-500/5 border-rose-500/10 text-rose-500/50";
-                      statusLabel = "ABSENT";
+                      if (dateStr > format(new Date(), 'yyyy-MM-dd')) {
+                        statusLabel = ""; // Future
+                      } else {
+                        cellBg = "bg-rose-500/5 border-rose-500/10 text-rose-500/50";
+                        statusLabel = "ABSENT";
+                      }
                     } else if (detail.status === 'late_cut') {
                       cellBg = "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400";
                       statusLabel = "LATE";
@@ -1114,13 +1158,15 @@ export default function Attendance() {
 
                     const tooltip = log 
                       ? `${format(parseISO(dateStr), 'MMM dd')} - ${statusLabel || 'PRESENT'}\nIn: ${clockInStr || '--:--'}\nOut: ${clockOutStr || '--:--'}\n${detail.explanation}`
-                      : `${format(parseISO(dateStr), 'MMM dd')}: No Record (Absent)`;
+                      : `${format(parseISO(dateStr), 'MMM dd')} - ${statusLabel || 'No Record'}\n${detail.explanation}`;
 
                     return (
                       <td key={dateStr} className="text-center px-1 py-1.5" title={tooltip}>
-                        {log ? (
+                        {log || statusLabel ? (
                           <div className={`inline-flex flex-col items-center justify-center gap-0.5 min-w-[65px] py-1 px-1.5 rounded border text-[9px] font-medium leading-none ${cellBg}`}>
-                            {statusLabel ? (
+                            {statusLabel && !log ? (
+                              <span className="font-semibold py-1">{statusLabel}</span>
+                            ) : statusLabel ? (
                               <span className="font-semibold py-1">{statusLabel}</span>
                             ) : (
                               <>

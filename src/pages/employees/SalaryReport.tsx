@@ -55,8 +55,7 @@ function calcMonthStats(
   const empLogs = allLogs[emp.id] || {};
   const monthlySalary = Number(emp.monthly_salary) || getEmpSalary(emp.full_name) || 0;
   const isPreethi = emp.full_name?.toLowerCase().includes("preethi");
-    const workingDays = isPreethi ? 22 : 26; // 22 for Preethi, 26 for others
-  const perDay = Math.round(monthlySalary / workingDays);
+  const perDay = isPreethi ? Math.round(monthlySalary / 22) : Math.floor(monthlySalary / 30);
   const halfDay = Math.round(perDay / 2);
   const deadline = emp.punch_deadline || (emp.full_name?.toLowerCase().startsWith("preethi") ? "10:00:00" : "08:00:00");
 
@@ -95,16 +94,28 @@ function calcMonthStats(
 
   days.forEach(dateStr => {
     const log = empLogs[dateStr];
+
+    if (log && log.status === 'on_leave') {
+      paidLeaves++;
+      if (paidLeaves > 1) {
+        unpaidLeaves++;
+        totalDeduction += perDay;
+      } else {
+        earnedDays += 1;
+      }
+      return;
+    }
+
+    const isWfh = emp.system_mode === 'wfh' || emp.full_name?.toLowerCase().includes("vemula") || emp.full_name?.toLowerCase().includes("aditi");
+
+    if (isWfh) {
+      presentDays++;
+      earnedDays += 1;
+      return;
+    }
+
     if (log) {
-      if (log.status === 'on_leave') {
-        paidLeaves++;
-        if (paidLeaves > 1) {
-          unpaidLeaves++;
-          totalDeduction += perDay;
-        } else {
-          earnedDays += 1;
-        }
-      } else if (log.clock_in) {
+      if (log.clock_in) {
         const minsLate = getLateMinutes(log.clock_in, deadline);
         if (minsLate >= 2) {
           if (log.is_excused && excusedMins + minsLate <= 120) {
@@ -174,7 +185,7 @@ export default function SalaryReport() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline')
+        .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline, system_mode, joining_date')
         .eq('status', 'approved')
         .order('full_name');
       if (error) throw error;

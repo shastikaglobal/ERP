@@ -18,8 +18,7 @@ async function checkAttLogs() {
   const { data, error } = await supabase
     .from('AttLogs')
     .select('*')
-    .gte('LogDateTime', '2026-06-01')
-    .lt('LogDateTime', '2026-06-05');
+    .gte('LogDateTime', '2026-06-09T00:00:00Z');
 
   if (error) {
     console.error("Error fetching AttLogs:", error);
