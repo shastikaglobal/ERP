@@ -27,6 +27,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
 
   const [openSubGroups, setOpenSubGroups] = useState<string[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [employeeAdmin, setEmployeeAdmin] = useState(false);
 
   const [counts, setCounts] = useState({ clientAcq: 0, conversions: 0, customers: 0 });
 
@@ -80,41 +83,118 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     return () => { mounted = false; clearInterval(interval); };
   }, []);
 
-  const allowedSecretaryGroups = new Set(["dashboards", "quotations", "documents", "finance", "tally", "accounts", "hr & employees"]);
-  const allowedBdeGroups = new Set(["dashboards", "crm", "mobile crm", "quotations", "documents", "system", "hr & employees"]);
+  useEffect(() => {
+    let mounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    // We store user id separately for the fetch
+    let currentUser: string | undefined;
+
+    const fetchPerms = async () => {
+      if (!currentUser) {
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUser = user?.id;
+      }
+      
+      console.log('Current user id:', currentUser);
+      
+      if (!currentUser || !profile?.email) return;
+      
+      let isEmpAdmin = false;
+      try {
+        const { data: empData } = await (supabase
+          .from("employees" as any)
+          .select("role")
+          .eq("email", profile.email)
+          .maybeSingle() as unknown as Promise<{ data: any }>);
+        if (empData && empData.role?.toLowerCase() === "admin") {
+          isEmpAdmin = true;
+        }
+      } catch (e) {
+        console.error("Employee fetching error:", e);
+      }
+      
+      if (mounted) setEmployeeAdmin(isEmpAdmin);
+
+      if (isAdmin || isEmpAdmin) {
+        if (mounted) setPermissionsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await (supabase
+          .from("user_permissions" as any)
+          .select("section, has_access")
+          .eq("user_id", currentUser)
+          .eq("has_access", true) as unknown as Promise<{ data: any[], error: any }>);
+          
+        if (!mounted) return;
+        if (data) {
+          const perms = data.map(p => p.section.toLowerCase());
+          console.log('Fetched permissions mapped:', perms);
+          setPermissions(perms);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (mounted) setPermissionsLoading(false);
+      }
+    };
+    
+    fetchPerms().then(() => {
+      // Realtime subscription setup
+      if (mounted) {
+        channel = supabase
+          .channel('sidebar-permissions')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_permissions',
+            },
+            (payload) => {
+              console.log('Realtime permission change detected, re-fetching...', payload);
+              setTimeout(() => {
+                if (mounted) fetchPerms();
+              }, 500);
+            }
+          )
+          .subscribe();
+      }
+    });
+
+    return () => { 
+      mounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [profile?.email, isAdmin]);
+
+  const activeIsAdmin = isAdmin || employeeAdmin;
 
   const visibleGroups = navGroups
     .map(g => {
-      const groupTitleLower = g.title.toLowerCase();
-      let items = g.items.filter(i => {
-        if (isSecretary && allowedSecretaryGroups.has(groupTitleLower)) {
-          if (groupTitleLower === "hr & employees") {
-            return !i.permission || can(i.permission);
-          }
-          return true;
+      if (activeIsAdmin) return g;
+      
+      let items = g.items.map(i => {
+        console.log('Nav item being checked:', i.title);
+        if (i.items) {
+          // nested children matching exactly as requested
+          const subItems = i.items.filter(sub => {
+            console.log('Nav item being checked (sub):', sub.title);
+            return permissions.includes(sub.title.toLowerCase());
+          });
+          return { ...i, items: subItems };
         }
-        if (isBde && allowedBdeGroups.has(groupTitleLower)) {
-          if (groupTitleLower === "hr & employees") {
-            return !i.permission || can(i.permission);
-          }
-          return true;
-        }
-        return !i.permission || can(i.permission);
+        return i;
+      }).filter(i => {
+        // preserve standard items if mapped, or if they have successfully permitted children
+        return permissions.includes(i.title.toLowerCase()) || (i.items && i.items.length > 0);
       });
 
-      if (g.title === "Dashboards" && isSecretary && !isAdmin) {
-        items = [
-          { title: "Finance & Tally", url: "/dashboards/finance-tally", icon: LayoutDashboard },
-          { title: "User Approvals", url: "/employees/roles", icon: ShieldCheck },
-        ];
-      }
-      if (g.title === "Dashboards" && isBde && !isAdmin) {
-        items = [{ title: "BDE Dashboard", url: "/dashboards/bde", icon: LayoutDashboard }];
-      }
-      if (g.title === "System" && isBde && !isAdmin) {
-        items = [{ title: "Settings", url: "/system/settings", icon: Settings }];
-      }
-      // Filter Face Attendance for unauthorized users
+      // Filter Face Attendance for unauthorized users for extra safety if they somehow granted it
       if (g.title === "HR & Employees") {
         const allowedEmails = new Set([
           "vemulanavyalahar009@gmail.com",
@@ -125,16 +205,23 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           items = items.filter(i => i.title !== "Face Attendance");
         }
       }
+      
       return { ...g, items };
     })
-    .filter(g => g.items.length > 0)
-    .filter(g => {
-      if (isAdmin) return true;
-      const titleLower = g.title.toLowerCase();
-      if (isSecretary) return allowedSecretaryGroups.has(titleLower);
-      if (isBde) return allowedBdeGroups.has(titleLower);
-      return true;
-    });
+    .filter(g => g.items.length > 0);
+
+  if (permissionsLoading && !activeIsAdmin) {
+    return (
+      <aside
+        className={cn(
+          "fixed lg:sticky top-0 left-0 z-50 h-screen w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-transform lg:translate-x-0 items-center justify-center",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </aside>
+    );
+  }
 
   return (
     <>

@@ -289,12 +289,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let userId: string | null = null;
     let profileSub: ReturnType<typeof supabase.channel> | null = null;
     let rolesSub: ReturnType<typeof supabase.channel> | null = null;
+    let rolePermsSub: ReturnType<typeof supabase.channel> | null = null;
     let presenceChannel: ReturnType<typeof supabase.channel> | null = null;
 
     const subscribeRealtime = (uid: string) => {
       // Clean up previous channels using removeChannel to bypass the internal cache
       if (profileSub) supabase.removeChannel(profileSub);
       if (rolesSub) supabase.removeChannel(rolesSub);
+      if (rolePermsSub) supabase.removeChannel(rolePermsSub);
       if (presenceChannel) supabase.removeChannel(presenceChannel);
 
       const rand = Math.random().toString(36).substring(7);
@@ -318,6 +320,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           () => loadUserData(uid)
         )
         .subscribe();
+
+      // Listen to changes on role permissions (this makes permission matrix changes live)
+      rolePermsSub = supabase
+        .channel(`role-perms-${uid}-${rand}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "role_permissions" },
+          () => loadUserData(uid)
+        )
+        .subscribe();
+
 
       // Realtime Presence for Online Status - use a constant channel name for all users
       presenceChannel = supabase.channel('global-presence', {

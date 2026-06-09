@@ -250,12 +250,13 @@ const App = () => (
               <Route path="/farmers/:id" element={<FarmerDetail />} />
 
               {/* Procurement */}
+
               <Route path="/procurement/orders" element={<PurchaseOrdersListLive />} />
               <Route path="/procurement/orders/create" element={<CreatePOLive />} />
               <Route path="/procurement/suppliers" element={<SuppliersList />} />
               <Route path="/procurement/suppliers/:id" element={<SupplierDetail />} />
               <Route path="/procurement/dashboard" element={<ProcurementDashboard />} />
-              <Route path="/procurement/analytics" element={<ProcurementDashboard />} />
+              <Route path="/procurement/analytics" element={<Navigate to="/procurement/dashboard" replace />} />
 
               {/* Quality Control */}
               <Route path="/qc/inspections" element={<InspectionsList />} />

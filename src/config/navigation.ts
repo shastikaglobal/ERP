@@ -114,7 +114,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Dashboard", url: "/warehouse/dashboard", icon: LayoutDashboard },
       { title: "Receiving Goods", url: "/warehouse/receiving", icon: PackageCheck },
-      { title: "Packing Management", url: "/warehouse/packing", icon: Package },
       {
         title: "Inventory",
         url: "/warehouse/inventory",
@@ -127,6 +126,7 @@ export const navGroups: NavGroup[] = [
           { title: "Damaged Stock Management", url: "/inventory/damaged-stock-management", icon: AlertOctagon },
           { title: "Expiry Monitoring", url: "/inventory/expiry-monitoring", icon: Timer },
           { title: "Multi-Warehouse Management", url: "/inventory/multi-warehouse", icon: Warehouse },
+          { title: "Packing Management", url: "/warehouse/packing", icon: Package },
         ]
       },
       {
@@ -142,16 +142,6 @@ export const navGroups: NavGroup[] = [
         ]
       },
       {
-        title: "Barcode & Tracking",
-        url: "/barcodes",
-        icon: QrCode,
-        items: [
-          { title: "Barcodes", url: "/barcodes", icon: QrCode, permission: "inventory.view" },
-          { title: "Generate QR", url: "/barcodes/generate", icon: FilePlus, permission: "inventory.manage" },
-          { title: "Scan", url: "/barcodes/scan", icon: ScanLine, permission: "inventory.view" },
-        ]
-      },
-      {
         title: "Shipments",
         url: "/shipments",
         icon: Ship,
@@ -161,6 +151,16 @@ export const navGroups: NavGroup[] = [
           { title: "Create Shipment", url: "/shipments/create", icon: FilePlus, permission: "shipments.manage" },
           { title: "Container Tracking", url: "/shipments/containers", icon: Container, permission: "shipments.view" },
           { title: "Delivery Status", url: "/shipments/delivery", icon: Navigation, permission: "shipments.view" },
+        ]
+      },
+      {
+        title: "Barcode & Tracking",
+        url: "/barcodes",
+        icon: QrCode,
+        items: [
+          { title: "Barcodes", url: "/barcodes", icon: QrCode, permission: "inventory.view" },
+          { title: "Generate QR", url: "/barcodes/generate", icon: FilePlus, permission: "inventory.manage" },
+          { title: "Scan", url: "/barcodes/scan", icon: ScanLine, permission: "inventory.view" },
         ]
       },
       {
