@@ -63,6 +63,7 @@ export default function Warehouses() {
         .from("warehouses")
         .select(`*, inventory_batches(quantity_remaining_kg, product:products(category))`)
         .eq("company_id", profile.company_id)
+        .neq("is_deleted", true)
         .order("name");
 
       if (error) throw error;
@@ -148,11 +149,16 @@ export default function Warehouses() {
   };
 
   const handleDelete = async (id: string, warehouseName: string) => {
-    if (!confirm(`Delete "${warehouseName}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${warehouseName}"? This will hide the warehouse from the app.`)) return;
     try {
-      const { error } = await supabase.from("warehouses").delete().eq("id", id);
+      const { error } = await supabase.from("warehouses").update({
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
-      toast.success("Warehouse deleted");
+      toast.success("Warehouse hidden from the app");
       queryClient.invalidateQueries({ queryKey: ["warehouses_live"] });
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });
     } catch (err: any) {

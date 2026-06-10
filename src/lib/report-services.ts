@@ -10,6 +10,7 @@ export async function getStockSummaryData(filters: {
   try {
     let query = supabase
       .from("inventory_batches")
+      .neq("is_deleted", true)
       .select(`
         id,
         lot_number,
@@ -70,6 +71,7 @@ export async function getBatchTrackingData(filters: {
   try {
     let query = supabase
       .from("inventory_batches")
+      .neq("is_deleted", true)
       .select(`
         id,
         lot_number,
@@ -111,6 +113,7 @@ export async function getBatchTrackingData(filters: {
 
     const { data: movements, error: movementError } = await supabase
       .from("inventory_movements")
+      .neq("is_deleted", true)
       .select("*")
       .in("batch_id", batchIds)
       .order("created_at", { ascending: false });
@@ -147,6 +150,7 @@ export async function getDispatchReportData(filters: {
   try {
     let query = supabase
       .from("export_shipments")
+      .neq("is_deleted", true)
       .select(`
         id,
         shipment_number,
@@ -199,6 +203,7 @@ export async function getContainerLoadingData(filters: {
   try {
     let query = supabase
       .from("export_shipments")
+      .neq("is_deleted", true)
       .select(`
         id,
         container_number,
@@ -255,6 +260,7 @@ export async function getDamageWastageData(filters: {
   try {
     let query = supabase
       .from("inventory_batches")
+      .neq("is_deleted", true)
       .select(`
         id,
         lot_number,
@@ -308,6 +314,7 @@ export async function getInventoryAgingData(filters: {
   try {
     let query = supabase
       .from("inventory_batches")
+      .neq("is_deleted", true)
       .select(`
         id,
         lot_number,

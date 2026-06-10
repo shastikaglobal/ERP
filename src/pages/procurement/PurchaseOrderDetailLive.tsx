@@ -46,6 +46,7 @@ export default function PurchaseOrderDetailLive() {
             farmer:farmers!purchase_orders_farmer_id_fkey(full_name)
           `)
           .eq("id", id)
+          .neq("is_deleted", true)
           .single();
 
         if (poErr) throw poErr;

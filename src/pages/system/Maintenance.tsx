@@ -28,6 +28,10 @@ export default function Maintenance() {
 
     setIsWiping(true);
     try {
+// NOTE: HR-related tables (profiles, attendance_logs, face_embeddings, etc.) are intentionally excluded
+        // to prevent accidental permanent deletion. Use targeted archival/cleanup procedures instead.
+// NOTE: System audit tables (app_notifications, activity_logs, audit_logs, zoho_accounts, etc.) are intentionally excluded
+      // to preserve audit trails and system configuration history. Use targeted archival/cleanup procedures instead.
       const tablesToWipe = [
         "export_containers",
         "export_shipments",
@@ -42,11 +46,8 @@ export default function Maintenance() {
         "farmers",
         "suppliers",
         "customers",
-        "app_notifications",
-        "user_roles",
-        "profiles",
-        "attendance_logs"
-      ];
+          "user_roles"
+        ];
 
 
       for (const table of tablesToWipe) {

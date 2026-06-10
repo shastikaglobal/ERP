@@ -95,9 +95,12 @@ export async function getAllFaceEmbeddings() {
 }
 
 export async function deleteFaceEmbeddings(employeeId) {
+    // Soft-delete embeddings to retain historical data for audits
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUserId = authData?.user?.id || null;
     const { error } = await supabase
         .from('face_embeddings')
-        .delete()
+        .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: currentUserId })
         .eq('employee_id', employeeId);
     if (error) throw error;
 }

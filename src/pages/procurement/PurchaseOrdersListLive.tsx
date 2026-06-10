@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function PurchaseOrdersListLive() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +42,7 @@ export default function PurchaseOrdersListLive() {
         const { data: poData, error: poError } = await supabase
           .from("purchase_orders")
           .select("id, po_number, farmer_id, status, order_date, total, currency")
+          .neq("is_deleted", true)
           .order("order_date", { ascending: false });
 
         if (poError) throw poError;
@@ -83,12 +86,16 @@ export default function PurchaseOrdersListLive() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this purchase order? This cannot be undone.")) return;
+    if (!window.confirm("Delete this purchase order? This will hide the order from the app, but keep it in the database.")) return;
     try {
-      const { error } = await supabase.from("purchase_orders").delete().eq("id", id);
+      const { error } = await supabase.from("purchase_orders").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
       setOrders(orders.filter(o => o.id !== id));
-      toast.success("Purchase order deleted");
+      toast.success("Purchase order hidden from the app");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete");
     }

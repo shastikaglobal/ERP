@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
-import { parties } from '../../data/mockData'
-import { Plus, AlertTriangle } from 'lucide-react'
+import { Plus, AlertTriangle, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../hooks/useAuth'
 
 
 const SearchBar = ({ placeholder, value, onChange, children }) => (
@@ -39,20 +41,74 @@ const SearchBar = ({ placeholder, value, onChange, children }) => (
 
 export default function Parties() {
   const nav = useNavigate()
+  const { profile } = useAuth()
+  const [parties, setParties] = useState([])
   const [search, setSearch] = useState('')
   const [typeFilter, setType] = useState('All')
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(null)
 
-  const filtered = parties.filter(p => {
-    const s = p.name.toLowerCase().includes(search.toLowerCase()) || p.gstin.includes(search)
+  useEffect(() => {
+    fetchParties()
+  }, [])
+
+  const fetchParties = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('parties')
+      .select('*')
+      .neq('is_deleted', true)
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Failed to load parties:', error)
+      toast.error('Unable to load parties. Check your database connection.')
+      setParties([])
+    } else {
+      setParties(data || [])
+    }
+
+    setLoading(false)
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this party? This will only soft-delete the record.')) {
+      return
+    }
+
+    setDeleting(id)
+    const { error } = await supabase
+      .from('parties')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null
+      })
+      .eq('id', id)
+
+    setDeleting(null)
+
+    if (error) {
+      console.error('Soft delete error:', error)
+      toast.error('Unable to remove party. Please try again.')
+      return
+    }
+
+    setParties(parties.filter((p) => p.id !== id))
+    toast.success('Party removed from view (soft-deleted)')
+  }
+
+  const filtered = parties.filter((p) => {
+    const s = p.name?.toLowerCase().includes(search.toLowerCase()) || p.gstin?.includes(search)
     const t = typeFilter === 'All' || p.type === typeFilter
     return s && t
   })
 
-  const customers = parties.filter(p => p.type === 'Customer')
-  const vendors = parties.filter(p => p.type === 'Vendor')
-  const receivable = customers.reduce((s, p) => s + p.outstanding, 0)
-  const payable = Math.abs(vendors.reduce((s, p) => s + p.outstanding, 0))
-  const overdue = parties.reduce((s, p) => s + p.overdue, 0)
+  const customers = parties.filter((p) => p.type === 'Customer')
+  const vendors = parties.filter((p) => p.type === 'Vendor')
+  const receivable = customers.reduce((s, p) => s + (p.outstanding || 0), 0)
+  const payable = Math.abs(vendors.reduce((s, p) => s + (p.outstanding || 0), 0))
+  const overdue = parties.reduce((s, p) => s + (p.overdue || 0), 0)
 
   return (
     <div className="space-y-6">

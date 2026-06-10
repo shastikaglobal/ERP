@@ -2,10 +2,12 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
 import { Tag } from '../../components/ui/tag'
+import { useState, useEffect } from 'react'
 import {
   BookOpen, List, Scale, Users, ShoppingCart, FileCheck,
   CheckCircle, Clock, AlertCircle
 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 // Mock Data
 export const counts = {
@@ -17,50 +19,50 @@ export const counts = {
   gst: { gstr1: 'Pending', gstr3b: 'Filed', payable: '₹1,81,000' }
 };
 
-const statCards = [
-  {
-    label: 'Journal Entries',
-    value: counts.journals.total.toString(),
-    icon: <BookOpen className="h-4 w-4 text-amber-300" />,
-    hint: `${counts.journals.posted} Posted · ${counts.journals.draft} Draft`,
-    accent: 'border-amber-500/80 bg-amber-500/10',
-  },
-  {
-    label: 'Ledger Accounts',
-    value: counts.ledgers.total.toString(),
-    icon: <List className="h-4 w-4 text-sky-300" />,
-    hint: `${counts.ledgers.active} Active accounts`,
-    accent: 'border-sky-500/80 bg-sky-500/10',
-  },
-  {
-    label: 'Total Parties',
-    value: counts.parties.total.toString(),
-    icon: <Users className="h-4 w-4 text-violet-300" />,
-    hint: `${counts.parties.customers} Customers · ${counts.parties.vendors} Vendors`,
-    accent: 'border-violet-500/80 bg-violet-500/10',
-  },
-  {
-    label: 'Invoices',
-    value: counts.invoices.total.toString(),
-    icon: <FileCheck className="h-4 w-4 text-emerald-300" />,
-    hint: `${counts.invoices.paid} Paid · ${counts.invoices.pending} Pending`,
-    accent: 'border-emerald-500/80 bg-emerald-500/10',
-  },
-  {
-    label: 'Purchase Orders',
-    value: '16',
-    icon: <ShoppingCart className="h-4 w-4 text-amber-300" />,
-    hint: '12 Fulfilled · 4 Pending',
-    accent: 'border-amber-500/80 bg-amber-500/10',
-  },
-  {
-    label: 'Trial Balance',
-    value: '✓',
-    icon: <Scale className="h-4 w-4 text-slate-200" />,
-    hint: 'Balanced as on 31 Mar 2026',
-    accent: 'border-emerald-500/80 bg-emerald-500/10',
-  },
-]
+  const statCards = [
+    {
+      label: 'Journal Entries',
+      value: counts.journals.total.toString(),
+      icon: <BookOpen className="h-4 w-4 text-amber-300" />,
+      hint: `${counts.journals.posted} Posted · ${counts.journals.draft} Draft`,
+      accent: 'border-amber-500/80 bg-amber-500/10',
+    },
+    {
+      label: 'Ledger Accounts',
+      value: counts.ledgers.total.toString(),
+      icon: <List className="h-4 w-4 text-sky-300" />,
+      hint: `${counts.ledgers.active} Active accounts`,
+      accent: 'border-sky-500/80 bg-sky-500/10',
+    },
+    {
+      label: 'Total Parties',
+      value: counts.parties.total.toString(),
+      icon: <Users className="h-4 w-4 text-violet-300" />,
+      hint: `${counts.parties.customers} Customers · ${counts.parties.vendors} Vendors`,
+      accent: 'border-violet-500/80 bg-violet-500/10',
+    },
+    {
+      label: 'Invoices',
+      value: counts.invoices.total.toString(),
+      icon: <FileCheck className="h-4 w-4 text-emerald-300" />,
+      hint: `${counts.invoices.paid} Paid · ${counts.invoices.pending} Pending`,
+      accent: 'border-emerald-500/80 bg-emerald-500/10',
+    },
+    {
+      label: 'Purchase Orders',
+      value: '16',
+      icon: <ShoppingCart className="h-4 w-4 text-amber-300" />,
+      hint: '12 Fulfilled · 4 Pending',
+      accent: 'border-amber-500/80 bg-amber-500/10',
+    },
+    {
+      label: 'Trial Balance',
+      value: '✓',
+      icon: <Scale className="h-4 w-4 text-slate-200" />,
+      hint: 'Balanced as on 31 Mar 2026',
+      accent: 'border-emerald-500/80 bg-emerald-500/10',
+    },
+  ]
 
 const VoucherRow = ({ label, value, color }) => (
   <div className="flex items-center justify-between gap-4 py-4 sm:py-3">
@@ -75,6 +77,41 @@ const VoucherRow = ({ label, value, color }) => (
 )
 
 export default function Counts() {
+  const [counts, setCounts] = useState({
+    journals: { total: 142, posted: 130, draft: 12 },
+    ledgers: { total: 45, active: 42 },
+    parties: { total: 128, customers: 85, vendors: 43 },
+    invoices: { total: 84, paid: 62, pending: 22 },
+    vouchers: { sales: 45, purchase: 28, payment: 50, receipt: 30 },
+    gst: { gstr1: 'Pending', gstr3b: 'Filed', payable: '₹1,81,000' }
+  })
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        // Fetch all counts excluding soft-deleted records
+        const [journalRes, ledgerRes, partiesRes] = await Promise.all([
+          supabase.from('journal_entries').select('status', { count: 'exact' }).neq('is_deleted', true),
+          supabase.from('chart_of_accounts').select('id', { count: 'exact' }).neq('is_deleted', true).eq('status', 'Active'),
+          supabase.from('parties').select('type', { count: 'exact' }).neq('is_deleted', true)
+        ])
+
+        const journals = journalRes.data || []
+        const posted = journals.filter(j => j.status === 'Posted').length
+        const draft = journals.filter(j => j.status === 'Draft').length
+
+        setCounts(prev => ({
+          ...prev,
+          journals: { total: journals.length, posted, draft },
+          ledgers: { total: ledgerRes.count || 45, active: ledgerRes.count || 42 },
+          parties: { total: partiesRes.count || 128, customers: 85, vendors: 43 }
+        }))
+      } catch (err) {
+        console.error('Failed to load counts:', err)
+      }
+    }
+    loadCounts()
+  }, [])
   return (
     <div className="space-y-6">
       <PageHeader

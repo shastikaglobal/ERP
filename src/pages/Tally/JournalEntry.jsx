@@ -43,8 +43,8 @@ function NewEntryForm({ onSaved }) {
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        const { data: customers } = await supabase.from('customers').select('name')
-        const { data: suppliers } = await supabase.from('suppliers').select('name')
+        const { data: customers } = await supabase.from('customers').select('name').neq('is_deleted', true)
+        const { data: suppliers } = await supabase.from('suppliers').select('name').neq('is_deleted', true)
         
         const dynamicAccounts = [
           ...accountsList,

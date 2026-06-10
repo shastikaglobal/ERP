@@ -56,6 +56,7 @@ export default function ExportReady() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("export_ready_inventory")
+        .neq("is_deleted", true)
         .select(`
           *,
           products(name, grade),
@@ -233,22 +234,24 @@ export default function ExportReady() {
     setIsConfirmOpen(true);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!confirmAction || !confirmTargetId) return;
     if (confirmAction === "ship") {
       actionMutation.mutate({ id: confirmTargetId, status: "shipped" });
     } else {
-      supabase
-        .from("export_ready_inventory")
-        .delete()
-        .eq("id", confirmTargetId)
-        .then(({ error }) => {
-          if (error) throw error;
-          queryClient.invalidateQueries({ queryKey: ["export-ready-inventory"] });
-          toast.success("Record deleted successfully.");
-          setIsConfirmOpen(false);
-        })
-        .catch((err) => toast.error(err.message || "Failed to delete record."));
+      try {
+        const { error } = await supabase.from("export_ready_inventory").update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: profile?.id || null,
+        }).eq("id", confirmTargetId);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["export-ready-inventory"] });
+        toast.success("Record hidden successfully.");
+        setIsConfirmOpen(false);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete record.");
+      }
     }
   };
 

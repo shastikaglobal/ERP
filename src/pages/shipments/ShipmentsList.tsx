@@ -35,6 +35,7 @@ export default function ShipmentsList() {
         .from("export_shipments")
         .select("*, export_containers(count)")
         .eq("company_id", profile.company_id)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -61,9 +62,13 @@ export default function ShipmentsList() {
     if (!confirm("Are you sure you want to delete this shipment? This will also remove linked tracking data.")) return;
     
     try {
-      const { error } = await supabase.from("export_shipments").delete().eq("id", id);
+      const { error } = await supabase.from("export_shipments").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
-      toast.success("Shipment deleted successfully");
+      toast.success("Shipment hidden successfully");
       fetchShipments();
     } catch (err: any) {
       toast.error(err.message || "Failed to delete shipment");

@@ -32,6 +32,7 @@ export default function FarmersList() {
       const { data, error } = await supabase
         .from("farmers")
         .select("id, code, full_name, phone, village, district, state, primary_crops, is_active, created_at")
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Farmer[];

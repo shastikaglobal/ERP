@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
-import { trialBalance } from '../../data/mockData'
+import { trialBalance as mockTrialBalance } from '../../data/mockData'
 import { Download, CheckCircle } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 const groupColor = {
   Assets: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
@@ -26,6 +27,31 @@ const groupHeaderBg = {
 const fmt = (n) => n ? n.toLocaleString('en-IN') : '—'
 
 export default function TrialBalance() {
+  const [trialBalance, setTrialBalance] = useState(mockTrialBalance)
+
+  useEffect(() => {
+    const loadTrialBalance = async () => {
+      try {
+        // Fetch trial balance data excluding soft-deleted records
+        const { data, error } = await supabase
+          .from('trial_balance')
+          .select('*')
+          .neq('is_deleted', true)
+          .order('group')
+
+        if (error) throw error
+        if (data && data.length > 0) {
+          setTrialBalance(data)
+        }
+      } catch (err) {
+        console.error('Failed to load trial balance:', err)
+        // Use mock data as fallback
+        setTrialBalance(mockTrialBalance)
+      }
+    }
+    loadTrialBalance()
+  }, [])
+
   const groups = [...new Set(trialBalance.map(r => r.group))]
   const totDr = trialBalance.reduce((s, r) => s + r.closeDr, 0)
   const totCr = trialBalance.reduce((s, r) => s + r.closeCr, 0)

@@ -4,6 +4,7 @@ import { StatCard } from '../../components/shared/StatCard'
 import { Tag } from '../../components/ui/tag'
 import { ledgerEntries, fmt } from '../../data/mockData'
 import { Download } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 const ACCOUNTS = ['Sales Account','Cash Account','Bank — HDFC','Raj Exports','Purchase Account','CGST Payable','Salary Expense','Capital Account']
 
@@ -22,6 +23,8 @@ export default function Ledger() {
   const [filter, setFilter] = useState('All')
 
   const filtered = ledgerEntries.filter(r => {
+    // Exclude soft-deleted entries
+    if (r.is_deleted) return false
     if (filter === 'Debit') return r.debit > 0
     if (filter === 'Credit') return r.credit > 0
     return true

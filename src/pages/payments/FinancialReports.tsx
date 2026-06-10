@@ -30,6 +30,7 @@ export default function FinancialReports() {
           const { data } = await supabase
             .from("sales_orders")
             .select("order_number, amount, currency, delivery_date, customer:customers(name)")
+            .neq("is_deleted", true)
             .eq("status", "Pending");
           
           const formatted = (data || []).map(o => ({
@@ -55,11 +56,13 @@ export default function FinancialReports() {
           const { data: revenue } = await supabase
             .from("payments")
             .select("payment_number, amount, currency, received_at")
+            .neq("is_deleted", true)
             .eq("status", "Completed");
 
           const { data: expenses } = await supabase
             .from("purchase_orders")
             .select("po_number, total, currency, order_date")
+            .neq("is_deleted", true)
             .in("status", ["approved", "received"]);
           
           const revFormatted = (revenue || []).map(p => ({
@@ -99,12 +102,12 @@ export default function FinancialReports() {
           });
         } else if (name === "Balance Sheet") {
           // Fetch Assets
-          const { data: payments } = await supabase.from("payments").select("amount").eq("status", "Completed");
-          const { data: inventory } = await supabase.from("inventory_batches").select("quantity_remaining_kg, cost_per_kg");
-          const { data: receivables } = await supabase.from("sales_orders").select("amount").eq("status", "Pending");
+          const { data: payments } = await supabase.from("payments").select("amount").neq("is_deleted", true).eq("status", "Completed");
+          const { data: inventory } = await supabase.from("inventory_batches").select("quantity_remaining_kg, cost_per_kg").neq("is_deleted", true);
+          const { data: receivables } = await supabase.from("sales_orders").select("amount").neq("is_deleted", true).eq("status", "Pending");
           
           // Fetch Liabilities
-          const { data: payables } = await supabase.from("purchase_orders").select("total").in("status", ["approved", "received"]);
+          const { data: payables } = await supabase.from("purchase_orders").select("total").neq("is_deleted", true).in("status", ["approved", "received"]);
 
           const cashTotal = (payments || []).reduce((s, p) => s + Number(p.amount), 0);
           const inventoryVal = (inventory || []).reduce((s, i) => s + (Number(i.quantity_remaining_kg) * (Number(i.cost_per_kg) || 50)), 0); 
@@ -133,12 +136,14 @@ export default function FinancialReports() {
           const { data: inflow } = await supabase
             .from("payments")
             .select("payment_number, amount, currency, received_at, customer:customers(name)")
+            .neq("is_deleted", true)
             .eq("status", "Completed");
           
           // Cash Outflow: Approved/Received POs (assuming payment on receipt/approval for now)
           const { data: outflow } = await supabase
             .from("purchase_orders")
             .select("po_number, total, currency, order_date, farmer:farmers(full_name)")
+            .neq("is_deleted", true)
             .in("status", ["approved", "received"]);
 
           const cashIn = (inflow || []).map(i => ({

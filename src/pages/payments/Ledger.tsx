@@ -32,6 +32,7 @@ export default function Ledger() {
       const { data, error } = await supabase
         .from("payments")
         .select("amount, currency")
+        .neq("is_deleted", true)
         .eq("company_id", profile.company_id)
         .eq("status", "Completed");
 

@@ -93,6 +93,7 @@ export default function InventoryBatches() {
             .from("inventory_batches")
             .select("*, products(name, grade), warehouses(name)")
             .eq("company_id", profile.company_id)
+            .neq("is_deleted", true)
             .order("received_date", { ascending: false }),
           supabase.from("products").select("id, name, grade"),
           supabase.from("warehouses").select("id, name"),
@@ -250,6 +251,7 @@ export default function InventoryBatches() {
         .from("inventory_batches")
         .select("*, products(name, grade), warehouses(name)")
         .eq("company_id", profile.company_id)
+        .neq("is_deleted", true)
         .order("received_date", { ascending: false });
       setBatches(data || []);
     } catch (err: any) {
@@ -298,9 +300,13 @@ export default function InventoryBatches() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("inventory_batches").delete().eq("id", deleteId);
+      const { error } = await supabase.from("inventory_batches").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", deleteId);
       if (error) throw error;
-      toast.success("Batch deleted successfully");
+      toast.success("Batch hidden successfully");
       setBatches(batches.filter((b) => b.id !== deleteId));
       setConfirmOpen(false);
     } catch (err: any) {

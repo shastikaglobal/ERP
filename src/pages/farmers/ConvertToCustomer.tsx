@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,16 +14,26 @@ export default function ConvertToCustomer() {
   const [loading, setLoading] = useState(false);
   const [converting, setConverting] = useState<string | null>(null);
 
-  // Fetch farmers on mount
-  React.useEffect(() => {
+  // Fetch farmers on mount (exclude soft-deleted)
+  useEffect(() => {
+    let mounted = true
     setLoading(true);
     supabase
       .from("farmers")
       .select("id, full_name, is_customer")
-      .then(({ data }) => {
-        setFarmers(data || []);
+      .neq('is_deleted', true)
+      .order('full_name', { ascending: true })
+      .then(({ data, error }) => {
+        if (!mounted) return
+        if (error) {
+          console.error('Failed to load farmers', error)
+          setFarmers([])
+        } else {
+          setFarmers(data || [])
+        }
         setLoading(false);
       });
+    return () => { mounted = false }
   }, []);
 
   const handleConvert = async (id: string) => {

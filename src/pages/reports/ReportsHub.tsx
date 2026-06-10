@@ -90,19 +90,23 @@ export default function ReportsHub() {
       const [batchRes, shipmentRes, damageRes, exportReadyRes] = await Promise.all([
         supabase
           .from("inventory_batches")
+          .neq("is_deleted", true)
           .select("id, quantity_kg, quantity_remaining_kg, status")
           .eq("company_id", companyId),
         supabase
           .from("export_shipments")
+          .neq("is_deleted", true)
           .select("id, status, total_quantity_kg")
           .eq("company_id", companyId),
         supabase
           .from("inventory_batches")
+          .neq("is_deleted", true)
           .select("id, quantity_kg")
           .eq("company_id", companyId)
           .in("status", ["damaged", "rejected", "quarantine"]),
         supabase
           .from("inventory_batches")
+          .neq("is_deleted", true)
           .select("id, quantity_remaining_kg")
           .eq("company_id", companyId)
           .eq("is_export_ready", true)

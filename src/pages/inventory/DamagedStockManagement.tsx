@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,6 +66,7 @@ export default function DamagedStockManagement() {
       const { data, error } = await supabase
         .from("damaged_stock")
         .select("*")
+        .neq("is_deleted", true)
         .order("damage_date", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -120,14 +122,20 @@ export default function DamagedStockManagement() {
     onError: (err: any) => toast.error(err.message || "Failed to save record."),
   });
 
+  const { profile } = useAuth();
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("damaged_stock").delete().eq("id", id);
+      const { error } = await supabase.from("damaged_stock").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["damaged-stock"] });
-      toast.success("Record deleted successfully.");
+      toast.success("Record hidden successfully.");
       setIsConfirmOpen(false);
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete record."),

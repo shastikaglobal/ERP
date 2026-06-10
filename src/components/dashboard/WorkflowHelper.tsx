@@ -52,7 +52,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_pos', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('purchase_orders').select('id').eq('company_id', companyId).limit(10);
+      const { data } = await supabase.from('purchase_orders').select('id').eq('company_id', companyId).neq('is_deleted', true).limit(10);
       return data || [];
     },
     enabled: !!companyId

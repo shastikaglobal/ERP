@@ -281,8 +281,12 @@ export default function EditQuotation() {
 
       if (quoteErr) throw quoteErr;
 
-      // 3. Update Quotation Items (Delete old ones and insert new ones to keep it simple and clean)
-      await supabase.from('quotation_items').delete().eq('quotation_id', id);
+      // 3. Update Quotation Items (soft-delete old ones and insert new ones to keep it simple and clean)
+      await supabase.from('quotation_items').update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq('quotation_id', id);
 
       const insertItems = items.filter(i => i.product_name).map(i => ({
         quotation_id: id,

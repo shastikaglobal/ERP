@@ -32,14 +32,16 @@ export default function ProcurementDashboard() {
         const { count: supCount, error: supErr } = await (supabase as any)
           .from("farmers")
           .select("*", { count: "exact", head: true })
-          .eq("company_id", profile.company_id);
+          .eq("company_id", profile.company_id)
+          .neq("is_deleted", true);
 
         if (supErr) throw supErr;
 
         const { data: pos, error: poErr } = await (supabase as any)
           .from("purchase_orders")
           .select("id, status, total, order_date, farmers(full_name)")
-          .eq("company_id", profile.company_id);
+          .eq("company_id", profile.company_id)
+          .neq("is_deleted", true);
 
         if (poErr) throw poErr;
 

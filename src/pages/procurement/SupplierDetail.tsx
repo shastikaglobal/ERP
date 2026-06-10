@@ -29,8 +29,8 @@ export default function SupplierDetail() {
       if (!id) return;
       try {
         const [supRes, poRes] = await Promise.all([
-          supabase.from("farmers").select("*").eq("id", id).single(),
-          supabase.from("purchase_orders").select("*").eq("farmer_id", id).order("order_date", { ascending: false })
+          supabase.from("farmers").select("*").eq("id", id).neq("is_deleted", true).single(),
+          supabase.from("purchase_orders").select("*").eq("farmer_id", id).neq("is_deleted", true).order("order_date", { ascending: false })
         ]);
 
         if (supRes.error) throw supRes.error;

@@ -18,6 +18,7 @@ export default function Certificates() {
         const { data, error } = await supabase
           .from("export_orders")
           .select("*, export_shipments(*)")
+          .neq("is_deleted", true)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -38,11 +39,15 @@ export default function Certificates() {
     try {
       const { error } = await supabase
         .from("export_orders")
-        .delete()
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: null,
+        })
         .eq("id", id);
 
       if (error) throw error;
-      toast.success("Deleted successfully");
+      toast.success("Certificate record hidden successfully");
       setShipments(prev => prev.filter(s => s.id !== id));
     } catch (err: any) {
       toast.error("Failed to delete: " + err.message);

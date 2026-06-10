@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,6 +68,7 @@ export default function MultiWarehouse() {
       const { data, error } = await supabase
         .from("warehouses")
         .select("*")
+        .neq("is_deleted", true)
         .order("name", { ascending: true });
       if (error) throw error;
       return data || [];
@@ -80,7 +82,8 @@ export default function MultiWarehouse() {
       const { data, error } = await supabase
         .from("warehouse_stock")
         .select("*")
-        .eq("warehouse_id", expandedWarehouseId);
+        .eq("warehouse_id", expandedWarehouseId)
+        .neq("is_deleted", true);
       if (error) throw error;
       return data || [];
     },
@@ -169,14 +172,21 @@ export default function MultiWarehouse() {
     onError: (err: any) => toast.error(err.message || "Failed to save stock."),
   });
 
+  const { profile } = useAuth();
+
   const deleteWarehouseMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("warehouses").delete().eq("id", id);
+      const { error } = await supabase.from("warehouses").update({
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });
-      toast.success("Warehouse deleted successfully.");
+      toast.success("Warehouse hidden successfully.");
       setIsConfirmOpen(false);
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete warehouse."),
@@ -184,12 +194,16 @@ export default function MultiWarehouse() {
 
   const deleteStockMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("warehouse_stock").delete().eq("id", id);
+      const { error } = await supabase.from("warehouse_stock").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["warehouse-stock"] });
-      toast.success("Stock deleted successfully.");
+      toast.success("Stock hidden successfully.");
       setIsConfirmOpen(false);
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete stock."),

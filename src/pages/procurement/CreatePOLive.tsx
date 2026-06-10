@@ -41,7 +41,7 @@ export default function CreatePOLive() {
     const fetchData = async () => {
       try {
         const [supRes, prodRes] = await Promise.all([
-          supabase.from("farmers").select("id, full_name").eq("is_active", true),
+          supabase.from("farmers").select("id, full_name").eq("is_active", true).neq("is_deleted", true),
           supabase.from("products").select("id, name, unit").eq("is_active", true)
         ]);
           

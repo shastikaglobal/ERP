@@ -45,6 +45,7 @@ export default function SuppliersList() {
       const { data, error } = await supabase
         .from("farmers")
         .select("*")
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -109,12 +110,17 @@ export default function SuppliersList() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); 
-    if (!confirm("Delete this supplier?")) return;
+    if (!confirm("Delete this supplier? This will hide the supplier from the app, but keep it in the database.")) return;
 
     try {
-      const { error } = await supabase.from("farmers").delete().eq("id", id);
+      const { error } = await supabase.from("farmers").update({
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
-      toast.success("Supplier deleted");
+      toast.success("Supplier hidden from the app");
       setSuppliers(suppliers.filter(s => s.id !== id));
     } catch (err: any) {
       toast.error(err.message || "Failed to delete supplier");

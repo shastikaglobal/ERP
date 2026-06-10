@@ -15,7 +15,7 @@ export default function FarmerDetail() {
     queryKey: ["farmer", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("farmers").select("*").eq("id", id!).maybeSingle();
+      const { data, error } = await supabase.from("farmers").select("*").eq("id", id!).neq("is_deleted", true).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -29,6 +29,7 @@ export default function FarmerDetail() {
         .from("purchase_orders")
         .select("id, po_number, order_date, total, status")
         .eq("farmer_id", id!)
+        .neq("is_deleted", true)
         .order("order_date", { ascending: false })
         .limit(10);
       if (error) throw error;

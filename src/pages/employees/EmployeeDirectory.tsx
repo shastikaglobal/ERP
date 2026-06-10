@@ -233,19 +233,26 @@ export default function EmployeeDirectory() {
   };
 
   const handleDeleteAccount = async (userId: string, fullName: string | null) => {
-    if (!window.confirm(`Are you sure you want to permanently delete ${fullName || 'this user'}? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to deactivate ${fullName || 'this user'}? This will only archive the account and keep the data for auditing.`)) {
       return;
     }
     
     try {
-      const { error } = await supabase.rpc('delete_user', { target_user_id: userId });
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id || null;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: false, is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: currentUserId })
+        .eq('id', userId);
+
       if (error) throw error;
-      
-      toast.success(`${fullName || 'User'} has been removed.`);
+
+      toast.success(`${fullName || 'User'} has been archived.`);
       setEmployees(prev => prev.filter(e => e.id !== userId));
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || "Failed to delete user. Please ensure the database function is installed.");
+      toast.error(error.message || "Failed to archive user.");
     }
   };
 

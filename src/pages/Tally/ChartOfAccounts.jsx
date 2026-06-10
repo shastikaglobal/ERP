@@ -1,18 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Badge } from '../../components/ui/badge'
 import { Input } from '../../components/ui/input'
-import { Plus, CheckCircle, XCircle, Edit, Trash2, BookOpen, TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react'
+import { Plus, CheckCircle, XCircle, Trash2, BookOpen, TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
 
-// Mock Data
-export const chartOfAccounts = [
+const DEFAULT_ACCOUNTS = [
   { code: '1001', name: 'Cash', group: 'Current Assets', type: 'Asset', balance: '₹4,20,000', gst: false, status: 'Active' },
   { code: '2001', name: 'Accounts Payable', group: 'Current Liabilities', type: 'Liability', balance: '₹3,12,000', gst: true, status: 'Active' },
   { code: '3001', name: 'Sales Revenue', group: 'Revenue', type: 'Income', balance: '₹15,00,000', gst: true, status: 'Active' },
   { code: '4001', name: 'Office Supplies', group: 'Expenses', type: 'Expense', balance: '₹35,000', gst: true, status: 'Active' },
   { code: '5001', name: 'Owner Capital', group: 'Equity', type: 'Equity', balance: '₹15,00,000', gst: false, status: 'Active' }
-];
+]
 
 const SearchBar = ({ placeholder, value, onChange }) => (
   <input 
@@ -42,7 +43,7 @@ const SearchBar = ({ placeholder, value, onChange }) => (
 )
 
 const TYPES = ['All','Asset','Equity','Liability','Income','Expense']
-const GROUPS = [...new Set(chartOfAccounts.map(a => a.group))]
+const GROUPS = [...new Set(DEFAULT_ACCOUNTS.map(a => a.group))]
 
 const StatCard = ({ icon: Icon, label, value, accent }) => (
   <div className={`relative overflow-hidden rounded-3xl border border-border bg-card/70 shadow-sm border-l-4 border-l-${accent}-500/80 p-5`}>
@@ -59,9 +60,35 @@ const StatCard = ({ icon: Icon, label, value, accent }) => (
 )
 
 export default function ChartOfAccounts() {
-  const [accounts, setAccounts] = useState(chartOfAccounts)
+  const { profile } = useAuth()
+  const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('All')
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(null)
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [])
+
+  const fetchAccounts = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('chart_of_accounts')
+      .select('*')
+      .neq('is_deleted', true)
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Failed to load chart of accounts:', error)
+      toast.error('Unable to load accounts. Showing defaults until the database is available.')
+      setAccounts(DEFAULT_ACCOUNTS)
+    } else {
+      setAccounts(data || DEFAULT_ACCOUNTS)
+    }
+
+    setLoading(false)
+  }
 
   const handleNewAccount = () => {
     const name = window.prompt("Enter new Account Name:");
@@ -73,21 +100,43 @@ export default function ChartOfAccounts() {
     }
   }
 
-  const handleDelete = (code) => {
-    if (window.confirm("Are you sure you want to delete this account?")) {
-      setAccounts(accounts.filter(a => a.code !== code));
-      toast.success("Account deleted successfully!");
+  const handleDelete = async (code) => {
+    if (!window.confirm('Are you sure you want to delete this account? It can be restored later.')) {
+      return
     }
+
+    setDeleting(code)
+    const { error } = await supabase
+      .from('chart_of_accounts')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null
+      })
+      .eq('code', code)
+
+    setDeleting(null)
+
+    if (error) {
+      console.error('Soft delete error:', error)
+      toast.error('Unable to delete account. Please try again.')
+      return
+    }
+
+    setAccounts(accounts.filter((a) => a.code !== code))
+    toast.success('Account marked as deleted (soft-deleted)')
   }
 
-  const filtered = accounts.filter(a => {
-    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.code.includes(search)
-    const matchType   = typeFilter === 'All' || a.type === typeFilter
+  const filtered = accounts.filter((a) => {
+    if (a.is_deleted) return false
+    const matchSearch = a.name?.toLowerCase().includes(search.toLowerCase()) || a.code?.includes(search)
+    const matchType = typeFilter === 'All' || a.type === typeFilter
     return matchSearch && matchType
   })
 
-  const grouped = GROUPS.reduce((acc, g) => {
-    const rows = filtered.filter(a => a.group === g)
+  const groups = Array.from(new Set(filtered.map((a) => a.group))).sort()
+  const grouped = groups.reduce((acc, g) => {
+    const rows = filtered.filter((a) => a.group === g)
     if (rows.length) acc[g] = rows
     return acc
   }, {})

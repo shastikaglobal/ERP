@@ -7,18 +7,27 @@ import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProductCatalog() {
   const nav = useNavigate();
   const queryClient = useQueryClient();
 
+  const { profile } = useAuth();
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this product? This action cannot be undone.")) return;
+    if (!window.confirm("Delete this product? This will hide it from the app.")) return;
     try {
-      const { error } = await supabase.from("products").delete().eq("id", id);
+      const { error } = await supabase.from("products").update({
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
-      toast.success("Product deleted successfully");
+      toast.success("Product hidden successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to delete product");
@@ -31,6 +40,7 @@ export default function ProductCatalog() {
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .neq("is_deleted", true)
         .order("name");
       if (error) throw error;
       return data as any[];

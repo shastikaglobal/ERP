@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +58,7 @@ export default function ExpiryMonitoring() {
       const { data, error } = await supabase
         .from("expiry_monitoring")
         .select("*")
+        .neq("is_deleted", true)
         .order("expiry_date", { ascending: true });
       if (error) throw error;
       return data || [];
@@ -108,14 +110,20 @@ export default function ExpiryMonitoring() {
     onError: (err: any) => toast.error(err.message || "Failed to save item."),
   });
 
+  const { profile } = useAuth();
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("expiry_monitoring").delete().eq("id", id);
+      const { error } = await supabase.from("expiry_monitoring").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id || null,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expiry-monitoring"] });
-      toast.success("Item deleted successfully.");
+      toast.success("Item hidden successfully.");
       setIsConfirmOpen(false);
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete item."),

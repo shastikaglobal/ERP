@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,6 +55,7 @@ export default function BatchWiseStock() {
       const { data, error } = await supabase
         .from("inventory_batches")
         .select("*")
+        .neq("is_deleted", true)
         .order("received_date", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -109,7 +111,12 @@ export default function BatchWiseStock() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("inventory_batches").delete().eq("id", id);
+      const { data: profile } = await supabase.auth.getUser();
+      const { error } = await supabase.from("inventory_batches").update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.user?.id || null,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

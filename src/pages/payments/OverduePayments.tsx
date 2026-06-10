@@ -19,6 +19,7 @@ export default function OverduePayments() {
       const { data, error } = await supabase
         .from("sales_orders")
         .select("*, customer:customers(name)")
+        .neq("is_deleted", true)
         .eq("status", "Pending");
 
       if (error) throw error;

@@ -24,7 +24,8 @@ export default function ZohoIntegration() {
     const { data, error } = await supabase
       .from("zoho_accounts")
       .select("*")
-      .eq("user_id", profile.id);
+      .eq("user_id", profile.id)
+      .neq("is_deleted", true);
     if (data) setAccounts(data);
     setLoading(false);
   }
@@ -69,18 +70,25 @@ export default function ZohoIntegration() {
   const handleDelete = async (accountId: string) => {
     if (!confirm("Are you sure you want to disconnect this account?")) return;
     
-    const { error } = await supabase
-      .from("zoho_accounts")
-      .delete()
-      .eq("id", accountId);
-      
-    if (error) {
-      toast.error(`Failed to delete account: ${error.message}`);
-      return;
-    }
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id || null;
 
-    toast.success("Account disconnected");
-    fetchAccounts();
+      const { error } = await supabase
+        .from("zoho_accounts")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: currentUserId })
+        .eq("id", accountId);
+        
+      if (error) {
+        toast.error(`Failed to disconnect account: ${error.message}`);
+        return;
+      }
+
+      toast.success("Account disconnected (archived)");
+      fetchAccounts();
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`);
+    }
   };
 
   return (

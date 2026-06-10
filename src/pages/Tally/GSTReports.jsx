@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/badge'
 import { Tag } from '../../components/ui/tag'
 import { supabase } from '../../lib/supabase'
 import { toast } from 'sonner'
-import { Plus, Loader2, Download } from 'lucide-react'
+import { Plus, Loader2, Download, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -20,6 +20,7 @@ export default function GSTReports() {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState('All')
+  const [deletingId, setDeletingId] = useState(null)
 
   // Form State
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
@@ -38,6 +39,7 @@ export default function GSTReports() {
       const { data: records, error } = await supabase
         .from('gst_transactions')
         .select('*')
+        .neq('is_deleted', true)
         .order('date', { ascending: false })
 
       if (error) throw error
@@ -74,7 +76,9 @@ export default function GSTReports() {
         sgst: sAmt,
         igst: iAmt,
         total,
-        type
+        type,
+        is_deleted: false,
+        deleted_at: null
       }])
 
       if (error) throw error
@@ -97,6 +101,27 @@ export default function GSTReports() {
       console.error(error)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Hide this GST record from the report? The record will remain in the database for audit and recovery.')) return
+    setDeletingId(id)
+    try {
+      const { error } = await supabase
+        .from('gst_transactions')
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setData(prev => prev.filter(record => record.id !== id))
+      toast.success('GST record hidden from view; underlying data retained.')
+    } catch (err) {
+      toast.error(err.message || 'Failed to hide GST record')
+      console.error(err)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -327,14 +352,14 @@ export default function GSTReports() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-card/80">
-                  {['Date','Party','GSTIN','Invoice No','Taxable Amt','CGST','SGST','IGST','Total','Type'].map((h) => (
+                  {['Date','Party','GSTIN','Invoice No','Taxable Amt','CGST','SGST','IGST','Total','Type','Actions'].map((h) => (
                     <th key={h} className="tbl-th tbl-header py-3 text-left pl-4">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredData.map((r) => (
-                  <tr key={r.id} className="tbl-row hover:bg-amber-500/5 transition-colors cursor-pointer">
+                  <tr key={r.id} className="tbl-row hover:bg-amber-500/5 transition-colors">
                     <td className="tbl-cell font-mono text-xs text-slate-500 pl-4">{r.date}</td>
                     <td className="tbl-cell font-semibold text-slate-200 pl-4">{r.party}</td>
                     <td className="tbl-cell font-mono text-xs text-slate-400 pl-4">{r.gstin || '—'}</td>
@@ -348,6 +373,17 @@ export default function GSTReports() {
                       <Badge className={r.type === 'Sales' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}>
                         {r.type}
                       </Badge>
+                    </td>
+                    <td className="tbl-cell pr-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r.id)}
+                        disabled={deletingId === r.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-3 py-1 text-xs font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Hide
+                      </button>
                     </td>
                   </tr>
                 ))}
