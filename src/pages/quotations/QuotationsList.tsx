@@ -54,25 +54,12 @@ export default function QuotationsList() {
     queryKey: ['quotations', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('quotations')
-        .select(`
-          id,
-          quotation_number,
-          amount,
-          currency,
-          *,
-          customer:customers(name, address, phone),
-          items:quotation_items(
-            *,
-            product:products(name, sku, unit)
-          )
-        `)
-        .eq('company_id', profile.company_id)
-        .neq('is_deleted', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/quotations', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch quotations");
+      const data = await res.json();
 
       return (data || []).map((q: any) => ({
         ...q,
@@ -153,9 +140,13 @@ export default function QuotationsList() {
     if (!window.confirm(`Delete quotation ${quotation.quotation_number}? This cannot be undone.`)) return;
     setDeletingId(quotation.id);
     try {
-      // Soft-delete the quotation
-      const { error } = await supabase.from('quotations').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', quotation.id);
-      if (error) throw error;
+      // Soft-delete the quotation via API
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${quotation.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Delete failed");
       toast.success(`Quotation ${quotation.quotation_number} removed from view (soft-deleted)`);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     } catch (err: any) {

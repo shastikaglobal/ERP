@@ -8,6 +8,9 @@ if (!globalThis.fetch) {
 
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const db = require('./db');
 
 require('dotenv').config();
 
@@ -31,6 +34,26 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // Use raw text body parser to handle the tab-separated values sent by ZKTeco devices
 app.use(express.text({ type: '*/*', limit: '10mb' }));
+app.use(express.json());
+app.use(cors());
+
+// --- Mount API Routes ---
+const attendanceRoutes = require('./routes/attendance');
+const employeesRoutes = require('./routes/employees');
+const crmRoutes = require('./routes/crm');
+const invoicesRoutes = require('./routes/invoices');
+const mailboxRoutes = require('./routes/mailbox');
+const productsRoutes = require('./routes/products');
+const settingsRoutes = require('./routes/settings');
+
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/employees', employeesRoutes);
+app.use('/api/leads', crmRoutes);
+app.use('/api', invoicesRoutes);
+app.use('/api/emails', mailboxRoutes);
+app.use('/api', productsRoutes);
+app.use('/api', settingsRoutes);
+
 
 console.log("🚀 Starting ADMS Sync Server...");
 console.log(`🔗 Supabase Target URL: ${SUPABASE_URL}`);
@@ -137,40 +160,34 @@ app.post('/iclock/cdata', async (req, res) => {
         const punchTimeIso = punchTimeUTC.toISOString();
 
         // Check if attendance record already exists for this day
-        const { data: existing, error: existErr } = await supabase
-          .from('attendance_logs')
-          .select('*')
-          .eq('employee_id', emp.id)
-          .eq('date', dateStr)
-          .maybeSingle();
-
-        if (existErr) {
+        let existing = null;
+        try {
+          const { rows } = await db.query(
+            'SELECT * FROM attendance_logs WHERE employee_id = $1 AND date = $2 LIMIT 1',
+            [emp.id, dateStr]
+          );
+          if (rows.length > 0) existing = rows[0];
+        } catch (existErr) {
           console.error(`❌ DB error checking attendance for employee [${emp.id}] on [${dateStr}]:`, existErr.message);
           continue;
         }
 
         if (!existing) {
           // Create new record with clock_in = punchTime
-          const { error: insertErr } = await supabase
-            .from('attendance_logs')
-            .insert({
-              employee_id: emp.id,
-              date: dateStr,
-              status: 'present',
-              clock_in: punchTimeIso,
-              clock_out: null
-            });
-
-          if (insertErr) {
-            console.error(`❌ Failed to insert attendance:`, insertErr.message);
-          } else {
-            console.log(`✅ Logged Clock-In for employee [${emp.id}] on ${dateStr} at ${punchTimeIso}`);
+          try {
+            await db.query(
+              'INSERT INTO attendance_logs (employee_id, date, status, check_in, check_out) VALUES ($1, $2, $3, $4, $5)',
+              [emp.id, dateStr, 'present', punchTimeIso, null]
+            );
+            console.log(`✅ Logged Check-In for employee [${emp.id}] on ${dateStr} at ${punchTimeIso}`);
             processedCount++;
+          } catch (insertErr) {
+            console.error(`❌ Failed to insert attendance:`, insertErr.message);
           }
         } else {
-          // Record exists. Update clock_in or clock_out.
-          let updatedClockIn = existing.clock_in;
-          let updatedClockOut = existing.clock_out;
+          // Record exists. Update check_in or check_out.
+          let updatedClockIn = existing.check_in;
+          let updatedClockOut = existing.check_out;
 
           const currentPunchTimeMs = punchTimeUTC.getTime();
 
@@ -179,11 +196,11 @@ app.post('/iclock/cdata', async (req, res) => {
           } else {
             const existingInMs = new Date(updatedClockIn).getTime();
             if (currentPunchTimeMs < existingInMs) {
-              updatedClockIn = punchTimeIso; // Earlier punch is clock_in
+              updatedClockIn = punchTimeIso; // Earlier punch is check_in
             }
           }
 
-          // Update clock_out if the punch is later than clock_in and at least 1 minute apart
+          // Update check_out if the punch is later than check_in and at least 1 minute apart
           const existingInMs = new Date(updatedClockIn).getTime();
           if (currentPunchTimeMs > existingInMs) {
             if (!updatedClockOut) {
@@ -193,44 +210,34 @@ app.post('/iclock/cdata', async (req, res) => {
             } else {
               const existingOutMs = new Date(updatedClockOut).getTime();
               if (currentPunchTimeMs > existingOutMs) {
-                updatedClockOut = punchTimeIso; // Later punch is clock_out
+                updatedClockOut = punchTimeIso; // Later punch is check_out
               }
             }
           }
 
-          const { error: updateErr } = await supabase
-            .from('attendance_logs')
-            .update({
-              clock_in: updatedClockIn,
-              clock_out: updatedClockOut,
-              status: 'present'
-            })
-            .eq('id', existing.id);
-
-          if (updateErr) {
-            console.error(`❌ Failed to update attendance [${existing.id}]:`, updateErr.message);
-          } else {
+          try {
+            await db.query(
+              'UPDATE attendance_logs SET check_in = $1, check_out = $2, status = $3 WHERE id = $4',
+              [updatedClockIn, updatedClockOut, 'present', existing.id]
+            );
             console.log(`🔄 Updated attendance for employee [${emp.id}] on ${dateStr}: In=${updatedClockIn?.substring(11,19)}, Out=${updatedClockOut?.substring(11,19)}`);
             processedCount++;
+          } catch (updateErr) {
+            console.error(`❌ Failed to update attendance [${existing.id}]:`, updateErr.message);
           }
         }
         
         // --- IMMUTABLE RAW PUNCH STORAGE ---
         // Insert the raw punch log into the 'AttLogs' table so no one can erase the raw data
-        const { error: rawLogErr } = await supabase
-          .from('AttLogs')
-          .insert({
-            EmployeeCode: biometricId,
-            LogDateTime: punchTimeIso,
-            DownloadDateTime: new Date().toISOString(),
-            Direction: parts[2]?.trim() === '0' ? 'in' : (parts[2]?.trim() === '1' ? 'out' : parts[2]?.trim()),
-            DeviceId: sn
-          });
-
-        if (rawLogErr) {
-          console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
-        } else {
+        try {
+          const direction = parts[2]?.trim() === '0' ? 'in' : (parts[2]?.trim() === '1' ? 'out' : parts[2]?.trim());
+          await db.query(
+            'INSERT INTO "AttLogs" ("EmployeeCode", "LogDateTime", "DownloadDateTime", "Direction", "DeviceId") VALUES ($1, $2, $3, $4, $5)',
+            [biometricId, punchTimeIso, new Date().toISOString(), direction, sn]
+          );
           console.log(`🔒 Safely stored immutable raw punch in AttLogs for [${biometricId}] at ${punchTimeIso}`);
+        } catch (rawLogErr) {
+          console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
         }
         
       }
@@ -314,14 +321,15 @@ app.post('/force-logout', express.json(), async (req, res) => {
 
   // 2. Update attendance_logs
   const today = nowIso.split('T')[0];
-  const { error: attErr } = await supabase
-    .from('attendance_logs')
-    .update({ clock_out: nowIso })
-    .eq('employee_id', userId)
-    .eq('date', today)
-    .is('clock_out', null);
-    
-  if (!attErr) updatedAttendance = true;
+  try {
+    const { rowCount } = await db.query(
+      'UPDATE attendance_logs SET check_out = $1 WHERE employee_id = $2 AND date = $3 AND check_out IS NULL',
+      [nowIso, userId, today]
+    );
+    if (rowCount > 0) updatedAttendance = true;
+  } catch (attErr) {
+    console.error("Attendance update error:", attErr);
+  }
 
   // 3. Log them out of the actual application (bypassing auth tokens)
   let loggedOutApp = false;

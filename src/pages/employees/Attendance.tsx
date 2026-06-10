@@ -348,16 +348,28 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const clockInIso = new Date(`${todayStr}T${manualTime}`).toISOString();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session found");
 
-      const { error } = await supabase.from('attendance_logs').upsert({
-        employee_id: emp.id,
-        date: todayStr,
-        clock_in: clockInIso,
-        is_manual: true,
-        status: 'present'
+      const response = await fetch('/api/attendance/manual-time', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          employee_id: emp.id,
+          date: todayStr,
+          check_in: clockInIso
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save attendance');
+      }
+
       toast.success("Attendance saved successfully!");
       setEnteringTimeEmpId(null);
       await loadData(startDate, endDate);
@@ -390,16 +402,29 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const clockInTime = new Date(`${todayStr}T08:00:00`).toISOString();
-      const { error } = await supabase.from('attendance_logs').upsert({
-        employee_id: emp.id,
-        date: todayStr,
-        clock_in: clockInTime,
-        status: 'present',
-        is_manual: true,
-        notes: 'Field Trip (OD)'
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session found");
+
+      const response = await fetch('/api/attendance/mark-od', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          employee_id: emp.id,
+          date: todayStr,
+          check_in: clockInTime,
+          od_reason: 'Field Trip (OD)'
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to mark OD');
+      }
+
       toast.success("Marked as OD / Field Trip");
       await loadData(startDate, endDate);
     } catch (e: any) {
@@ -561,12 +586,23 @@ export default function Attendance() {
     const nextMonth = new Date(endOfMonthDate.getFullYear(), endOfMonthDate.getMonth() + 1, 1);
     const lastDayOfMonth = format(subDays(nextMonth, 1), 'yyyy-MM-dd');
 
-    const { data: logs, error: logsErr } = await supabase
-      .from('attendance_logs')
-      .select('*')
-      .not('is_deleted', 'eq', true)
-      .gte('date', firstDayOfMonth)
-      .lte('date', lastDayOfMonth);
+    // Fetch from VPS API instead of Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    let logs: any[] = [];
+    let logsErr = null;
+
+    if (session) {
+      try {
+        const response = await fetch(`/api/attendance?start=${firstDayOfMonth}&end=${lastDayOfMonth}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        logs = await response.json();
+      } catch (err) {
+        logsErr = err;
+        console.error("Fetch API Error:", err);
+      }
+    }
 
     if (!logsErr && logs) {
       const grouped: Record<string, any> = {};

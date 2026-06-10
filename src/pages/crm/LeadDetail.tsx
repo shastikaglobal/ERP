@@ -76,32 +76,31 @@ export default function LeadDetail() {
     async function fetchLeadDetails() {
       if (!id) return;
       try {
-        const { data: leadData, error: leadError } = await supabase
-          .from("leads")
-          .select(`*`)
-          .eq("id", id)
-          .single();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const leadRes = await fetch(`/api/leads/${id}`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!leadRes.ok) throw new Error("Failed to fetch lead");
+        const leadData = await leadRes.json();
 
-        if (leadError) throw leadError;
         setLead(leadData as unknown as Lead);
         setNewProduct(leadData.product_type || "");
 
-        const { data: acts, error: actsError } = await supabase
-          .from("activities")
-          .select(`id, title, type, created_at, completed, profiles:created_by(full_name)`)
-          .eq("lead_id", id)
-          .order("created_at", { ascending: false });
-
-        if (actsError) throw actsError;
+        const actsRes = await fetch(`/api/leads/${id}/activities`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!actsRes.ok) throw new Error("Failed to fetch activities");
+        const acts = await actsRes.json();
+        
         setActivities(acts as unknown as Activity[]);
 
-        const { data: quotes, error: quotesError } = await supabase
-          .from("quotations")
-          .select(`id, quotation_number, status, created_at, amount, currency`)
-          .eq("lead_id", id)
-          .order("created_at", { ascending: false });
-
-        if (quotesError) throw quotesError;
+        const quotesRes = await fetch(`/api/leads/${id}/quotations`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!quotesRes.ok) throw new Error("Failed to fetch quotations");
+        const quotes = await quotesRes.json();
+        
         setQuotations(quotes as unknown as Quotation[]);
       } catch (error: any) {
         toast.error(error.message || "Failed to load lead details");
@@ -117,12 +116,14 @@ export default function LeadDetail() {
     if (!id || !lead) return;
     setSavingProduct(true);
     try {
-      const { error } = await supabase
-        .from("leads")
-        .update({ product_type: newProduct } as any)
-        .eq("id", id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ product_type: newProduct })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to update product");
       setLead({ ...lead, product_type: newProduct });
       setEditingProduct(false);
       toast.success("Product of interest updated");

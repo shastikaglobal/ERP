@@ -45,9 +45,13 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-products"],
         queryFn: async () => {
             try {
-                const { data, error } = await supabase.from('products').select('id, name').limit(1);
-                if (error) throw error;
-                return data || [];
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch('/api/products', {
+                    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                });
+                if (!res.ok) throw new Error('Failed to fetch products');
+                const data = await res.json();
+                return (data || []).slice(0, 1); // only need first for reference id
             } catch (err: any) {
                 console.error("Error fetching products:", err);
                 return [];

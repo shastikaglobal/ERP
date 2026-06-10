@@ -20,13 +20,12 @@ export default function ProductCatalog() {
     e.stopPropagation();
     if (!window.confirm("Delete this product? This will hide it from the app.")) return;
     try {
-      const { error } = await supabase.from("products").update({
-        is_deleted: true,
-        is_active: false,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.id || null,
-      }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${session?.access_token}` },
+      });
+      if (!res.ok) throw new Error("Failed to delete product");
       toast.success("Product hidden successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
@@ -37,13 +36,12 @@ export default function ProductCatalog() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .neq("is_deleted", true)
-        .order("name");
-      if (error) throw error;
-      return data as any[];
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/products", {
+        headers: { "Authorization": `Bearer ${session?.access_token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json() as Promise<any[]>;
     },
   });
   return (

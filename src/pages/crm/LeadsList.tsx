@@ -160,13 +160,13 @@ export default function LeadsList() {
 
   const fetchLeads = async () => {
     try {
-      const { data, error } = await supabase
-        .from("leads")
-        .select(`*`)
-        .neq("is_deleted", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
+      const res = await fetch('/api/leads', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch leads");
+      const data = await res.json();
       setLeads(data as unknown as Lead[]);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch leads");
@@ -177,20 +177,26 @@ export default function LeadsList() {
 
   const fetchTeam = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) return;
-
-    const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single();
-    if (!profile?.company_id) return;
-
-    const { data: profiles } = await supabase.from('profiles').select('id, full_name').eq('company_id', profile.company_id);
-    if (profiles) {
+    if (!session) return;
+    const res = await fetch('/api/employees', {
+      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    });
+    if (res.ok) {
+      const profiles = await res.json();
       setTeam(profiles);
     }
   };
 
   const fetchSources = async () => {
-    const { data } = await supabase.from('acquisition_channels').select('id, channel_name').order('channel_name');
-    if (data) setSources(data);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch('/api/leads/meta/sources', {
+      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSources(data);
+    }
   };
 
   useEffect(() => {
@@ -255,22 +261,26 @@ export default function LeadsList() {
         throw new Error("You must be logged in to create a lead");
       }
 
-      const { error } = await supabase.from("leads").insert({
-        date: date || null,
-        business_category: businessCategory,
-        company_name: companyName,
-        contact_name: contactName,
-        product_type: productType,
-        country: country,
-        mobile: mobile,
-        email: parsedEmails.join(", "),
-        website: website,
-        stage: "New",
-        assigned_to: String(assignedTo || ""),
-        source_id: sourceId && sourceId !== "none" ? sourceId : null
-      } as any);
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          date: date || null,
+          business_category: businessCategory,
+          company_name: companyName,
+          contact_name: contactName,
+          product_type: productType,
+          country: country,
+          mobile: mobile,
+          email: parsedEmails.join(", "),
+          website: website,
+          stage: "New",
+          assigned_to: String(assignedTo || ""),
+          source_id: sourceId && sourceId !== "none" ? sourceId : null
+        })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to create lead");
 
       toast.success("Lead created successfully");
       setIsDialogOpen(false);
@@ -286,24 +296,27 @@ export default function LeadsList() {
   const convertToCustomer = async (lead: Lead) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const companyId = (await supabase.from("profiles").select("company_id").eq("id", session?.user?.id).single()).data?.company_id;
+      
+      const empRes = await fetch(`/api/employees/${session?.user?.id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      const empData = await empRes.json();
+      const companyId = empData?.company_id;
 
       if (!companyId) throw new Error("Could not identify your company");
 
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .insert({
+      const res = await fetch(`/api/leads/${lead.id}/convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
           company_id: companyId,
           name: lead.company_name,
           country: lead.country,
           email: lead.email,
         })
-        .select()
-        .single();
+      });
 
-      if (customerError) throw customerError;
-
-      await supabase.from("leads").update({ stage: "Won" }).eq("id", lead.id);
+      if (!res.ok) throw new Error("Conversion failed");
 
       toast.success(`${lead.company_name} is now a registered Customer!`);
       fetchLeads();
@@ -328,24 +341,20 @@ export default function LeadsList() {
 
     const assignee = followUpAssignedTo;
     try {
-      const { error } = await supabase.from("follow_ups" as any).insert({
-        lead_id: selectedFollowUpLead.id,
-        company_name: selectedFollowUpLead.company_name,
-        contact_name: selectedFollowUpLead.contact_name,
-        follow_up_date: followUpDate,
-        note: followUpNote,
-        assigned_to: assignee,
-        is_notified: false,
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          company_name: selectedFollowUpLead.company_name,
+          contact_name: selectedFollowUpLead.contact_name,
+          follow_up_date: followUpDate,
+          note: followUpNote,
+          assigned_to: assignee,
+        })
       });
-      if (error) throw error;
-
-      // Update the lead's assigned_to field to reflect the new assignment
-      const { error: updateError } = await supabase
-        .from("leads")
-        .update({ assigned_to: assignee })
-        .eq("id", selectedFollowUpLead.id);
-
-      if (updateError) throw updateError;
+      
+      if (!res.ok) throw new Error("Failed to save follow up");
 
       toast.success("Follow-up saved successfully");
       setIsFollowUpOpen(false);
@@ -388,12 +397,14 @@ export default function LeadsList() {
       // Ensure we store in the standardized "[Method]: Note" format
       const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
 
-      const { error } = await supabase
-        .from("leads")
-        .update({ remark: formattedRemark })
-        .eq("id", selectedRemarkLead.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/leads/${selectedRemarkLead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ remark: formattedRemark })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to update remark");
       toast.success("Remark updated successfully");
       setIsRemarkOpen(false);
       setSelectedRemarkLead(null);
@@ -414,9 +425,12 @@ export default function LeadsList() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      // Soft-delete lead instead of permanent deletion
-      const { error } = await supabase.from("leads").update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", deleteId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/leads/${deleteId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete lead");
       toast.success("Lead removed from view (soft-deleted)");
       // Refresh list to hide it
       fetchLeads();

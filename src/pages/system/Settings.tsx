@@ -49,8 +49,16 @@ export default function Settings() {
   useEffect(() => {
     if (!profile?.company_id) return;
     const fetchCompany = async () => {
-      const { data, error } = await supabase.from("companies").select("*").eq("id", profile.company_id).single();
-      if (!error && data) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch("/api/settings", {
+          headers: {
+            "Authorization": `Bearer ${session?.access_token}`
+          }
+        });
+        if (!res.ok) throw new Error("Failed to fetch settings");
+        const data = await res.json();
+        
         setName(data.name || "Shastika Global Impex Pvt Ltd");
         setCurrency(data.base_currency?.toLowerCase() || "inr");
         setSignatureUrl(data.signature_url || "");
@@ -66,7 +74,11 @@ export default function Settings() {
         if (data.smtp_port) setSmtpPort(data.smtp_port);
         if (data.smtp_user) setSmtpUser(data.smtp_user);
         if (data.from_email) setFromEmail(data.from_email);
+      } catch (err) {
+        console.error("Error loading settings:", err);
+        toast.error("Failed to load settings");
       }
+      
       if (profile?.avatar_url) {
         setAvatarUrl(profile.avatar_url);
       }
@@ -130,12 +142,19 @@ export default function Settings() {
         .getPublicUrl(filePath);
 
       // Save to profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', profile.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/employees/${profile.id}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ avatar_url: publicUrl })
+      });
 
-      if (updateError) throw updateError;
+      if (!res.ok) {
+        throw new Error("Failed to update profile avatar on backend");
+      }
 
       setAvatarUrl(publicUrl);
       toast.success("Profile picture updated successfully!");
@@ -152,7 +171,7 @@ export default function Settings() {
     if (!profile?.company_id) return;
     setSaving(true);
     
-    // Update company table in Supabase
+    // Update company table in backend
     interface CompanyUpdateData {
       name: string;
       base_currency: string;
@@ -185,26 +204,49 @@ export default function Settings() {
       updateData.smtp_pass = smtpPass;
     }
 
-    const { error } = await supabase.from("companies").update(updateData).eq("id", profile.company_id);
-    
-    // Update personal profile
-    const profileUpdate: any = {};
-    if (dob) profileUpdate.dob = dob;
-    if (joiningDate) profileUpdate.joining_date = joiningDate;
-    if (systemMode) profileUpdate.system_mode = systemMode;
-    if (city) profileUpdate.city = city;
-    
-    let profileError = null;
-    if (Object.keys(profileUpdate).length > 0) {
-      const { error: pErr } = await supabase.from("profiles").update(profileUpdate).eq("id", profile.id);
-      profileError = pErr;
-    }
-    
-    setSaving(false);
-    if (error || profileError) {
-      toast.error("Error saving: " + (error?.message || profileError?.message));
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const companyRes = await fetch("/api/settings", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!companyRes.ok) {
+        throw new Error("Failed to save company settings");
+      }
+      
+      // Update personal profile
+      const profileUpdate: any = {};
+      if (dob) profileUpdate.dob = dob;
+      if (joiningDate) profileUpdate.joining_date = joiningDate;
+      if (systemMode) profileUpdate.system_mode = systemMode;
+      if (city) profileUpdate.city = city;
+      
+      if (Object.keys(profileUpdate).length > 0) {
+        const profileRes = await fetch(`/api/employees/${profile.id}`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${session?.access_token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(profileUpdate)
+        });
+        
+        if (!profileRes.ok) {
+          throw new Error("Failed to save personal profile settings");
+        }
+      }
+      
       toast.success("Settings saved successfully!");
+    } catch (err: any) {
+      toast.error("Error saving: " + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 

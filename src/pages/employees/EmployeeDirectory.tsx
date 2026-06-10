@@ -50,18 +50,21 @@ export default function EmployeeDirectory() {
 
   const fetchEmployees = async () => {
     setLoading(true);
-    const { data: empls, error: empErr } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id, dob, joining_date, system_mode, city")
-      .eq("status", "approved")
-      .order("full_name");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
 
-    if (empErr) {
-      toast.error(empErr.message);
-    } else {
-      setEmployees((empls as ProfileRow[]) || []);
+      const response = await fetch('/api/employees', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
       
-      // If admin, also fetch today's sessions
+      if (!response.ok) throw new Error("Failed to fetch employees");
+      const empls = await response.json();
+      setEmployees(empls || []);
+      
+      // If admin, also fetch today's sessions (still using Supabase realtime for now until session module is migrated)
       if (isAdmin) {
         const todayStartsAt = new Date();
         todayStartsAt.setHours(0, 0, 0, 0);
@@ -74,8 +77,11 @@ export default function EmployeeDirectory() {
         
         if (sessData) setSessions(sessData);
       }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load directory");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -238,15 +244,15 @@ export default function EmployeeDirectory() {
     }
     
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id || null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: false, is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: currentUserId })
-        .eq('id', userId);
+      const response = await fetch(`/api/employees/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
 
-      if (error) throw error;
+      if (!response.ok) throw new Error("Failed to archive user");
 
       toast.success(`${fullName || 'User'} has been archived.`);
       setEmployees(prev => prev.filter(e => e.id !== userId));
@@ -534,9 +540,24 @@ export default function EmployeeDirectory() {
                           onBlur={async (event) => {
                             const val = event.target.value.trim();
                             if (val !== (e.biometric_id || "")) {
-                              const { error } = await supabase.from('profiles').update({ biometric_id: val || null }).eq('id', e.id);
-                              if (error) toast.error("Failed to update ID");
-                              else toast.success(`Updated ID for ${e.full_name}`);
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) throw new Error("No active session");
+                                
+                                const response = await fetch(`/api/employees/${e.id}`, {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`
+                                  },
+                                  body: JSON.stringify({ biometric_id: val || null })
+                                });
+                                
+                                if (!response.ok) throw new Error("Failed to update ID");
+                                toast.success(`Updated ID for ${e.full_name}`);
+                              } catch (err) {
+                                toast.error("Failed to update ID");
+                              }
                             }
                           }}
                         />

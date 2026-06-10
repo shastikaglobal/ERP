@@ -263,8 +263,14 @@ export default function Mailbox() {
       setSentEmails(prev => prev.map(e => e.id === email.id ? { ...e, is_read: true } : e));
       setSelectedEmail((prev: any) => prev?.id === email.id ? { ...prev, is_read: true } : prev);
 
-      supabase.from("emails").update({ is_read: true }).eq("id", email.id).then(({ error }) => {
-        if (error) console.error("Failed to mark email as read in database:", error);
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          fetch(`/api/emails/${email.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ is_read: true })
+          }).catch(err => console.error("Failed to mark email as read in database:", err));
+        }
       });
     }
     setIsComposing(false);
@@ -360,18 +366,21 @@ export default function Mailbox() {
         roleSlugs?.has("bde") ||
         (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
-      let query = supabase.from("zoho_accounts").select("*");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/emails/accounts', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      
+      if (!res.ok) { toast.error("Failed to fetch accounts"); return; }
+      let data = await res.json();
 
-      if (isAdmin) {
-        // Admin sees all mails
-      } else if (isBde) {
-        query = query.ilike("account_email", "bde@%");
-      } else {
-        query = query.eq("user_id", profile?.id || "");
+      if (!isAdmin) {
+        if (isBde) {
+          data = data.filter((a: any) => a.account_email.toLowerCase().startsWith("bde@"));
+        } else {
+          data = data.filter((a: any) => a.user_id === profile?.id);
+        }
       }
-
-      const { data, error } = await query;
-      if (error) { toast.error(error.message); return; }
 
       if (data && data.length > 0) {
         setAccounts(data);
@@ -388,14 +397,13 @@ export default function Mailbox() {
   }
 
   async function fetchHistory(accountId: string) {
-    const { data, error } = await supabase
-      .from("emails")
-      .select("*")
-      .eq("account_id", accountId)
-      .order("received_at", { ascending: false })
-      .limit(500);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`/api/emails?account_id=${accountId}`, {
+      headers: { 'Authorization': `Bearer ${session?.access_token}` }
+    });
 
-    if (error) { toast.error(error.message); return; }
+    if (!res.ok) { toast.error("Failed to fetch email history"); return; }
+    const data = await res.json();
     if (data) setSentEmails(data);
   }
 
@@ -567,9 +575,12 @@ export default function Mailbox() {
 
       const plainText = finalContent.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
 
-      const { data: emailRow, error: insertError } = await supabase
-        .from("emails")
-        .insert({
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const insertRes = await fetch('/api/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
           to_address: to,
           cc_address: cc || null,
           bcc_address: bcc || null,
@@ -584,12 +595,16 @@ export default function Mailbox() {
           account_id: account.id,
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : null,
         })
-        .select()
-        .single();
+      });
 
-      if (insertError) throw insertError;
+      if (!insertRes.ok) throw new Error("Failed to insert email log");
+      const emailRow = await insertRes.json();
 
-      await supabase.from("emails").update({ status: "pending" }).eq("id", emailRow.id);
+      await fetch(`/api/emails/${emailRow.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ status: "pending" })
+      });
 
       toast.info("Sending email...", { id: `sending-${emailRow.id}`, duration: 10000 });
 

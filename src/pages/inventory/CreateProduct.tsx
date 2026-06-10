@@ -35,17 +35,28 @@ export default function CreateProduct() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.from("products").insert({
-        company_id: profile.company_id,
-        sku: form.sku,
-        name: form.name,
-        category: form.category || null,
-        unit: form.unit || "Piece",
-        hs_code: form.hs_code || null,
-        description: form.description || null,
-        is_active: true
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          company_id: profile.company_id,
+          sku: form.sku,
+          name: form.name,
+          category: form.category || null,
+          unit: form.unit || "Piece",
+          hs_code: form.hs_code || null,
+          description: form.description || null,
+          is_active: true,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create product");
+      }
       toast.success("Product created successfully");
       qc.invalidateQueries({ queryKey: ["products"] });
       nav("/inventory/products");

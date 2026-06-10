@@ -44,13 +44,20 @@ export default function Approvals() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, phone, requested_role, status, rejection_reason, created_at")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setRows((data as ProfileRow[]) || []);
-    setLoading(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+      const res = await fetch('/api/employees/all/profiles', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch profiles");
+      const data = await res.json();
+      setRows(data || []);
+    } catch (err: any) {
+      toast.error(err.message || "Error fetching profiles");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -75,27 +82,42 @@ export default function Approvals() {
   const approve = async (r: ProfileRow) => {
     const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
-    const { data, error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
-    setBusyId(null);
-    if (error) {
-      console.error("approve_user error:", error);
-      alert(`Approve failed: ${error.message}`);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ status: 'approved', requested_role: role })
+      });
+      if (!res.ok) throw new Error("Failed to approve");
+      toast.success(`${r.email} approved as ${role}`);
+      load();
+    } catch (error: any) {
       toast.error(error.message);
-      return;
+    } finally {
+      setBusyId(null);
     }
-    toast.success(`${r.email} approved as ${role}`);
-    load();
   };
 
   const reject = async (r: ProfileRow) => {
     const reason = window.prompt(`Reject ${r.email}? Optional reason:`) ?? null;
     if (reason === null) return;
     setBusyId(r.id);
-    const { error } = await supabase.rpc("reject_user", { _target: r.id, _reason: reason });
-    setBusyId(null);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`${r.email} rejected`);
-    load();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ status: 'rejected', rejection_reason: reason })
+      });
+      if (!res.ok) throw new Error("Failed to reject");
+      toast.success(`${r.email} rejected`);
+      load();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const pending = rows.filter((r) => r.status === "pending");
@@ -105,16 +127,21 @@ export default function Approvals() {
   const changeRole = async (r: ProfileRow) => {
     const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
-    const { error } = await supabase.rpc("approve_user", { _target: r.id, _role_slug: role });
-    setBusyId(null);
-    if (error) {
-      console.error("changeRole error:", error);
-      alert(`Change role failed: ${error.message}`);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ requested_role: role })
+      });
+      if (!res.ok) throw new Error("Failed to change role");
+      toast.success(`${r.email} role changed to ${role}`);
+      load();
+    } catch (error: any) {
       toast.error(error.message);
-      return;
+    } finally {
+      setBusyId(null);
     }
-    toast.success(`${r.email} role changed to ${role}`);
-    load();
   };
 
   const renderTable = (list: ProfileRow[], showActions = false) => (

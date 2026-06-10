@@ -17,17 +17,17 @@ export default function Invoices() {
     const fetchInvoices = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("export_orders")
-          .select("*, export_shipments(*)")
-          .neq("is_deleted", true)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("No active session");
+        const res = await fetch('/api/invoices', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch invoices");
+        const data = await res.json();
         setShipments(data || []);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Invoice load error:", err);
-        toast.error("Failed to load invoices.");
+        toast.error("Failed to load invoices: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -39,16 +39,13 @@ export default function Invoices() {
     if (!confirm(`Are you sure you want to delete invoice ${number}?`)) return;
 
     try {
-      const { error } = await supabase
-        .from("export_orders")
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: null,
-        })
-        .eq("id", id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Delete failed on server");
       toast.success("Invoice hidden successfully");
       // Refresh local state
       setShipments(prev => prev.filter(s => s.id !== id));
@@ -82,22 +79,22 @@ export default function Invoices() {
             { 
               key: "order_number", 
               header: "Invoice #", 
-              render: (r) => <span className="font-mono text-xs text-primary font-bold">{r.order_number?.replace('EXP', 'PI')}</span> 
+              render: (r) => <span className="font-mono text-xs text-primary font-bold">{(r.invoice_number || r.order_number)?.replace('EXP', 'PI')}</span> 
             },
             { 
               key: "customer_name", 
               header: "Customer", 
-              render: (r) => <span className="font-medium">{r.customer_name}</span> 
+              render: (r) => <span className="font-medium">{r.customer_name || r.customer}</span> 
             },
             { 
               key: "product", 
               header: "Product", 
-              render: (r) => <span className="text-muted-foreground">{r.product}</span> 
+              render: (r) => <span className="text-muted-foreground">{r.product || r.description}</span> 
             },
             { 
               key: "amount", 
               header: "Amount", 
-              render: (r) => <span className="font-medium tabular-nums">{r.currency} {r.total_amount?.toLocaleString()}</span> 
+              render: (r) => <span className="font-medium tabular-nums">{r.currency} {(r.total_amount || r.amount)?.toLocaleString()}</span> 
             },
             { 
               key: "status", 
@@ -130,7 +127,7 @@ export default function Invoices() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => handleDelete(r.id, r.order_number?.replace('EXP', 'PI'))}
+                      onClick={() => handleDelete(r.id, r.invoice_number || r.order_number?.replace('EXP', 'PI'))}
                       className="text-muted-foreground hover:text-destructive"
                       title="Delete Invoice"
                     >

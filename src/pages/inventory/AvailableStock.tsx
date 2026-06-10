@@ -104,20 +104,13 @@ export default function AvailableStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
-      const query = supabase
-        .from('products')
-        .select('id, name, category, grade')
-        .eq('is_active', true)
-        .neq('is_deleted', true)
-        .order('name');
-
-      const finalQuery = profile?.company_id
-        ? query.or(`company_id.eq.${profile.company_id},company_id.is.null`)
-        : query;
-
-      const { data, error } = await finalQuery;
-      if (error) throw error;
-      return data || [];
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/products', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      return (data || []).filter((p: any) => p.is_active !== false);
     }
   });
 
@@ -142,13 +135,22 @@ export default function AvailableStock() {
 
     const seedProducts = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        // Seed each default product via POST /api/products
         const records = defaultProducts.map(product => ({
           ...product,
           company_id: profile.company_id
         }));
-
-        const { error } = await supabase.from('products').upsert(records, { onConflict: 'company_id, sku' });
-        if (error) throw error;
+        await Promise.all(records.map(record =>
+          fetch('/api/products', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`
+            },
+            body: JSON.stringify(record)
+          }).catch(() => null) // ignore duplicate-key errors gracefully
+        ));
         queryClient.invalidateQueries({ queryKey: ['products-list', profile.company_id] });
       } catch (err) {
         console.error('Failed to seed default products:', err);
