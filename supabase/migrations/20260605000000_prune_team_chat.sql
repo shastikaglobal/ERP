@@ -2,8 +2,11 @@
 CREATE OR REPLACE FUNCTION public.prune_old_team_chat()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Delete messages older than 24 hours
-  DELETE FROM public.team_chat
+  -- Soft-delete messages older than 24 hours so chat history remains auditable
+  UPDATE public.team_chat
+  SET is_deleted = true,
+      deleted_at = NOW(),
+      deleted_by = NULL
   WHERE created_at < NOW() - INTERVAL '24 hours';
   
   RETURN NEW;

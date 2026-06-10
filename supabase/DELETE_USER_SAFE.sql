@@ -46,11 +46,25 @@ BEGIN
   -- 8. Nullify created_by in quotations
   UPDATE public.quotations        SET created_by = NULL WHERE created_by = v_user_id;
 
-  -- 9. Delete from attendance (hard delete is safe here)
-  DELETE FROM public.attendance WHERE profile_id = v_user_id;
+  -- 9. Soft-delete attendance rows instead of hard deleting them
+  ALTER TABLE IF EXISTS public.attendance ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
+  ALTER TABLE IF EXISTS public.attendance ADD COLUMN IF NOT EXISTS deleted_at timestamptz NULL;
+  ALTER TABLE IF EXISTS public.attendance ADD COLUMN IF NOT EXISTS deleted_by uuid NULL;
+  UPDATE public.attendance
+  SET is_deleted = true,
+      deleted_at = NOW(),
+      deleted_by = NULL
+  WHERE profile_id = v_user_id;
 
-  -- 10. Finally delete the profile row (this is the main FK blocker)
-  DELETE FROM public.profiles WHERE id = v_user_id;
+  -- 10. Soft-delete the profile row instead of removing it from the database
+  ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
+  ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS deleted_at timestamptz NULL;
+  ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS deleted_by uuid NULL;
+  UPDATE public.profiles
+  SET is_deleted = true,
+      deleted_at = NOW(),
+      deleted_by = NULL
+  WHERE id = v_user_id;
 
   RAISE NOTICE 'All references cleared for user %. You can now delete them from the Auth dashboard.', v_user_id;
 END;

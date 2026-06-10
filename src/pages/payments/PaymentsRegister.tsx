@@ -38,8 +38,9 @@ export default function PaymentsRegister() {
         .from("payments")
         .select("*")
         .eq("company_id", profile.company_id)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
-      
+
       if (pError) throw pError;
 
       // Fetch pending export orders (unpaid)
@@ -47,6 +48,7 @@ export default function PaymentsRegister() {
         .from("export_orders")
         .select("*")
         .eq("company_id", profile.company_id)
+        .neq("is_deleted", true)
         .eq("payment_status", "unpaid");
 
       if (eError) throw eError;
@@ -154,10 +156,10 @@ export default function PaymentsRegister() {
 
   return (
     <div className="p-6">
-      <PageHeader 
-        title="Payment Register" 
-        description="All incoming and outstanding payments" 
-        breadcrumbs={[{ label: "Payments" }]} 
+      <PageHeader
+        title="Payment Register"
+        description="All incoming and outstanding payments"
+        breadcrumbs={[{ label: "Payments" }]}
         actions={
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>

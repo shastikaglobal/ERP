@@ -35,7 +35,7 @@ CREATE POLICY follow_ups_update_policy ON public.follow_ups
   FOR UPDATE USING (true);
 
 CREATE POLICY follow_ups_delete_policy ON public.follow_ups
-  FOR DELETE USING (true);
+  FOR DELETE USING (false);
 
 -- Add updated_at trigger
 DROP TRIGGER IF EXISTS trg_follow_ups_updated ON public.follow_ups;

@@ -8,6 +8,7 @@ import { ShieldAlert, Globe, Server, Activity, Lock, CheckCircle, RefreshCw, Ter
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { softDeleteRecord } from "@/lib/softDelete";
 
 export default function AdvancedSecurity() {
   const { profile } = useAuth();
@@ -86,12 +87,16 @@ export default function AdvancedSecurity() {
   };
 
   const handleDeleteSubnet = async (id: string) => {
-    const { error } = await supabase.from('corporate_subnets').delete().eq('id', id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Subnet removed");
+    try {
+      await softDeleteRecord("corporate_subnets", id, {
+        resourceType: "corporate_subnet",
+        resourceName: `Subnet ${id}`,
+        extraPayload: { is_active: false },
+      });
+      toast.success("Subnet archived (soft delete)");
       refetchSubnets();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to archive subnet");
     }
   };
 

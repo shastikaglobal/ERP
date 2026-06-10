@@ -769,8 +769,8 @@ export default function InventoryBatches() {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete Batch"
-        description="This action cannot be undone. The batch will be permanently deleted."
+        title="Archive Batch"
+        description="Are you sure? This batch will be hidden from the active list but preserved for audit."
         onConfirm={executeDelete}
         isLoading={isSubmitting}
       />

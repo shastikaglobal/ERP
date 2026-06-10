@@ -46,11 +46,7 @@ DROP POLICY IF EXISTS "company_access_emails_delete" ON public.emails;
 CREATE POLICY "company_access_emails_delete" ON public.emails
   FOR DELETE
   TO authenticated
-  USING (
-    company_id IN (
-      SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    )
-  );
+  USING (false);
 
 
 -- 2. Enable RLS on zoho_accounts

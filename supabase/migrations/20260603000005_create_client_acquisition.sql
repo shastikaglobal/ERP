@@ -29,7 +29,7 @@ DROP POLICY IF EXISTS "Allow authenticated update" ON client_acquisition;
 CREATE POLICY "Allow authenticated update" ON client_acquisition FOR UPDATE TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Allow authenticated delete" ON client_acquisition;
-CREATE POLICY "Allow authenticated delete" ON client_acquisition FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete" ON client_acquisition FOR DELETE TO authenticated USING (false);
 
 -- Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE client_acquisition;

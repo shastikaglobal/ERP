@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { softDeleteRecord } from "@/lib/softDelete";
 
 export default function Tasks() {
   const { profile, roleSlugs } = useAuth();
@@ -88,11 +89,14 @@ export default function Tasks() {
   const deleteTask = async (id: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;
     try {
-      const { error } = await supabase.from("crm_tasks").delete().eq("id", id);
-      if (error) throw error;
-      toast.success("Task deleted");
+      await softDeleteRecord("crm_tasks", id, {
+        resourceType: "crm_task",
+        resourceName: `Task ${id}`,
+      });
+      setTasks(prev => prev.filter((task) => task.id !== id));
+      toast.success("Task archived (soft delete)");
     } catch (err: any) {
-      toast.error("Failed to delete task");
+      toast.error("Failed to archive task");
     }
   };
 

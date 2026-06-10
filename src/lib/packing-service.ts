@@ -45,6 +45,9 @@ export async function createPackingProtocol(
                     status: data.status || "draft",
                     company_id: companyId,
                     created_by: userId,
+                    is_deleted: false,
+                    deleted_at: null,
+                    deleted_by: null,
                 },
             ])
             .select()
@@ -76,6 +79,7 @@ export async function getPackingProtocols(
         .from("packing_protocols")
         .select("*")
         .eq("company_id", companyId)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false });
 
     if (filters?.status) {
@@ -121,11 +125,14 @@ export async function updatePackingProtocol(
     return data;
 }
 
-// Delete packing protocol
+// Delete packing protocol (Soft-delete)
 export async function deletePackingProtocol(id: string): Promise<void> {
     const { error } = await supabase
         .from("packing_protocols")
-        .delete()
+        .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString()
+        } as any)
         .eq("id", id);
 
     if (error) throw error;
@@ -136,7 +143,8 @@ export async function getPackingStats(companyId: string) {
     const { data, error } = await supabase
         .from("packing_protocols")
         .select("status")
-        .eq("company_id", companyId);
+        .eq("company_id", companyId)
+        .neq("is_deleted", true);
 
     if (error) throw error;
 

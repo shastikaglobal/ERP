@@ -1,25 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileBox, Package, Loader2, Trash2 } from "lucide-react";
+import { FileBox, Package, Loader2, Trash2, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useAuth } from "@/hooks/useAuth";
+import { generatePackingListPDF, generatePackingSlipPDF, generateCartonLabelsPDF } from "@/lib/packing-export";
+import { getPackingListPDF } from "@/lib/packing-service";
 
 export default function PackingLists() {
   const navigate = useNavigate();
   const [packingLists, setPackingLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
 
   useEffect(() => {
     const fetchPLs = async () => {
+      if (!profile?.company_id) return;
+      
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from("export_orders")
-          .select("*, export_shipments(*)")
+          .from("packing_protocols")
+          .select("*")
+          .eq("company_id", profile.company_id)
           .neq("is_deleted", true)
           .order("created_at", { ascending: false });
 
@@ -33,14 +40,14 @@ export default function PackingLists() {
       }
     };
     fetchPLs();
-  }, []);
+  }, [profile?.company_id]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this packing list?")) return;
 
     try {
       const { error } = await supabase
-        .from("export_orders")
+        .from("packing_protocols")
         .update({
           is_deleted: true,
           deleted_at: new Date().toISOString(),
@@ -53,6 +60,30 @@ export default function PackingLists() {
       setPackingLists(prev => prev.filter(pl => pl.id !== id));
     } catch (err: any) {
       toast.error("Failed to delete: " + err.message);
+    }
+  };
+
+  const handleGenerateDocument = async (id: string, type: "list" | "slip" | "labels") => {
+    try {
+      const data = await getPackingListPDF(id);
+      
+      switch (type) {
+        case "list":
+          await generatePackingListPDF(data);
+          toast.success("Packing List generated");
+          break;
+        case "slip":
+          await generatePackingSlipPDF(data);
+          toast.success("Packing Slip generated");
+          break;
+        case "labels":
+          await generateCartonLabelsPDF(data);
+          toast.success("Carton Labels generated");
+          break;
+      }
+    } catch (error) {
+      console.error("Error generating document:", error);
+      toast.error("Failed to generate document");
     }
   };
 
@@ -81,7 +112,7 @@ export default function PackingLists() {
                   <div className="flex items-center gap-2">
                     <FileBox className="h-5 w-5 text-primary" />
                     <span className="font-mono text-sm font-bold">
-                      {pl.order_number?.replace('EXP', 'PL')}
+                      PKG-{pl.id.substring(0, 8).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex gap-1 items-center">
@@ -100,31 +131,65 @@ export default function PackingLists() {
 
               <CardContent className="pt-4 space-y-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Customer</p>
-                  <p className="font-bold">{pl.customer_name}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Receiving ID</p>
+                  <p className="font-bold font-mono">{pl.receiving_id}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Product</p>
+                    <p className="text-xs text-muted-foreground">Cartons</p>
                     <div className="flex items-center gap-1">
                       <Package className="h-3 w-3 text-primary" />
-                      <span className="text-sm font-medium">{pl.product}</span>
+                      <span className="text-sm font-medium">{pl.carton_count}</span>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Quantity</p>
-                    <p className="text-sm font-medium tabular-nums">{pl.quantity} {pl.unit}</p>
+                    <p className="text-xs text-muted-foreground">Net Weight</p>
+                    <p className="text-sm font-medium tabular-nums">{pl.net_weight} kg</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Gross Weight</p>
+                    <p className="text-sm font-medium tabular-nums">{pl.gross_weight} kg</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Pallet Config</p>
+                    <p className="text-sm font-medium">{pl.pallet_config}</p>
                   </div>
                 </div>
+                {pl.export_marks && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Export Marks</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-2">{pl.export_marks}</p>
+                  </div>
+                )}
               </CardContent>
 
-              <CardFooter className="bg-muted/10 border-t p-3">
+              <CardFooter className="bg-muted/10 border-t p-3 flex gap-2">
                 <Button
-                  className="w-full"
+                  className="flex-1"
+                  size="sm"
                   variant="outline"
-                  onClick={() => navigate(`/documents/packing-lists/${pl.id}/preview`)}
+                  onClick={() => handleGenerateDocument(pl.id, "list")}
                 >
-                  VIEW PDF
+                  <Download className="h-3 w-3 mr-1" />
+                  Packing List
+                </Button>
+                <Button
+                  className="flex-1"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGenerateDocument(pl.id, "slip")}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Packing Slip
+                </Button>
+                <Button
+                  className="flex-1"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGenerateDocument(pl.id, "labels")}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Labels
                 </Button>
               </CardFooter>
             </Card>

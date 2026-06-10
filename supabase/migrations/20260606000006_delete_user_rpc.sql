@@ -10,8 +10,16 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized: Only admins can delete users.';
   END IF;
 
-  -- Delete from auth.users
-  -- (Because of the cascade foreign keys, this will also delete their profile and everything else linked to them)
-  DELETE FROM auth.users WHERE id = target_user_id;
+  -- Soft-delete the user's public profile instead of removing the auth user record.
+  -- Keeping auth.users intact preserves audit history and avoids permanent deletion.
+  UPDATE public.profiles
+  SET is_deleted = true,
+      deleted_at = NOW(),
+      deleted_by = auth.uid()
+  WHERE id = target_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User profile not found: %', target_user_id;
+  END IF;
 END;
 $$;

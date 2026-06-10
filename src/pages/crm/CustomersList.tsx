@@ -9,11 +9,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
@@ -47,7 +47,7 @@ export default function CustomersList() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-  
+
   // New state for Add/Edit/Detail
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -76,6 +76,7 @@ export default function CustomersList() {
           .from("customers" as any)
           .select("*")
           .eq("company_id", profile.company_id)
+          .neq("is_deleted", true)
           .order("name"),
         supabase
           .from("leads" as any)
@@ -88,9 +89,9 @@ export default function CustomersList() {
           .select("id, customer_id, created_at")
           .eq("company_id", profile.company_id)
       ]);
-      
+
       if (custRes.error) throw custRes.error;
-      
+
       const leadsMap = new Map();
       (leadsRes.data as any[] || []).forEach((l: any) => {
         if (l.company_name) {
@@ -113,10 +114,10 @@ export default function CustomersList() {
       const merged = (custRes.data || []).map((c: any) => {
         const lead = leadsMap.get(c.name?.toLowerCase());
         const customerOrders = ordersByCustomer.get(c.id) || [];
-        const lastOrder = customerOrders.length > 0 
+        const lastOrder = customerOrders.length > 0
           ? new Date(Math.max(...customerOrders.map((o: any) => new Date(o.created_at).getTime())))
           : null;
-        
+
         return {
           ...c,
           country: c.country || lead?.country || "Unspecified",
@@ -144,9 +145,9 @@ export default function CustomersList() {
   const filteredCustomers = useMemo(() => {
     if (!searchQuery) return customers;
     const query = searchQuery.toLowerCase();
-    return customers.filter(c => 
-      c.name?.toLowerCase().includes(query) || 
-      c.email?.toLowerCase().includes(query) || 
+    return customers.filter(c =>
+      c.name?.toLowerCase().includes(query) ||
+      c.email?.toLowerCase().includes(query) ||
       c.country?.toLowerCase().includes(query)
     );
   }, [customers, searchQuery]);
@@ -160,13 +161,17 @@ export default function CustomersList() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("customers" as any).delete().eq("id", deleteId);
+      const { error } = await supabase.from("customers" as any).update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: profile?.id
+      } as any).eq("id", deleteId);
       if (error) throw error;
-      toast.success("Customer removed successfully");
+      toast.success("Customer removed from view (soft-deleted)");
       setCustomers(customers.filter(c => c.id !== deleteId));
       setConfirmOpen(false);
     } catch (err: any) {
-      toast.error("Could not delete customer. They may have active orders.");
+      toast.error("Could not delete customer record.");
     } finally {
       setDeleteId(null);
     }
@@ -175,16 +180,16 @@ export default function CustomersList() {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.company_id) return;
-    
+
     try {
       setIsSubmitting(true);
       const { error } = await supabase.from("customers" as any).insert([{
         ...formData,
         company_id: profile.company_id
       }]);
-      
+
       if (error) throw error;
-      
+
       toast.success("Customer added successfully");
       setIsAddDialogOpen(false);
       setFormData({ name: "", country: "", email: "", phone: "", notes: "", relationship_status: "Active Client", satisfaction_notes: "" });
@@ -226,7 +231,7 @@ export default function CustomersList() {
 
   const handleUpdateFromSheet = async () => {
     if (!selectedCustomer) return;
-    
+
     try {
       setIsSubmitting(true);
       const { error } = await supabase
@@ -241,9 +246,9 @@ export default function CustomersList() {
           notes: formData.notes
         })
         .eq("id", selectedCustomer.id);
-      
+
       if (error) throw error;
-      
+
       toast.success("Client data synchronized");
       setIsSheetOpen(false);
       fetchCustomers();
@@ -266,7 +271,7 @@ export default function CustomersList() {
   const handleNotesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCustomer) return;
-    
+
     try {
       setIsSubmitting(true);
       const { error } = await supabase
@@ -275,9 +280,9 @@ export default function CustomersList() {
           satisfaction_notes: formData.satisfaction_notes
         })
         .eq("id", editingCustomer.id);
-      
+
       if (error) throw error;
-      
+
       toast.success("Engagement notes updated");
       setIsNotesDialogOpen(false);
       fetchCustomers();
@@ -291,7 +296,7 @@ export default function CustomersList() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCustomer) return;
-    
+
     try {
       setIsSubmitting(true);
       const { error } = await supabase
@@ -305,9 +310,9 @@ export default function CustomersList() {
           relationship_status: formData.relationship_status
         })
         .eq("id", editingCustomer.id);
-      
+
       if (error) throw error;
-      
+
       toast.success("Customer updated successfully");
       setIsEditDialogOpen(false);
       fetchCustomers();
@@ -320,7 +325,7 @@ export default function CustomersList() {
 
   const exportToCSV = () => {
     if (customers.length === 0) return;
-    
+
     const headers = ["Name", "Country", "Email", "Phone", "Notes"];
     const csvContent = [
       headers.join(","),
@@ -332,7 +337,7 @@ export default function CustomersList() {
         `"${(c.notes || '').replace(/"/g, '""')}"`
       ].join(","))
     ].join("\n");
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -346,8 +351,8 @@ export default function CustomersList() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <PageHeader 
-        title="Customer Directory" 
+      <PageHeader
+        title="Customer Directory"
         description="Official database of your global clients and export partners"
         breadcrumbs={[{ label: "CRM", to: "/crm/leads" }, { label: "Customers" }]}
       />
@@ -355,8 +360,8 @@ export default function CustomersList() {
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by name, email, or country..." 
+          <Input
+            placeholder="Search by name, email, or country..."
             className="pl-10 bg-white/5 border-white/10 focus:border-primary/50 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -410,8 +415,8 @@ export default function CustomersList() {
               </TableRow>
             ) : (
               filteredCustomers.map((customer) => (
-                <TableRow 
-                  key={customer.id} 
+                <TableRow
+                  key={customer.id}
                   className="hover:bg-primary/5 transition-colors border-white/5 cursor-pointer"
                   onClick={() => handleRowClick(customer)}
                 >
@@ -435,10 +440,10 @@ export default function CustomersList() {
                     <Badge variant="secondary" className={cn(
                       "text-[9px] uppercase px-3 whitespace-nowrap border-none font-bold",
                       customer.relationship_status === "High Value Client" ? "bg-amber-500/20 text-amber-500" :
-                      customer.relationship_status === "Repeat Buyer" ? "bg-blue-500/20 text-blue-500" :
-                      customer.relationship_status === "Inactive Client" ? "bg-red-500/20 text-red-500" :
-                      customer.relationship_status === "Potential Growth Client" ? "bg-purple-500/20 text-purple-500" :
-                      "bg-emerald-500/20 text-emerald-500"
+                        customer.relationship_status === "Repeat Buyer" ? "bg-blue-500/20 text-blue-500" :
+                          customer.relationship_status === "Inactive Client" ? "bg-red-500/20 text-red-500" :
+                            customer.relationship_status === "Potential Growth Client" ? "bg-purple-500/20 text-purple-500" :
+                              "bg-emerald-500/20 text-emerald-500"
                     )}>
                       {customer.relationship_status || "Active Client"}
                     </Badge>
@@ -473,26 +478,26 @@ export default function CustomersList() {
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 rounded-full transition-all"
                         onClick={() => handleNotesClick(customer)}
                         title="Satisfaction Notes"
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all"
                         onClick={() => handleEditClick(customer)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
                         onClick={() => handleDelete(customer.id, customer.name)}
                       >
@@ -506,7 +511,7 @@ export default function CustomersList() {
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Search Insights */}
       {filteredCustomers.length > 0 && searchQuery && (
         <p className="text-xs text-muted-foreground italic">
@@ -517,10 +522,10 @@ export default function CustomersList() {
       <ConfirmDialog
         open={confirmOpen}
         title="Remove Customer"
-        description={`Are you sure you want to permanently delete "${deleteName}" from the business directory? This will remove all associated contact records.`}
+        description={`Are you sure you want to remove "${deleteName}" from the business directory? This will only hide the record from view.`}
         onConfirm={executeDelete}
         onCancel={() => setConfirmOpen(false)}
-        confirmLabel="Proceed to Delete"
+        confirmLabel="Confirm Archive"
       />
 
       {/* Add Customer Dialog */}
@@ -539,25 +544,25 @@ export default function CustomersList() {
             <div className="grid grid-cols-2 gap-4 text-foreground">
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="name" className="text-xs uppercase tracking-widest font-bold opacity-70">Company Name *</Label>
-                <Input id="name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" placeholder="e.g. Global Exports Ltd" />
+                <Input id="name" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-white/5 border-white/10" placeholder="e.g. Global Exports Ltd" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country" className="text-xs uppercase tracking-widest font-bold opacity-70">Country</Label>
-                <Input id="country" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="bg-white/5 border-white/10" placeholder="e.g. Germany" />
+                <Input id="country" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} className="bg-white/5 border-white/10" placeholder="e.g. Germany" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-xs uppercase tracking-widest font-bold opacity-70">Phone</Label>
-                <Input id="phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="bg-white/5 border-white/10" placeholder="+1..." />
+                <Input id="phone" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="bg-white/5 border-white/10" placeholder="+1..." />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="email" className="text-xs uppercase tracking-widest font-bold opacity-70">Contact Email</Label>
-                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="bg-white/5 border-white/10" placeholder="contact@company.com" />
+                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="bg-white/5 border-white/10" placeholder="contact@company.com" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Initial Health Category</Label>
-                <select 
-                  value={formData.relationship_status} 
-                  onChange={e => setFormData({...formData, relationship_status: e.target.value})}
+                <select
+                  value={formData.relationship_status}
+                  onChange={e => setFormData({ ...formData, relationship_status: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="Active Client">Active Client</option>
@@ -569,7 +574,7 @@ export default function CustomersList() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="notes" className="text-xs uppercase tracking-widest font-bold opacity-70">Business Notes</Label>
-                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="bg-white/5 border-white/10 min-h-[100px]" placeholder="Key commodities, past requirements..." />
+                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="bg-white/5 border-white/10 min-h-[100px]" placeholder="Key commodities, past requirements..." />
               </div>
             </div>
             <DialogFooter className="pt-4 gap-2">
@@ -595,25 +600,25 @@ export default function CustomersList() {
             <div className="grid grid-cols-2 gap-4 text-foreground">
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="edit-name" className="text-xs uppercase tracking-widest font-bold opacity-70">Company Name</Label>
-                <Input id="edit-name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" />
+                <Input id="edit-name" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-white/5 border-white/10" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-country" className="text-xs uppercase tracking-widest font-bold opacity-70">Country</Label>
-                <Input id="edit-country" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="bg-white/5 border-white/10" />
+                <Input id="edit-country" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} className="bg-white/5 border-white/10" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-phone" className="text-xs uppercase tracking-widest font-bold opacity-70">Phone</Label>
-                <Input id="edit-phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="bg-white/5 border-white/10" />
+                <Input id="edit-phone" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="bg-white/5 border-white/10" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="edit-email" className="text-xs uppercase tracking-widest font-bold opacity-70">Email Address</Label>
-                <Input id="edit-email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="bg-white/5 border-white/10" />
+                <Input id="edit-email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="bg-white/5 border-white/10" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Relationship Health Status</Label>
-                <select 
-                  value={formData.relationship_status} 
-                  onChange={e => setFormData({...formData, relationship_status: e.target.value})}
+                <select
+                  value={formData.relationship_status}
+                  onChange={e => setFormData({ ...formData, relationship_status: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="Active Client">Active Client</option>
@@ -649,9 +654,9 @@ export default function CustomersList() {
           <form onSubmit={handleNotesSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Customer Service Notes</Label>
-              <Textarea 
-                value={formData.satisfaction_notes} 
-                onChange={e => setFormData({...formData, satisfaction_notes: e.target.value})}
+              <Textarea
+                value={formData.satisfaction_notes}
+                onChange={e => setFormData({ ...formData, satisfaction_notes: e.target.value })}
                 placeholder="Log satisfaction level, recent complaints, or relationship health notes..."
                 className="bg-white/5 border-white/10 min-h-[150px] text-foreground"
               />
@@ -676,7 +681,7 @@ export default function CustomersList() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-8 pt-16 space-y-8">
             <SheetHeader className="text-left">
               <div className="flex items-center justify-between">
@@ -693,9 +698,9 @@ export default function CustomersList() {
             {/* Health Status Dropdown */}
             <div className="space-y-4">
               <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Relationship Health</Label>
-              <Select 
-                value={formData.relationship_status} 
-                onValueChange={(val) => setFormData({...formData, relationship_status: val})}
+              <Select
+                value={formData.relationship_status}
+                onValueChange={(val) => setFormData({ ...formData, relationship_status: val })}
               >
                 <SelectTrigger className="bg-white/5 border-white/10 h-12">
                   <SelectValue placeholder="Select Status" />
@@ -731,9 +736,9 @@ export default function CustomersList() {
             {/* Satisfaction Notes */}
             <div className="space-y-4">
               <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Customer Service & Satisfaction Notes</Label>
-              <Textarea 
-                value={formData.satisfaction_notes} 
-                onChange={(e) => setFormData({...formData, satisfaction_notes: e.target.value})}
+              <Textarea
+                value={formData.satisfaction_notes}
+                onChange={(e) => setFormData({ ...formData, satisfaction_notes: e.target.value })}
                 className="bg-white/5 border-white/10 min-h-[120px] focus:ring-primary"
                 placeholder="Log internal feedback, complaints, or positive results..."
               />
@@ -757,8 +762,8 @@ export default function CustomersList() {
             </div>
 
             <SheetFooter className="mt-8">
-              <Button 
-                onClick={handleUpdateFromSheet} 
+              <Button
+                onClick={handleUpdateFromSheet}
                 disabled={isSubmitting}
                 className="w-full btn-gold h-12 text-lg"
               >

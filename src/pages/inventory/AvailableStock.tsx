@@ -1,25 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { 
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  Search, Plus, Download, Edit2, History, Package, 
+import {
+  Search, Plus, Download, Edit2, History, Package,
   LayoutGrid, AlertTriangle, ArrowUpDown, Building2
 } from "lucide-react";
 import { format } from "date-fns";
@@ -61,7 +61,7 @@ export default function AvailableStock() {
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
-  
+
   // Selected items
   const [selectedStock, setSelectedStock] = useState<any>(null);
   const [hasSeededDefaultProducts, setHasSeededDefaultProducts] = useState(false);
@@ -74,7 +74,7 @@ export default function AvailableStock() {
     minimum_stock_level: 0,
     notes: ""
   });
-  
+
   const [adjustForm, setAdjustForm] = useState({
     type: "add",
     quantity: 0,
@@ -92,9 +92,10 @@ export default function AvailableStock() {
           products(id, name, grade, category),
           warehouses(id, name)
         `)
+        .neq('is_deleted', true)
         .gt('available_quantity', 0)
         .order('available_quantity', { ascending: true });
-        
+
       if (error) throw error;
       return (data || []) as any[];
     }
@@ -107,6 +108,7 @@ export default function AvailableStock() {
         .from('products')
         .select('id, name, category, grade')
         .eq('is_active', true)
+        .neq('is_deleted', true)
         .order('name');
 
       const finalQuery = profile?.company_id
@@ -128,6 +130,7 @@ export default function AvailableStock() {
         .select('id, name')
         .eq('company_id', profile?.company_id)
         .eq('is_active', true)
+        .neq('is_deleted', true)
         .order('name');
       if (error) throw error;
       return data || [];
@@ -168,7 +171,7 @@ export default function AvailableStock() {
       totalAvail += Number(item.available_quantity) || 0;
       if (item.product_id) prodSet.add(item.product_id);
       if (item.warehouse_id) whSet.add(item.warehouse_id);
-      
+
       const health = getStockHealth(item.available_quantity, item.minimum_stock_level || 0);
       if (health !== 'healthy') lowStock++;
     });
@@ -225,7 +228,7 @@ export default function AvailableStock() {
       const current = Number(selectedStock.available_quantity) || 0;
       const adj = Number(adjustForm.quantity) || 0;
       const newQty = adjustForm.type === 'add' ? current + adj : current - adj;
-      
+
       if (newQty < 0) throw new Error("Quantity cannot be completely negative.");
 
       // First update stock
@@ -233,7 +236,7 @@ export default function AvailableStock() {
         .from('inventory_batches')
         .update({ available_quantity: newQty, updated_at: new Date().toISOString() })
         .eq('id', selectedStock.id);
-      
+
       if (error) throw error;
 
       // Ideally insert into an inventory_movements table here to keep history
@@ -278,7 +281,7 @@ export default function AvailableStock() {
       const health = getStockHealth(item.available_quantity, item.minimum_stock_level || 0);
       return `${pName},${wName},${item.available_quantity},${item.minimum_stock_level || 0},${health},"${item.updated_at}"`;
     });
-    
+
     const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -350,14 +353,14 @@ export default function AvailableStock() {
         <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search product or warehouse..." 
+            <Input
+              placeholder="Search product or warehouse..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
             />
           </div>
-          
+
           <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All Warehouses" />
@@ -473,8 +476,8 @@ export default function AvailableStock() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Product</Label>
-              <Select 
-                value={editForm.product_id || undefined} 
+              <Select
+                value={editForm.product_id || undefined}
                 onValueChange={(val) => setEditForm(p => ({ ...p, product_id: val }))}
               >
                 <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
@@ -487,11 +490,11 @@ export default function AvailableStock() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Warehouse</Label>
-              <Select 
-                value={editForm.warehouse_id || undefined} 
+              <Select
+                value={editForm.warehouse_id || undefined}
                 onValueChange={(val) => setEditForm(p => ({ ...p, warehouse_id: val }))}
               >
                 <SelectTrigger><SelectValue placeholder="Select Warehouse" /></SelectTrigger>
@@ -504,17 +507,17 @@ export default function AvailableStock() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Available (kg)</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.available_quantity} 
+                <Input
+                  type="number"
+                  value={editForm.available_quantity}
                   onChange={e => setEditForm(p => ({ ...p, available_quantity: parseFloat(e.target.value) || 0 }))}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Min. Level (kg)</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.minimum_stock_level} 
+                <Input
+                  type="number"
+                  value={editForm.minimum_stock_level}
                   onChange={e => setEditForm(p => ({ ...p, minimum_stock_level: parseFloat(e.target.value) || 0 }))}
                 />
               </div>
@@ -522,10 +525,10 @@ export default function AvailableStock() {
 
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea 
-                value={editForm.notes} 
+              <Textarea
+                value={editForm.notes}
                 onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Optional notes" 
+                placeholder="Optional notes"
               />
             </div>
           </div>
@@ -554,7 +557,7 @@ export default function AvailableStock() {
               <div className="space-y-2">
                 <Label>Adjustment Type</Label>
                 <Select value={adjustForm.type || undefined} onValueChange={(val) => setAdjustForm(prev => ({ ...prev, type: val }))}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="add">Add (+)</SelectItem>
                     <SelectItem value="subtract">Subtract (-)</SelectItem>
@@ -563,10 +566,10 @@ export default function AvailableStock() {
               </div>
               <div className="space-y-2">
                 <Label>Quantity (kg)</Label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   min="0"
-                  value={adjustForm.quantity || ''} 
+                  value={adjustForm.quantity || ''}
                   onChange={e => setAdjustForm(p => ({ ...p, quantity: Math.abs(parseFloat(e.target.value) || 0) }))}
                 />
               </div>
@@ -575,7 +578,7 @@ export default function AvailableStock() {
             <div className="space-y-2">
               <Label>Reason</Label>
               <Select value={adjustForm.reason || undefined} onValueChange={(val) => setAdjustForm(prev => ({ ...prev, reason: val }))}>
-                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Purchase received">Purchase received</SelectItem>
                   <SelectItem value="Return">Return</SelectItem>
@@ -589,18 +592,18 @@ export default function AvailableStock() {
 
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea 
-                value={adjustForm.notes} 
+              <Textarea
+                value={adjustForm.notes}
                 onChange={e => setAdjustForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Details for adjustment..." 
+                placeholder="Details for adjustment..."
               />
             </div>
-            
+
             <div className="p-3 bg-blue-50 text-blue-800 rounded-md mt-2 text-sm">
               New quantity will be: <span className="font-bold">
-                {adjustForm.type === 'add' 
-                  ? ((Number(selectedStock?.available_quantity)||0) + (Number(adjustForm.quantity)||0)) 
-                  : ((Number(selectedStock?.available_quantity)||0) - (Number(adjustForm.quantity)||0))} kg
+                {adjustForm.type === 'add'
+                  ? ((Number(selectedStock?.available_quantity) || 0) + (Number(adjustForm.quantity) || 0))
+                  : ((Number(selectedStock?.available_quantity) || 0) - (Number(adjustForm.quantity) || 0))} kg
               </span>
             </div>
           </div>

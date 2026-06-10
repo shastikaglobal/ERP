@@ -55,15 +55,15 @@ export default function EmployeeActivity({ hideHeader = false }: { hideHeader?: 
         { data: profilesData },
         { data: sessionsData },
         { data: userRolesData }
-      ] = await Promise.all([
-        supabase.from("profiles" as any).select("id, full_name, avatar_url"),
-        supabase.from("active_sessions" as any).select("*"),
-        supabase.from("user_roles" as any).select("user_id, roles(name)")
-      ]);
+        ] = await Promise.all([
+          supabase.from("profiles" as any).select("id, full_name, avatar_url"),
+          supabase.from("active_sessions" as any).select("*").neq("is_deleted", true),
+          supabase.from("user_roles" as any).select("*")
+        ]);
 
-      const profiles = (profilesData || []) as any[];
-      const sessions = (sessionsData || []) as any[];
-      const userRoles = (userRolesData || []) as any[];
+        const profiles = (profilesData || []) as any[];
+        const sessions = (sessionsData || []) as any[];
+        const userRoles = (userRolesData || []) as any[];
 
       if (!profiles) return;
 

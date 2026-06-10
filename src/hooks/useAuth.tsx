@@ -248,10 +248,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Clean up from active_sessions first
+      // Clean up active_sessions via soft delete so session history remains auditable
       await supabase
         .from("active_sessions" as any)
-        .delete()
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+        })
         .eq("user_id", user.id);
 
       const { data: loginRecord } = await (supabase

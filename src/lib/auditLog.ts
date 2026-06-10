@@ -301,8 +301,13 @@ export async function cleanupOldAuditLogs(daysToKeep: number = 90): Promise<numb
 
   const { data, error } = await supabase
     .from(auditTable)
-    .delete()
-    .lt(dateColumn, cutoffDate.toISOString());
+    .update({
+      is_deleted: true,
+      deleted_at: cutoffDate.toISOString(),
+      deleted_by: null,
+    })
+    .lt(dateColumn, cutoffDate.toISOString())
+    .select('id');
 
   if (error) {
     console.error("Failed to cleanup audit logs:", error);

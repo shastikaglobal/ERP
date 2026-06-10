@@ -8,6 +8,7 @@
 // EXAMPLE 1: Creating a Quotation
 // ============================================
 import { logAudit } from "@/lib/auditLog";
+import { softDeleteRecord } from "@/lib/softDelete";
 
 async function createQuotation(data: any) {
   try {
@@ -94,14 +95,12 @@ async function updateQuotation(id: string, updates: any, oldValues: any) {
 
 async function deleteQuotation(id: string, quotationNumber: string) {
   try {
-    const { error } = await supabase
-      .from("quotations")
-      .delete()
-      .eq("id", id);
+    await softDeleteRecord("quotations", id, {
+      resourceType: "quotation",
+      resourceName: `Quotation #${quotationNumber}`,
+    });
 
-    if (error) throw error;
-
-    // LOG THE DELETION
+    // LOG THE SOFT DELETE ACTION
     await logAudit({
       action: "delete",
       team: "BDE",

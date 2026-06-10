@@ -489,8 +489,8 @@ export default function BatchWiseStock() {
       <ConfirmDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title="Delete Batch"
-        description="Are you sure you want to delete this batch? This action cannot be undone."
+        title="Archive Batch"
+        description="Are you sure you want to archive this batch? It will be hidden from the active list but kept for historical records."
         onConfirm={handleConfirm}
         isLoading={deleteMutation.isLoading}
       />

@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { softDeleteRecord } from "@/lib/softDelete";
 import { exportQuotationsToPDF } from "@/lib/quotation-export";
 
 export default function QuotationPreview() {
@@ -55,19 +56,18 @@ export default function QuotationPreview() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("quotations")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      await softDeleteRecord("quotations", id as string, {
+        resourceType: "quotation",
+        resourceName: q?.quotation_number ? `Quotation ${q.quotation_number}` : `Quotation ${id}`,
+      });
     },
     onSuccess: () => {
-      toast.success("Quotation deleted successfully");
+      toast.success("Quotation archived successfully");
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       nav("/quotations");
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to delete quotation");
+      toast.error(err.message || "Failed to archive quotation");
     }
   });
 

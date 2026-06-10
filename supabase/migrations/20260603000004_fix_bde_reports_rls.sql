@@ -22,12 +22,12 @@ FOR SELECT
 TO authenticated
 USING (true);
 
--- 4. Create a DELETE policy for authenticated users
+-- 4. Block physical DELETE and enforce soft-delete semantics instead
 CREATE POLICY "Allow authenticated delete"
 ON public.bde_daily_reports
 FOR DELETE
 TO authenticated
-USING (true);
+USING (false);
 
 -- 5. Notify to reload schema
 NOTIFY pgrst, 'reload schema';

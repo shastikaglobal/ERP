@@ -28,6 +28,7 @@ export function useActivityTracker(moduleName: string) {
           .from("active_sessions" as any)
           .select("id")
           .eq("user_id", userId)
+          .neq("is_deleted", true)
           .maybeSingle();
 
         if (findError) {

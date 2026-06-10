@@ -28,9 +28,9 @@ export default function Maintenance() {
 
     setIsWiping(true);
     try {
-// NOTE: HR-related tables (profiles, attendance_logs, face_embeddings, etc.) are intentionally excluded
-        // to prevent accidental permanent deletion. Use targeted archival/cleanup procedures instead.
-// NOTE: System audit tables (app_notifications, activity_logs, audit_logs, zoho_accounts, etc.) are intentionally excluded
+      // NOTE: HR-related tables (profiles, attendance_logs, face_embeddings, etc.) are intentionally excluded
+      // to prevent accidental permanent deletion. Use targeted archival/cleanup procedures instead.
+      // NOTE: System audit tables (app_notifications, activity_logs, audit_logs, zoho_accounts, etc.) are intentionally excluded
       // to preserve audit trails and system configuration history. Use targeted archival/cleanup procedures instead.
       const tablesToWipe = [
         "export_containers",
@@ -46,28 +46,38 @@ export default function Maintenance() {
         "farmers",
         "suppliers",
         "customers",
-          "user_roles"
-        ];
+        "user_roles"
+      ];
 
 
       for (const table of tablesToWipe) {
-        let query = supabase.from(table).delete();
-        
+        let query = supabase.from(table as any).update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: profile?.id
+        } as any);
+
         if (table === "profiles") {
           query = query.neq("id", profile?.id);
         } else if (table === "user_roles") {
           query = query.neq("user_id", profile?.id);
         } else {
-          query = query.neq("id", "00000000-0000-0000-0000-000000000000");
+          // No-op where to target all if not filtered, but we need a filter for .update()
+          // eq("company_id", profile?.company_id) is better to limit to current company
+          if (profile?.company_id) {
+            query = query.eq("company_id" as any, profile.company_id);
+          } else {
+            query = query.neq("id" as any, "00000000-0000-0000-0000-000000000000");
+          }
         }
 
         const { error } = await query;
         if (error) {
-          console.error(`Error wiping ${table}:`, error);
+          console.error(`Error soft-deleting data from ${table}:`, error);
         }
       }
 
-      toast.success("System reset successful. All transactional and employee data cleared.");
+      toast.success("System reset successful. All transactional data marked as deleted.");
       setIsDone(true);
       setConfirmText("");
     } catch (err: any) {
@@ -91,7 +101,7 @@ export default function Maintenance() {
             Nuclear Option: Factory Reset
           </h2>
           <p className="mt-2 text-sm">
-            This action will permanently delete all **Leads, Orders, Shipments, Inventory, Farmers, Customers, Staff, and Attendance**. 
+            This action will permanently delete all **Leads, Orders, Shipments, Inventory, Farmers, Customers, Staff, and Attendance**.
             Structural data like your Company settings and your own Admin profile will be preserved.
           </p>
 
@@ -102,7 +112,7 @@ export default function Maintenance() {
           <div className="bg-destructive/5 px-6 py-4 border-b border-destructive/10">
             <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
               <Trash2 className="h-5 w-5" />
-              Clear All System Data
+              Archive All System Data
             </h3>
           </div>
           <CardContent className="p-6 space-y-6">
@@ -117,16 +127,16 @@ export default function Maintenance() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium block">To confirm, type <span className="font-bold text-destructive">RESET</span> below:</label>
-                  <Input 
-                    value={confirmText} 
-                    onChange={(e) => setConfirmText(e.target.value)} 
+                  <Input
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
                     placeholder="Type RESET here..."
                     className="border-destructive/20 focus-visible:ring-destructive h-12 text-lg"
                   />
                 </div>
-                
-                <Button 
-                  variant="destructive" 
+
+                <Button
+                  variant="destructive"
                   className="w-full h-12 text-lg font-bold shadow-lg shadow-destructive/20"
                   disabled={confirmText !== "RESET" || isWiping}
                   onClick={handleWipe}
@@ -134,7 +144,7 @@ export default function Maintenance() {
                   {isWiping ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Wiping Database...
+                      Archiving Database...
                     </>
                   ) : (
                     <>

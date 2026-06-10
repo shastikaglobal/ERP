@@ -179,6 +179,327 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          id: string
+          company_id: string
+          payment_number: string | null
+          payer_name: string
+          amount: number
+          currency: string
+          method: string
+          status: string
+          reference_number: string | null
+          received_at: string | null
+          created_by: string | null
+          created_at: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id?: string
+          payment_number?: string | null
+          payer_name: string
+          amount: number
+          currency?: string
+          method?: string
+          status?: string
+          reference_number?: string | null
+          received_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          payment_number?: string | null
+          payer_name?: string
+          amount?: number
+          currency?: string
+          method?: string
+          status?: string
+          reference_number?: string | null
+          received_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      export_orders: {
+        Row: {
+          id: string
+          company_id: string
+          order_number: string
+          customer_name: string | null
+          total_amount: number
+          currency: string
+          payment_status: string
+          created_at: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          order_number: string
+          customer_name?: string | null
+          total_amount: number
+          currency?: string
+          payment_status?: string
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          order_number?: string
+          customer_name?: string | null
+          total_amount?: number
+          currency?: string
+          payment_status?: string
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          id: string
+          company_id: string
+          full_name: string
+          email: string | null
+          phone: string | null
+          status: string
+          created_at: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          full_name: string
+          email?: string | null
+          phone?: string | null
+          status?: string
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          full_name?: string
+          email?: string | null
+          phone?: string | null
+          status?: string
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      warehouses: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          warehouse_type: string
+          address: string | null
+          city: string
+          state: string | null
+          location: string | null
+          capacity_kg: number | null
+          manager_name: string | null
+          manager_phone: string | null
+          is_cold_chain: boolean
+          is_active: boolean
+          created_at: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          warehouse_type?: string
+          address?: string | null
+          city: string
+          state?: string | null
+          location?: string | null
+          capacity_kg?: number | null
+          manager_name?: string | null
+          manager_phone?: string | null
+          is_cold_chain?: boolean
+          is_active?: boolean
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          warehouse_type?: string
+          address?: string | null
+          city?: string
+          state?: string | null
+          location?: string | null
+          capacity_kg?: number | null
+          manager_name?: string | null
+          manager_phone?: string | null
+          is_cold_chain?: boolean
+          is_active?: boolean
+          created_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      inventory_batches: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string | null
+          product_id: string | null
+          lot_number: string
+          quantity_remaining_kg: number
+          received_date: string
+          status: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id?: string | null
+          product_id?: string | null
+          lot_number: string
+          quantity_remaining_kg: number
+          received_date?: string
+          status?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string | null
+          product_id?: string | null
+          lot_number?: string
+          quantity_remaining_kg?: number
+          received_date?: string
+          status?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          id: string
+          name: string
+          email: string | null
+          phone: string | null
+          address: string | null
+          logo_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          logo_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          logo_url?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      packing_protocols: {
+        Row: {
+          id: string
+          receiving_id: string
+          carton_count: number
+          net_weight: number
+          gross_weight: number
+          pallet_config: string | null
+          export_marks: string | null
+          status: string
+          company_id: string
+          created_by: string
+          created_at: string
+          updated_at: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          receiving_id: string
+          carton_count: number
+          net_weight: number
+          gross_weight: number
+          pallet_config?: string | null
+          export_marks?: string | null
+          status?: string
+          company_id: string
+          created_by: string
+          created_at?: string
+          updated_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          receiving_id?: string
+          carton_count?: number
+          net_weight?: number
+          gross_weight?: number
+          pallet_config?: string | null
+          export_marks?: string | null
+          status?: string
+          company_id?: string
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          is_deleted?: boolean
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

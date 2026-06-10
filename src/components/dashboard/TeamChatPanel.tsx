@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Send, MessageCircle, X, Paperclip, Loader2, CheckCheck, Smile } from "lucide-react";
 import { toast } from "sonner";
 import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { softDeleteRecord } from "@/lib/softDelete";
 
 const playNotificationSound = () => {
   try {
@@ -419,15 +420,18 @@ export function TeamChatPanel() {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    const { error } = await supabase.from('team_chat').delete().eq('id', messageId);
-    if (error) {
-      console.error('Delete error:', error);
+    try {
+      await softDeleteRecord('team_chat', messageId, {
+        resourceType: 'team_chat_message',
+        resourceName: `Team chat message ${messageId}`,
+      });
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      if (activeMenuMessageId === messageId) {
+        setActiveMenuMessageId(null);
+      }
+    } catch (error: any) {
+      console.error('Soft delete error:', error);
       toast.error('Failed to delete message');
-      return;
-    }
-    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
-    if (activeMenuMessageId === messageId) {
-      setActiveMenuMessageId(null);
     }
   };
 

@@ -44,4 +44,4 @@ DROP POLICY IF EXISTS "Users can delete packing protocols for their company" ON 
 CREATE POLICY "Users can delete packing protocols" 
   ON public.packing_protocols 
   FOR DELETE 
-  USING (auth.uid() IS NOT NULL);
+  USING (false);
