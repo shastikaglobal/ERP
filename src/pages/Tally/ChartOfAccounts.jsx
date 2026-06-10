@@ -73,18 +73,45 @@ export default function ChartOfAccounts() {
 
   const fetchAccounts = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('chart_of_accounts')
-      .select('*')
-      .neq('is_deleted', true)
-      .order('name', { ascending: true })
+    try {
+      const { data, error } = await supabase
+        .from('chart_of_accounts')
+        .select('*')
+        .neq('is_deleted', true)
+        .order('code', { ascending: true })
 
-    if (error) {
-      console.error('Failed to load chart of accounts:', error)
-      toast.error('Unable to load accounts. Showing defaults until the database is available.')
+      if (error) {
+        console.error('Failed to load chart of accounts:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          hint: error.hint,
+          details: error.details
+        })
+
+        // Provide more specific error messages
+        if (error.message?.includes('relation "chart_of_accounts" does not exist')) {
+          toast.error('Chart of Accounts table not found. See FIX_CHART_OF_ACCOUNTS.md')
+        } else if (error.message?.includes('permission denied')) {
+          toast.error('Permission denied. Check RLS policies and your company assignment.')
+        } else {
+          toast.error('Unable to load accounts. Showing defaults until the database is available.')
+        }
+        setAccounts(DEFAULT_ACCOUNTS)
+      } else {
+        // Convert balance to formatted string if needed
+        const formattedData = (data || []).map(acc => ({
+          ...acc,
+          balance: typeof acc.balance === 'number' 
+            ? `₹${acc.balance.toLocaleString('en-IN')}` 
+            : acc.balance
+        }))
+        setAccounts(formattedData.length > 0 ? formattedData : DEFAULT_ACCOUNTS)
+      }
+    } catch (err) {
+      console.error('Unexpected error loading chart of accounts:', err)
+      toast.error('Unexpected error: ' + (err?.message || 'Unknown error'))
       setAccounts(DEFAULT_ACCOUNTS)
-    } else {
-      setAccounts(data || DEFAULT_ACCOUNTS)
     }
 
     setLoading(false)
@@ -246,7 +273,14 @@ export default function ChartOfAccounts() {
         </div>
 
         <div className="overflow-x-auto bg-card/70">
-          {Object.keys(grouped).length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <p className="text-slate-400 text-sm">Loading chart of accounts...</p>
+              </div>
+            </div>
+          ) : Object.keys(grouped).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <BookOpen size={48} className="text-amber-400 mb-4" />
               <h4 className="text-lg font-semibold text-slate-300 mb-2">No accounts found</h4>
@@ -291,7 +325,7 @@ export default function ChartOfAccounts() {
                       <td className="tbl-cell">
                         <div className="flex items-center gap-2">
                           <button className="text-xs text-amber-400 hover:text-amber-300 font-medium">Edit</button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(a.code); }} className="text-xs text-red-400 hover:text-red-300 font-medium"><Trash2 size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(a.code); }} disabled={deleting === a.code} className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"><Trash2 size={12} /></button>
                         </div>
                       </td>
                     </tr>
