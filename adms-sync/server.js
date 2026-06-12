@@ -39,6 +39,8 @@ app.use(cors());
 const attendanceRoutes = require('./routes/attendance');
 const employeesRoutes = require('./routes/employees');
 const crmRoutes = require('./routes/crm');
+const followUpsRoutes = require('./routes/follow_ups');
+const quotationsRoutes = require('./routes/quotations');
 const invoicesRoutes = require('./routes/invoices');
 const mailboxRoutes = require('./routes/mailbox');
 const productsRoutes = require('./routes/products');
@@ -47,6 +49,8 @@ const settingsRoutes = require('./routes/settings');
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/leads', crmRoutes);
+app.use('/api/follow-ups', followUpsRoutes);
+app.use('/api/quotations', quotationsRoutes);
 app.use('/api', invoicesRoutes);
 app.use('/api/emails', mailboxRoutes);
 app.use('/api', productsRoutes);
@@ -174,7 +178,7 @@ app.post('/iclock/cdata', express.text({ type: '*/*', limit: '10mb' }), async (r
           // Create new record with clock_in = punchTime
           try {
             await db.query(
-              'INSERT INTO attendance_logs (employee_id, date, status, check_in, check_out) VALUES ($1, $2, $3, $4, $5)',
+              'INSERT INTO attendance_logs (employee_id, date, status, clock_in, clock_out) VALUES ($1, $2, $3, $4, $5)',
               [emp.id, dateStr, 'present', punchTimeIso, null]
             );
             console.log(`✅ Logged Check-In for employee [${emp.id}] on ${dateStr} at ${punchTimeIso}`);
@@ -183,9 +187,9 @@ app.post('/iclock/cdata', express.text({ type: '*/*', limit: '10mb' }), async (r
             console.error(`❌ Failed to insert attendance:`, insertErr.message);
           }
         } else {
-          // Record exists. Update check_in or check_out.
-          let updatedClockIn = existing.check_in;
-          let updatedClockOut = existing.check_out;
+          // Record exists. Update clock_in or clock_out.
+          let updatedClockIn = existing.clock_in;
+          let updatedClockOut = existing.clock_out;
 
           const currentPunchTimeMs = punchTimeUTC.getTime();
 
@@ -215,7 +219,7 @@ app.post('/iclock/cdata', express.text({ type: '*/*', limit: '10mb' }), async (r
 
           try {
             await db.query(
-              'UPDATE attendance_logs SET check_in = $1, check_out = $2, status = $3 WHERE id = $4',
+              'UPDATE attendance_logs SET clock_in = $1, clock_out = $2, status = $3 WHERE id = $4',
               [updatedClockIn, updatedClockOut, 'present', existing.id]
             );
             console.log(`🔄 Updated attendance for employee [${emp.id}] on ${dateStr}: In=${updatedClockIn?.substring(11,19)}, Out=${updatedClockOut?.substring(11,19)}`);

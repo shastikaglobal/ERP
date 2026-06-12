@@ -103,13 +103,13 @@ export default function FollowUps() {
   const fetchFollowUps = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("follow_ups" as any)
-        .select("id, lead_id, company_name, contact_name, follow_up_date, reminder_time, note, assigned_to, is_notified, business_category, product_type, country, mobile, email, website")
-        .neq('is_deleted', true)
-        .order("follow_up_date", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/follow-ups', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch follow-ups");
+      const data = await res.json();
 
-      if (error) throw error;
       setFollowUps(data as FollowUp[]);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch follow-ups");
@@ -175,26 +175,37 @@ export default function FollowUps() {
         website: lead.website,
       };
 
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (isEditing && selectedFollowUp) {
-        const { error } = await supabase
-          .from("follow_ups" as any)
-          .update(payload)
-          .eq("id", selectedFollowUp.id);
-        if (error) throw error;
+        const res = await fetch(`/api/follow-ups/${selectedFollowUp.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Failed to update follow-up");
         toast.success("Follow-up updated successfully");
       } else {
-        const { error } = await supabase.from("follow_ups" as any).insert(payload);
-        if (error) throw error;
+        const res = await fetch(`/api/leads/${selectedLeadId}/follow-ups`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({
+            company_name: lead.company_name,
+            contact_name: lead.contact_name,
+            follow_up_date: followUpDate,
+            note: combinedNote,
+            assigned_to: assignee
+          })
+        });
+        if (!res.ok) throw new Error("Failed to create follow-up");
         toast.success("Follow-up created successfully");
       }
-
-      // Update the lead's assigned_to field to reflect the new assignment
-      const { error: updateError } = await supabase
-        .from("leads" as any)
-        .update({ assigned_to: assignee })
-        .eq("id", selectedLeadId);
-      
-      if (updateError) throw updateError;
 
       setIsDialogOpen(false);
       resetForm();
@@ -250,8 +261,16 @@ export default function FollowUps() {
 
   const handleAcknowledge = async (id: string) => {
     try {
-      const { error } = await supabase.from("follow_ups" as any).update({ is_notified: true }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/follow-ups/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ is_notified: true })
+      });
+      if (!res.ok) throw new Error("Failed to acknowledge follow-up");
       toast.success("Follow-up acknowledged");
       fetchFollowUps();
     } catch (error: any) {
@@ -261,9 +280,12 @@ export default function FollowUps() {
 
   const handleDelete = async (id: string) => {
     try {
-      // Soft-delete the follow-up instead of permanent deletion
-      const { error } = await supabase.from("follow_ups" as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/follow-ups/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete follow-up");
       toast.success("Follow-up removed from view (soft-deleted)");
       fetchFollowUps();
     } catch (error: any) {

@@ -962,8 +962,16 @@ export default function LeadsList() {
                         defaultValue={lead.stage}
                         onValueChange={async (newStage) => {
                           try {
-                            const { error } = await supabase.from("leads").update({ stage: newStage }).eq("id", lead.id);
-                            if (error) throw error;
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const res = await fetch(`/api/leads/${lead.id}`, {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session?.access_token}`
+                              },
+                              body: JSON.stringify({ stage: newStage })
+                            });
+                            if (!res.ok) throw new Error("Failed to update stage");
                             toast.success(`Lead moved to ${newStage}`);
                             fetchLeads();
                           } catch (err: any) {

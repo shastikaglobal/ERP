@@ -29,6 +29,14 @@ type Quotation = {
   currency: string;
 };
 
+type FollowUp = {
+  id: string;
+  follow_up_date: string;
+  note: string;
+  assigned_to: string;
+  is_notified: boolean;
+};
+
 type Lead = {
   id: string;
   company_name: string;
@@ -67,6 +75,7 @@ export default function LeadDetail() {
   const [lead, setLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(false);
   const [newProduct, setNewProduct] = useState("");
@@ -102,6 +111,13 @@ export default function LeadDetail() {
         const quotes = await quotesRes.json();
         
         setQuotations(quotes as unknown as Quotation[]);
+
+        const followUpsRes = await fetch(`/api/leads/${id}/follow-ups`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!followUpsRes.ok) throw new Error("Failed to fetch follow-ups");
+        const followUpsData = await followUpsRes.json();
+        setFollowUps(followUpsData as unknown as FollowUp[]);
       } catch (error: any) {
         toast.error(error.message || "Failed to load lead details");
       } finally {
@@ -256,6 +272,22 @@ export default function LeadDetail() {
                   </div>
                 ))}
               </div>
+            )}
+          </Section>
+          <Section title="Follow Ups">
+            {followUps.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No follow ups recorded yet.</p>
+            ) : (
+              <ol className="relative border-l border-border ml-2 space-y-4">
+                {followUps.map((f) => (
+                  <li key={f.id} className="ml-4">
+                    <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-blue-500 border-4 border-background" />
+                    <div className="text-sm font-medium">{f.follow_up_date ? format(new Date(f.follow_up_date), "PP") : "No Date"} - {f.assigned_to || "Unassigned"}</div>
+                    <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{f.note || "No note"}</div>
+                    {f.is_notified && <span className="text-[10px] text-green-500 font-semibold uppercase mt-1 inline-block">Notified</span>}
+                  </li>
+                ))}
+              </ol>
             )}
           </Section>
         </div>

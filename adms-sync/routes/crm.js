@@ -185,6 +185,24 @@ router.post('/:id/follow-ups', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/leads/:id/follow-ups - Fetch lead follow ups
+router.get('/:id/follow-ups', requireAuth, async (req, res) => {
+  try {
+    const { data: rows, error } = await supabase
+      .from('follow_ups')
+      .select('*')
+      .eq('lead_id', req.params.id)
+      .neq('is_deleted', true)
+      .order('follow_up_date', { ascending: false });
+
+    if (error) throw error;
+    res.json(rows || []);
+  } catch (err) {
+    console.error("Supabase Error (get lead follow-ups):", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // GET /api/leads/:id/activities - Fetch lead activities
 router.get('/:id/activities', requireAuth, async (req, res) => {
   try {
