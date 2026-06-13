@@ -9,9 +9,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+
+const DEFAULT_ACQUISITION_CHANNELS = [
+  "Social Media (Instagram, Facebook)",
+  "Trade Fair / Exhibition",
+  "Referral",
+  "Cold Call / Direct Outreach",
+  "Website / Online Inquiry",
+  "WhatsApp Marketing",
+  "Agent / Broker",
+];
 
 export default function ClientAcquisition() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [sources, setSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,24 +64,71 @@ export default function ClientAcquisition() {
     };
   }, []);
 
+  const getCompanyId = async () => {
+    if (profile?.company_id) return profile.company_id;
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', userId)
+      .single();
+    if (profileError) return null;
+    return profileData?.company_id || null;
+  };
+
+  const ensureDefaultChannels = async (companyId: string, currentChannels: any[]) => {
+    const existingNames = new Set(currentChannels.map(ch => String(ch.channel_name || '').trim().toLowerCase()));
+    const missingChannels = DEFAULT_ACQUISITION_CHANNELS
+      .filter(name => !existingNames.has(name.trim().toLowerCase()))
+      .map(name => ({
+        company_id: companyId,
+        channel_name: name,
+        avg_lead_cost: 0,
+      }));
+
+    if (missingChannels.length === 0) return;
+
+    await supabase.from('acquisition_channels').insert(missingChannels);
+  };
+
   const fetchData = async () => {
     setLoading(true);
+
+    const companyId = await getCompanyId();
+    if (!companyId) {
+      setSources([]);
+      setLoading(false);
+      return;
+    }
 
     const { data: channels } = await supabase
       .from('acquisition_channels')
       .select('*')
+      .eq('company_id', companyId)
       .order('channel_name');
 
     const { data: leads } = await supabase
       .from('leads')
       .select('id, source_id, stage');
 
-    if (channels && leads) {
+    if (channels) {
+      await ensureDefaultChannels(companyId, channels);
+    }
+
+    const { data: allChannels } = await supabase
+      .from('acquisition_channels')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('channel_name');
+
+    if (allChannels && leads) {
       let tLeads = 0;
       let tClients = 0;
       let tRevenue = 0;
 
-      const processed = channels.map(ch => {
+      const processed = allChannels.map(ch => {
         const chLeads = leads.filter(l => l.source_id === ch.id);
         const chClients = chLeads.filter(l => l.stage && ['Won', 'Closed Won', 'Deal Won', 'Client', 'Converted'].some(s => l.stage.toLowerCase().includes(s.toLowerCase())));
 
