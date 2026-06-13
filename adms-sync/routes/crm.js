@@ -74,15 +74,24 @@ router.put('/:id', requireAuth, async (req, res) => {
       const leadCheck = await db.query('SELECT company_id, company_name, country, email FROM leads WHERE id = $1', [id]);
       if (leadCheck.rows.length > 0) {
         const leadData = leadCheck.rows[0];
-        // Ensure company_id is present, default to 1 if not
-        const cmpId = leadData.company_id || 1;
-        // Check if already in customers to avoid duplicates
-        const custCheck = await db.query('SELECT id FROM customers WHERE email = $1 AND name = $2', [leadData.email, leadData.company_name]);
-        if (custCheck.rows.length === 0) {
-          await db.query(
-            `INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)`,
-            [cmpId, leadData.company_name, leadData.country, leadData.email]
-          );
+        
+        let cmpId = leadData.company_id;
+        if (!cmpId && req.user && req.user.sub) {
+          const empCheck = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
+          if (empCheck.rows.length > 0) cmpId = empCheck.rows[0].company_id;
+        }
+
+        if (cmpId) {
+          // Check if already in customers to avoid duplicates
+          const custCheck = await db.query('SELECT id FROM customers WHERE email = $1 AND name = $2', [leadData.email, leadData.company_name]);
+          if (custCheck.rows.length === 0) {
+            await db.query(
+              `INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)`,
+              [cmpId, leadData.company_name, leadData.country, leadData.email]
+            );
+          }
+        } else {
+          console.error("Skipping conversion: no valid company_id found for lead", id);
         }
       }
       updates.stage = 'Client Successfully Acquired';
