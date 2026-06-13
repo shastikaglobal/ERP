@@ -560,17 +560,21 @@ export default function CustomersList() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Initial Health Category</Label>
-                <select
-                  value={formData.relationship_status}
-                  onChange={e => setFormData({ ...formData, relationship_status: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                <Select
+                  value={String(formData.relationship_status || "")}
+                  onValueChange={(val) => setFormData({ ...formData, relationship_status: val })}
                 >
-                  <option value="Active Client">Active Client</option>
-                  <option value="Repeat Buyer">Repeat Buyer</option>
-                  <option value="High Value Client">High Value Client</option>
-                  <option value="Potential Growth Client">Potential Growth Client</option>
-                  <option value="Inactive Client">Inactive Client</option>
-                </select>
+                  <SelectTrigger className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-white/10">
+                    <SelectItem value="Active Client">Active Client</SelectItem>
+                    <SelectItem value="Repeat Buyer">Repeat Buyer</SelectItem>
+                    <SelectItem value="High Value Client">High Value Client</SelectItem>
+                    <SelectItem value="Potential Growth Client">Potential Growth Client</SelectItem>
+                    <SelectItem value="Inactive Client">Inactive Client</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="notes" className="text-xs uppercase tracking-widest font-bold opacity-70">Business Notes</Label>
@@ -616,17 +620,21 @@ export default function CustomersList() {
               </div>
               <div className="space-y-2 col-span-2">
                 <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Relationship Health Status</Label>
-                <select
-                  value={formData.relationship_status}
-                  onChange={e => setFormData({ ...formData, relationship_status: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                <Select
+                  value={String(formData.relationship_status || "")}
+                  onValueChange={(val) => setFormData({ ...formData, relationship_status: val })}
                 >
-                  <option value="Active Client">Active Client</option>
-                  <option value="Repeat Buyer">Repeat Buyer</option>
-                  <option value="High Value Client">High Value Client</option>
-                  <option value="Potential Growth Client">Potential Growth Client</option>
-                  <option value="Inactive Client">Inactive Client</option>
-                </select>
+                  <SelectTrigger className="w-full bg-white/5 border border-white/10 rounded-md h-10 px-3 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-white/10">
+                    <SelectItem value="Active Client">Active Client</SelectItem>
+                    <SelectItem value="Repeat Buyer">Repeat Buyer</SelectItem>
+                    <SelectItem value="High Value Client">High Value Client</SelectItem>
+                    <SelectItem value="Potential Growth Client">Potential Growth Client</SelectItem>
+                    <SelectItem value="Inactive Client">Inactive Client</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter className="pt-4 gap-2">
