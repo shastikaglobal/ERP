@@ -72,7 +72,7 @@ export const navGroups: NavGroup[] = [
       { title: "Report", url: "/crm/reports", icon: BarChart3, permission: "farmers.view" },
       { title: "Mail Box", url: "/system/mailbox", icon: Inbox, permission: "farmers.view" },
       { title: "Email Integration", url: "/crm/email", icon: Mail, permission: "farmers.view" },
-      { title: "Security", url: "/crm/security", icon: ShieldCheck, permission: "farmers.view" },
+      // { title: "Security", url: "/crm/security", icon: ShieldCheck, permission: "farmers.view" },
       { title: "Advanced Security", url: "/crm/advanced-security", icon: ShieldAlert, permission: "farmers.view" },
       { title: "Zoho API Sync", url: "/system/integrations/zoho", icon: Mail, permission: "farmers.view" },
     ],
@@ -85,18 +85,19 @@ export const navGroups: NavGroup[] = [
       { title: "Revenue Analytics", url: "/crm/revenue", icon: TrendingUp, permission: "farmers.view" },
     ]
   },
-  {
-    title: "Mobile CRM",
-    icon: Smartphone,
-    items: [
-      { title: "Mobile Login", url: "/mobile/login", icon: Key, permission: "farmers.view" },
-      { title: "Push Notifications", url: "/mobile/push-notifications", icon: Bell, permission: "farmers.view" },
-      { title: "Call Logging", url: "/mobile/call-logging", icon: PhoneCall, permission: "farmers.view" },
-      { title: "GPS Tracking", url: "/mobile/gps-tracking", icon: MapPin, permission: "farmers.view" },
-      { title: "IP Tracking", url: "/mobile/ip-tracking", icon: Globe, permission: "farmers.view" },
-      { title: "Device Authorization", url: "/mobile/device-authorization", icon: ShieldCheck, permission: "farmers.view" },
-    ],
-  },
+  // Mobile CRM – commented out, sidebar section disabled
+  // {
+  //   title: "Mobile CRM",
+  //   icon: Smartphone,
+  //   items: [
+  //     { title: "Mobile Login", url: "/mobile/login", icon: Key, permission: "farmers.view" },
+  //     { title: "Push Notifications", url: "/mobile/push-notifications", icon: Bell, permission: "farmers.view" },
+  //     { title: "Call Logging", url: "/mobile/call-logging", icon: PhoneCall, permission: "farmers.view" },
+  //     { title: "GPS Tracking", url: "/mobile/gps-tracking", icon: MapPin, permission: "farmers.view" },
+  //     { title: "IP Tracking", url: "/mobile/ip-tracking", icon: Globe, permission: "farmers.view" },
+  //     { title: "Device Authorization", url: "/mobile/device-authorization", icon: ShieldCheck, permission: "farmers.view" },
+  //   ],
+  // },
 
   {
     title: "Procurement",

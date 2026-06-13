@@ -21,7 +21,7 @@ import EmailIntegration from "./pages/crm/EmailIntegration";
 import CrmDashboard from "./pages/crm/Dashboard";
 import CrmTasks from "./pages/crm/Tasks";
 import CrmSecurity from "./pages/crm/Security";
-import CrmMobileCRM from "./pages/crm/MobileCRM";
+
 import CrmClientAcquisition from "./pages/crm/ClientAcquisition";
 import CrmAdvancedSecurity from "./pages/crm/AdvancedSecurity";
 import CrmReports from "./pages/crm/Reports";
@@ -33,13 +33,13 @@ import CrmEmployeeActivity from "./pages/crm/EmployeeActivity";
 import CrmConvert from "./pages/crm/Convert";
 import CrmCustomersList from "./pages/crm/CustomersList";
 
-// Mobile CRM
-import MobileLogin from "./pages/mobile/MobileLogin";
-import PushNotifications from "./pages/mobile/PushNotifications";
-import CallLogging from "./pages/mobile/CallLogging";
-import GPSTracking from "./pages/mobile/GPSTracking";
-import IPTracking from "./pages/mobile/IPTracking";
-import DeviceAuthorization from "./pages/mobile/DeviceAuthorization";
+// Mobile CRM (commented out – sidebar section disabled)
+// import MobileLogin from "./pages/mobile/MobileLogin";
+// import PushNotifications from "./pages/mobile/PushNotifications";
+// import CallLogging from "./pages/mobile/CallLogging";
+// import GPSTracking from "./pages/mobile/GPSTracking";
+// import IPTracking from "./pages/mobile/IPTracking";
+// import DeviceAuthorization from "./pages/mobile/DeviceAuthorization";
 
 import CompleteProfile from "./pages/CompleteProfile";
 import WaitingApproval from "./pages/WaitingApproval";
@@ -325,7 +325,6 @@ const App = () => (
               <Route path="/crm/email" element={<EmailIntegration />} />
               <Route path="/crm/tasks" element={<CrmTasks />} />
               <Route path="/crm/security" element={<CrmSecurity />} />
-              <Route path="/crm/mobile-crm" element={<CrmMobileCRM />} />
               <Route path="/crm/client-acquisition" element={<CrmClientAcquisition />} />
               <Route path="/crm/advanced-security" element={<CrmAdvancedSecurity />} />
               <Route path="/crm/reports" element={<CrmReports />} />
@@ -337,13 +336,14 @@ const App = () => (
               <Route path="/crm/convert" element={<CrmConvert />} />
               <Route path="/crm/customers" element={<CrmCustomersList />} />
 
-              {/* Mobile pages */}
-              <Route path="/mobile/login" element={<MobileLogin />} />
-              <Route path="/mobile/push-notifications" element={<PushNotifications />} />
-              <Route path="/mobile/call-logging" element={<CallLogging />} />
-              <Route path="/mobile/gps-tracking" element={<GPSTracking />} />
-              <Route path="/mobile/ip-tracking" element={<IPTracking />} />
-              <Route path="/mobile/device-authorization" element={<DeviceAuthorization />} />
+              {/* Mobile pages – commented out, sidebar section disabled
+              /mobile/login -> MobileLogin
+              /mobile/push-notifications -> PushNotifications
+              /mobile/call-logging -> CallLogging
+              /mobile/gps-tracking -> GPSTracking
+              /mobile/ip-tracking -> IPTracking
+              /mobile/device-authorization -> DeviceAuthorization
+              */}
 
               {/* Orders */}
               <Route path="/orders" element={<OrdersList />} />
