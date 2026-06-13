@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download, Loader2, Filter } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function ContainerLoadingReport() {
   const { profile } = useAuth();
@@ -24,19 +25,18 @@ export default function ContainerLoadingReport() {
 
   const handleExport = async () => {
     try {
-      const { data, error } = await supabase
-        .from('container_loadings')
-        .select('*');
-      
-      if (error) throw error;
-      
+      if (!report || report.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
       const csv = [
         ['Container ID', 'Container Number', 
          'Product', 'Loading Status', 
          'Seal Number', 'Utilization %',
          'Total Weight (kg)', 'Destination',
          'Loading Date'],
-        ...data.map(row => [
+        ...report.map((row: any) => [
           row.id,
           row.container_number,
           row.product_name,
@@ -47,7 +47,7 @@ export default function ContainerLoadingReport() {
           row.destination,
           row.loading_date
         ])
-      ].map(r => r.join(',')).join('\n');
+      ].map(r => r.map((cell) => String(cell).replace(/"/g, '""')).join(',')).join('\n');
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -56,8 +56,10 @@ export default function ContainerLoadingReport() {
       a.download = 'Container_Loading_Report.csv';
       a.click();
       URL.revokeObjectURL(url);
+      toast.success('Report exported successfully');
     } catch (err) {
       console.error('Export failed:', err);
+      toast.error('Failed to export report');
     }
   };
 

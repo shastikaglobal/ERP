@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function ConfirmDialog({ open, title = 'Confirm', message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel', loading = false }) {
+export function ConfirmDialog({ open, title = 'Confirm', message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel', loading = false }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center px-4 py-8">
@@ -16,3 +16,5 @@ export default function ConfirmDialog({ open, title = 'Confirm', message, onConf
     </div>
   )
 }
+
+export default ConfirmDialog

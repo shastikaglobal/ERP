@@ -254,6 +254,11 @@ export default function ExportReady() {
   };
 
   const exportCsv = () => {
+    if (!filteredInventory || filteredInventory.length === 0) {
+      toast.info("No data available to export");
+      return;
+    }
+
     const headers = [
       "Product",
       "Warehouse",
@@ -364,7 +369,12 @@ export default function ExportReady() {
                   <SelectItem value="shipped">Shipped</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={exportCsv} className="whitespace-nowrap">
+              <Button
+                variant="outline"
+                onClick={exportCsv}
+                className="whitespace-nowrap"
+                disabled={isInventoryLoading}
+              >
                 <Download className="h-4 w-4" /> Export
               </Button>
             </div>

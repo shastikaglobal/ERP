@@ -23,7 +23,10 @@ export default function DamageWastageReport() {
   });
 
   const handleExport = () => {
-    if (!report?.data) return;
+    if (!report?.data || report.data.length === 0) {
+      toast.info("No data available to export");
+      return;
+    }
 
     const csv = [
       ["Lot Number", "Product", "Status", "Quantity (kg)", "Grade", "Warehouse", "Received Date"].join(","),

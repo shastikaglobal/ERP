@@ -32,7 +32,10 @@ export default function InventoryAgingReport() {
   });
 
   const handleExport = () => {
-    if (!report?.data) return;
+    if (!report?.data || report.data.length === 0) {
+      toast.info("No data available to export");
+      return;
+    }
 
     const csv = [
       ["Lot Number", "Product", "Days Old", "Aging Bucket", "Quantity (kg)", "Warehouse", "Received Date"].join(","),

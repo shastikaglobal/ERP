@@ -34,6 +34,25 @@ const STAGES = [
     { id: "stock", label: "Stock Entry", icon: Database },
 ];
 
+const COMPANY_PRODUCT_NAMES = [
+    "Tender Coconut",
+    "Green Coconut",
+    "Husked Coconut",
+    "Semi-Husked Coconut",
+    "Dehusked Coconut",
+    "Fresh Organic Coconut",
+    "Tomato",
+    "Watermelon",
+    "Black Diamond Watermelon",
+    "Yellow Pumpkin",
+    "White Pumpkin",
+    "Yellow Cucumber",
+    "Cavendish Banana",
+    "Baby Banana",
+    "Nendran Banana",
+    "Red Banana",
+];
+
 export default function ReceivingGoods() {
     const queryClient = useQueryClient();
     const { profile } = useAuth();
@@ -41,26 +60,30 @@ export default function ReceivingGoods() {
     const [savedStocks, setSavedStocks] = useState<any[]>([]);
 
     const { data: suppliers = [], isLoading: suppliersLoading, error: suppliersError } = useQuery({
-        queryKey: ["warehouse-suppliers", profile?.company_id],
+        queryKey: ["warehouse-suppliers"],
         enabled: true,
         queryFn: async () => {
-            let query = supabase.from('farmers').select('id, full_name').neq('is_deleted', true).eq('is_active', true).order('full_name', { ascending: true });
-            if (profile?.company_id) query = query.eq('company_id', profile.company_id);
-            const { data, error } = await query;
+            const { data, error } = await supabase
+                .from('farmers')
+                .select('id, full_name, email, phone')
+                .neq('is_deleted', true)
+                .eq('is_active', true)
+                .order('full_name', { ascending: true });
             if (error) throw error;
             return data || [];
         }
     });
 
     const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
-        queryKey: ["warehouse-products", profile?.company_id],
+        queryKey: ["warehouse-products"],
         enabled: true,
         queryFn: async () => {
-            let query = supabase.from('products').select('id, name, grade, unit').neq('is_deleted', true).order('name', { ascending: true });
-            if (profile?.company_id) {
-                query = query.or(`company_id.eq.${profile.company_id},company_id.is.null`);
-            }
-            const { data, error } = await query;
+            const { data, error } = await supabase
+                .from('products')
+                .select('id, name, grade, unit')
+                .neq('is_deleted', true)
+                .eq('is_active', true)
+                .order('name', { ascending: true });
             if (error) throw error;
             return data || [];
         }
@@ -118,22 +141,78 @@ export default function ReceivingGoods() {
         notes: ""
     });
 
-    const handleInputChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const formatSupplierInfo = (supplier: any) => {
+        if (!supplier) return "";
+        const parts = [supplier.full_name];
+        if (supplier.phone) parts.push(supplier.phone);
+        if (supplier.email) parts.push(supplier.email);
+        return parts.filter(Boolean).join(" — ");
     };
 
+    const handleInputChange = (field: string, value: string) => {
+        const stringValue = String(value || "");
+        setFormData(prev => {
+            if (field === "supplierId") {
+                const supplier = suppliers.find((s: any) => String(s.id) === stringValue);
+                return {
+                    ...prev,
+                    supplierId: stringValue,
+                    supplierInfo: stringValue ? formatSupplierInfo(supplier) : "",
+                };
+            }
+            if (field === "productId" || field === "warehouseId") {
+                return { ...prev, [field]: stringValue };
+            }
+            return { ...prev, [field]: value };
+        });
+    };
+
+    const uniqueProducts = useMemo(() => {
+        const normalizedProducts = (products || [])
+            .filter((p: any) => p && p.name)
+            .map((p: any) => ({
+                ...p,
+                id: String(p.id),
+                normalizedName: String(p.name).trim().toLowerCase(),
+                normalizedGrade: String(p.grade || "").trim().toLowerCase(),
+                normalizedUnit: String(p.unit || "").trim().toLowerCase(),
+            }));
+
+        const productMap = normalizedProducts.reduce((map: Record<string, any>, product: any) => {
+            if (!map[product.normalizedName]) {
+                map[product.normalizedName] = product;
+            }
+            return map;
+        }, {} as Record<string, any>);
+
+        return COMPANY_PRODUCT_NAMES.map((name, index) => {
+            const normalizedName = name.trim().toLowerCase();
+            const product = productMap[normalizedName];
+            if (product) {
+                return product;
+            }
+            return {
+                id: `fallback-product-${index}`,
+                name,
+                grade: "",
+                unit: "kg",
+                isFallback: true,
+            };
+        });
+    }, [products]);
+
     const selectedProduct = useMemo(
-        () => products.find((product: any) => product.id === formData.productId),
-        [products, formData.productId]
+        () => uniqueProducts.find((product: any) => product.id === formData.productId),
+        [uniqueProducts, formData.productId]
     );
 
     const selectedWarehouse = useMemo(
-        () => warehouses.find((warehouse: any) => warehouse.id === formData.warehouseId),
+        () => warehouses.find((warehouse: any) => String(warehouse.id) === formData.warehouseId),
         [warehouses, formData.warehouseId]
     );
 
     const selectedSupplier = useMemo(
-        () => suppliers.find((supplier: any) => supplier.id === formData.supplierId),
+        () => suppliers.find((supplier: any) => String(supplier.id) === formData.supplierId),
         [suppliers, formData.supplierId]
     );
 
@@ -448,11 +527,15 @@ export default function ReceivingGoods() {
                                                 <SelectValue placeholder={productsLoading ? "Loading products..." : "Select product"} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {products.length > 0 ? products.map((product: any) => (
+                                                {uniqueProducts.length > 0 ? uniqueProducts.map((product: any) => (
                                                     <SelectItem key={product.id} value={product.id}>
                                                         {product.name} {product.grade ? `- ${product.grade}` : ''}
                                                     </SelectItem>
-                                                )) : null}
+                                                )) : COMPANY_PRODUCT_NAMES.map((productName, idx) => (
+                                                    <SelectItem key={`fallback-${idx}`} value={`fallback-${idx}`}>
+                                                        {productName}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <p className="text-xs text-muted-foreground">Select the product batch being received.</p>
