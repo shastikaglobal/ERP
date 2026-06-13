@@ -4,6 +4,7 @@ import { Section } from "@/components/shared/FormShell";
 import { DollarSign, FileText, ClipboardList, TrendingUp, Users, Plus, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { isConvertedLeadStage, isClosedLeadStage } from "@/lib/crmStages";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,8 @@ export default function BdeDashboard() {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
+        .or(`company_id.eq.${profile.company_id},company_id.is.null`)
+        .neq('is_deleted', true);
       if (error) throw error;
       return data || [];
     },
@@ -65,8 +67,8 @@ export default function BdeDashboard() {
 
   // Calculations
   const totalLeads = leads.length;
-  const wonLeads = leads.filter(l => l.stage === 'won').length;
-  const activeLeads = leads.filter(l => l.stage !== 'won' && l.stage !== 'lost').length;
+  const wonLeads = leads.filter((l) => isConvertedLeadStage(l.stage)).length;
+  const activeLeads = leads.filter((l) => !isClosedLeadStage(l.stage)).length;
   const leadConversionRate = totalLeads > 0 ? ((wonLeads / totalLeads) * 100).toFixed(0) : '0';
 
   const totalQuotes = quotations.length;

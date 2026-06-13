@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { isConvertedLeadStage } from "@/lib/crmStages";
 
 const DEFAULT_ACQUISITION_CHANNELS = [
   "Social Media (Instagram, Facebook)",
@@ -121,7 +122,8 @@ export default function ClientAcquisition() {
 
     const { data: leads } = await supabase
       .from('leads')
-      .select('id, source_id, stage');
+      .select('id, source_id, stage')
+      .neq('is_deleted', true);
 
     if (channels) {
       await ensureDefaultChannels(companyId, channels);
@@ -144,10 +146,9 @@ export default function ClientAcquisition() {
       const tClients = leads.filter(l => isClient(l.stage)).length;
       const tRevenue = tClients * 12000;
 
-      const processed = allChannels.map(ch => {
+            const processed = allChannels.map(ch => {
         const chLeads = leads.filter(l => l.source_id === ch.id);
-        const chClients = chLeads.filter(l => isClient(l.stage));
-
+        const chClients = chLeads.filter(l => isConvertedLeadStage(l.stage));
         const leadsCount = chLeads.length;
         const clientsCount = chClients.length;
         const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
@@ -168,7 +169,7 @@ export default function ClientAcquisition() {
       // Add "Direct / Unknown" row for leads without a source
       const unknownLeads = leads.filter(l => !l.source_id);
       if (unknownLeads.length > 0) {
-        const unknownClients = unknownLeads.filter(l => isClient(l.stage));
+        const unknownClients = unknownLeads.filter(l => isConvertedLeadStage(l.stage));
         const leadsCount = unknownLeads.length;
         const clientsCount = unknownClients.length;
         const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";

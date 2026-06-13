@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
+import { isConvertedLeadStage } from "@/lib/crmStages";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useAuth } from "@/hooks/useAuth";
@@ -181,7 +182,7 @@ export default function RevenueAnalytics() {
         const acquiredLeads = data.leads.filter((l: any) => {
             // Only include leads that actually have orders placed
             const hasOrder = customerNamesWithOrders.has(l.company_name?.toLowerCase());
-            return hasOrder && ['won', 'converted', 'customer'].includes(l.stage?.toLowerCase()?.trim());
+            return hasOrder && isConvertedLeadStage(l.stage);
         });
 
         acquiredLeads.forEach((lead: any) => {

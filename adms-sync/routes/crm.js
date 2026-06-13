@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/leads - Fetch all leads
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM leads ORDER BY created_at DESC');
+    const { rows } = await db.query('SELECT * FROM leads WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get leads):", err);
@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1', [id]);
+    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND is_deleted IS NOT TRUE', [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -43,12 +43,12 @@ router.post('/', requireAuth, async (req, res) => {
         data.company_id = profileRows[0].company_id;
       }
     }
-    
+
     const keys = Object.keys(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const columns = keys.map(k => `"${k}"`).join(', ');
     const values = Object.values(data);
-    
+
     const { rows } = await db.query(
       `INSERT INTO leads (${columns}) VALUES (${placeholders}) RETURNING *`,
       values
@@ -66,16 +66,16 @@ router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
+
     const keys = Object.keys(updates);
     if (keys.length === 0) return res.json({ success: true });
-    
+
     if (updates.stage === 'Won' || updates.stage === 'Client Successfully Acquired') {
       // Automatically convert to customer if not already converted
       const leadCheck = await db.query('SELECT company_id, company_name, country, email FROM leads WHERE id = $1', [id]);
       if (leadCheck.rows.length > 0) {
         const leadData = leadCheck.rows[0];
-        
+
         let cmpId = leadData.company_id;
         if (!cmpId && req.user && req.user.sub) {
           const empCheck = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
@@ -100,7 +100,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     const setClause = keys.map((key, i) => `"${key}" = $${i + 2}`).join(', ');
     const values = [id, ...Object.values(updates)];
-    
+
     await db.query(`UPDATE leads SET ${setClause} WHERE id = $1`, values);
     res.json({ success: true });
   } catch (err) {
@@ -137,7 +137,7 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { company_id, name, country, email } = req.body;
-    
+
     // Insert into customers
     await db.query(
       'INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)',
@@ -161,15 +161,15 @@ router.post('/:id/follow-ups', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { company_name, contact_name, follow_up_date, note, assigned_to } = req.body;
-    
+
     await db.query(
       `INSERT INTO follow_ups (lead_id, company_name, contact_name, follow_up_date, note, assigned_to, is_notified) 
        VALUES ($1, $2, $3, $4, $5, $6, false)`,
       [id, company_name, contact_name, follow_up_date, note, assigned_to]
     );
-    
+
     await db.query('UPDATE leads SET assigned_to = $1 WHERE id = $2', [assigned_to, id]);
-    
+
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (add follow-up):", err);
@@ -189,7 +189,7 @@ router.get('/:id/activities', requireAuth, async (req, res) => {
        ORDER BY a.created_at DESC`,
       [id]
     );
-    
+
     // Format to match Supabase nested structure: profiles: { full_name }
     const formatted = rows.map(r => {
       const { profile_full_name, ...rest } = r;
@@ -198,7 +198,7 @@ router.get('/:id/activities', requireAuth, async (req, res) => {
         profiles: { full_name: profile_full_name }
       };
     });
-    
+
     res.json(formatted);
   } catch (err) {
     console.error("DB Error (get lead activities):", err);
@@ -228,12 +228,12 @@ router.post('/:id/activities', requireAuth, async (req, res) => {
     const data = req.body;
     data.lead_id = id;
     data.created_by = req.user.sub;
-    
+
     const keys = Object.keys(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const columns = keys.map(k => `"${k}"`).join(', ');
     const values = Object.values(data);
-    
+
     const { rows } = await db.query(
       `INSERT INTO lead_activities (${columns}) VALUES (${placeholders}) RETURNING *`,
       values

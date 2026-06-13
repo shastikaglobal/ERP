@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2, Globe, Calendar } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { CRM_CONVERTED_LEAD_STAGES } from "@/lib/crmStages";
 
 export default function CrmConvert() {
   const { data: conversions, isLoading } = useQuery({
@@ -13,7 +14,7 @@ export default function CrmConvert() {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .in("stage", ["Won", "Client Successfully Acquired"])
+        .in("stage", CRM_CONVERTED_LEAD_STAGES as readonly string[])
         .order("updated_at", { ascending: false });
       
       if (error) throw error;
@@ -75,8 +76,8 @@ export default function CrmConvert() {
                   </TableCell>
                   <TableCell>{conversion.product_type}</TableCell>
                   <TableCell className="text-right">
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 uppercase text-[10px]">
-                      Won
+                    <Badge className={`bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 uppercase text-[10px]`}>
+                      {conversion.stage || "Unknown"}
                     </Badge>
                   </TableCell>
                 </TableRow>

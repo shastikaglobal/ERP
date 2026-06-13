@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AIChatPanel } from "./AIChatPanel";
+import { CRM_CONVERTED_LEAD_STAGES } from "@/lib/crmStages";
 
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
@@ -64,7 +65,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
 
         const [acqRes, convRes, custRes] = await Promise.all([
           supabase.from('client_acquisition' as any).select('id', { count: 'exact', head: true }).maybeSingle(),
-          supabase.from('leads' as any).select('id', { count: 'exact', head: true }).in('stage', ['Won', 'Client Successfully Acquired']).maybeSingle(),
+          supabase.from('leads' as any).select('id', { count: 'exact', head: true }).in('stage', CRM_CONVERTED_LEAD_STAGES as readonly string[]).maybeSingle(),
           supabase.from('customers' as any).select('id', { count: 'exact', head: true }).maybeSingle()
         ]);
 

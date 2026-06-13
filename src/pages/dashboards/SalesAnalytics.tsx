@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { isConvertedLeadStage, isLostLeadStage } from "@/lib/crmStages";
 import { format, parse, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
 
 export default function SalesAnalytics() {
@@ -20,6 +21,7 @@ export default function SalesAnalytics() {
         .from('leads')
         .select('id, company_name, country, assigned_to, stage, created_at, status')
         .eq('company_id', profile.company_id)
+        .neq('is_deleted', true)
         .order('created_at', { ascending: false });
       if (error) {
         console.error('Error fetching leads:', error);
@@ -97,8 +99,8 @@ export default function SalesAnalytics() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
   
   const totalLeads = leads.length;
-  const wonLeads = leads.filter(l => l.stage === 'closed_won').length;
-  const lostLeads = leads.filter(l => l.stage === 'closed_lost').length;
+  const wonLeads = leads.filter((l) => isConvertedLeadStage(l.stage)).length;
+  const lostLeads = leads.filter((l) => isLostLeadStage(l.stage)).length;
   
   const conversionRate = totalLeads > 0 ? (orders.length / totalLeads) * 100 : 0;
   

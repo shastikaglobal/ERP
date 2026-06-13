@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, startOfWeek, subDays, isAfter, differenceInMinutes } from "date-fns";
+import { isConvertedLeadStage } from "@/lib/crmStages";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsAdminOrManager } from "@/hooks/useAuth";
@@ -245,9 +246,7 @@ export default function Performance() {
         const reportedLinkedin = employeeDailyReports.reduce((sum, dr) => sum + (Number(dr.linkedin_messages) || 0), 0);
         const linkedinMessages = Math.max(individualLinkedin, reportedLinkedin);
 
-        const dealsClosed = employeeLeads.filter(l =>
-          ['won', 'closed won', 'closed_won', 'won', 'Closed Won'].includes(l.stage?.toLowerCase()?.trim())
-        ).length;
+        const dealsClosed = employeeLeads.filter((l) => isConvertedLeadStage(l.stage)).length;
 
         // Map export orders by matching created_by to employee or customer_name to lead
         const employeeOrders = (data.exportOrders || []).filter(o => {

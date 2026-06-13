@@ -27,26 +27,6 @@ const COLORS = {
   textMuted: "#484f58",
 };
 
-const statusColor = (s: string) => {
-  const map: Record<string, string> = {
-    "New": COLORS.blue,
-    "Qualified": COLORS.purple,
-    "Negotiation": COLORS.gold,
-    "Follow-Up": COLORS.orange,
-    "Closed Won": COLORS.green,
-    "closed_won": COLORS.green,
-    "Closed Lost": COLORS.red,
-    "closed_lost": COLORS.red,
-    "Draft": COLORS.textSecondary,
-    "Sent": COLORS.blue,
-    "Approved": COLORS.green,
-    "Online": COLORS.green,
-    "Idle": COLORS.gold,
-    "Offline": COLORS.textMuted
-  };
-  return map[s] || COLORS.textSecondary;
-};
-
 const Card = ({ children, style = {} }: { children: React.ReactNode, style?: React.CSSProperties }) => (
   <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 20px", ...style }}>
     {children}
@@ -131,11 +111,11 @@ function Dashboard() {
       <SectionHeader title="CRM Dashboard" sub="Shastika Global Impex — Agri Export ERP Overview" />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
-        <MetricCard label="Total Leads" value={dash.totalLeads.toString()} sub="Aggregated from live data" color={COLORS.blue} icon={<Target size={22} color={COLORS.blue} />} onClick={() => window.location.href = "/crm/leads"} />
-        <MetricCard label="Pending Follow-Ups" value={dash.totalPending.toString()} sub={`${dash.overdueActivities} overdue`} color={COLORS.orange} icon={<Bell size={22} color={COLORS.orange} />} onClick={() => window.location.href = "/crm/activities"} />
-        <MetricCard label="Closed Deals" value={dash.closedWonLeads.toString()} sub="Total Closed Won" color={COLORS.green} icon={<CheckCircle2 size={22} color={COLORS.green} />} onClick={() => window.location.href = "/crm/leads"} />
+        <MetricCard label="Total Leads" value={(dash.totalLeads || 0).toString()} sub="Aggregated from live data" color={COLORS.blue} icon={<Target size={22} color={COLORS.blue} />} onClick={() => window.location.href = "/crm/leads"} />
+        <MetricCard label="Pending Follow-Ups" value={(dash.totalPending || 0).toString()} sub={`${dash.overdueActivities || 0} overdue`} color={COLORS.orange} icon={<Bell size={22} color={COLORS.orange} />} onClick={() => window.location.href = "/crm/activities"} />
+        <MetricCard label="Closed Deals" value={(dash.closedWonLeads || 0).toString()} sub="Total Closed Won" color={COLORS.green} icon={<CheckCircle2 size={22} color={COLORS.green} />} onClick={() => window.location.href = "/crm/leads"} />
         <MetricCard label="Revenue (USD)" value={revenueFormatted} sub="Total approved quotations" color={COLORS.accent} icon={<DollarSign size={22} color={COLORS.accent} />} />
-        <MetricCard label="Conversion Rate" value={`${dash.conversionRate}%`} sub="Won vs Total Leads" color={COLORS.purple} icon={<TrendingUp size={22} color={COLORS.purple} />} />
+        <MetricCard label="Conversion Rate" value={`${dash.conversionRate || 0}%`} sub="Won vs Total Leads" color={COLORS.purple} icon={<TrendingUp size={22} color={COLORS.purple} />} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>

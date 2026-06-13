@@ -13,6 +13,13 @@ import { Loader2, Plus, Trash2, MessageSquare, Search, FileDown, FileSpreadsheet
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  CRM_LEAD_STAGES,
+  CRM_OPEN_LEAD_STAGES,
+  CRM_CLOSED_LEAD_STAGES,
+  getLeadStageBadgeColor,
+  isWonLeadStage,
+} from "@/lib/crmStages";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -44,24 +51,7 @@ type Lead = {
   source_id?: string | null;
 };
 
-const STAGES = ["New", "Contacted", "Negotiation", "Qualified", "Won", "Client Successfully Acquired", "Lost"];
-
-const STAGE_COLORS: Record<string, string> = {
-  new: "bg-slate-500",
-  contacted: "bg-blue-500",
-  negotiation: "bg-yellow-500",
-  qualified: "bg-purple-500",
-  won: "bg-green-500",
-  "client successfully acquired": "bg-emerald-500",
-  lost: "bg-red-500",
-  New: "bg-slate-500",
-  Contacted: "bg-blue-500",
-  Negotiation: "bg-yellow-500",
-  Qualified: "bg-purple-500",
-  Won: "bg-green-500",
-  "Client Successfully Acquired": "bg-emerald-500",
-  Lost: "bg-red-500",
-};
+const STAGES = CRM_LEAD_STAGES;
 
 const EMAIL_SEPARATOR_REGEX = /[;,\n]+/;
 
@@ -126,8 +116,8 @@ export default function LeadsList() {
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
   const [leadsTab, setLeadsTab] = useState<"open" | "closed">("open");
 
-  const OPEN_STAGES = ["New", "Contacted", "Negotiation", "Qualified"];
-  const CLOSED_STAGES = ["Won", "Client Successfully Acquired", "Lost"];
+  const OPEN_STAGES = CRM_OPEN_LEAD_STAGES;
+  const CLOSED_STAGES = CRM_CLOSED_LEAD_STAGES;
 
   const uniqueCountries = Array.from(
     new Set(leads
@@ -983,8 +973,11 @@ export default function LeadsList() {
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     {canEditStage ? (
                       <Select
-                        defaultValue={lead.stage}
+                        value={lead.stage}
                         onValueChange={async (newStage) => {
+                          if (!newStage || newStage === lead.stage) return;
+                          const previousLeads = [...leads];
+                          setLeads(leads.map((item) => item.id === lead.id ? { ...item, stage: newStage } : item));
                           try {
                             const { data: { session } } = await supabase.auth.getSession();
                             const res = await fetch(`/api/leads/${lead.id}`, {
@@ -997,21 +990,26 @@ export default function LeadsList() {
                             });
                             if (!res.ok) throw new Error("Failed to update stage");
                             toast.success(`Lead moved to ${newStage}`);
-                            fetchLeads();
+                            await fetchLeads();
                           } catch (err: any) {
+                            setLeads(previousLeads);
                             toast.error(err.message || "Failed to update stage");
                           }
                         }}
                       >
-                        <SelectTrigger className={`h-8 w-32 ${STAGE_COLORS[lead.stage?.toLowerCase()] || 'bg-slate-500'} text-white border-none font-bold`}>
+                        <SelectTrigger className={`h-8 w-32 ${getLeadStageBadgeColor(lead.stage)} text-white border-none font-bold`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                          {STAGES.map((s) => (
+                            <SelectItem key={s} value={s} className="capitalize">
+                              {s}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge className={`h-8 w-32 justify-center ${STAGE_COLORS[lead.stage?.toLowerCase()] || 'bg-slate-500'} text-white border-none font-bold`}>
+                      <Badge className={`h-8 w-32 justify-center ${getLeadStageBadgeColor(lead.stage)} text-white border-none font-bold`}>
                         {lead.stage}
                       </Badge>
                     )}
@@ -1078,7 +1076,7 @@ export default function LeadsList() {
                       >
                         Remark
                       </Button>
-                      {["won", "client successfully acquired"].includes(lead.stage?.toLowerCase() || "") && (
+                      {isWonLeadStage(lead.stage) && (
                         <Button
                           size="sm"
                           variant="outline"
