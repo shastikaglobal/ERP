@@ -32,6 +32,8 @@ import CrmCustomerDatabase from "./pages/crm/CustomerDatabase";
 import CrmEmployeeActivity from "./pages/crm/EmployeeActivity";
 import CrmConvert from "./pages/crm/Convert";
 import CrmCustomersList from "./pages/crm/CustomersList";
+import CrmSuccessfulConversations from "./pages/crm/SuccessfulConversations";
+import CrmLostLeads from "./pages/crm/LostLeads";
 
 // Mobile CRM (commented out – sidebar section disabled)
 // import MobileLogin from "./pages/mobile/MobileLogin";
@@ -327,6 +329,8 @@ const App = () => (
               <Route path="/crm/tasks" element={<CrmTasks />} />
               <Route path="/crm/security" element={<CrmSecurity />} />
               <Route path="/crm/client-acquisition" element={<CrmClientAcquisition />} />
+              <Route path="/crm/successful-conversations" element={<CrmSuccessfulConversations />} />
+              <Route path="/crm/lost-leads" element={<CrmLostLeads />} />
               <Route path="/crm/advanced-security" element={<CrmAdvancedSecurity />} />
               <Route path="/crm/reports" element={<CrmReports />} />
               <Route path="/crm/performance" element={<CrmPerformance />} />

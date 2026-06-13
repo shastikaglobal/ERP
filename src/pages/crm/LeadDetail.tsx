@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+import { authFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -86,43 +86,31 @@ export default function LeadDetail() {
     async function fetchLeadDetails() {
       if (!id) return;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const leadRes = await fetch(`/api/leads/${id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const leadRes = await authFetch(`/api/leads/${id}`);
         if (!leadRes.ok) throw new Error("Failed to fetch lead");
         const leadData = await leadRes.json();
 
         setLead(leadData as unknown as Lead);
         setNewProduct(leadData.product_type || "");
 
-        const actsRes = await fetch(`/api/leads/${id}/activities`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const actsRes = await authFetch(`/api/leads/${id}/activities`);
         if (!actsRes.ok) throw new Error("Failed to fetch activities");
         const acts = await actsRes.json();
         
         setActivities(acts as unknown as Activity[]);
 
-        const quotesRes = await fetch(`/api/leads/${id}/quotations`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const quotesRes = await authFetch(`/api/leads/${id}/quotations`);
         if (!quotesRes.ok) throw new Error("Failed to fetch quotations");
         const quotes = await quotesRes.json();
         
         setQuotations(quotes as unknown as Quotation[]);
 
-        const followUpsRes = await fetch(`/api/leads/${id}/follow-ups`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const followUpsRes = await authFetch(`/api/leads/${id}/follow-ups`);
         if (!followUpsRes.ok) throw new Error("Failed to fetch follow-ups");
         const followUpsData = await followUpsRes.json();
         setFollowUps(followUpsData as unknown as FollowUp[]);
 
-        const tasksRes = await fetch(`/api/leads/${id}/tasks`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const tasksRes = await authFetch(`/api/leads/${id}/tasks`);
         if (tasksRes.ok) {
           const tasksData = await tasksRes.json();
           setTasks(tasksData);
@@ -141,10 +129,9 @@ export default function LeadDetail() {
     if (!id || !lead) return;
     setSavingProduct(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/leads/${id}`, {
+      const res = await authFetch(`/api/leads/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_type: newProduct })
       });
 

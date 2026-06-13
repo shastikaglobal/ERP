@@ -20,13 +20,23 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const totalLeads = parseInt(leadsRes.rows[0].total, 10);
 
     // 2. Closed Deals (Won Leads + Export Orders)
-    let wonLeadsQuery = `SELECT COUNT(*) as total FROM leads WHERE is_deleted = false AND stage IN ('won', 'closed_won', 'Closed Won', 'closed', 'Won')`;
+    // Query for leads with "Won" or "Client Successfully Acquired" stages (case-insensitive)
+    let wonLeadsQuery = `
+      SELECT COUNT(*) as total FROM leads 
+      WHERE is_deleted = false 
+      AND (
+        LOWER(TRIM(stage)) = 'won' 
+        OR LOWER(TRIM(stage)) = 'client successfully acquired'
+      )
+    `;
     const wonLeadsParams = [];
     if (company_id) {
       wonLeadsQuery += ` AND company_id = $1`;
       wonLeadsParams.push(company_id);
     }
     const wonLeadsRes = await db.query(wonLeadsQuery, wonLeadsParams);
+    
+    console.log(`[Analytics Dashboard] Won Leads Query - Count: ${wonLeadsRes.rows[0].total}, Company: ${company_id || 'all'}`);
     
     let ordersQuery = `SELECT COUNT(*) as total FROM export_orders WHERE is_deleted = false`;
     const ordersParams = [];

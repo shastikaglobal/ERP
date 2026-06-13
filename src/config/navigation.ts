@@ -14,7 +14,7 @@ import {
   UsersRound, CalendarCheck, ShieldCheck,
   Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare, Trash2, Inbox,
   Smartphone, Activity, ShieldAlert, Monitor, PhoneCall, Key, MessageSquare, Database, Globe,
-  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer
+  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer, CheckCircle2, XCircle
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -65,8 +65,8 @@ export const navGroups: NavGroup[] = [
       { title: "Follow-Ups", url: "/crm/follow-ups", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Communication", url: "/crm/communication", icon: MessageSquare, permission: "farmers.view" },
       { title: "Client Acquisition", url: "/crm/client-acquisition", icon: UserPlus, permission: "farmers.view" },
-      { title: "Successful Conversation", url: "/crm/convert", icon: BadgeCheck, permission: "farmers.view" },
-      { title: "Client Success", url: "/crm/customers", icon: Award, permission: "farmers.view" },
+      { title: "Successful Conversations", url: "/crm/successful-conversations", icon: CheckCircle2, permission: "farmers.view" },
+      { title: "Lost Leads", url: "/crm/lost-leads", icon: XCircle, permission: "farmers.view" },
       { title: "Customer Database", url: "/crm/customer-database", icon: Database, permission: "farmers.view" },
       { title: "Task", url: "/crm/tasks", icon: ClipboardCheck, permission: "farmers.view" },
       { title: "Report", url: "/crm/reports", icon: BarChart3, permission: "farmers.view" },

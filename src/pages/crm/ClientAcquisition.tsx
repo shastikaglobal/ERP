@@ -5,6 +5,7 @@ import Card from "@/components/Card";
 import { UserPlus, Star, BarChart3, TrendingUp, Search, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { authFetch } from "@/lib/api";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +15,6 @@ import { isConvertedLeadStage } from "@/lib/crmStages";
 
 const DEFAULT_ACQUISITION_CHANNELS = [
   "Social Media (Instagram, Facebook)",
-  "LinkedIn",
-  "Instagram",
-  "Google",
-  "Chrome / Direct Browsing",
   "Trade Fair / Exhibition",
   "Referral",
   "Cold Call / Direct Outreach",
@@ -69,28 +66,24 @@ export default function ClientAcquisition() {
     };
   }, []);
 
-  async function getCompanyId() {
+  const getCompanyId = async () => {
     if (profile?.company_id) return profile.company_id;
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
 
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data?.session?.user?.id) return null;
+    const res = await authFetch(`/api/employees/${userId}`);
+    if (!res.ok) {
+      console.warn("Failed to fetch employee record for company ID");
+      return null;
+    }
 
-    const userId = data.session.user.id;
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', userId)
-      .single();
+    const employeeData = await res.json();
+    return employeeData?.company_id || null;
+  };
 
-    if (profileError || !profileData) return null;
-    return profileData.company_id || null;
-  }
-
-  async function ensureDefaultChannels(companyId: string, currentChannels: any[]) {
-    const existingNames = new Set(
-      currentChannels.map(ch => String(ch.channel_name || '').trim().toLowerCase())
-    );
-
+  const ensureDefaultChannels = async (companyId: string, currentChannels: any[]) => {
+    const existingNames = new Set(currentChannels.map(ch => String(ch.channel_name || '').trim().toLowerCase()));
     const missingChannels = DEFAULT_ACQUISITION_CHANNELS
       .filter(name => !existingNames.has(name.trim().toLowerCase()))
       .map(name => ({
@@ -101,129 +94,169 @@ export default function ClientAcquisition() {
 
     if (missingChannels.length === 0) return;
 
-    await supabase.from('acquisition_channels').insert(missingChannels);
-  }
+    for (const channel of missingChannels) {
+      const res = await authFetch('/api/leads/meta/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(channel),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        console.warn('Failed to create default acquisition channel', channel.channel_name, body);
+      }
+    }
+  };
 
-  async function fetchData() {
+  const fetchData = async () => {
     setLoading(true);
 
-    const companyId = await getCompanyId();
-    if (!companyId) {
-      setSources([]);
-      setLoading(false);
-      return;
-    }
+    try {
+      const companyId = await getCompanyId();
+      if (!companyId) {
+        console.warn("No company ID found for user");
+        setSources([]);
+        setLoading(false);
+        return;
+      }
 
-    const { data: channels } = await supabase
-      .from('acquisition_channels')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('channel_name');
+      console.log(`[ClientAcquisition] Fetching data for company ${companyId}`);
 
-    const { data: leads } = await supabase
-      .from('leads')
-      .select('id, source_id, stage')
-      .neq('is_deleted', true);
+      // Fetch acquisition channels from backend
+      const channelsRes = await authFetch(`/api/leads/meta/sources?company_id=${encodeURIComponent(companyId)}`);
+      if (!channelsRes.ok) {
+        console.error("Error fetching channels from backend:", channelsRes.statusText);
+        toast.error("Failed to load acquisition channels");
+        setLoading(false);
+        return;
+      }
+      const channels = await channelsRes.json();
 
-    if (channels) {
-      await ensureDefaultChannels(companyId, channels);
-    }
+      // Ensure default channels exist
+      if (channels) {
+        await ensureDefaultChannels(companyId, channels);
+      }
 
-    const { data: allChannels } = await supabase
-      .from('acquisition_channels')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('channel_name');
+      // Fetch all leads FOR THIS COMPANY ONLY
+      const leadsRes = await authFetch(`/api/leads?company_id=${encodeURIComponent(companyId)}`);
+      if (!leadsRes.ok) {
+        console.error("Error fetching leads from backend:", leadsRes.statusText);
+        toast.error("Failed to load leads");
+        setLoading(false);
+        return;
+      }
+      const leads = await leadsRes.json();
 
-    if (allChannels && leads) {
-      const isClient = (stage: string) => {
-        if (!stage) return false;
-        const s = stage.toLowerCase();
-        return ['won', 'client', 'converted'].some(keyword => s.includes(keyword));
-      };
+      // IMPORTANT: Use the workflow endpoint to get ONLY "Client Successfully Acquired" leads
+      // Data Fetching Rule: Fetch all leads where stage = "Client Successfully Acquired"
+      const clientAcqRes = await authFetch(`/api/leads/workflow/client-acquisition?company_id=${encodeURIComponent(companyId)}`);
+      const clientAcquiredLeads = clientAcqRes.ok ? await clientAcqRes.json() : [];
 
-      const tLeads = leads.length;
-      const tClients = leads.filter(l => isClient(l.stage)).length;
-      const tRevenue = tClients * 12000;
+      console.log(`[ClientAcquisition] Fetched ${leads?.length || 0} total leads, ${clientAcquiredLeads.length} "Client Successfully Acquired"`);
 
-            const processed = allChannels.map(ch => {
-        const chLeads = leads.filter(l => l.source_id === ch.id);
-        const chClients = chLeads.filter(l => isConvertedLeadStage(l.stage));
-        const leadsCount = chLeads.length;
-        const clientsCount = chClients.length;
-        const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
+      // Fetch channels again to ensure we have latest
+      const allChannelsRes = await authFetch(`/api/leads/meta/sources?company_id=${encodeURIComponent(companyId)}`);
+      if (!allChannelsRes.ok) {
+        console.error("Error fetching final channels from backend:", allChannelsRes.statusText);
+        toast.error("Failed to load channels");
+        setLoading(false);
+        return;
+      }
+      const allChannels = await allChannelsRes.json();
 
-        const revenue = clientsCount * 12000;
+      // Process data
+      if (allChannels && leads) {
+        let tLeads = 0;
+        let tClients = 0;
+        let tRevenue = 0;
 
-        return {
-          id: ch.id,
-          channel: ch.channel_name,
-          leads: leadsCount,
-          clients: clientsCount,
-          cost: `$${parseFloat(ch.avg_lead_cost || 0).toFixed(2)}`,
-          rate: rate,
-          value: `$${revenue.toLocaleString()}`
-        };
-      });
+        const processed = allChannels.map(ch => {
+          // Get leads from this channel
+          const chLeads = leads.filter(l => l.source_id === ch.id);
+          // Count how many of those leads are in "Client Successfully Acquired" workflow
+          const chClients = chLeads.filter(l => l.stage === 'Client Successfully Acquired');
 
-      // Add "Direct / Unknown" row for leads without a source
-      const unknownLeads = leads.filter(l => !l.source_id);
-      if (unknownLeads.length > 0) {
-        const unknownClients = unknownLeads.filter(l => isConvertedLeadStage(l.stage));
-        const leadsCount = unknownLeads.length;
-        const clientsCount = unknownClients.length;
-        const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
-        const revenue = clientsCount * 12000;
-        
-        processed.push({
-          id: 'unknown-source',
-          channel: 'Direct / Unknown',
-          leads: leadsCount,
-          clients: clientsCount,
-          cost: `$0.00`,
-          rate: rate,
-          value: `$${revenue.toLocaleString()}`
+          const leadsCount = chLeads.length;
+          const clientsCount = chClients.length;
+          const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
+
+          // Revenue calculation: $12,000 per acquired client
+          const revenue = clientsCount * 12000;
+
+          tLeads += leadsCount;
+          tClients += clientsCount;
+          tRevenue += revenue;
+
+          console.log(`[ClientAcquisition] Channel ${ch.channel_name}: ${leadsCount} leads, ${clientsCount} acquired clients`);
+
+          return {
+            id: ch.id,
+            channel: ch.channel_name,
+            leads: leadsCount,
+            clients: clientsCount,
+            cost: `$${parseFloat(ch.avg_lead_cost || 0).toFixed(2)}`,
+            rate: rate,
+            value: `$${revenue.toLocaleString()}`
+          };
         });
+
+        setSources(processed);
+        setTotalLeads(tLeads);
+        // Use the actual count of "Client Successfully Acquired" leads from the workflow endpoint
+        setConvertedClients(clientAcquiredLeads.length);
+        tClients = clientAcquiredLeads.length;
+        tRevenue = tClients * 12000;
+
+        const overallRate = tLeads > 0 ? ((tClients / tLeads) * 100).toFixed(1) + "%" : "0.0%";
+        setAvgAcquisitionRate(overallRate);
+
+        let formattedRev = `$${tRevenue.toLocaleString()}`;
+        if (tRevenue >= 1000000) {
+          formattedRev = `$${(tRevenue / 1000000).toFixed(2)}M`;
+        } else if (tRevenue >= 1000) {
+          formattedRev = `$${(tRevenue / 1000).toFixed(1)}K`;
+        }
+        setTotalPipeValue(formattedRev);
+
+        console.log(`[ClientAcquisition] Summary: ${tLeads} total leads, ${tClients} "Client Successfully Acquired", ${formattedRev} revenue`);
       }
-
-      setSources(processed);
-      setTotalLeads(tLeads);
-      setConvertedClients(tClients);
-
-      const overallRate = tLeads > 0 ? ((tClients / tLeads) * 100).toFixed(1) + "%" : "0.0%";
-      setAvgAcquisitionRate(overallRate);
-
-      let formattedRev = `$${tRevenue.toLocaleString()}`;
-      if (tRevenue >= 1000000) {
-        formattedRev = `$${(tRevenue / 1000000).toFixed(2)}M`;
-      } else if (tRevenue >= 1000) {
-        formattedRev = `$${(tRevenue / 1000).toFixed(1)}K`;
-      }
-      setTotalPipeValue(formattedRev);
+    } catch (err) {
+      console.error("Unexpected error in fetchData:", err);
+      toast.error("An unexpected error occurred while loading data");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddChannel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newChannelName) return;
     setSubmitting(true);
-
     try {
-      const companyId = await getCompanyId();
+      const companyId = profile?.company_id || (await getCompanyId());
       if (!companyId) throw new Error("Could not find company ID");
 
-      const { error } = await supabase.from('acquisition_channels').insert({
-        company_id: companyId,
-        channel_name: newChannelName,
-        avg_lead_cost: parseFloat(newChannelCost) || 0,
+      const res = await authFetch('/api/leads/meta/sources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company_id: companyId,
+          channel_name: newChannelName,
+          avg_lead_cost: parseFloat(newChannelCost) || 0,
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`Failed to add channel: ${errorBody || res.statusText}`);
+      }
+
       toast.success("Channel added successfully!");
       setIsDialogOpen(false);
       setNewChannelName("");
       setNewChannelCost("");
+      fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to add channel");
     } finally {
@@ -333,7 +366,15 @@ export default function ClientAcquisition() {
               {loading ? (
                 <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Loading channels...</td></tr>
               ) : sources.length === 0 ? (
-                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No channels found.</td></tr>
+                <tr>
+                  <td colSpan={6} className="p-6">
+                    <div className="text-center space-y-2">
+                      <p className="text-muted-foreground font-medium">No acquisition data available yet</p>
+                      <p className="text-xs text-muted-foreground/60">Create leads and mark them as "Client Successfully Acquired" to see data here.</p>
+                      <p className="text-xs text-muted-foreground/60">Channels are being seeded automatically.</p>
+                    </div>
+                  </td>
+                </tr>
               ) : (
                 sources.map((item, i) => (
                   <tr key={item.id || i} className="border-b border-border/40 hover:bg-neutral-900/30 transition-colors">

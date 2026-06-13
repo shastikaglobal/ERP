@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Target, Bell, CheckCircle2, DollarSign, TrendingUp, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, parseISO } from "date-fns";
@@ -64,6 +64,7 @@ const ProgressBar = ({ value, max, color = COLORS.accent }: { value: number, max
 
 function Dashboard() {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
 
   const fetcher = async (url: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -89,6 +90,22 @@ function Dashboard() {
     },
     enabled: !!profile // Wait for profile to load
   });
+
+  // Poll for dashboard metrics every 5 seconds instead of real-time
+  useEffect(() => {
+    console.log("[Dashboard] Setting up polling for analytics");
+
+    const pollInterval = setInterval(() => {
+      console.log("[Dashboard] Polling for analytics updates...");
+      // Invalidate the query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ["crm_dashboard_analytics"] });
+    }, 5000);
+
+    return () => {
+      console.log("[Dashboard] Clearing polling interval");
+      clearInterval(pollInterval);
+    };
+  }, [queryClient]);
 
   if (isLoading || !data) {
     return (

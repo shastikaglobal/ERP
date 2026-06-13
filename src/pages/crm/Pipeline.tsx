@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
+import { authFetch } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
+import {
+  CRM_LEAD_STAGES,
+  getLeadStageBadgeColor,
+} from "@/lib/crmStages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +23,11 @@ type Lead = {
   stage: string;
 };
 
-const STAGES = [
-  { id: "New", label: "New", color: "bg-slate-500" },
-  { id: "Contacted", label: "Contacted", color: "bg-blue-400" },
-  { id: "Qualified", label: "Qualified", color: "bg-purple-500" },
-  { id: "Proposal", label: "Proposal", color: "bg-orange-500" },
-  { id: "Negotiation", label: "Negotiation", color: "bg-yellow-500" },
-  { id: "Nurturing", label: "Nurturing", color: "bg-cyan-500" },
-  { id: "Won", label: "Won", color: "bg-emerald-500" },
-  { id: "Lost", label: "Lost", color: "bg-rose-500" }
-];
+const STAGES = CRM_LEAD_STAGES.map((stage) => ({
+  id: stage,
+  label: stage,
+  color: getLeadStageBadgeColor(stage),
+}));
 
 export default function LeadPipeline() {
   const { roleSlugs } = useAuth();
@@ -38,11 +38,7 @@ export default function LeadPipeline() {
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
+      const res = await authFetch('/api/leads');
       if (!res.ok) throw new Error("Failed to fetch pipeline data");
       const data = await res.json();
       const activeLeads = (data || []).filter((l: any) => !l.is_deleted);
@@ -79,21 +75,23 @@ export default function LeadPipeline() {
     setLeads(leads.map(lead => lead.id === id ? { ...lead, stage: newStage } : lead));
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch(`/api/leads/${id}`, {
+      const res = await authFetch(`/api/leads/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ stage: newStage })
+        body: JSON.stringify({ stage: newStage }),
       });
 
-      if (!res.ok) throw new Error("Failed to update stage");
-      toast.success("Stage updated");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        const message = errorBody?.error || errorBody?.message || `Failed to update stage (${res.status})`;
+        throw new Error(message);
+      }
+
+      toast.success('Stage updated');
     } catch (error: any) {
-      toast.error(error.message || "Failed to update stage");
+      toast.error(error.message || 'Failed to update stage');
       setLeads(previousLeads); // Rollback
     }
   };
