@@ -328,10 +328,11 @@ export default function CreateQuotation() {
     try {
       const { error } = await supabase.from("packaging_types").insert({ name: newPkgName });
       if (error) throw error;
+      await loadPackagingTypes();
+      setPackagingType(newPkgName);
       toast.success("New packaging type added successfully");
       setIsPkgModalOpen(false);
       setNewPkgName("");
-      loadPackagingTypes();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to add packaging type");
@@ -496,7 +497,7 @@ export default function CreateQuotation() {
           <DialogHeader><DialogTitle>Add New Packaging Type</DialogTitle></DialogHeader>
           <form onSubmit={handleAddPackaging} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Packaging Name *</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Packaging Type *</label>
               <Input value={newPkgName} onChange={e => setNewPkgName(e.target.value)} placeholder="e.g., Plastic Bag, Box, etc." required />
             </div>
             <Button type="submit" disabled={savingPkg} className="w-full">
