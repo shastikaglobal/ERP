@@ -62,6 +62,7 @@ router.post('/', requireAuth, async (req, res) => {
 
 // PUT /api/leads/:id - Update lead
 router.put('/:id', requireAuth, async (req, res) => {
+  console.log(`[DEBUG] PUT /api/leads/${req.params.id} body:`, req.body);
   try {
     const { id } = req.params;
     const updates = req.body;

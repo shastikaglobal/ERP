@@ -269,26 +269,48 @@ export default function CreateQuotation() {
 
   useEffect(() => {
     const loadData = async () => {
-      let leadsQuery = supabase.from('leads').select('*').order('created_at', { ascending: false });
-      let productsQuery = supabase.from('products').select('*');
-      
-      if (profile?.company_id) {
-        productsQuery = productsQuery.eq('company_id', profile.company_id);
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([
-        leadsQuery,
-        productsQuery,
-        supabase.from('container_types').select('name').order('name'),
-        supabase.from('packaging_types').select('name').order('name')
-      ]);
-      console.log("LEADS FETCH RESULT:", leadsRes);
-      if (leadsRes.error) console.error("Leads error:", leadsRes.error);
-      
-      if (leadsRes.data) setLeadsList(leadsRes.data);
-      if (productsRes.data) setProductsList(productsRes.data);
-      if (containersRes.data) setContainerTypesList(containersRes.data);
-      if (pkgsRes.data) setPackagingTypesList(pkgsRes.data);
+        const leadsReq = fetch('/api/leads', { headers });
+        const productsReq = fetch('/api/products', { headers });
+        const containersReq = fetch('/api/meta/container_types', { headers });
+        const pkgsReq = fetch('/api/meta/packaging_types', { headers });
+
+        const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([leadsReq, productsReq, containersReq, pkgsReq]);
+
+        if (leadsRes.ok) {
+          setLeadsList(await leadsRes.json());
+        } else {
+          // If backend returned 401 (no token), fall back to client-side Supabase fetch
+          const status = leadsRes.status;
+          console.warn('Leads fetch status:', status);
+          if (status === 401) {
+            try {
+              const supRes = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+              if (supRes.data) setLeadsList(supRes.data as any[]);
+              if (supRes.error) console.error('Supabase leads error:', supRes.error);
+            } catch (e) {
+              console.error('Fallback supabase fetch failed:', e);
+            }
+          } else {
+            console.error('Failed to load leads', await leadsRes.text());
+          }
+        }
+
+        if (productsRes.ok) setProductsList(await productsRes.json());
+        else console.error('Failed to load products', await productsRes.text());
+
+        if (containersRes.ok) setContainerTypesList(await containersRes.json());
+        else console.error('Failed to load container types', await containersRes.text());
+
+        if (pkgsRes.ok) setPackagingTypesList(await pkgsRes.json());
+        else console.error('Failed to load packaging types', await pkgsRes.text());
+      } catch (err) {
+        console.error('Load data error:', err);
+      }
     };
     loadData();
   }, [profile?.company_id]);
@@ -336,98 +358,59 @@ export default function CreateQuotation() {
 
     setSaving(true);
     try {
-      // 1. Find or Create Customer
+      // 1. Find or Create Customer via backend so data is stored in VPS Postgres
       let customerId = null;
-      const { data: existingCust } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('company_id', profile!.company_id)
-        .eq('name', customerName)
-        .limit(1);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      if (existingCust && existingCust.length > 0) {
-        customerId = existingCust[0].id;
-        await supabase
-          .from('customers')
-          .update({
-            address: customerAddress || null,
-            phone: customerPhone || null
-          })
-          .eq('id', customerId);
-      } else {
-        const { data: custData, error: custErr } = await supabase
-          .from('customers')
-          .insert({ 
-            company_id: profile!.company_id, 
-            name: customerName,
-            address: customerAddress || null,
-            phone: customerPhone || null
-          })
-          .select('id').single();
-        
-        if (!custErr && custData) customerId = custData.id;
+        const custRes = await fetch('/api/customers/find-or-create', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ company_id: profile!.company_id, name: customerName, address: customerAddress || null, phone: customerPhone || null })
+        });
+        if (!custRes.ok) throw new Error('Failed to find or create customer');
+        const custData = await custRes.json();
+        customerId = custData.id || custData?.id;
+      } catch (err) {
+        console.error('Customer creation error:', err);
+        throw err;
       }
 
-      // 2. Generate unique quotation number
-      let finalQuoteNumber = quoteNumber;
-      if (!finalQuoteNumber) {
-        // Get the count of existing quotations for this company this year
-        const currentYear = new Date().getFullYear();
-        const { data: existingQuotes, error: countErr } = await supabase
-          .from('quotations')
-          .select('id')
-          .eq('company_id', profile!.company_id)
-          .ilike('quotation_number', `QT-${currentYear}-%`);
-        
-        if (!countErr && existingQuotes) {
-          const nextNumber = (existingQuotes.length + 1).toString().padStart(4, '0');
-          finalQuoteNumber = `QT-${currentYear}-${nextNumber}`;
-        } else {
-          // Fallback if query fails
-          finalQuoteNumber = `QT-${currentYear}-0001`;
-        }
-      }
+      // 2. Prepare quotation payload
+      const quotationPayload = {
+        company_id: profile!.company_id,
+        customer_id: customerId,
+        quotation_number: quoteNumber || undefined, // Backend will auto-generate if missing
+        customer_phone: customerPhone || null,
+        amount: totalAmount,
+        subtotal: subtotal,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        container_type: containerType || null,
+        packaging_type: packagingType || null,
+        packaging_cost: Number(packagingCost),
+        shipment_type: shipmentType || null,
+        shipping_cost: Number(shipmentCost),
+        country_of_origin: countryOfOrigin || null,
+        port_of_loading: portOfLoading || null,
+        port_of_discharge: portOfDischarge || null,
+        net_weight: netWeight || null,
+        estimated_shipment_date: estimatedShipmentDate || null,
+        packing_per_bag: packingPerBag || null,
+        bag_weight: bagWeight || null,
+        currency,
+        status: 'Draft',
+        items_count: items.length,
+        valid_until: validUntil || null,
+        incoterm: incoterm || "CIF",
+        payment_terms: paymentTerms,
+        lead_id: selectedLeadId || null,
+        created_by: profile!.id
+      };
 
-      // 3. Create Quotation
-
-      const { data: quoteData, error: quoteErr } = await supabase
-        .from('quotations')
-        .insert({
-          company_id: profile!.company_id,
-          customer_id: customerId,
-          quotation_number: finalQuoteNumber,
-          customer_phone: customerPhone || null,
-          amount: totalAmount,
-          subtotal: subtotal,
-          tax_rate: taxRate,
-          tax_amount: taxAmount,
-          container_type: containerType || null,
-          packaging_type: packagingType || null,
-          packaging_cost: Number(packagingCost),
-          shipment_type: shipmentType || null,
-          shipping_cost: Number(shipmentCost),
-          country_of_origin: countryOfOrigin || null,
-          port_of_loading: portOfLoading || null,
-          port_of_discharge: portOfDischarge || null,
-          net_weight: netWeight || null,
-          estimated_shipment_date: estimatedShipmentDate || null,
-          packing_per_bag: packingPerBag || null,
-          bag_weight: bagWeight || null,
-          currency,
-          status: 'Draft',
-          items_count: items.length,
-          valid_until: validUntil || null,
-          incoterm: incoterm || "CIF",
-          payment_terms: paymentTerms,
-          lead_id: selectedLeadId || null
-        })
-        .select('id').single();
-
-      if (quoteErr) throw quoteErr;
-
-      // 3. Create Quotation Items
-      const insertItems = items.filter(i => i.product_name).map(i => ({
-        quotation_id: quoteData.id,
+      const itemsPayload = items.filter(i => i.product_name).map(i => ({
         product_id: i.product_id || null, 
         quantity: Number(i.qty),
         unit_price: Number(i.price),
@@ -436,10 +419,19 @@ export default function CreateQuotation() {
         hsn_code: i.hsn_code
       }));
 
-      if (insertItems.length > 0) {
-        const { error: itemsErr } = await supabase.from('quotation_items').insert(insertItems);
-        if (itemsErr) throw itemsErr;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/quotations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ quotation: quotationPayload, items: itemsPayload })
+      });
+
+      if (!res.ok) throw new Error("Failed to create quotation");
+      const quoteData = await res.json();
+      const finalQuoteNumber = quoteData.quotation_number;
 
       if (selectedLeadId) {
         await supabase.from("leads").update({ stage: "negotiation" }).eq("id", selectedLeadId);

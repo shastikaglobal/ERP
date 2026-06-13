@@ -19,6 +19,8 @@ const INVENTORY_TABLES = [
 // Helper to validate table name
 const isValidTable = (table) => INVENTORY_TABLES.includes(table);
 
+const hasDeletedColCache = {};
+
 // GET /api/inventory/:table
 router.get('/:table', requireAuth, async (req, res) => {
   const { table } = req.params;
@@ -26,7 +28,15 @@ router.get('/:table', requireAuth, async (req, res) => {
 
   try {
     let query = `SELECT * FROM ${table}`;
-    if (table !== 'products' && table !== 'warehouses' && table !== 'available_stock' && table !== 'inventory_movements') {
+    if (hasDeletedColCache[table] === undefined) {
+      const colCheck = await db.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'is_deleted'",
+        [table]
+      );
+      hasDeletedColCache[table] = colCheck.rows.length > 0;
+    }
+
+    if (hasDeletedColCache[table]) {
        query += " WHERE is_deleted = false OR is_deleted IS NULL";
     }
     const { rows } = await db.query(query);
@@ -93,7 +103,19 @@ router.delete('/:table/:id', requireAuth, async (req, res) => {
   if (!isValidTable(table)) return res.status(400).json({ error: "Invalid table" });
 
   try {
-    await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+    if (hasDeletedColCache[table] === undefined) {
+      const colCheck = await db.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'is_deleted'",
+        [table]
+      );
+      hasDeletedColCache[table] = colCheck.rows.length > 0;
+    }
+
+    if (hasDeletedColCache[table]) {
+      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+    } else {
+      await db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error(`Error DELETE ${table}:`, err.message);

@@ -31,22 +31,37 @@ export default function ShipmentsList() {
   const fetchShipments = async () => {
     try {
       if (!profile?.company_id) return;
-      const { data, error } = await supabase
-        .from("export_shipments")
-        .select("*, export_containers(count)")
-        .eq("company_id", profile.company_id)
-        .neq("is_deleted", true)
-        .order("created_at", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      if (error) throw error;
-      
-      const formatted = data?.map(s => ({
-        ...s,
-        containerCount: s.export_containers?.[0]?.count || 0
-      })) || [];
-      
-      setShipments(formatted as ExportShipment[]);
+      const [shipmentsRes, containersRes] = await Promise.all([
+        fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers }),
+        fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers })
+      ]);
+
+      if (shipmentsRes.ok && containersRes.ok) {
+        const shipmentsData = await shipmentsRes.json();
+        const containersData = await containersRes.json();
+        
+        const activeShipments = shipmentsData.filter((s: any) => s.is_deleted !== true);
+        const activeContainers = containersData.filter((c: any) => c.is_deleted !== true);
+
+        const formatted = activeShipments.map((s: any) => {
+          const count = activeContainers.filter((c: any) => c.shipment_id === s.id).length;
+          return {
+            ...s,
+            containerCount: count
+          };
+        });
+
+        const sorted = formatted.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setShipments(sorted as ExportShipment[]);
+      } else {
+        throw new Error("Failed to fetch shipments or containers data");
+      }
     } catch (err) {
+      console.error("Fetch shipments error:", err);
       toast.error("Failed to load shipments");
     } finally {
       setLoading(false);
@@ -62,12 +77,16 @@ export default function ShipmentsList() {
     if (!confirm("Are you sure you want to delete this shipment? This will also remove linked tracking data.")) return;
     
     try {
-      const { error } = await supabase.from("export_shipments").update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.id || null,
-      }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/finance/export_shipments/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) throw new Error(await res.text() || "Failed to delete shipment");
+
       toast.success("Shipment hidden successfully");
       fetchShipments();
     } catch (err: any) {

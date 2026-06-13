@@ -14,14 +14,16 @@ export default function OrderReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from("export_orders")
-          .select("*")
-          .eq("id" , id)
-          .single();
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        if (error) throw error;
-        setOrder(data);
+        const res = await fetch(`/api/finance/export_orders?id=${id}`, { headers });
+        if (!res.ok) throw new Error(await res.text() || "Failed to load order");
+
+        const data = await res.json();
+        if (data.length === 0) throw new Error("Order not found");
+        setOrder(data[0]);
       } catch (err: any) {
         console.error("Order Report load error:", err);
         setError(err.message || "Failed to load order");

@@ -34,9 +34,16 @@ export default function OrdersList() {
     if (!confirm("Are you sure you want to delete this order?")) return;
     
     try {
-      // Soft-delete: mark the record as deleted instead of removing it
-      const { error } = await supabase.from("export_orders").update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/finance/export_orders/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) throw new Error(await res.text() || "Failed to delete order");
+
       // Update local state to hide the deleted item from UI
       setOrders(orders.filter(o => o.id !== id));
       toast.success("Order removed from view (soft-deleted)");
@@ -49,15 +56,16 @@ export default function OrdersList() {
     const fetchOrders = async () => {
       try {
         if (!profile?.company_id) return;
-        const { data, error } = await supabase
-          .from("export_orders")
-          .select("*")
-          .eq("company_id", profile.company_id)
-          .neq("is_deleted", true)
-          .order("order_date", { ascending: false });
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        if (error) throw error;
-        setOrders(data || []);
+        const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
+        if (!res.ok) throw new Error(await res.text() || "Failed to load orders");
+
+        const data = await res.json();
+        const sorted = data.sort((a: any, b: any) => new Date(b.created_at || b.order_date).getTime() - new Date(a.created_at || a.order_date).getTime());
+        setOrders(sorted || []);
       } catch (err: any) {
         toast.error("Failed to load orders");
       } finally {
@@ -65,7 +73,7 @@ export default function OrdersList() {
       }
     };
     fetchOrders();
-  }, []);
+  }, [profile?.company_id]);
 
   return (
     <div className="p-6 space-y-6">

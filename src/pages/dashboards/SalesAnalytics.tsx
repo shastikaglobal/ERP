@@ -59,17 +59,18 @@ export default function SalesAnalytics() {
     queryKey: ['sales_analytics_quotations', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('quotations')
-        .select('id, lead_id, total_amount, amount, created_by, created_at, status')
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(1000);
-      if (error) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/quotations', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch quotations");
+        const data = await res.json();
+        return data || [];
+      } catch (error) {
         console.error('Error fetching quotations:', error);
         return [];
       }
-      return data || [];
     },
     enabled: !!profile?.company_id,
     staleTime: 30000,

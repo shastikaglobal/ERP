@@ -32,8 +32,18 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_quotes', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('quotations').select('id').eq('company_id', companyId).eq('status', 'Draft').limit(10);
-      return data || [];
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/quotations', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch quotations");
+        const data = await res.json();
+        return (data || []).filter((q: any) => q.status === 'Draft').slice(0, 10);
+      } catch (error) {
+        console.error('Error fetching quotations:', error);
+        return [];
+      }
     },
     enabled: !!companyId
   });

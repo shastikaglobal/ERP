@@ -36,9 +36,16 @@ export default function OrderDetail() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const { data, error } = await supabase.from("export_orders").select("*").eq("id", id).single();
-        if (error) throw error;
-        setOrder(data);
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+        const res = await fetch(`/api/finance/export_orders?id=${id}`, { headers });
+        if (!res.ok) throw new Error(await res.text() || "Failed to load order");
+        
+        const data = await res.json();
+        if (data.length === 0) throw new Error("Order not found");
+        setOrder(data[0]);
       } catch (err: any) {
         toast.error("Failed to load order");
         navigate("/orders");
@@ -52,8 +59,17 @@ export default function OrderDetail() {
   const updateStatus = async (field: 'status' | 'payment_status', value: string) => {
     setSavingStatus(true);
     try {
-      const { error } = await supabase.from("export_orders").update({ [field]: value }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/finance/export_orders/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ [field]: value })
+      });
+      if (!res.ok) throw new Error(await res.text() || "Update failed");
+
       setOrder({ ...order, [field]: value });
       toast.success("Order updated");
     } catch (err: any) {

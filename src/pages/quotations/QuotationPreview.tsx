@@ -18,32 +18,41 @@ export default function QuotationPreview() {
   const { data: q, isLoading, refetch } = useQuery({
     queryKey: ['quotation', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('quotations')
-        .select(`
-          *,
-          customer:customers(name, email, address, phone),
-          items:quotation_items(
-            *,
-            product:products(name, sku, unit, hs_code)
-          )
-        `)
-        .eq('id', id)
-        .single();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (error) throw error;
-      return data;
+      const qRes = await fetch(`/api/quotations/${id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!qRes.ok) throw new Error("Failed to load quotation");
+      const quotation = await qRes.json();
+
+      const itemsRes = await fetch(`/api/quotations/${id}/items`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!itemsRes.ok) throw new Error("Failed to load quotation items");
+      const items = await itemsRes.json();
+
+      return {
+        ...quotation,
+        customer: quotation.customers, // Map the API 'customers' property to 'customer' for frontend compatibility
+        items
+      };
     },
     enabled: !!id
   });
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("quotations")
-        .update({ status: "Pending" })
-        .eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ quotation: { status: "Pending" } })
+      });
+      if (!res.ok) throw new Error("Failed to update status");
     },
     onSuccess: () => {
       toast.success("Quotation sent for approval");
@@ -56,10 +65,14 @@ export default function QuotationPreview() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      await softDeleteRecord("quotations", id as string, {
-        resourceType: "quotation",
-        resourceName: q?.quotation_number ? `Quotation ${q.quotation_number}` : `Quotation ${id}`,
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
       });
+      if (!res.ok) throw new Error("Failed to delete quotation");
     },
     onSuccess: () => {
       toast.success("Quotation archived successfully");

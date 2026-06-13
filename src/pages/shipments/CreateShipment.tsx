@@ -49,30 +49,40 @@ export default function CreateShipment() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log("Fetching orders for shipment...");
-      const { data, error } = await supabase
-        .from("export_orders")
-        .select("*")
-        .eq("company_id", profile?.company_id)
-        .order("created_at", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
-      
-      console.log("Orders found:", data?.length || 0);
-      setOrders(data || []);
-      
-      const [carriersRes, portsRes, containersRes] = await Promise.all([
-        supabase.from("shipping_carriers").select("name, code").order("name"),
-        supabase.from("shipping_ports").select("name, country, code").order("name"),
-        supabase.from("container_types").select("name").order("name"),
+      const [ordersRes, carriersRes, portsRes, containersRes] = await Promise.all([
+        fetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers }),
+        fetch('/api/finance/shipping_carriers', { headers }),
+        fetch('/api/finance/shipping_ports', { headers }),
+        fetch('/api/finance/container_types', { headers })
       ]);
 
-      if (carriersRes.data) setCarriersList(carriersRes.data);
-      if (portsRes.data) setPortsList(portsRes.data);
-      if (containersRes.data) setContainerTypesList(containersRes.data);
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        const activeOrders = ordersData.filter((o: any) => o.is_deleted !== true);
+        const sorted = activeOrders.sort((a: any, b: any) => new Date(b.created_at || b.order_date).getTime() - new Date(a.created_at || a.order_date).getTime());
+        setOrders(sorted || []);
+      } else {
+        console.error("Failed to fetch export orders:", await ordersRes.text());
+      }
+
+      if (carriersRes.ok) {
+        const carriersData = await carriersRes.json();
+        setCarriersList(carriersData.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      }
+
+      if (portsRes.ok) {
+        const portsData = await portsRes.json();
+        setPortsList(portsData.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      }
+
+      if (containersRes.ok) {
+        const containersData = await containersRes.json();
+        setContainerTypesList(containersData.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      }
     } catch (err: any) {
       console.error("Fetch error:", err);
       toast.error("Failed to load data: " + err.message);
@@ -82,8 +92,8 @@ export default function CreateShipment() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (profile?.company_id) fetchData();
+  }, [profile?.company_id]);
 
   const selectedOrder = orders.find(o => o.id === orderId);
 
@@ -93,12 +103,21 @@ export default function CreateShipment() {
     
     setSavingPort(true);
     try {
-      const { error } = await supabase.from("shipping_ports").insert({
-        name: newPortName,
-        country: newPortCountry,
-        code: newPortCode.toUpperCase()
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/finance/shipping_ports', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: newPortName,
+          country: newPortCountry,
+          code: newPortCode.toUpperCase()
+        })
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(await res.text() || "Failed to add port");
+
       toast.success("New port added successfully");
       setIsPortModalOpen(false);
       setNewPortName("");
@@ -118,11 +137,20 @@ export default function CreateShipment() {
     
     setSavingContainer(true);
     try {
-      const { error } = await supabase.from("container_types").insert({
-        name: newContainerName,
-        description: newContainerDesc
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/finance/container_types', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: newContainerName,
+          description: newContainerDesc
+        })
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(await res.text() || "Failed to add container type");
+
       toast.success("New container type added successfully");
       setIsContainerModalOpen(false);
       setNewContainerName("");
@@ -142,6 +170,10 @@ export default function CreateShipment() {
 
     setSaving(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
       const shipmentNumber = `SHP-${new Date().getFullYear()}-${rand}`;
 
@@ -151,23 +183,28 @@ export default function CreateShipment() {
       const weightPerContainer = totalWeight / count;
 
       // Insert shipment
-      const { data: shipment, error: shipErr } = await supabase.from("export_shipments").insert({
-        company_id: profile!.company_id,
-        order_id: orderId,
-        shipment_number: shipmentNumber,
-        customer_name: selectedOrder?.customer_name,
-        carrier,
-        origin_port: originPort,
-        destination_port: destinationPort,
-        departure_date: departureDate || null,
-        eta: eta || null,
-        total_cartons: selectedOrder?.total_cartons,
-        unit_net_weight: selectedOrder?.unit_net_weight,
-        status: 'Pending',
-        created_by: profile!.id
-      }).select().single();
+      const shipRes = await fetch('/api/finance/export_shipments', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          company_id: profile!.company_id,
+          order_id: orderId,
+          shipment_number: shipmentNumber,
+          customer_name: selectedOrder?.customer_name,
+          carrier,
+          origin_port: originPort,
+          destination_port: destinationPort,
+          departure_date: departureDate || null,
+          eta: eta || null,
+          total_cartons: selectedOrder?.total_cartons,
+          unit_net_weight: selectedOrder?.unit_net_weight,
+          status: 'Pending',
+          created_by: profile!.id
+        })
+      });
 
-      if (shipErr) throw shipErr;
+      if (!shipRes.ok) throw new Error(await shipRes.text() || "Failed to create shipment");
+      const shipment = await shipRes.json();
 
       // Insert containers with pre-filled weights
       const containersToInsert = Array.from({ length: count }).map((_, i) => ({
@@ -179,8 +216,12 @@ export default function CreateShipment() {
         status: 'Pending'
       }));
 
-      const { error: contErr } = await supabase.from("export_containers").insert(containersToInsert);
-      if (contErr) throw contErr;
+      const contRes = await fetch('/api/finance/export_containers', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(containersToInsert)
+      });
+      if (!contRes.ok) throw new Error(await contRes.text() || "Failed to create containers");
 
       toast.success("Shipment created with automatic weight distribution!");
       nav("/shipments");

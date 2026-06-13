@@ -19,18 +19,14 @@ export default function ConvertQuotation() {
     queryKey: ['quotations_to_convert', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('quotations')
-        .select(`
-          *,
-          customer:customers(name, country),
-          items:quotation_items(quantity, product_id, products(name, unit))
-        `)
-        .eq('company_id', profile.company_id)
-        .eq('status', 'Approved')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/quotations/approved', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch approved quotations");
+      
+      const data = await res.json();
       
       // Production Filter: Exclude demo/test names
       const demoNames = [
@@ -39,7 +35,7 @@ export default function ConvertQuotation() {
         'shastika', 'sneka', 'vinoth', 'vishnu', 'yellow'
       ];
 
-      return (data || []).filter(q => {
+      return (data || []).filter((q: any) => {
         const name = q.customer?.name?.toLowerCase() || '';
         return !demoNames.includes(name);
       });
@@ -84,12 +80,16 @@ export default function ConvertQuotation() {
       if (orderErr) throw orderErr;
 
       // 2. Update Quotation Status
-      const { error: updateErr } = await supabase
-        .from('quotations')
-        .update({ status: 'Converted' })
-        .eq('id', quote.id);
-      
-      if (updateErr) throw updateErr;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${quote.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ quotation: { status: 'Converted' } })
+      });
+      if (!res.ok) throw new Error("Failed to update quotation status");
 
       return order;
     },

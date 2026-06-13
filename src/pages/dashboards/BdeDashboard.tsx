@@ -32,12 +32,18 @@ export default function BdeDashboard() {
     queryKey: ['bde_quotations', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('quotations')
-        .select('*')
-        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/quotations', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch quotations");
+        const data = await res.json();
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching quotations:', error);
+        return [];
+      }
     },
     enabled: !!profile?.company_id
   });

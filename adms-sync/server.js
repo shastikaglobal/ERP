@@ -54,6 +54,15 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 app.use(express.json());
 app.use(cors());
 
+// Handle JSON parse errors from body-parser to avoid crashing on malformed payloads
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.warn('⚠️ Invalid JSON payload received:', err.message);
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next(err);
+});
+
 // --- Mount API Routes ---
 const attendanceRoutes = require('./routes/attendance');
 const employeesRoutes = require('./routes/employees');
@@ -67,8 +76,11 @@ const analyticsRoutes = require('./routes/analytics');
 const invoicesRoutes = require('./routes/invoices');
 const mailboxRoutes = require('./routes/mailbox');
 const productsRoutes = require('./routes/products');
+const customersRoutes = require('./routes/customers');
+const metaRoutes = require('./routes/meta');
 const settingsRoutes = require('./routes/settings');
 const financeRoutes = require('./routes/finance');
+const ordersRoutes = require('./routes/orders');
 const hrRoutes = require('./routes/hr');
 const farmersRoutes = require('./routes/farmers');
 const permissionsRoutes = require('./routes/permissions');
@@ -83,6 +95,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/warehouse', warehouseRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/orders', ordersRoutes);
 app.use('/api/hr', hrRoutes);
 app.use('/api/farmers', farmersRoutes);
 app.use('/api/permissions', permissionsRoutes);
@@ -91,6 +104,8 @@ app.use('/api', invoicesRoutes);
 app.use('/api/emails', mailboxRoutes);
 app.use('/api', productsRoutes);
 app.use('/api', settingsRoutes);
+app.use('/api/customers', customersRoutes);
+app.use('/api/meta', metaRoutes);
 
 
 console.log("🚀 Starting ADMS Sync Server...");
@@ -399,6 +414,58 @@ app.post('/force-logout', express.json(), async (req, res) => {
 
   res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
 });
+
+// --- PostgreSQL LISTEN/NOTIFY Real-Time Sync ---
+const { Client } = require('pg');
+
+async function startPgListener() {
+  const pgClient = new Client({
+    user: 'erp_admin',
+    host: process.env.PG_HOST || '127.0.0.1',
+    database: 'shastika_erp',
+    password: process.env.PG_PASSWORD,
+    port: 5432,
+  });
+
+  pgClient.on('error', (err) => {
+    console.error('❌ PG Listener Client Error:', err.message);
+    // Try to reconnect after a delay
+    setTimeout(startPgListener, 5000);
+  });
+
+  pgClient.on('end', () => {
+    console.log('🔌 PG Listener Client connection ended.');
+  });
+
+  try {
+    await pgClient.connect();
+    console.log('🔌 Dedicated PG Listener Client connected.');
+    
+    await pgClient.query('LISTEN data_changed');
+    console.log('👂 Listening to PG channel "data_changed"');
+
+    pgClient.on('notification', (msg) => {
+      console.log(`🔔 Received PG notify on "data_changed": ${msg.payload}`);
+      
+      // Broadcast to Supabase Realtime channel 'global_data_sync'
+      supabase.channel('global_data_sync').send({
+        type: 'broadcast',
+        event: 'data_changed',
+        payload: { table: msg.payload }
+      }).then(() => {
+        console.log(`📡 Broadcasted data_changed for table: ${msg.payload}`);
+      }).catch(err => {
+        console.error('❌ Broadcast failed:', err.message || err);
+      });
+    });
+  } catch (err) {
+    console.error('❌ Failed to connect PG Listener:', err.message);
+    setTimeout(startPgListener, 5000);
+  }
+}
+
+// Start PG listener
+startPgListener();
 
 // Start Server
 const ensureUserPermissionsSetup = async () => {

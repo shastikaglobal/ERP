@@ -54,24 +54,22 @@ export default function QuotationsList() {
     queryKey: ['quotations', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('quotations')
-        .select(`
-          *,
-          customer:customers(name, address),
-          items:quotation_items(id, quantity, unit_price, total_price, hsn_code)
-        `)
-        .eq('company_id', profile.company_id)
-        .neq('is_deleted', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw new Error(error.message);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/quotations', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch quotations");
+      
+      const data = await res.json();
 
       return (data || []).map((q: any) => ({
         ...q,
         id: q.id,
         quotation_number: q.quotation_number,
-        customer_name: q.customer?.name || q.customer_name || 'Unknown',
+        customer_name: q.customers?.name || q.customer_name || 'Unknown',
         items_count: q.items?.length || 0,
         items: q.items || [],
         amount: q.amount,
@@ -84,23 +82,8 @@ export default function QuotationsList() {
     enabled: !!profile?.company_id
   });
 
-  useEffect(() => {
-    if (!profile?.company_id) return;
-    
-    const channel = supabase
-      .channel('quotations-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'quotations', filter: `company_id=eq.${profile.company_id}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['quotations'] });
-        }
-      )
-      .subscribe();
+  // Removed realtime subscription since we moved to the local API
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.company_id, queryClient]);
 
   const handleRowDownload = async (e: React.MouseEvent, quotation: Quotation) => {
     e.stopPropagation();
@@ -147,15 +130,15 @@ export default function QuotationsList() {
     setDeletingId(quotation.id);
     try {
       // Soft-delete the quotation via API
-      const { error } = await supabase
-        .from('quotations')
-        .update({ 
-          is_deleted: true, 
-          deleted_at: new Date().toISOString() 
-        })
-        .eq('id', quotation.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${quotation.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to delete quotation");
       toast.success(`Quotation ${quotation.quotation_number} removed from view (soft-deleted)`);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     } catch (err: any) {

@@ -14,7 +14,13 @@ const FINANCE_TABLES = [
   'purchase_orders',
   'customers',
   'suppliers',
-  'farmers'
+  'farmers',
+  'export_orders',
+  'export_shipments',
+  'export_containers',
+  'shipping_carriers',
+  'shipping_ports',
+  'container_types'
 ];
 
 const isValidTable = (table) => FINANCE_TABLES.includes(table);
@@ -83,6 +89,8 @@ router.get('/reports/cash_flow', requireAuth, async (req, res) => {
   }
 });
 
+const hasDeletedColCache = {};
+
 // GET /api/finance/:table
 router.get('/:table', requireAuth, async (req, res) => {
   const { table } = req.params;
@@ -93,8 +101,16 @@ router.get('/:table', requireAuth, async (req, res) => {
     const values = [];
     const conditions = [];
 
-    if (table !== 'sales_orders' && table !== 'purchase_orders') {
-       conditions.push("(is_deleted = false OR is_deleted IS NULL)");
+    if (hasDeletedColCache[table] === undefined) {
+      const colCheck = await db.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'is_deleted'",
+        [table]
+      );
+      hasDeletedColCache[table] = colCheck.rows.length > 0;
+    }
+
+    if (hasDeletedColCache[table]) {
+      conditions.push("(is_deleted = false OR is_deleted IS NULL)");
     }
 
     Object.keys(req.query).forEach((key) => {
@@ -163,13 +179,25 @@ router.put('/:table/:id', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/finance/:table/:id (Soft delete)
+// DELETE /api/finance/:table/:id (Soft/Hard delete)
 router.delete('/:table/:id', requireAuth, async (req, res) => {
   const { table, id } = req.params;
   if (!isValidTable(table)) return res.status(400).json({ error: "Invalid table" });
 
   try {
-    await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+    if (hasDeletedColCache[table] === undefined) {
+      const colCheck = await db.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'is_deleted'",
+        [table]
+      );
+      hasDeletedColCache[table] = colCheck.rows.length > 0;
+    }
+
+    if (hasDeletedColCache[table]) {
+      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+    } else {
+      await db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error(`Error DELETE ${table}:`, err.message);
@@ -178,3 +206,4 @@ router.delete('/:table/:id', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+

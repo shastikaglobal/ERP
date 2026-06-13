@@ -146,6 +146,7 @@ import PackingLists from "./pages/documents/PackingLists";
 import Certificates from "./pages/documents/Certificates";
 import DocumentViewer from "./pages/documents/DocumentViewer";
 import InvoiceReport from "./pages/documents/InvoiceReport";
+import CreateInvoice from "./pages/documents/CreateInvoice";
 
 // Payments
 import PaymentsRegister from "./pages/payments/PaymentsRegister";
@@ -363,6 +364,7 @@ const App = () => (
               {/* Documents */}
               <Route path="/documents" element={<Navigate to="/documents/invoices" replace />} />
               <Route path="/documents/invoices" element={<Invoices />} />
+              <Route path="/documents/invoices/create" element={<CreateInvoice />} />
               <Route path="/documents/invoices/:id" element={<InvoiceReport />} />
               <Route path="/documents/packing-lists" element={<PackingLists />} />
               <Route path="/documents/commercial-invoices" element={<Invoices />} />

@@ -12,22 +12,20 @@ export default function PublicQuotationView() {
   const { data: q, isLoading } = useQuery({
     queryKey: ['public_quotation', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('quotations')
-        .select(`
-          *,
-          customer:customers(name, email, address),
-          company:companies(name, logo_url, address, phone, email, website),
-          items:quotation_items(
-            *,
-            product:products(name, sku)
-          )
-        `)
-        .eq('id', id)
-        .single();
+      // NOTE: For public pages, we use the local API endpoint that does not require auth.
+      // Make sure the Express server is handling CORS properly for public routes if accessed from a different origin.
+      const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:8082' : ''; // Or just relative if proxied
+      const res = await fetch(`/api/quotations/public/${id}`);
+      if (!res.ok) {
+        throw new Error("Failed to load quotation");
+      }
+      const data = await res.json();
       
-      if (error) throw error;
-      return data;
+      return {
+        ...data,
+        customer: data.customers, // Map backend 'customers' to frontend 'customer'
+        items: data.items
+      };
     },
     enabled: !!id
   });

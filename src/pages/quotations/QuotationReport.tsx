@@ -16,21 +16,25 @@ export default function QuotationReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from("quotations")
-          .select(`
-            *,
-            customer:customers(*),
-            quotation_items (
-              *,
-              product:products(*)
-            )
-          `)
-          .eq("id", id)
-          .single();
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (error) throw error;
-        setQuotation(data);
+        const qRes = await fetch(`/api/quotations/${id}`, {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        });
+        if (!qRes.ok) throw new Error("Failed to load quotation");
+        const quotationData = await qRes.json();
+
+        const itemsRes = await fetch(`/api/quotations/${id}/items`, {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        });
+        if (!itemsRes.ok) throw new Error("Failed to load quotation items");
+        const items = await itemsRes.json();
+
+        setQuotation({
+          ...quotationData,
+          customer: quotationData.customers,
+          quotation_items: items,
+        });
       } catch (err: any) {
         console.error("Report load error:", err);
         setError(err.message || "Failed to load quotation");

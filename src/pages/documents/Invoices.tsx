@@ -61,7 +61,7 @@ export default function Invoices() {
         description="Generate and manage commercial invoices" 
         breadcrumbs={[{ label: "Documents" }, { label: "Invoices" }]}
         actions={
-          <Button size="sm" onClick={() => nav("/orders/create")}>
+          <Button size="sm" onClick={() => nav("/documents/invoices/create")}>
             <Plus className="h-4 w-4 mr-1.5" />New Invoice
           </Button>
         } 

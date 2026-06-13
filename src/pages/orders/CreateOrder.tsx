@@ -25,17 +25,34 @@ export default function CreateOrder() {
   useEffect(() => {
     const loadData = async () => {
       if (!profile?.company_id) return;
-      
-      const productsRes = await supabase.from('products').select('id, name, unit').eq('company_id', profile.company_id).order('name');
-      if (productsRes.data) setProductsList(productsRes.data);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const { data: leadsData } = await supabase
-        .from("leads")
-        .select("id, company_name, contact_name, mobile, email, country")
-        .not('is_deleted', 'eq', true)
-        .order("created_at", { ascending: false });
-      
-      if (leadsData) setLeadsList(leadsData);
+        const [leadsRes, productsRes] = await Promise.all([
+          fetch('/api/leads', { headers }),
+          fetch('/api/products', { headers })
+        ]);
+
+        if (leadsRes.ok) {
+          const leadsData = await leadsRes.json();
+          const activeLeads = leadsData.filter((l: any) => l.is_deleted !== true);
+          setLeadsList(activeLeads);
+        } else {
+          console.error("Failed to load leads:", await leadsRes.text());
+        }
+
+        if (productsRes.ok) {
+          const productsData = await productsRes.json();
+          const activeProducts = productsData.filter((p: any) => p.is_deleted !== true && p.company_id === profile.company_id);
+          setProductsList(activeProducts);
+        } else {
+          console.error("Failed to load products:", await productsRes.text());
+        }
+      } catch (err) {
+        console.error("Error loading order form data:", err);
+      }
     };
     loadData();
   }, [profile?.company_id]);
@@ -291,55 +308,72 @@ export default function CreateOrder() {
       const userId = session?.user?.id;
       if (!userId) throw new Error("Authentication required to create orders");
 
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       // Generate order number EXP-2026-XXX
       const year = new Date().getFullYear();
       const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const orderNumber = `EXP-${year}-${rand}`;
 
-      const { error } = await supabase.from("export_orders").insert({
-        company_id: profile!.company_id,
-        order_number: orderNumber,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_gst: customerGst,
-        customer_email: customerEmail,
-        customer_country: customerCountry,
-        product,
-        quantity: Number(quantity),
-        unit,
-        unit_price: Number(unitPrice),
-        total_amount: totalAmount,
-        currency,
-        expected_delivery: expectedDelivery ? new Date(expectedDelivery).toISOString() : null,
-        shipping_address: shippingAddress,
-        hsn_code: hsnCode,
-        incoterms: incoterms,
-        packing_details: packingDetails,
-        payment_terms: paymentTerms,
-        notes,
-        total_cartons: totalCartons ? Number(totalCartons) : null,
-        unit_net_weight: unitNetWeight ? Number(unitNetWeight) : null,
-        country_of_origin: countryOfOrigin || 'India',
-        port_of_loading: portOfLoading || null,
-        port_of_discharge: portOfDischarge || null,
-        mode_of_transport: modeOfTransport || null,
-        container_type: containerType || null,
-        loading_type: loadingType || null,
-        qty_per_carton: qtyPerCarton ? Number(qtyPerCarton) : null,
-        gross_weight_per_carton: grossWeightPerCarton ? Number(grossWeightPerCarton) : null,
-        total_net_weight: totalNetWeight ? Number(totalNetWeight) : null,
-        total_gross_weight: totalGrossWeight ? Number(totalGrossWeight) : null,
-        bank_name: bankName || null,
-        bank_branch: bankBranch || null,
-        account_no: accountNo || null,
-        ifsc_code: ifscCode || null,
-        swift_code: swiftCode || null,
-        created_by: userId,
-        status: 'pending',
-        payment_status: 'unpaid'
-      } as any);
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          company_id: profile!.company_id,
+          order_number: orderNumber,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_gst: customerGst,
+          customer_email: customerEmail,
+          customer_country: customerCountry,
+          product,
+          quantity: Number(quantity),
+          unit,
+          unit_price: Number(unitPrice),
+          total_amount: totalAmount,
+          currency,
+          expected_delivery: expectedDelivery ? new Date(expectedDelivery).toISOString() : null,
+          shipping_address: shippingAddress,
+          hsn_code: hsnCode,
+          incoterms: incoterms,
+          packing_details: packingDetails,
+          payment_terms: paymentTerms,
+          notes,
+          total_cartons: totalCartons ? Number(totalCartons) : null,
+          unit_net_weight: unitNetWeight ? Number(unitNetWeight) : null,
+          country_of_origin: countryOfOrigin || 'India',
+          port_of_loading: portOfLoading || null,
+          port_of_discharge: portOfDischarge || null,
+          mode_of_transport: modeOfTransport || null,
+          container_type: containerType || null,
+          loading_type: loadingType || null,
+          qty_per_carton: qtyPerCarton ? Number(qtyPerCarton) : null,
+          gross_weight_per_carton: grossWeightPerCarton ? Number(grossWeightPerCarton) : null,
+          total_net_weight: totalNetWeight ? Number(totalNetWeight) : null,
+          total_gross_weight: totalGrossWeight ? Number(totalGrossWeight) : null,
+          bank_name: bankName || null,
+          bank_branch: bankBranch || null,
+          account_no: accountNo || null,
+          ifsc_code: ifscCode || null,
+          swift_code: swiftCode || null,
+          created_by: userId,
+          status: 'pending',
+          payment_status: 'unpaid'
+        })
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errText = await res.text();
+        let message = "Failed to create order";
+        try {
+          const parsed = JSON.parse(errText);
+          message = parsed.error || message;
+        } catch {
+          if (errText) message = errText;
+        }
+        throw new Error(message);
+      }
 
       toast.success("Order created successfully!");
       navigate("/orders");

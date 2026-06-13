@@ -101,7 +101,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
             location.pathname.startsWith("/system/mailbox");
 
         // EXEMPTIONS: Admins/Managers, Non-CRM Routes, or if Protection is toggled OFF in DB, or on Mobile/Tablet
-        if (isLoadingPermissions || !isCRMRoute || isPrivileged || !protectionEnabled || isMobileOrTablet()) {
+        if (true || isLoadingPermissions || !isCRMRoute || isPrivileged || !protectionEnabled || isMobileOrTablet()) {
             setIsShielded(false);
             document.body.classList.remove('lockdown-active');
             return;

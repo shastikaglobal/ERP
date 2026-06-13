@@ -66,6 +66,7 @@ export default function EditQuotation() {
   const [netWeight, setNetWeight] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [deletedItems, setDeletedItems] = useState<string[]>([]);
   const [quoteNumber, setQuoteNumber] = useState("");
   const unitOptions = ["KG", "MT", "G", "LB", "PCS", "BOX", "CTN", "BAG", "L", "ML"];
   const [estimatedShipmentDate, setEstimatedShipmentDate] = useState("");
@@ -110,13 +111,11 @@ export default function EditQuotation() {
         }
 
         // Load metadata options
-        const [leadsRes, productsRes, containersRes, pkgsRes, quoteRes, itemsRes] = await Promise.all([
+        const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([
           leadsQuery,
           productsQuery,
           supabase.from('container_types').select('name').order('name'),
-          supabase.from('packaging_types').select('name').order('name'),
-          supabase.from('quotations').select('*, customers(name, address, phone)').eq('id', id).single(),
-          supabase.from('quotation_items').select('*').eq('quotation_id', id).order('created_at')
+          supabase.from('packaging_types').select('name').order('name')
         ]);
 
         if (leadsRes.data) setLeadsList(leadsRes.data);
@@ -124,10 +123,15 @@ export default function EditQuotation() {
         if (containersRes.data) setContainerTypesList(containersRes.data);
         if (pkgsRes.data) setPackagingTypesList(pkgsRes.data);
 
-        // Load quotation
-        if (quoteRes.error) throw quoteRes.error;
-        if (quoteRes.data) {
-          const q = quoteRes.data;
+        // Load quotation via API
+        const { data: { session } } = await supabase.auth.getSession();
+        const quoteRes = await fetch(`/api/quotations/${id}`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!quoteRes.ok) throw new Error("Failed to load quotation");
+        const q = await quoteRes.json();
+        
+        if (q) {
           setQuoteNumber(q.quotation_number);
           setSelectedLeadId(q.lead_id || "");
           setCustomerName(q.customers?.name || "");
@@ -152,9 +156,13 @@ export default function EditQuotation() {
           setBagWeight(q.bag_weight || "");
         }
 
-        // Load items
-        if (itemsRes.data) {
-          const loadedItems = itemsRes.data.map(i => ({
+        // Load items via API
+        const itemsRes = await fetch(`/api/quotations/${id}/items`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (itemsRes.ok) {
+          const itemsData = await itemsRes.json();
+          const loadedItems = itemsData.map((i: any) => ({
             id: i.id,
             db_id: i.id,
             product_id: i.product_id || "",
@@ -200,7 +208,13 @@ export default function EditQuotation() {
   };
 
   const addItem = () => setItems((s) => [...s, { id: Date.now().toString(), product_id: "", product_name: "", hsn_code: "", qty: 1, unit: "KG", price: 0 }]);
-  const removeItem = (id: string) => setItems((s) => s.filter((i) => i.id !== id));
+  const removeItem = (id: string) => {
+    const itemToRemove = items.find(i => i.id === id);
+    if (itemToRemove && itemToRemove.db_id) {
+      setDeletedItems(prev => [...prev, itemToRemove.db_id!]);
+    }
+    setItems((s) => s.filter((i) => i.id !== id));
+  };
   const updateItem = (id: string, patch: Partial<Item>) => setItems((s) => s.map((i) => (i.id === id ? { ...i, ...patch } : i)));
 
   const subtotal = items.reduce((s, i) => s + (Number(i.qty) * Number(i.price)), 0);
@@ -247,49 +261,37 @@ export default function EditQuotation() {
         if (!custErr && custData) customerId = custData.id;
       }
 
-      // 2. Update Quotation
-      const { error: quoteErr } = await supabase
-        .from('quotations')
-        .update({
-          customer_id: customerId,
-          customer_phone: customerPhone || null,
-          amount: totalAmount,
-          subtotal: subtotal,
-          tax_rate: taxRate,
-          tax_amount: taxAmount,
-          container_type: containerType || null,
-          packaging_type: packagingType || null,
-          packaging_cost: Number(packagingCost),
-          shipment_type: shipmentType || null,
-          shipping_cost: Number(shipmentCost),
-          country_of_origin: countryOfOrigin || null,
-          port_of_loading: portOfLoading || null,
-          port_of_discharge: portOfDischarge || null,
-          net_weight: netWeight || null,
-          estimated_shipment_date: estimatedShipmentDate || null,
-          packing_per_bag: packingPerBag || null,
-          bag_weight: bagWeight || null,
-          quotation_number: quoteNumber,
-          currency,
-          items_count: items.length,
-          valid_until: validUntil || null,
-          incoterm: incoterm || "CIF",
-          payment_terms: paymentTerms,
-          lead_id: selectedLeadId || null
-        })
-        .eq('id', id);
+      // 2. Update Quotation and Items via API
+      const quotationPayload = {
+        customer_id: customerId,
+        customer_phone: customerPhone || null,
+        amount: totalAmount,
+        subtotal: subtotal,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        container_type: containerType || null,
+        packaging_type: packagingType || null,
+        packaging_cost: Number(packagingCost),
+        shipment_type: shipmentType || null,
+        shipping_cost: Number(shipmentCost),
+        country_of_origin: countryOfOrigin || null,
+        port_of_loading: portOfLoading || null,
+        port_of_discharge: portOfDischarge || null,
+        net_weight: netWeight || null,
+        estimated_shipment_date: estimatedShipmentDate || null,
+        packing_per_bag: packingPerBag || null,
+        bag_weight: bagWeight || null,
+        quotation_number: quoteNumber,
+        currency,
+        items_count: items.length,
+        valid_until: validUntil || null,
+        incoterm: incoterm || "CIF",
+        payment_terms: paymentTerms,
+        lead_id: selectedLeadId || null
+      };
 
-      if (quoteErr) throw quoteErr;
-
-      // 3. Update Quotation Items (soft-delete old ones and insert new ones to keep it simple and clean)
-      await supabase.from('quotation_items').update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.id || null,
-      }).eq('quotation_id', id);
-
-      const insertItems = items.filter(i => i.product_name).map(i => ({
-        quotation_id: id,
+      const itemsToUpdate = items.filter(i => i.db_id).map(i => ({
+        id: i.db_id,
         product_id: i.product_id || null,
         quantity: Number(i.qty),
         unit_price: Number(i.price),
@@ -298,10 +300,31 @@ export default function EditQuotation() {
         hsn_code: i.hsn_code
       }));
 
-      if (insertItems.length > 0) {
-        const { error: itemsErr } = await supabase.from('quotation_items').insert(insertItems);
-        if (itemsErr) throw itemsErr;
-      }
+      const itemsToInsert = items.filter(i => !i.db_id && i.product_name).map(i => ({
+        product_id: i.product_id || null,
+        quantity: Number(i.qty),
+        unit_price: Number(i.price),
+        total_price: Number(i.qty) * Number(i.price),
+        description: i.product_name,
+        hsn_code: i.hsn_code
+      }));
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/quotations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ 
+          quotation: quotationPayload, 
+          itemsToUpdate, 
+          itemsToInsert,
+          itemsToDelete: deletedItems
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to update quotation");
 
       toast.success("Quotation updated successfully!");
       nav("/quotations");

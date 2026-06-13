@@ -75,26 +75,26 @@ def main():
         print("📁 Creating target directory /var/www/adms-sync...")
         ssh.exec_command('mkdir -p /var/www/adms-sync')
 
-        # Upload server.js
-        print("📤 Uploading server.js...")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        local_server_js = os.path.join(current_dir, 'server.js')
-        sftp.put(local_server_js, '/var/www/adms-sync/server.js')
-
-        # Upload db.js
-        print("📤 Uploading db.js...")
-        local_db_js = os.path.join(current_dir, 'db.js')
-        sftp.put(local_db_js, '/var/www/adms-sync/db.js')
-
-        # Upload routes/attendance.js
-        print("📤 Uploading routes/attendance.js...")
-        local_att_js = os.path.join(current_dir, 'routes', 'attendance.js')
-        sftp.put(local_att_js, '/var/www/adms-sync/routes/attendance.js')
-
-        # Upload routes/crm.js (to match updated local/VPS)
-        print("📤 Uploading routes/crm.js...")
-        local_crm_js = os.path.join(current_dir, 'routes', 'crm.js')
-        sftp.put(local_crm_js, '/var/www/adms-sync/routes/crm.js')
+        # Recursively upload local adms-sync directory
+        print("📤 Uploading project files recursively...")
+        local_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        def put_dir_recursive(local_path, remote_path):
+            try:
+                sftp.mkdir(remote_path)
+            except IOError:
+                pass
+            for item in os.listdir(local_path):
+                if item in ['.env', 'node_modules', '__pycache__', '.git', '.idea', '.vscode', 'deploy.py', 'deploy_all.py']:
+                    continue
+                l_item = os.path.join(local_path, item)
+                r_item = remote_path + '/' + item
+                if os.path.isdir(l_item):
+                    put_dir_recursive(l_item, r_item)
+                else:
+                    sftp.put(l_item, r_item)
+                    
+        put_dir_recursive(local_dir, '/var/www/adms-sync')
 
         # Generate and upload .env
         print("📤 Uploading remote .env...")
@@ -110,9 +110,10 @@ PG_PASSWORD=Shastika2026
         print("\n⚙️ Initializing project & installing dependencies on VPS...")
         commands = [
             ("npm init -y", "/var/www/adms-sync"),
-            ("npm install express dotenv @supabase/supabase-js ws", "/var/www/adms-sync"),
+            ("npm install express dotenv @supabase/supabase-js ws pg", "/var/www/adms-sync"),
+            ("node setup_pg_notify.js", "/var/www/adms-sync"),
             ("npm install -g pm2", ""),
-            ("pm2 start server.js --name \"adms-sync\"", "/var/www/adms-sync"),
+            ("pm2 restart adms-sync || pm2 start server.js --name \"adms-sync\"", "/var/www/adms-sync"),
             ("pm2 save", ""),
             ("pm2 startup", "")
         ]

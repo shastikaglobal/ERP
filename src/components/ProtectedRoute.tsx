@@ -29,8 +29,15 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     hasStarted.current = true;
 
     // Mobile/tablet browsers do not support getDisplayMedia for screen sharing.
-    // Bypass screen sharing requirement on mobile/tablet or if localStorage/query param bypass is set to avoid locking users/tests out.
-    if (isMobileOrTablet() || localStorage.getItem("bypassScreenShare") === "true" || window.location.search.includes("bypass=true")) {
+    // Also, getDisplayMedia is only available in secure contexts (HTTPS or localhost).
+    // Bypass screen sharing requirement if not supported or bypassed explicitly.
+    if (
+      isMobileOrTablet() || 
+      localStorage.getItem("bypassScreenShare") === "true" || 
+      window.location.search.includes("bypass=true") ||
+      !navigator.mediaDevices || 
+      !navigator.mediaDevices.getDisplayMedia
+    ) {
       setScreenStatus("sharing");
       return;
     }

@@ -26,9 +26,16 @@ export default function OrderStatus() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data, error } = await supabase.from("export_orders").select("*").order("order_date", { ascending: false });
-        if (error) throw error;
-        setOrders(data || []);
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+        const res = await fetch('/api/finance/export_orders', { headers });
+        if (!res.ok) throw new Error(await res.text() || "Failed to load orders");
+
+        const data = await res.json();
+        const sorted = data.sort((a: any, b: any) => new Date(b.created_at || b.order_date).getTime() - new Date(a.created_at || a.order_date).getTime());
+        setOrders(sorted || []);
       } catch (err: any) {
         toast.error("Failed to load order statuses");
       } finally {
@@ -42,8 +49,17 @@ export default function OrderStatus() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from("export_orders").update({ status: newStatus }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/finance/export_orders/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) throw new Error(await res.text() || "Update failed");
+
       toast.success(`Order marked as ${newStatus}`);
       setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
     } catch (err: any) {

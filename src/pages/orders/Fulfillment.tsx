@@ -6,45 +6,55 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Truck, Package, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Fulfillment() {
+  const { profile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [shippingIds, setShippingIds] = useState<string[]>([]);
 
-    const fetchFulfillments = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      
-      const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single();
+  const fetchFulfillments = async () => {
+    try {
       if (!profile?.company_id) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      try {
-        const { data, error } = await supabase
-          .from("export_orders")
-          .select("*")
-          .eq('company_id', profile.company_id)
-          .in("status", ["confirmed", "processing", "pending", "Pending"])
-          .order("created_at", { ascending: false });
-          
-        if (error) throw error;
-        setOrders(data || []);
-      } catch (err: any) {
-        toast.error("Failed to load fulfillments");
-      } finally {
-        setLoading(false);
-      }
-    };
+      const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
+      if (!res.ok) throw new Error(await res.text() || "Failed to load fulfillments");
+
+      const data = await res.json();
+      const pendingFulfillments = data.filter((o: any) => 
+        ["confirmed", "processing", "pending", "Pending"].includes(o.status)
+      );
+      const sorted = pendingFulfillments.sort((a: any, b: any) => new Date(b.created_at || b.order_date).getTime() - new Date(a.created_at || a.order_date).getTime());
+      setOrders(sorted || []);
+    } catch (err: any) {
+      toast.error("Failed to load fulfillments");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchFulfillments();
-  }, []);
+  }, [profile?.company_id]);
 
   const markShipped = async (id: string) => {
     setShippingIds(prev => [...prev, id]);
     try {
-      const { error } = await supabase.from("export_orders").update({ status: 'shipped' }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/finance/export_orders/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ status: 'shipped' })
+      });
+      if (!res.ok) throw new Error(await res.text() || "Failed to update status");
+
       toast.success("Order marked as shipped!");
       setOrders(orders.filter(o => o.id !== id));
     } catch (err: any) {
