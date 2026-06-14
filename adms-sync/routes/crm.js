@@ -131,9 +131,9 @@ router.get('/', requireAuth, async (req, res) => {
     const stage = req.query.stage;
     const stageIn = req.query.stage_in;
     const params = [];
-    let query = `SELECT * FROM leads WHERE is_deleted = false`;
+    let query = `SELECT * FROM leads WHERE (is_deleted IS NOT TRUE)`;
 
-    if (companyId && companyId !== 'undefined') {
+    if (companyId && companyId !== 'undefined' && companyId !== 'null') {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
