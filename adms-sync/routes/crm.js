@@ -151,8 +151,13 @@ router.get('/', requireAuth, async (req, res) => {
     const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("❌ [CRM] Error fetching leads:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("❌ [CRM] Verbose Fetch Error:", err);
+    res.status(500).json({
+      error: "Detailed Fetch Failed",
+      message: err.message,
+      query: query,
+      params: params
+    });
   }
 });
 
