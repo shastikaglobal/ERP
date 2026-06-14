@@ -8,16 +8,17 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/leads/workflow/successful-conversations - Fetch Won leads (for Client Success)
 router.get('/workflow/successful-conversations', requireAuth, async (req, res) => {
   try {
-    const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
-    const params = ['Won'];
-    let query = `SELECT * FROM leads WHERE stage = $1 AND is_deleted = false`;
+    console.log(`[CRM] Fetching Successful Conversations (Optimized) for company: ${companyId}`);
+    // Select specific fields to avoid potential issues with large/malformed JSON in other columns
+    let query = `SELECT id, company_name, contact_name, email, phone, country, city, stage, created_at, assigned_to FROM leads WHERE stage = 'Won' AND is_deleted = false`;
+    const params = [];
     if (companyId) {
-      query += ` AND company_id = $${params.length + 1}`;
+      query += ` AND company_id = $1`;
       params.push(companyId);
     }
     query += ` ORDER BY created_at DESC`;
-    console.log(`[CRM] Fetching Successful Conversations for company: ${companyId}, user: ${userId}`);
+
     const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
