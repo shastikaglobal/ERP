@@ -217,35 +217,52 @@ router.put('/:id', requireAuth, async (req, res) => {
   const updates = req.body || {};
   const userId = req.user?.sub || req.user?.id;
 
+  console.log(`[CRM] 📝 Update request for lead ${id}. User: ${userId}. Updates:`, JSON.stringify(updates));
+
   try {
     // 1. Get current lead state for audit and validation
+    console.log(`[CRM] 🔍 Fetching current state for lead ${id}...`);
     const currentLeadRows = await db.queryWithRLS(
-      'SELECT company_id, company_name, country, email, stage, contact_name FROM leads WHERE id = $1',
+      'SELECT id, company_id, company_name, country, email, stage, contact_name, converted_at FROM leads WHERE id = $1',
       [id],
       userId
     );
 
     if (currentLeadRows.rows.length === 0) {
+      console.warn(`[CRM] ⚠️ Lead ${id} not found or access denied for user ${userId}`);
       return res.status(404).json({ error: "Lead not found" });
     }
     const currentLead = currentLeadRows.rows[0];
+    console.log(`[CRM] ✅ Found current lead: ${currentLead.company_name} (Stage: ${currentLead.stage})`);
 
     // 2. Automated Logic for "Won" or "Client Successfully Acquired" stage
     const conversionStages = ['Won', 'Client Successfully Acquired'];
-    if (conversionStages.includes(updates.stage)) {
-      // Logic handled primarily by Database Triggers now
+    if (updates.stage && conversionStages.includes(updates.stage)) {
+      console.log(`[CRM] 🎯 Lead moving to conversion stage: ${updates.stage}`);
+
       // We only store the converted_at timestamp here for tracking in the leads table
       if (!currentLead.converted_at) {
+        console.log(`[CRM] 🕒 Setting converted_at timestamp...`);
         updates.converted_at = new Date().toISOString();
       }
 
-      // Log activity
-      await db.query(`INSERT INTO lead_activities (lead_id, activity_type, note, created_by) VALUES ($1, $2, $3, $4)`,
-        [id, 'stage_change', `Lead moved to conversion stage. Previous: ${currentLead.stage}, New: ${updates.stage}`, userId]);
+      // Log activity - Use correct column names: type and title
+      console.log(`[CRM] 📝 Logging conversion activity...`);
+      try {
+        await db.query(`INSERT INTO lead_activities (lead_id, type, title, created_by) VALUES ($1, $2, $3, $4)`,
+          [id, 'stage_change', `Lead moved to conversion stage. Previous: ${currentLead.stage}, New: ${updates.stage}`, userId]);
+        console.log(`[CRM] ✅ Activity logged successfully`);
+      } catch (actErr) {
+        console.error(`[CRM] ❌ Failed to log activity:`, actErr.message);
+        // Don't fail the whole update just because activity log failed
+      }
     }
 
     // 3. Build and execute standard update
-    if (Object.keys(updates).length === 0) return res.json({ success: true });
+    if (Object.keys(updates).length === 0) {
+      console.log(`[CRM] ℹ️ No updates to apply`);
+      return res.json({ success: true });
+    }
 
     const setClauses = [];
     const values = [];
@@ -259,16 +276,29 @@ router.put('/:id', requireAuth, async (req, res) => {
     values.push(id);
 
     const query = `UPDATE leads SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`;
+    console.log(`[CRM] 💾 Executing update query:`, query);
+    console.log(`[CRM] 📦 Query values:`, JSON.stringify(values));
+
     const result = await db.queryWithRLS(query, values, userId);
 
+    if (result.rows.length === 0) {
+      console.warn(`[CRM] ⚠️ Update returned no rows (id: ${id})`);
+      throw new Error("Update failed - no rows returned");
+    }
+
+    console.log(`[CRM] 🎉 Lead updated successfully: ${id}`);
     res.json({
       success: true,
-      message: conversionStages.includes(updates.stage) ? "Lead successfully converted and moved to workflow." : "Lead updated successfully.",
+      message: updates.stage && conversionStages.includes(updates.stage) ? "Lead successfully converted and moved to workflow." : "Lead updated successfully.",
       data: result.rows[0]
     });
   } catch (err) {
-    console.error("DB Error (update lead):", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("❌ [CRM] Update Error:", err);
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
