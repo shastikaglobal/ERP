@@ -17,11 +17,12 @@ router.get('/workflow/successful-conversations', requireAuth, async (req, res) =
       params.push(companyId);
     }
     query += ` ORDER BY created_at DESC`;
-    const result = await db.queryWithRLS(query, params, userId);
+    console.log(`[CRM] Fetching Successful Conversations for company: ${companyId}, user: ${userId}`);
+    const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("DB Error (get successful conversations):", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ [CRM] Error fetching successful conversations:", err);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
 
@@ -37,11 +38,12 @@ router.get('/workflow/client-acquisition', requireAuth, async (req, res) => {
       params.push(companyId);
     }
     query += ` ORDER BY created_at DESC`;
-    const result = await db.queryWithRLS(query, params, userId);
+    console.log(`[CRM] Fetching Client Acquisition for company: ${companyId}, user: ${userId}`);
+    const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("DB Error (get client acquisition):", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ [CRM] Error fetching client acquisition:", err);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
 
@@ -57,11 +59,12 @@ router.get('/workflow/lost-leads', requireAuth, async (req, res) => {
       params.push(companyId);
     }
     query += ` ORDER BY created_at DESC`;
-    const result = await db.queryWithRLS(query, params, userId);
+    console.log(`[CRM] Fetching Lost Leads for company: ${companyId}, user: ${userId}`);
+    const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("DB Error (get lost leads):", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ [CRM] Error fetching lost leads:", err);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
 
