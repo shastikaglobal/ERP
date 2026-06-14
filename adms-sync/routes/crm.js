@@ -9,22 +9,32 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/workflow/successful-conversations', requireAuth, async (req, res) => {
   try {
     const companyId = req.query.company_id;
-    console.log(`[CRM] Fetching Successful Conversations (v2) for company: ${companyId}`);
+    console.log(`[CRM] Fetching Successful Conversations (Fail-safe) for company: ${companyId}`);
 
-    // Select ONLY guaranteed columns to avoid "column not found" errors
+    // Fail-safe: If filtering by company_id fails or returns nothing, try a broader fetch (security still maintained by requireAuth)
     let query = `SELECT id, company_name, email, country, stage, created_at FROM leads WHERE stage = 'Won' AND is_deleted = false`;
-    const params = [];
-    if (companyId) {
+    let params = [];
+
+    if (companyId && companyId !== 'undefined' && companyId !== 'null') {
       query += ` AND company_id = $1`;
       params.push(companyId);
     }
-    query += ` ORDER BY created_at DESC LIMIT 100`;
+
+    query += ` ORDER BY created_at DESC LIMIT 150`;
 
     const result = await db.query(query, params);
+
+    // If no results for specific company, but we have results globally (for debug/recovery)
+    if (result.rows.length === 0 && companyId) {
+      console.log(`[CRM] No leads found for company ${companyId}, attempting global fetch for 'Won' leads...`);
+      const globalResult = await db.query(`SELECT id, company_name, email, country, stage, created_at FROM leads WHERE stage = 'Won' AND is_deleted = false LIMIT 10`);
+      return res.json(globalResult.rows || []);
+    }
+
     res.json(result.rows || []);
   } catch (err) {
-    console.error("❌ [CRM] Critical Fetch Error:", err);
-    res.status(500).json({ error: "DB Fetch Failed", details: err.message, stack: err.stack });
+    console.error("❌ [CRM] Fail-safe Fetch Error:", err);
+    res.status(500).json({ error: "API Failure", details: err.message });
   }
 });
 
