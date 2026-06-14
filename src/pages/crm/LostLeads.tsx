@@ -51,17 +51,13 @@ export default function LostLeads() {
     fetchData();
 
     const channel = supabase
-      .channel('lost-leads-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
-        (payload) => {
-          // Refresh if stage changed to/from Lost
-          if (payload.new?.stage === 'Lost' || payload.old?.stage === 'Lost') {
-            fetchData();
-          }
+      .channel('lost-leads-realtime-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads') {
+          console.log('[LostLeads] 🔔 Lead update detected via broadcast, refreshing...');
+          fetchData();
         }
-      )
+      })
       .subscribe();
 
     return () => {
@@ -133,7 +129,7 @@ export default function LostLeads() {
         const totalCount = allLeads.length;
 
         setTotalLost(lostCount);
-        
+
         // Revenue lost calculation: assume $12,000 per potential deal
         const lostRevenue = lostCount * 12000;
         setLostValue(`$${lostRevenue.toLocaleString()}`);
@@ -196,10 +192,8 @@ export default function LostLeads() {
   return (
     <div className="w-full h-screen overflow-auto bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-4 md:p-6">
       <SectionHeader
-        icon={XCircle}
         title="Lost Leads"
-        subtitle="Leads that did not convert"
-        color={COLORS.red}
+        sub="Leads that did not convert"
       />
 
       {/* Metrics Cards */}

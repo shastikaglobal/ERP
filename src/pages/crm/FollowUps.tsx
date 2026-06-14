@@ -92,7 +92,7 @@ export default function FollowUps() {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
-      
+
       const data = await res.json();
       setLeads(data.filter((l: any) => !l.is_deleted) as LeadOption[]);
     } catch (error: any) {
@@ -124,8 +124,14 @@ export default function FollowUps() {
     fetchBdeMembers();
 
     const channel = supabase
-      .channel("follow-ups-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "follow_ups" }, fetchFollowUps)
+      .channel("follow-ups-realtime-sync")
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'follow_ups' || payload.payload?.table === 'leads') {
+          console.log('[FollowUps] 🔔 Change detected via broadcast, refreshing...');
+          fetchFollowUps();
+          if (payload.payload?.table === 'leads') fetchLeads();
+        }
+      })
       .subscribe();
 
     return () => {
@@ -146,14 +152,14 @@ export default function FollowUps() {
     }
 
     const assignee = assignedTo;
-    
+
     // Convert 12h to 24h for storage
     let [hours, minutes] = reminderTime.split(':').map(Number);
     if (timePeriod === "PM" && hours < 12) hours += 12;
     if (timePeriod === "AM" && hours === 12) hours = 0;
     const finalTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
 
-    const combinedNote = note.trim() 
+    const combinedNote = note.trim()
       ? `${contactMethod}: ${note.trim()}`
       : contactMethod;
 
@@ -176,7 +182,7 @@ export default function FollowUps() {
       };
 
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (isEditing && selectedFollowUp) {
         const res = await fetch(`/api/follow-ups/${selectedFollowUp.id}`, {
           method: 'PUT',
@@ -232,7 +238,7 @@ export default function FollowUps() {
     setSelectedLeadId(followUp.lead_id);
     setFollowUpDate(followUp.follow_up_date || "");
     setAssignedTo(followUp.assigned_to || (bdeMembers[0]?.full_name || ""));
-    
+
     // Parse note: "Method: Note"
     const noteParts = followUp.note?.split(": ");
     if (noteParts && noteParts.length > 1) {
@@ -254,7 +260,7 @@ export default function FollowUps() {
       if (h === 0) h = 12;
     }
     setReminderTime(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-    
+
     setIsEditing(true);
     setIsDialogOpen(true);
   };
@@ -326,8 +332,8 @@ export default function FollowUps() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button 
-            className="bg-primary hover:bg-primary/90" 
+          <Button
+            className="bg-primary hover:bg-primary/90"
             onClick={() => {
               resetForm();
               setIsDialogOpen(true);
@@ -400,8 +406,8 @@ export default function FollowUps() {
               </TableRow>
             ) : (
               filteredFollowUps.map((followUp) => (
-                <TableRow 
-                  key={followUp.id} 
+                <TableRow
+                  key={followUp.id}
                   className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => {
                     setSelectedFollowUp(followUp);
@@ -417,8 +423,8 @@ export default function FollowUps() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger className="text-left cursor-help" onClick={(e) => e.stopPropagation()}>
-                            {followUp.note.length > 40 
-                              ? `${followUp.note.substring(0, 40)}...` 
+                            {followUp.note.length > 40
+                              ? `${followUp.note.substring(0, 40)}...`
                               : followUp.note}
                           </TooltipTrigger>
                           <TooltipContent className="max-w-[300px] bg-slate-900 text-white border-slate-800">
@@ -440,10 +446,10 @@ export default function FollowUps() {
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     {!followUp.is_notified && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="h-8 text-[10px] uppercase tracking-wider" 
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[10px] uppercase tracking-wider"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAcknowledge(followUp.id);
@@ -452,10 +458,10 @@ export default function FollowUps() {
                         <Check className="mr-1 h-3.5 w-3.5" /> Acknowledge
                       </Button>
                     )}
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="h-8 text-[10px] uppercase tracking-wider" 
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-[10px] uppercase tracking-wider"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEditOpen(followUp);
@@ -463,10 +469,10 @@ export default function FollowUps() {
                     >
                       <Edit2 className="mr-1 h-3.5 w-3.5" /> Edit
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-8 text-[10px] uppercase tracking-wider" 
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-[10px] uppercase tracking-wider"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(followUp.id);
@@ -482,7 +488,7 @@ export default function FollowUps() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="bg-card border-border max-w-lg text-foreground">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Follow-Up" : "Create Follow-Up"}</DialogTitle>
@@ -519,7 +525,7 @@ export default function FollowUps() {
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Selected Lead Details</span>
                   <Badge variant="outline" className="text-[10px] bg-background/50">Auto-filled</Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <div className="col-span-full">
                     <div className="text-[10px] text-muted-foreground/60 uppercase font-medium">Company Name</div>
@@ -649,7 +655,7 @@ export default function FollowUps() {
           <SheetHeader className="mb-6 border-b border-white/10 pb-4">
             <SheetTitle className="text-white text-xl">Follow-Up Details</SheetTitle>
           </SheetHeader>
-          
+
           {selectedFollowUp && (
             <div className="space-y-6">
               <div>
@@ -663,24 +669,24 @@ export default function FollowUps() {
 
               <div className="grid grid-cols-1 gap-4">
                 <DetailItem label="Contact Name" value={selectedFollowUp.contact_name} />
-                                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <DetailItem label="Follow-Up Date" value={formatDate(selectedFollowUp.follow_up_date)} />
                   <DetailItem label="Reminder Time" value={selectedFollowUp.reminder_time ? new Date(`2000-01-01T${selectedFollowUp.reminder_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "09:00 AM"} />
                 </div>
 
                 <DetailItem label="Assigned To" value={selectedFollowUp.assigned_to} />
-                
+
                 <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-3 mt-2">
                   <div className="border-b border-white/10 pb-2 mb-1">
                     <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Contact Activity</span>
                   </div>
-                  <DetailItem 
-                    label="Contact Method" 
-                    value={selectedFollowUp.note?.split(": ")[0]} 
+                  <DetailItem
+                    label="Contact Method"
+                    value={selectedFollowUp.note?.split(": ")[0]}
                   />
-                  <DetailItem 
-                    label="Internal Note" 
-                    value={selectedFollowUp.note?.includes(": ") ? selectedFollowUp.note.split(": ").slice(1).join(": ") : "—"} 
+                  <DetailItem
+                    label="Internal Note"
+                    value={selectedFollowUp.note?.includes(": ") ? selectedFollowUp.note.split(": ").slice(1).join(": ") : "—"}
                   />
                 </div>
 

@@ -44,21 +44,13 @@ export default function ClientAcquisition() {
     fetchData();
 
     const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
-        () => {
+      .channel('client-acquisition-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads' || payload.payload?.table === 'acquisition_channels') {
+          console.log('[ClientAcquisition] 🔔 Change detected via broadcast, refreshing...');
           fetchData();
         }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'acquisition_channels' },
-        () => {
-          fetchData();
-        }
-      )
+      })
       .subscribe();
 
     return () => {

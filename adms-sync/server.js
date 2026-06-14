@@ -187,8 +187,8 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
         }
 
         // Match profile by biometric_id
-        const emp = profiles.find(p => 
-          p.biometric_id === biometricId || 
+        const emp = profiles.find(p =>
+          p.biometric_id === biometricId ||
           (p.biometric_id && Number(p.biometric_id) === Number(biometricId))
         );
 
@@ -200,7 +200,7 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
         // Parse punch timestamp
         const dateParts = punchTimeStr.split(' ');
         const dateStr = dateParts[0]; // "YYYY-MM-DD"
-        
+
         // Assume device is running in India Standard Time (+05:30)
         const tzOffset = process.env.DEVICE_TIMEZONE_OFFSET || '+05:30';
         const punchTimeUTC = new Date(punchTimeStr.replace(' ', 'T') + tzOffset);
@@ -269,7 +269,7 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
                 updatedClockIn = punchTimeIso; // Earlier punch is check_in
               }
             }
-            
+
             const existingInMsAfter = new Date(updatedClockIn).getTime();
             if (currentPunchTimeMs > existingInMsAfter) {
               if (!updatedClockOut) {
@@ -292,13 +292,13 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
               'UPDATE attendance_logs SET clock_in = $1, clock_out = $2, status = $3 WHERE id = $4',
               [updatedClockIn, updatedClockOut, 'present', existing.id]
             );
-            console.log(`🔄 Updated attendance for employee [${emp.id}] on ${dateStr}: In=${updatedClockIn?.substring(11,19)}, Out=${updatedClockOut?.substring(11,19)}`);
+            console.log(`🔄 Updated attendance for employee [${emp.id}] on ${dateStr}: In=${updatedClockIn?.substring(11, 19)}, Out=${updatedClockOut?.substring(11, 19)}`);
             processedCount++;
           } catch (updateErr) {
             console.error(`❌ Failed to update attendance [${existing.id}]:`, updateErr.message);
           }
         }
-        
+
         // --- IMMUTABLE RAW PUNCH STORAGE ---
         // Insert the raw punch log into the 'AttLogs' table so no one can erase the raw data
         try {
@@ -311,7 +311,7 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
         } catch (rawLogErr) {
           console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
         }
-        
+
       }
 
       console.log(`🎉 Sync completed. Successfully processed ${processedCount} punch(es).`);
@@ -332,7 +332,7 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
 app.get(['/iclock/getrequest', '/iclock/getrequest.aspx'], (req, res) => {
   const sn = req.query.SN || 'UNKNOWN';
   console.log(`\n⏳ [GET /iclock/getrequest] Command request from SN: ${sn}`);
-  
+
   // Return OK indicating no pending commands
   res.setHeader('Content-Type', 'text/plain');
   res.status(200).send('OK');
@@ -366,10 +366,10 @@ app.post('/force-logout', express.json(), async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   const { userId, sessionId } = req.body;
   if (!userId) return res.status(400).json({ error: "Missing userId" });
-  
+
   const nowIso = new Date().toISOString();
   let updatedSession = false;
   let updatedAttendance = false;
@@ -440,13 +440,13 @@ async function startPgListener() {
   try {
     await pgClient.connect();
     console.log('🔌 Dedicated PG Listener Client connected.');
-    
+
     await pgClient.query('LISTEN data_changed');
     console.log('👂 Listening to PG channel "data_changed"');
 
     pgClient.on('notification', (msg) => {
       console.log(`🔔 Received PG notify on "data_changed": ${msg.payload}`);
-      
+
       // Broadcast to Supabase Realtime channel 'global_data_sync'
       supabase.channel('global_data_sync').send({
         type: 'broadcast',
@@ -481,7 +481,12 @@ const ensureUserPermissionsSetup = async () => {
         updated_at TIMESTAMPTZ DEFAULT now()
       );
     `);
-    console.log('✅ user_permissions table is ready.');
+
+    // Ensure conversion tracking column exists
+    await db.query(`ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS converted_at TIMESTAMPTZ;`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_leads_converted_at ON public.leads(converted_at);`);
+
+    console.log('✅ Base tables and leads schema tracking are ready.');
   } catch (err) {
     console.error('❌ Could not ensure user_permissions table:', err);
     process.exit(1);

@@ -6,29 +6,18 @@ const { requireAuth } = require('../middleware/auth');
 // ========== WORKFLOW ENDPOINTS - MUST BE DEFINED BEFORE /:id ROUTES ==========
 
 // GET /api/leads/workflow/successful-conversations - Fetch Won leads (for Client Success)
-// Data Fetching Rule: Fetch all leads where stage = "Won"
 router.get('/workflow/successful-conversations', requireAuth, async (req, res) => {
   try {
     const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
-    
     const params = ['Won'];
-    let query = `
-      SELECT * FROM leads 
-      WHERE stage = $1 AND is_deleted = false
-    `;
-
+    let query = `SELECT * FROM leads WHERE stage = $1 AND is_deleted = false`;
     if (companyId) {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
-
     query += ` ORDER BY created_at DESC`;
-    
-    console.log(`[CRM Workflow] Fetching successful-conversations (Won leads) for user ${userId}, company: ${companyId}`);
-    
     const result = await db.queryWithRLS(query, params, userId);
-    console.log(`[CRM Workflow] Returned ${result.rows.length} Won leads`);
     res.json(result.rows || []);
   } catch (err) {
     console.error("DB Error (get successful conversations):", err);
@@ -37,29 +26,18 @@ router.get('/workflow/successful-conversations', requireAuth, async (req, res) =
 });
 
 // GET /api/leads/workflow/client-acquisition - Fetch Client Successfully Acquired leads
-// Data Fetching Rule: Fetch all leads where stage = "Client Successfully Acquired"
 router.get('/workflow/client-acquisition', requireAuth, async (req, res) => {
   try {
     const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
-    
     const params = ['Client Successfully Acquired'];
-    let query = `
-      SELECT * FROM leads 
-      WHERE stage = $1 AND is_deleted = false
-    `;
-
+    let query = `SELECT * FROM leads WHERE stage = $1 AND is_deleted = false`;
     if (companyId) {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
-
     query += ` ORDER BY created_at DESC`;
-    
-    console.log(`[CRM Workflow] Fetching client-acquisition (Client Successfully Acquired leads) for user ${userId}, company: ${companyId}`);
-    
     const result = await db.queryWithRLS(query, params, userId);
-    console.log(`[CRM Workflow] Returned ${result.rows.length} Client Successfully Acquired leads`);
     res.json(result.rows || []);
   } catch (err) {
     console.error("DB Error (get client acquisition):", err);
@@ -72,17 +50,13 @@ router.get('/workflow/lost-leads', requireAuth, async (req, res) => {
   try {
     const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
-    
     const params = [];
     let query = `SELECT * FROM leads WHERE stage = 'Lost' AND is_deleted = false`;
-
     if (companyId) {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
-
     query += ` ORDER BY created_at DESC`;
-    
     const result = await db.queryWithRLS(query, params, userId);
     res.json(result.rows || []);
   } catch (err) {
@@ -91,22 +65,18 @@ router.get('/workflow/lost-leads', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/leads/workflow/won-leads - Fetch Won leads (direct from leads table)
+// GET /api/leads/workflow/won-leads - Fetch Won leads
 router.get('/workflow/won-leads', requireAuth, async (req, res) => {
   try {
     const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
-    
     const params = [];
     let query = `SELECT * FROM leads WHERE stage = 'Won' AND is_deleted = false`;
-
     if (companyId) {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
-
     query += ` ORDER BY created_at DESC`;
-    
     const result = await db.queryWithRLS(query, params, userId);
     res.json(result.rows || []);
   } catch (err) {
@@ -117,43 +87,32 @@ router.get('/workflow/won-leads', requireAuth, async (req, res) => {
 
 // ========== STANDARD CRUD ENDPOINTS ==========
 
-// GET /api/leads - Fetch all leads, optionally scoped by company_id and stage filters
+// GET /api/leads - Fetch all leads
 router.get('/', requireAuth, async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { rows } = await db.query('SELECT * FROM leads WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC');
-    res.json(rows);
-=======
     const companyId = req.query.company_id;
     const stage = req.query.stage;
     const stageIn = req.query.stage_in;
     const userId = req.user?.sub || req.user?.id;
     const params = [];
     let query = `SELECT * FROM leads WHERE (is_deleted IS FALSE OR is_deleted = false)`;
-
     if (companyId) {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
-
     if (stage) {
       query += ` AND stage = $${params.length + 1}`;
       params.push(stage);
     } else if (stageIn) {
-      const stages = String(stageIn)
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const stages = String(stageIn).split(',').map(s => s.trim()).filter(Boolean);
       if (stages.length > 0) {
         query += ` AND stage = ANY($${params.length + 1}::text[])`;
         params.push(stages);
       }
     }
-
     query += ` ORDER BY created_at DESC`;
     const result = await db.queryWithRLS(query, params, userId);
     res.json(result.rows || []);
->>>>>>> cea8f4d (Fix: align CRM stages and pipeline; include Client Successfully Acquired)
   } catch (err) {
     console.error("DB Error (get leads):", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -163,22 +122,14 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /api/leads/:id - Fetch single lead
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { id } = req.params;
-    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND is_deleted IS NOT TRUE', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: "Not found" });
-    res.json(rows[0]);
-=======
     const userId = req.user?.sub || req.user?.id;
     const result = await db.queryWithRLS(
       `SELECT * FROM leads WHERE id = $1 AND (is_deleted IS FALSE OR is_deleted = false)`,
       [req.params.id],
       userId
     );
-
     if (result.rows.length === 0) return res.status(404).json({ error: "Not found" });
     res.json(result.rows[0]);
->>>>>>> cea8f4d (Fix: align CRM stages and pipeline; include Client Successfully Acquired)
   } catch (err) {
     console.error("DB Error (get single lead):", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -189,28 +140,16 @@ router.get('/:id', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const data = req.body;
-    data.created_by = req.user.sub;
-
-    // Fetch user's company_id from profiles if not provided
+    data.created_by = req.user.sub || req.user.id;
     if (!data.company_id && data.created_by) {
-      const { rows: profileRows } = await db.query(
-        'SELECT company_id FROM profiles WHERE id = $1',
-        [data.created_by]
-      );
-      if (profileRows.length > 0 && profileRows[0].company_id) {
-        data.company_id = profileRows[0].company_id;
-      }
+      const { rows: profileRows } = await db.query('SELECT company_id FROM profiles WHERE id = $1', [data.created_by]);
+      if (profileRows.length > 0) data.company_id = profileRows[0].company_id;
     }
-
     const keys = Object.keys(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const columns = keys.map(k => `"${k}"`).join(', ');
     const values = Object.values(data);
-
-    const { rows } = await db.query(
-      `INSERT INTO leads (${columns}) VALUES (${placeholders}) RETURNING *`,
-      values
-    );
+    const { rows } = await db.query(`INSERT INTO leads (${columns}) VALUES (${placeholders}) RETURNING *`, values);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error("DB Error (create lead):", err);
@@ -218,117 +157,97 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PUT /api/leads/:id - Update lead
+// PUT /api/leads/:id - Update lead (Main automated handler for state changes)
 router.put('/:id', requireAuth, async (req, res) => {
-  console.log(`[DEBUG] PUT /api/leads/${req.params.id} body:`, req.body);
+  const { id } = req.params;
+  const updates = req.body || {};
+  const userId = req.user?.sub || req.user?.id;
+
   try {
-<<<<<<< HEAD
-    const { id } = req.params;
-    const updates = req.body;
-=======
-    const leadId = req.params.id;
-    const updates = req.body || {};
-    const userId = req.user?.sub || req.user?.id || 'unknown';
+    // 1. Get current lead state for audit and validation
+    const currentLeadRows = await db.queryWithRLS(
+      'SELECT company_id, company_name, country, email, stage, contact_name FROM leads WHERE id = $1',
+      [id],
+      userId
+    );
 
-    console.log(`[CRM Lead Update] Request to update lead ${leadId}`, {
-      updates,
-      userId,
-      bodyType: typeof req.body,
-      bodyKeys: Object.keys(req.body || {})
-    });
-
-    if (Object.keys(updates).length === 0) {
-      console.warn(`[CRM Lead Update] No updates provided for lead ${leadId}`);
-      return res.status(400).json({ error: "No updates provided" });
+    if (currentLeadRows.rows.length === 0) {
+      return res.status(404).json({ error: "Lead not found" });
     }
+    const currentLead = currentLeadRows.rows[0];
 
-    if ('stage' in updates) {
-      if (updates.stage === null || updates.stage === undefined || updates.stage === '') {
-        console.warn(`[CRM Lead Update] Invalid stage value for lead ${leadId}`);
-        return res.status(400).json({ error: "Stage value is required" });
+    // 2. Automated Logic for "Won" or "Client Successfully Acquired" stage
+    const conversionStages = ['Won', 'Client Successfully Acquired'];
+    if (conversionStages.includes(updates.stage)) {
+      // Validation: Check mandatory information for conversion
+      const missingFields = [];
+      if (!currentLead.company_name) missingFields.push("Company Name");
+      if (!currentLead.email) missingFields.push("Email");
+      if (!currentLead.country) missingFields.push("Country");
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          error: `Incomplete lead data. Please provide ${missingFields.join(', ')} before marking as ${updates.stage}.`
+        });
       }
-      console.log(`[CRM Lead Update] Lead ${leadId} stage update: "${updates.stage}" by user ${userId}`);
-    }
->>>>>>> cea8f4d (Fix: align CRM stages and pipeline; include Client Successfully Acquired)
 
-    const keys = Object.keys(updates);
-    if (keys.length === 0) return res.json({ success: true });
-
-<<<<<<< HEAD
-    if (updates.stage === 'Won' || updates.stage === 'Client Successfully Acquired') {
-      // Automatically convert to customer if not already converted
-      const leadCheck = await db.query('SELECT company_id, company_name, country, email FROM leads WHERE id = $1', [id]);
-      if (leadCheck.rows.length > 0) {
-        const leadData = leadCheck.rows[0];
-
-        let cmpId = leadData.company_id;
-        if (!cmpId && req.user && req.user.sub) {
-          const empCheck = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
-          if (empCheck.rows.length > 0) cmpId = empCheck.rows[0].company_id;
-        }
-
-        if (cmpId) {
-          // Check if already in customers to avoid duplicates
-          const custCheck = await db.query('SELECT id FROM customers WHERE email = $1 AND name = $2', [leadData.email, leadData.company_name]);
-          if (custCheck.rows.length === 0) {
-            await db.query(
-              `INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)`,
-              [cmpId, leadData.company_name, leadData.country, leadData.email]
-            );
-          }
-        } else {
-          console.error("Skipping conversion: no valid company_id found for lead", id);
-        }
+      // Store conversion timestamp if not already set
+      if (!currentLead.converted_at) {
+        updates.converted_at = new Date().toISOString();
       }
-      updates.stage = 'Client Successfully Acquired';
+
+      // Automate conversion to customer if not already done
+      const customerCheck = await db.queryWithRLS(
+        'SELECT id FROM customers WHERE email = $1 AND company_id = $2',
+        [currentLead.email, currentLead.company_id],
+        userId
+      );
+
+      if (customerCheck.rows.length === 0) {
+        await db.queryWithRLS(
+          'INSERT INTO customers (company_id, name, country, email, contact_person) VALUES ($1, $2, $3, $4, $5)',
+          [currentLead.company_id, currentLead.company_name, currentLead.country, currentLead.email, currentLead.contact_name],
+          userId
+        );
+      }
+
+      // Log activity
+      await db.queryWithRLS(
+        'INSERT INTO lead_activities (lead_id, activity_type, note, created_by) VALUES ($1, $2, $3, $4)',
+        [id, 'stage_change', `Lead moved to conversion stage. Previous: ${currentLead.stage}, New: ${updates.stage}`, userId],
+        userId
+      );
     }
 
-    const setClause = keys.map((key, i) => `"${key}" = $${i + 2}`).join(', ');
-    const values = [id, ...Object.values(updates)];
+    // 3. Build and execute standard update
+    if (Object.keys(updates).length === 0) return res.json({ success: true });
 
-    await db.query(`UPDATE leads SET ${setClause} WHERE id = $1`, values);
-    res.json({ success: true });
-=======
-    // Build SET clauses - only update provided fields
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
     for (const [key, value] of Object.entries(updates)) {
-      setClauses.push(`${key} = $${idx}`);
+      setClauses.push(`"${key}" = $${idx}`);
       values.push(value);
       idx++;
     }
-
-    // Add updated_at timestamp
     setClauses.push(`updated_at = NOW()`);
+    values.push(id);
 
-    // Prepare the WHERE clause
-    const leadIdParam = `$${idx}`;
-    values.push(leadId);
-
-    const query = `UPDATE leads SET ${setClauses.join(', ')} WHERE id = ${leadIdParam} RETURNING *`;
-    console.log(`[CRM Lead Update] SQL Query:`, query);
-    console.log(`[CRM Lead Update] SQL Values:`, values);
-
-    // Use queryWithRLS to set auth context for RLS policies
+    const query = `UPDATE leads SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`;
     const result = await db.queryWithRLS(query, values, userId);
 
-    if (result.rows.length === 0) {
-      console.warn(`[CRM Lead Update] Lead ${leadId} not found for update (RLS may have blocked it)`);
-      return res.status(404).json({ error: "Lead not found or no permission to update" });
-    }
-
-    console.log(`[CRM Lead Update] Successfully updated lead ${leadId}`, {
-      stage: result.rows[0].stage,
-      updatedAt: result.rows[0].updated_at,
+    res.json({
+      success: true,
+      message: conversionStages.includes(updates.stage) ? "Lead successfully converted and moved to workflow." : "Lead updated successfully.",
+      data: result.rows[0]
     });
-
-    res.json({ success: true, data: result.rows[0] });
->>>>>>> cea8f4d (Fix: align CRM stages and pipeline; include Client Successfully Acquired)
   } catch (err) {
-    console.error(`[CRM Lead Update] DB Error for lead ${req.params.id}:`, err);
+    console.error("DB Error (update lead):", err);
     res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
 
-// DELETE /api/leads/:id - Delete lead (Soft delete)
+// DELETE /api/leads/:id - Soft delete
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -340,45 +259,37 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/leads/meta/sources - Fetch acquisition channels, optionally scoped by company_id
+// GET /api/leads/meta/sources - Fetch acquisition channels
 router.get('/meta/sources', requireAuth, async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { rows } = await db.query('SELECT id, channel_name FROM acquisition_channels ORDER BY channel_name');
-    res.json(rows);
-=======
+    const userId = req.user?.sub || req.user?.id;
     const companyId = req.query.company_id;
     const params = [];
     let query = `SELECT id, channel_name, avg_lead_cost, company_id FROM acquisition_channels`;
-
     if (companyId) {
       query += ` WHERE company_id = $1`;
       params.push(companyId);
     }
-
     query += ` ORDER BY channel_name`;
-    const result = await db.query(query, params);
+    const result = await db.queryWithRLS(query, params, userId);
     res.json(result.rows || []);
->>>>>>> cea8f4d (Fix: align CRM stages and pipeline; include Client Successfully Acquired)
   } catch (err) {
     console.error("DB Error (get sources):", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// POST /api/leads/meta/sources - Create acquisition channel via backend
+// POST /api/leads/meta/sources - Create acquisition channel
 router.post('/meta/sources', requireAuth, async (req, res) => {
   try {
     const { company_id, channel_name, avg_lead_cost } = req.body;
-    if (!company_id || !channel_name) {
-      return res.status(400).json({ error: "company_id and channel_name are required" });
-    }
-
-    const result = await db.query(
+    if (!company_id || !channel_name) return res.status(400).json({ error: "company_id and channel_name are required" });
+    const userId = req.user?.sub || req.user?.id;
+    const result = await db.queryWithRLS(
       `INSERT INTO acquisition_channels (company_id, channel_name, avg_lead_cost) VALUES ($1, $2, $3) RETURNING *`,
-      [company_id, channel_name, avg_lead_cost || 0]
+      [company_id, channel_name, avg_lead_cost || 0],
+      userId
     );
-
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("DB Error (create source):", err);
@@ -391,20 +302,13 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { company_id, name, country, email } = req.body;
-
-    // Insert into customers
-    await db.query(
-      'INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)',
-      [company_id, name, country, email]
-    );
-    await db.query(
-      `UPDATE leads SET stage = 'Client Successfully Acquired' WHERE id = $1 AND stage != 'Client Successfully Acquired'`,
-      [id]
-    );
-
+    await db.query('BEGIN');
+    await db.query('INSERT INTO customers (company_id, name, country, email) VALUES ($1, $2, $3, $4)', [company_id, name, country, email]);
+    await db.query(`UPDATE leads SET stage = 'Client Successfully Acquired' WHERE id = $1`, [id]);
     await db.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
+    await db.query('ROLLBACK');
     console.error("DB Error (convert lead):", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -415,15 +319,8 @@ router.post('/:id/follow-ups', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { company_name, contact_name, follow_up_date, note, assigned_to } = req.body;
-
-    await db.query(
-      `INSERT INTO follow_ups (lead_id, company_name, contact_name, follow_up_date, note, assigned_to, is_notified) 
-       VALUES ($1, $2, $3, $4, $5, $6, false)`,
-      [id, company_name, contact_name, follow_up_date, note, assigned_to]
-    );
-
+    await db.query(`INSERT INTO follow_ups (lead_id, company_name, contact_name, follow_up_date, note, assigned_to, is_notified) VALUES ($1, $2, $3, $4, $5, $6, false)`, [id, company_name, contact_name, follow_up_date, note, assigned_to]);
     await db.query('UPDATE leads SET assigned_to = $1 WHERE id = $2', [assigned_to, id]);
-
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (add follow-up):", err);
@@ -435,24 +332,8 @@ router.post('/:id/follow-ups', requireAuth, async (req, res) => {
 router.get('/:id/activities', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await db.query(
-      `SELECT a.*, p.full_name as profile_full_name 
-       FROM lead_activities a
-       LEFT JOIN profiles p ON a.created_by = p.id::text
-       WHERE a.lead_id = $1 
-       ORDER BY a.created_at DESC`,
-      [id]
-    );
-
-    // Format to match Supabase nested structure: profiles: { full_name }
-    const formatted = rows.map(r => {
-      const { profile_full_name, ...rest } = r;
-      return {
-        ...rest,
-        profiles: { full_name: profile_full_name }
-      };
-    });
-
+    const { rows } = await db.query(`SELECT a.*, p.full_name as profile_full_name FROM lead_activities a LEFT JOIN profiles p ON a.created_by = p.id::text WHERE a.lead_id = $1 ORDER BY a.created_at DESC`, [id]);
+    const formatted = rows.map(r => ({ ...r, profiles: { full_name: r.profile_full_name } }));
     res.json(formatted);
   } catch (err) {
     console.error("DB Error (get lead activities):", err);
@@ -464,10 +345,7 @@ router.get('/:id/activities', requireAuth, async (req, res) => {
 router.get('/:id/quotations', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await db.query(
-      'SELECT id, quotation_number, status, created_at, amount, currency FROM quotations WHERE lead_id = $1 ORDER BY created_at DESC',
-      [id]
-    );
+    const { rows } = await db.query('SELECT id, quotation_number, status, created_at, amount, currency FROM quotations WHERE lead_id = $1 ORDER BY created_at DESC', [id]);
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get lead quotations):", err);
@@ -481,17 +359,12 @@ router.post('/:id/activities', requireAuth, async (req, res) => {
     const { id } = req.params;
     const data = req.body;
     data.lead_id = id;
-    data.created_by = req.user.sub;
-
+    data.created_by = req.user.sub || req.user.id;
     const keys = Object.keys(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const columns = keys.map(k => `"${k}"`).join(', ');
     const values = Object.values(data);
-
-    const { rows } = await db.query(
-      `INSERT INTO lead_activities (${columns}) VALUES (${placeholders}) RETURNING *`,
-      values
-    );
+    const { rows } = await db.query(`INSERT INTO lead_activities (${columns}) VALUES (${placeholders}) RETURNING *`, values);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error("DB Error (create lead activity):", err);

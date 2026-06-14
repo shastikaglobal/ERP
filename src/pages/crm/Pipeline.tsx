@@ -52,16 +52,16 @@ export default function LeadPipeline() {
 
   useEffect(() => {
     fetchLeads();
-    
+
     // Add realtime subscription for leads
     const channel = supabase
-      .channel('pipeline-leads-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'leads' },
-        () => {
+      .channel('pipeline-realtime-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads') {
+          console.log('[Pipeline] 🔔 Lead update detected via broadcast, refreshing...');
           fetchLeads();
         }
-      )
+      })
       .subscribe();
 
     return () => {
@@ -107,12 +107,12 @@ export default function LeadPipeline() {
   return (
     <div className="p-6 h-full flex flex-col space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Sales Pipeline</h1>
-      
+
       <div className="flex-1 overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max h-full">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter((l) => l.stage?.toLowerCase() === stage.id.toLowerCase());
-            
+
             return (
               <div key={stage.id} className="w-80 flex flex-col bg-muted/30 rounded-lg border border-border/50">
                 <div className="p-3 border-b flex items-center justify-between bg-card rounded-t-lg">
@@ -122,7 +122,7 @@ export default function LeadPipeline() {
                   </div>
                   <Badge variant="secondary">{stageLeads.length}</Badge>
                 </div>
-                
+
                 <div className="p-3 flex-1 overflow-y-auto space-y-3 min-h-[200px]">
                   {stageLeads.length === 0 ? (
                     <div className="text-sm text-muted-foreground text-center py-4 border-2 border-dashed rounded-md">
@@ -140,7 +140,7 @@ export default function LeadPipeline() {
                             {lead.country && <div>🌍 {lead.country}</div>}
                             {(lead.interested_product || lead.product_type) && <div>📦 {lead.interested_product || lead.product_type}</div>}
                           </div>
-                          
+
                           {canEditStage ? (
                             <Select
                               value={lead.stage}

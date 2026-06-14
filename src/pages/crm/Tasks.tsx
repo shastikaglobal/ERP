@@ -23,16 +23,15 @@ export default function Tasks() {
     if (profile?.company_id) {
       fetchTasks();
 
-      // Subscribe to real-time changes
+      // Subscribe to real-time changes via broadcast
       const channel = supabase
-        .channel('tasks-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'crm_tasks', filter: `company_id=eq.${profile.company_id}` },
-          (payload) => {
-            fetchTasks(); // Simple refetch on any change to keep joins fresh
+        .channel('tasks-realtime-sync')
+        .on('broadcast', { event: 'data_changed' }, (payload) => {
+          if (payload.payload?.table === 'crm_tasks' || payload.payload?.table === 'leads') {
+            console.log('[Tasks] 🔔 Change detected via broadcast, refreshing...');
+            fetchTasks();
           }
-        )
+        })
         .subscribe();
 
       return () => {
@@ -60,10 +59,10 @@ export default function Tasks() {
   const toggleComplete = async (id: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === "Completed" ? "In Progress" : "Completed";
-      
+
       // Optimistic update
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
-      
+
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/crm-tasks/${id}`, {
         method: 'PUT',
@@ -73,7 +72,7 @@ export default function Tasks() {
         },
         body: JSON.stringify({ status: newStatus })
       });
-        
+
       if (!res.ok) throw new Error("Failed to update status");
     } catch (err: any) {
       toast.error("Failed to update status");
@@ -175,11 +174,10 @@ export default function Tasks() {
           {filteredTasks.map((t) => (
             <div
               key={t.id}
-              className={`p-4 rounded-xl border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 group ${
-                t.status === "Completed"
+              className={`p-4 rounded-xl border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 group ${t.status === "Completed"
                   ? "bg-neutral-900/20 border-border/40 opacity-60"
                   : "bg-neutral-900/40 border-border hover:border-primary/20"
-              }`}
+                }`}
             >
               <div className="flex items-start gap-3">
                 <button
@@ -217,27 +215,25 @@ export default function Tasks() {
               </div>
 
               <div className="flex items-center gap-3 self-end md:self-auto">
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[10px] ${
-                  t.priority === "High"
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[10px] ${t.priority === "High"
                     ? "bg-red-500/10 text-red-500 border border-red-500/20"
                     : t.priority === "Medium"
-                    ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                    : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                }`}>
+                      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                      : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                  }`}>
                   {t.priority} Priority
                 </span>
 
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] ${
-                  t.status === "Completed"
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] ${t.status === "Completed"
                     ? "bg-neutral-800 text-muted-foreground border border-neutral-700"
                     : formatDueDate(t.due_date) === "Today"
-                    ? "bg-red-500/10 text-red-400 border border-red-500/10 animate-pulse"
-                    : "bg-neutral-900 text-muted-foreground border border-border"
-                }`}>
+                      ? "bg-red-500/10 text-red-400 border border-red-500/10 animate-pulse"
+                      : "bg-neutral-900 text-muted-foreground border border-border"
+                  }`}>
                   {formatDueDate(t.due_date)}
                 </span>
 
-                <button 
+                <button
                   onClick={() => deleteTask(t.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-red-500"
                 >
@@ -254,8 +250,8 @@ export default function Tasks() {
         </div>
       </Card>
 
-      <AddTaskDialog 
-        open={isDialogOpen} 
+      <AddTaskDialog
+        open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSuccess={fetchTasks}
       />

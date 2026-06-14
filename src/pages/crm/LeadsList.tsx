@@ -198,13 +198,21 @@ export default function LeadsList() {
     fetchTeam();
     fetchSources();
 
-    // Poll for leads changes every 4 seconds instead of real-time subscription
-    const pollInterval = setInterval(() => {
-      console.log('[LeadsList] Polling for leads changes...');
-      fetchLeads();
-    }, 4000);
+    // Subscribe to global sync broadcast for real-time updates
+    const channel = supabase
+      .channel('leads-list-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads') {
+          console.log('[LeadsList] 🔔 Lead update detected via broadcast, refreshing...');
+          fetchLeads();
+        }
+      })
+      .subscribe();
+
+    const pollInterval = setInterval(fetchLeads, 15000); // Slower fallback
 
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(pollInterval);
     };
   }, []);
@@ -278,7 +286,7 @@ export default function LeadsList() {
   const convertToCustomer = async (lead: Lead) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       const empRes = await authFetch(`/api/employees/${session?.user?.id}`);
       if (!empRes.ok) throw new Error("Could not identify your company");
       const empData = await empRes.json();
@@ -322,7 +330,7 @@ export default function LeadsList() {
 
     const assignee = followUpAssignedTo;
     try {
-        const res = await authFetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, {
+      const res = await authFetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,7 +341,7 @@ export default function LeadsList() {
           assigned_to: assignee,
         })
       });
-      
+
       if (!res.ok) throw new Error("Failed to save follow up");
 
       toast.success("Follow-up saved successfully");
@@ -984,10 +992,11 @@ export default function LeadsList() {
                             if (!res.ok) {
                               const errorBody = await res.json().catch(() => null);
                               const message = errorBody?.error || errorBody?.message || `${res.status} ${res.statusText}`;
-                              throw new Error(`Failed to update stage: ${message}`);
+                              throw new Error(message);
                             }
 
-                            toast.success(`Lead moved to ${newStage}`);
+                            const result = await res.json();
+                            toast.success(result.message || `Lead moved to ${newStage}`);
                             await fetchLeads();
                           } catch (err: any) {
                             console.error(`[LeadsList] Stage update error:`, err);

@@ -65,7 +65,7 @@ export const navGroups: NavGroup[] = [
       { title: "Follow-Ups", url: "/crm/follow-ups", icon: CalendarCheck, permission: "farmers.view" },
       { title: "Communication", url: "/crm/communication", icon: MessageSquare, permission: "farmers.view" },
       { title: "Client Acquisition", url: "/crm/client-acquisition", icon: UserPlus, permission: "farmers.view" },
-      { title: "Successful Conversations", url: "/crm/successful-conversations", icon: CheckCircle2, permission: "farmers.view" },
+      { title: "Client Success", url: "/crm/successful-conversations", icon: CheckCircle2, permission: "farmers.view" },
       { title: "Lost Leads", url: "/crm/lost-leads", icon: XCircle, permission: "farmers.view" },
       { title: "Customer Database", url: "/crm/customer-database", icon: Database, permission: "farmers.view" },
       { title: "Task", url: "/crm/tasks", icon: ClipboardCheck, permission: "farmers.view" },

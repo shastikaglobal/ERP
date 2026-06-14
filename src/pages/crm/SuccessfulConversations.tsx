@@ -39,18 +39,13 @@ export default function SuccessfulConversations() {
 
     // Subscribe to leads table changes for real-time updates
     const channel = supabase
-      .channel('successful-conversations-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
-        (payload) => {
-          // Refresh if stage changed to/from Won
-          if (payload.new?.stage === 'Won' || payload.old?.stage === 'Won') {
-            console.log('[SuccessfulConversations] Stage change detected, refreshing...');
-            fetchData();
-          }
+      .channel('client-success-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads') {
+          console.log('[ClientSuccess] 🔔 Lead update detected via broadcast, refreshing...');
+          fetchData();
         }
-      )
+      })
       .subscribe();
 
     return () => {
@@ -113,7 +108,7 @@ export default function SuccessfulConversations() {
 
       const data = await res.json();
       console.log(`[SuccessfulConversations] Fetched ${data.length} Won leads`);
-      
+
       setLeads(data || []);
 
       // Calculate metrics
@@ -144,10 +139,8 @@ export default function SuccessfulConversations() {
   return (
     <div className="w-full h-screen overflow-auto bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-4 md:p-6">
       <SectionHeader
-        icon={CheckCircle2}
-        title="Successful Conversations"
-        subtitle="Won leads - Ready for client acquisition"
-        color={COLORS.green}
+        title="Client Success"
+        sub="Won leads - Successful conversions ready for acquisition"
       />
 
       {/* Metrics Cards */}
@@ -228,10 +221,10 @@ export default function SuccessfulConversations() {
               <thead>
                 <tr className="border-b border-slate-700">
                   <th className="px-4 py-3 text-left text-slate-300 font-semibold">Company</th>
+                  <th className="px-4 py-3 text-left text-slate-300 font-semibold">Contact Person</th>
                   <th className="px-4 py-3 text-left text-slate-300 font-semibold">Country</th>
                   <th className="px-4 py-3 text-left text-slate-300 font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left text-slate-300 font-semibold">Phone</th>
-                  <th className="px-4 py-3 text-left text-slate-300 font-semibold">Stage</th>
+                  <th className="px-4 py-3 text-left text-slate-300 font-semibold">Assigned To</th>
                   <th className="px-4 py-3 text-left text-slate-300 font-semibold">Date Won</th>
                   <th className="px-4 py-3 text-center text-slate-300 font-semibold">Action</th>
                 </tr>
@@ -244,6 +237,7 @@ export default function SuccessfulConversations() {
                     onClick={() => handleLeadClick(lead)}
                   >
                     <td className="px-4 py-3 text-slate-100 font-medium">{lead.company_name || '-'}</td>
+                    <td className="px-4 py-3 text-slate-300">{lead.contact_name || '-'}</td>
                     <td className="px-4 py-3 text-slate-300 flex items-center gap-2">
                       <MapPin size={14} color={COLORS.textMuted} />
                       {lead.country || '-'}
@@ -252,19 +246,15 @@ export default function SuccessfulConversations() {
                       <Mail size={14} color={COLORS.textMuted} />
                       {lead.email || '-'}
                     </td>
-                    <td className="px-4 py-3 text-slate-300 flex items-center gap-2">
-                      <Phone size={14} color={COLORS.textMuted} />
-                      {lead.phone || '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-xs font-medium">
-                        {lead.stage || 'Won'}
-                      </span>
+                    <td className="px-4 py-3 text-slate-300">
+                      {lead.assigned_to || 'Unassigned'}
                     </td>
                     <td className="px-4 py-3 text-slate-400 text-xs">
-                      {lead.created_at
-                        ? new Date(lead.created_at).toLocaleDateString()
-                        : '-'}
+                      {lead.converted_at
+                        ? new Date(lead.converted_at).toLocaleDateString()
+                        : lead.created_at
+                          ? new Date(lead.created_at).toLocaleDateString()
+                          : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Button

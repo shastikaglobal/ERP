@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
@@ -51,38 +51,54 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const toggleSubGroup = (title: string) =>
     setOpenSubGroups(prev => (prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]));
 
+  const fetchCounts = useCallback(async () => {
+    try {
+      const companyId = profile?.company_id;
+      const url = companyId
+        ? `/api/meta/sidebar-counts?company_id=${encodeURIComponent(companyId)}`
+        : '/api/meta/sidebar-counts';
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch sidebar counts");
+      const data = await res.json();
+
+      setCounts({
+        clientAcq: data.clientAcq || 0,
+        conversions: data.conversions || 0,
+        customers: data.customers || 0
+      });
+    } catch (err) {
+      console.error("[AppSidebar] Error fetching counts:", err);
+    }
+  }, [profile?.company_id, session?.access_token]);
+
   useEffect(() => {
-    let mounted = true;
-    const fetchCounts = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
-        let companyFilter: any = null;
-        if (userId) {
-          const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', userId).single();
-          companyFilter = profile?.company_id || null;
-        }
-
-        const [acqRes, convRes, custRes] = await Promise.all([
-          supabase.from('client_acquisition' as any).select('id', { count: 'exact', head: true }).maybeSingle(),
-          supabase.from('leads' as any).select('id', { count: 'exact', head: true }).in('stage', CRM_CONVERTED_LEAD_STAGES as readonly string[]).maybeSingle(),
-          supabase.from('customers' as any).select('id', { count: 'exact', head: true }).maybeSingle()
-        ]);
-
-        if (!mounted) return;
-        setCounts({
-          clientAcq: acqRes?.count || 0,
-          conversions: convRes?.count || 0,
-          customers: custRes?.count || 0
-        });
-      } catch (err) {
-        // ignore
-      }
-    };
     fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
-    return () => { mounted = false; clearInterval(interval); };
-  }, []);
+
+    // Subscribe to global data sync broadcast
+    const channel = supabase
+      .channel('global-sync-sidebar')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        console.log('[AppSidebar] 🔔 Real-time sync broadcast received:', payload);
+        if (['leads', 'customers', 'client_acquisition'].includes(payload.payload?.table)) {
+          console.log('[AppSidebar] 🔄 Refreshing counts due to table change:', payload.payload.table);
+          fetchCounts();
+        }
+      })
+      .subscribe();
+
+    const interval = setInterval(fetchCounts, 60000); // Slower fallback
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchCounts]);
 
   const currentUserId = profile?.id;
 
@@ -177,7 +193,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       if (activeIsAdmin) {
         return g;
       }
-      
+
       // 2. Filter items in the group
       const filteredItems = g.items.map(item => {
         // If it has sub-items (like Warehouse -> Inventory -> Available Stock)
@@ -189,16 +205,16 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           });
           return { ...item, items: filteredSubItems };
         }
-        
+
         // If it's a top-level item in the group
         return item;
       }).filter(item => {
         // Keep item if it has allowed sub-items OR if its own title is allowed
         const isSelfAllowed = permissions.includes(item.title.toLowerCase().trim());
         const hasAllowedChildren = item.items && item.items.length > 0;
-        
+
         if (isSelfAllowed) console.log(`[AppSidebar] ✔️ Allowed (item): ${item.title}`);
-        
+
         return isSelfAllowed || hasAllowedChildren;
       });
 
@@ -268,7 +284,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                       const hasSubItems = item.items && item.items.length > 0;
                       const isSubOpen = openSubGroups.includes(item.title);
                       const isSubActive = item.items?.some(sub => location.pathname === sub.url || location.pathname.startsWith(sub.url + "/"));
-                      const badgeCount = item.url === '/crm/client-acquisition' ? counts.clientAcq : item.url === '/crm/convert' ? counts.conversions : item.url === '/crm/customers' ? counts.customers : 0;
+                      const badgeCount = item.url === '/crm/client-acquisition' ? counts.clientAcq : item.url === '/crm/successful-conversations' ? counts.conversions : item.url === '/crm/customer-database' ? counts.customers : 0;
 
                       if (hasSubItems) {
                         return (

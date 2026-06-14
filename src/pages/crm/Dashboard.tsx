@@ -85,24 +85,33 @@ function Dashboard() {
         fetcher(`/api/analytics/revenue${companyQuery}`),
         fetcher(`/api/analytics/performance${companyQuery}`)
       ]);
-      
+
       return { dash, funnel, rev, perf };
     },
     enabled: !!profile // Wait for profile to load
   });
 
-  // Poll for dashboard metrics every 5 seconds instead of real-time
+  // Real-time broadcast listener
   useEffect(() => {
-    console.log("[Dashboard] Setting up polling for analytics");
+    console.log("[Dashboard] Setting up real-time broadcast listener");
+
+    const channel = supabase
+      .channel('crm-dashboard-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        console.log('[Dashboard] 🔔 Real-time broadcast received:', payload);
+        if (['leads', 'activities', 'quotations'].includes(payload.payload?.table)) {
+          console.log('[Dashboard] 🔄 Invalidating queries due to change in:', payload.payload.table);
+          queryClient.invalidateQueries({ queryKey: ["crm_dashboard_analytics"] });
+        }
+      })
+      .subscribe();
 
     const pollInterval = setInterval(() => {
-      console.log("[Dashboard] Polling for analytics updates...");
-      // Invalidate the query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ["crm_dashboard_analytics"] });
-    }, 5000);
+    }, 15000); // Slower polling as fallback
 
     return () => {
-      console.log("[Dashboard] Clearing polling interval");
+      supabase.removeChannel(channel);
       clearInterval(pollInterval);
     };
   }, [queryClient]);
@@ -119,8 +128,8 @@ function Dashboard() {
 
   const totalLeads = dash.totalLeads || 0;
   const maxRevTrend = Math.max(...trendData.map((m: any) => m.revenue), 1);
-  const revenueFormatted = dash.totalRevenue >= 1000000 
-    ? `$${(dash.totalRevenue / 1000000).toFixed(2)}M` 
+  const revenueFormatted = dash.totalRevenue >= 1000000
+    ? `$${(dash.totalRevenue / 1000000).toFixed(2)}M`
     : `$${(dash.totalRevenue / 1000).toFixed(1)}K`;
 
   return (
@@ -211,5 +220,15 @@ function Dashboard() {
     </div>
   );
 }
+
+const statusColor = (status: string) => {
+  const s = status.toLowerCase();
+  if (s.includes('won') || s.includes('acquired')) return COLORS.green;
+  if (s.includes('lost')) return COLORS.red;
+  if (s.includes('negotiation')) return COLORS.gold;
+  if (s.includes('qualified')) return COLORS.purple;
+  if (s.includes('contacted')) return COLORS.blue;
+  return COLORS.textSecondary;
+};
 
 export default Dashboard;

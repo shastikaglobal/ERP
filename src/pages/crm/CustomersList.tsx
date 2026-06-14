@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, UserCheck, Globe, Search, Filter, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { authFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -70,64 +71,28 @@ export default function CustomersList() {
     if (!profile?.company_id) return;
     try {
       setLoading(true);
-      // Fetch customers, leads, profiles, and orders for metrics
-      const [custRes, leadsRes, profilesRes, ordersRes] = await Promise.all([
-        supabase
-          .from("customers" as any)
-          .select("*")
-          .eq("company_id", profile.company_id)
-          .neq("is_deleted", true)
-          .order("name"),
-        supabase
-          .from("leads" as any)
-          .select("company_name, country, email"),
-        supabase
-          .from("profiles")
-          .select("id, full_name"),
-        supabase
-          .from("sales_orders" as any)
-          .select("id, customer_id, created_at")
-          .eq("company_id", profile.company_id)
-      ]);
+      // Fetch customers from VPS API
+      const custRes = await authFetch(`/api/customers?company_id=${profile.company_id}`);
+      if (!custRes.ok) throw new Error("Failed to fetch customers");
+      const custData = await custRes.json();
 
-      if (custRes.error) throw custRes.error;
-
-      const leadsMap = new Map();
-      (leadsRes.data as any[] || []).forEach((l: any) => {
-        if (l.company_name) {
-          leadsMap.set(l.company_name.toLowerCase(), l);
-        }
-      });
+      // Fetch profiles for "Added By" display
+      const profilesRes = await authFetch('/api/employees/all/profiles');
+      const profilesData = profilesRes.ok ? await profilesRes.json() : [];
 
       const profilesMap = new Map();
-      (profilesRes.data || []).forEach(p => {
+      profilesData.forEach((p: any) => {
         profilesMap.set(p.id, p.full_name);
       });
 
-      const ordersByCustomer = new Map();
-      (ordersRes.data || []).forEach(o => {
-        const list = ordersByCustomer.get(o.customer_id) || [];
-        list.push(o);
-        ordersByCustomer.set(o.customer_id, list);
-      });
-
-      const merged = (custRes.data || []).map((c: any) => {
-        const lead = leadsMap.get(c.name?.toLowerCase());
-        const customerOrders = ordersByCustomer.get(c.id) || [];
-        const lastOrder = customerOrders.length > 0
-          ? new Date(Math.max(...customerOrders.map((o: any) => new Date(o.created_at).getTime())))
-          : null;
-
-        return {
-          ...c,
-          country: c.country || lead?.country || "Unspecified",
-          email: c.email || lead?.email || "No email recorded",
-          added_by_name: profilesMap.get(c.created_by) || "System / Auto",
-          order_count: customerOrders.length,
-          last_order_date: lastOrder,
-          days_since_order: lastOrder ? differenceInDays(new Date(), lastOrder) : null
-        };
-      });
+      const merged = (custData || []).map((c: any) => ({
+        ...c,
+        added_by_name: profilesMap.get(c.created_by) || "System / Auto",
+        // Fallback fields for the UI
+        country: c.country || "Unspecified",
+        email: c.email || "No email",
+        order_count: 0 // Placeholder for now
+      }));
 
       setCustomers(merged);
     } catch (err: any) {
@@ -140,6 +105,21 @@ export default function CustomersList() {
 
   useEffect(() => {
     fetchCustomers();
+
+    // Add real-time sync via broadcast
+    const channel = supabase
+      .channel('customers-realtime-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'customers' || payload.payload?.table === 'leads') {
+          console.log('[CustomersList] 🔔 Change detected via broadcast, refreshing...');
+          fetchCustomers();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile?.company_id]);
 
   const filteredCustomers = useMemo(() => {

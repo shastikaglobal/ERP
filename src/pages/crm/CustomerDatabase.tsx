@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { authFetch } from "@/lib/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Printer, ShieldAlert } from "lucide-react";
@@ -54,11 +55,11 @@ const SectionHeader = ({ title, sub }: any) => (
 );
 
 const TabButton = ({ active, label, onClick }: any) => (
-  <button 
+  <button
     onClick={onClick}
-    style={{ 
-      background: "none", 
-      border: "none", 
+    style={{
+      background: "none",
+      border: "none",
       borderBottom: active ? `2px solid ${COLORS.accent}` : "2px solid transparent",
       color: active ? COLORS.textPrimary : COLORS.textSecondary,
       padding: "8px 12px",
@@ -94,11 +95,7 @@ function CustomerDatabase() {
   const fetchLeads = async () => {
     setLoadingData(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
+      const res = await authFetch('/api/leads');
       if (!res.ok) throw new Error("Failed to fetch leads");
       const data = await res.json();
       const activeLeads = (data || []).filter((l: any) => !l.is_deleted);
@@ -112,6 +109,20 @@ function CustomerDatabase() {
 
   useEffect(() => {
     fetchLeads();
+
+    const channel = supabase
+      .channel('customer-db-sync')
+      .on('broadcast', { event: 'data_changed' }, (payload) => {
+        if (payload.payload?.table === 'leads') {
+          console.log('[CustomerDatabase] 🔔 Change detected via broadcast, refreshing...');
+          fetchLeads();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -120,25 +131,25 @@ function CustomerDatabase() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user?.id) return;
-        
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('company_id')
           .eq('id', session.user.id)
           .single();
-          
+
         if (!profile?.company_id) return;
 
         const { data: profiles, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('company_id', profile.company_id);
-          
+
         if (error) throw error;
-          
+
         if (profiles) {
           // Filter out admins gracefully
-          const filtered = profiles.filter((p: any) => 
+          const filtered = profiles.filter((p: any) =>
             p.role !== 'admin' && p.role_slug !== 'admin'
           );
           setTeamMembers(filtered);
@@ -204,7 +215,7 @@ function CustomerDatabase() {
         body: JSON.stringify({ assigned_to: newAssignee })
       });
       if (!res.ok) throw new Error("Failed to reassign lead");
-      
+
       toast.success(`Lead reassigned to ${newAssignee}`);
       setSelected({ ...selected, assigned_to: newAssignee });
       await fetchLeads(); // Refresh the lead data
@@ -315,7 +326,7 @@ function CustomerDatabase() {
               <div style={{ fontSize: 16, fontWeight: 700 }}>{selected.company_name || selected.contact_name}</div>
               <Badge label="Encrypted Profile" color={COLORS.green} />
             </div>
-            
+
             <div style={{ display: "flex", gap: 8, borderBottom: `1px solid ${COLORS.border}`, marginBottom: 16 }}>
               {["Overview", "Inquiries", "Quotations", "Activity & Security"].map(tab => (
                 <TabButton key={tab} active={activeTab === tab} label={tab} onClick={() => setActiveTab(tab)} />
@@ -347,7 +358,7 @@ function CustomerDatabase() {
                     </span>
                   </div>
                 ))}
-                
+
                 <div style={{ marginTop: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: 8 }}>COMMUNICATION TIMELINE</div>
                   {followUps.length > 0 ? followUps.map((t: any, i: number) => (
@@ -387,8 +398,8 @@ function CustomerDatabase() {
             {activeTab === "Quotations" && (
               <div style={{ animation: "fadeIn 0.2s ease" }}>
                 {quotations.length > 0 ? quotations.map((qt: any, i: number) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     onClick={() => navigate(`/quotations/${qt.id}`)}
                     style={{ padding: "12px", background: COLORS.surface, borderRadius: 8, marginBottom: 8, border: `1px solid ${COLORS.border}`, cursor: "pointer", transition: "all 0.2s" }}
                     onMouseOver={(e) => e.currentTarget.style.borderColor = COLORS.accent}
@@ -436,7 +447,7 @@ function CustomerDatabase() {
                           <span style={{ background: COLORS.border, color: COLORS.textPrimary, padding: "4px 8px", borderRadius: 4, fontSize: 11 }}>Manager</span>
                         </div>
                       </div>
-                      
+
                       <div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.textSecondary, marginBottom: 8 }}>REASSIGN LEAD</div>
                         <Select value={selected.assigned_to || ""} onValueChange={handleReassign}>

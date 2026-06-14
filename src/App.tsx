@@ -30,7 +30,6 @@ import CrmRevenue from "./pages/crm/RevenueAnalytics";
 import CrmCommunication from "./pages/crm/Communication";
 import CrmCustomerDatabase from "./pages/crm/CustomerDatabase";
 import CrmEmployeeActivity from "./pages/crm/EmployeeActivity";
-import CrmConvert from "./pages/crm/Convert";
 import CrmCustomersList from "./pages/crm/CustomersList";
 import CrmSuccessfulConversations from "./pages/crm/SuccessfulConversations";
 import CrmLostLeads from "./pages/crm/LostLeads";
@@ -329,6 +328,7 @@ const App = () => (
               <Route path="/crm/tasks" element={<CrmTasks />} />
               <Route path="/crm/security" element={<CrmSecurity />} />
               <Route path="/crm/client-acquisition" element={<CrmClientAcquisition />} />
+              <Route path="/crm/convert" element={<Navigate to="/crm/successful-conversations" replace />} />
               <Route path="/crm/successful-conversations" element={<CrmSuccessfulConversations />} />
               <Route path="/crm/lost-leads" element={<CrmLostLeads />} />
               <Route path="/crm/advanced-security" element={<CrmAdvancedSecurity />} />
@@ -338,7 +338,6 @@ const App = () => (
               <Route path="/crm/communication" element={<CrmCommunication />} />
               <Route path="/crm/customer-database" element={<CrmCustomerDatabase />} />
               <Route path="/crm/employee-activity" element={<CrmEmployeeActivity />} />
-              <Route path="/crm/convert" element={<CrmConvert />} />
               <Route path="/crm/customers" element={<CrmCustomersList />} />
 
               {/* Mobile pages – commented out, sidebar section disabled
