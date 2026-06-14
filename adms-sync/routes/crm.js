@@ -183,44 +183,15 @@ router.put('/:id', requireAuth, async (req, res) => {
     // 2. Automated Logic for "Won" or "Client Successfully Acquired" stage
     const conversionStages = ['Won', 'Client Successfully Acquired'];
     if (conversionStages.includes(updates.stage)) {
-      // Validation: Check mandatory information for conversion
-      const missingFields = [];
-      if (!currentLead.company_name) missingFields.push("Company Name");
-      if (!currentLead.email) missingFields.push("Email");
-      if (!currentLead.country) missingFields.push("Country");
-
-      if (missingFields.length > 0) {
-        return res.status(400).json({
-          error: `Incomplete lead data. Please provide ${missingFields.join(', ')} before marking as ${updates.stage}.`
-        });
-      }
-
-      // Store conversion timestamp if not already set
+      // Logic handled primarily by Database Triggers now
+      // We only store the converted_at timestamp here for tracking in the leads table
       if (!currentLead.converted_at) {
         updates.converted_at = new Date().toISOString();
       }
 
-      // Automate conversion to customer if not already done
-      const customerCheck = await db.queryWithRLS(
-        'SELECT id FROM customers WHERE email = $1 AND company_id = $2',
-        [currentLead.email, currentLead.company_id],
-        userId
-      );
-
-      if (customerCheck.rows.length === 0) {
-        await db.queryWithRLS(
-          'INSERT INTO customers (company_id, name, country, email, contact_person) VALUES ($1, $2, $3, $4, $5)',
-          [currentLead.company_id, currentLead.company_name, currentLead.country, currentLead.email, currentLead.contact_name],
-          userId
-        );
-      }
-
       // Log activity
-      await db.queryWithRLS(
-        'INSERT INTO lead_activities (lead_id, activity_type, note, created_by) VALUES ($1, $2, $3, $4)',
-        [id, 'stage_change', `Lead moved to conversion stage. Previous: ${currentLead.stage}, New: ${updates.stage}`, userId],
-        userId
-      );
+      await db.query(`INSERT INTO lead_activities (lead_id, activity_type, note, created_by) VALUES ($1, $2, $3, $4)`,
+        [id, 'stage_change', `Lead moved to conversion stage. Previous: ${currentLead.stage}, New: ${updates.stage}`, userId]);
     }
 
     // 3. Build and execute standard update
