@@ -1,10 +1,8 @@
 export const CRM_LEAD_STAGES = [
   "New",
   "Contacted",
-  "Qualified",
-  "Proposal",
   "Negotiation",
-  "Nurturing",
+  "Qualified",
   "Won",
   "Client Successfully Acquired",
   "Lost",
@@ -13,10 +11,8 @@ export const CRM_LEAD_STAGES = [
 export const CRM_OPEN_LEAD_STAGES = [
   "New",
   "Contacted",
-  "Qualified",
-  "Proposal",
   "Negotiation",
-  "Nurturing",
+  "Qualified",
 ] as const;
 
 export const CRM_CLOSED_LEAD_STAGES = [
