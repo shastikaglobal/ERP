@@ -149,14 +149,26 @@ router.get('/', requireAuth, async (req, res) => {
     }
     query += ` ORDER BY created_at DESC`;
     const result = await db.query(query, params);
-    res.json(result.rows || []);
+
+    // Safety check: ensure we always return an array, even if something is weird
+    const rows = (result.rows || []).map(row => {
+      try {
+        // Sanitize potentially malformed fields if any
+        return {
+          ...row,
+          metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {})
+        };
+      } catch (e) {
+        return { ...row, metadata: {} };
+      }
+    });
+
+    res.json(rows);
   } catch (err) {
     console.error("❌ [CRM] Verbose Fetch Error:", err);
     res.status(500).json({
       error: "Detailed Fetch Failed",
-      message: err.message,
-      query: query,
-      params: params
+      message: err.message
     });
   }
 });
