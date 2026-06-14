@@ -130,10 +130,10 @@ router.get('/', requireAuth, async (req, res) => {
     const companyId = req.query.company_id;
     const stage = req.query.stage;
     const stageIn = req.query.stage_in;
-    const userId = req.user?.sub || req.user?.id;
     const params = [];
-    let query = `SELECT * FROM leads WHERE (is_deleted IS FALSE OR is_deleted = false)`;
-    if (companyId) {
+    let query = `SELECT * FROM leads WHERE is_deleted = false`;
+
+    if (companyId && companyId !== 'undefined') {
       query += ` AND company_id = $${params.length + 1}`;
       params.push(companyId);
     }
@@ -148,11 +148,11 @@ router.get('/', requireAuth, async (req, res) => {
       }
     }
     query += ` ORDER BY created_at DESC`;
-    const result = await db.queryWithRLS(query, params, userId);
+    const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("DB Error (get leads):", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ [CRM] Error fetching leads:", err);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
 
