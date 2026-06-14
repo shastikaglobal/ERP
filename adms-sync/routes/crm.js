@@ -9,21 +9,22 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/workflow/successful-conversations', requireAuth, async (req, res) => {
   try {
     const companyId = req.query.company_id;
-    console.log(`[CRM] Fetching Successful Conversations (Optimized) for company: ${companyId}`);
-    // Select specific fields to avoid potential issues with large/malformed JSON in other columns
-    let query = `SELECT id, company_name, contact_name, email, phone, country, city, stage, created_at, assigned_to FROM leads WHERE stage = 'Won' AND is_deleted = false`;
+    console.log(`[CRM] Fetching Successful Conversations (v2) for company: ${companyId}`);
+
+    // Select ONLY guaranteed columns to avoid "column not found" errors
+    let query = `SELECT id, company_name, email, country, stage, created_at FROM leads WHERE stage = 'Won' AND is_deleted = false`;
     const params = [];
     if (companyId) {
       query += ` AND company_id = $1`;
       params.push(companyId);
     }
-    query += ` ORDER BY created_at DESC`;
+    query += ` ORDER BY created_at DESC LIMIT 100`;
 
     const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("❌ [CRM] Error fetching successful conversations:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("❌ [CRM] Critical Fetch Error:", err);
+    res.status(500).json({ error: "DB Fetch Failed", details: err.message, stack: err.stack });
   }
 });
 
