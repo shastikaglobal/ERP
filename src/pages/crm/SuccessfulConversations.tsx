@@ -99,7 +99,7 @@ export default function SuccessfulConversations() {
       console.log(`[SuccessfulConversations] Fetching Won leads for company ${companyId}`);
 
       const res = await authFetch(
-        `/api/leads/workflow/successful-conversations?company_id=${companyId}`
+        `/api/leads/conversions?company_id=${companyId}`
       );
 
       if (!res.ok) {

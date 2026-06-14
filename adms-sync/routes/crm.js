@@ -75,8 +75,30 @@ router.get('/workflow/lost-leads', requireAuth, async (req, res) => {
     const result = await db.query(query, params);
     res.json(result.rows || []);
   } catch (err) {
-    console.error("❌ [CRM] Error fetching lost leads:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("❌ [CRM] Critical Fetch Error:", err);
+    res.status(500).json({ error: "DB Fetch Failed", details: err.message });
+  }
+});
+
+// GET /api/leads/conversions (New cache-breaking route)
+router.get('/conversions', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.query.company_id;
+    console.log(`[CRM] Cache-breaking fetch for conversations. Company: ${companyId}`);
+
+    let query = `SELECT id, company_name, email, country, stage, created_at FROM leads WHERE stage = 'Won' AND is_deleted = false`;
+    let params = [];
+    if (companyId && companyId !== 'undefined') {
+      query += ` AND company_id = $1`;
+      params.push(companyId);
+    }
+    query += ` ORDER BY created_at DESC LIMIT 100`;
+
+    const result = await db.query(query, params);
+    res.json(result.rows || []);
+  } catch (err) {
+    console.error("❌ [CRM] Cache-breaking route error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
