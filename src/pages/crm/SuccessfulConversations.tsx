@@ -81,9 +81,16 @@ export default function SuccessfulConversations() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const companyId = await getCompanyId();
+      // Prioritize profile company_id, then fallback to getCompanyId()
+      let companyId = profile?.company_id;
+
       if (!companyId) {
-        console.warn("No company ID found for user");
+        console.log("[SuccessfulConversations] Profile company_id missing, fetching via getCompanyId...");
+        companyId = await getCompanyId();
+      }
+
+      if (!companyId) {
+        console.warn("[SuccessfulConversations] No company ID found");
         setLeads([]);
         setLoading(false);
         return;
@@ -91,43 +98,33 @@ export default function SuccessfulConversations() {
 
       console.log(`[SuccessfulConversations] Fetching Won leads for company ${companyId}`);
 
-      // Fetch Won leads from the workflow endpoint
-      // Data Fetching Rule: Fetch all leads where stage = "Won"
       const res = await authFetch(
-        `/api/leads/workflow/successful-conversations?company_id=${encodeURIComponent(companyId)}`
+        `/api/leads/workflow/successful-conversations?company_id=${companyId}`
       );
 
       if (!res.ok) {
-        const errorBody = await res.json().catch(() => null);
-        const message = errorBody?.error || res.statusText;
-        console.error("Error fetching successful conversations:", message);
-        toast.error("Failed to load successful conversations");
-        setLoading(false);
-        return;
+        const errorText = await res.text();
+        console.error("API Error Response:", errorText);
+        throw new Error(`Server returned ${res.status}: ${errorText}`);
       }
 
       const data = await res.json();
-      console.log(`[SuccessfulConversations] Fetched ${data.length} Won leads`);
-
+      console.log(`[SuccessfulConversations] Fetched ${data?.length || 0} Won leads`);
       setLeads(data || []);
 
-      // Calculate metrics
-      const uniqueLeads = new Map<string, boolean>();
-      data.forEach((lead: any) => {
-        if (lead.email) uniqueLeads.set(lead.email, true);
-      });
+      // Calculate simple metrics based on fetched data
+      const wonCount = data?.length || 0;
+      setTotalWonLeads(wonCount);
+      setTotalConversions(wonCount);
 
-      setTotalWonLeads(data.length);
-      setTotalConversions(uniqueLeads.size);
-
-      // Revenue calculation: assume $12,000 per successful conversation
-      const totalValue = uniqueLeads.size * 12000;
+      // Estimated Value for display
+      const totalValue = wonCount * 12000;
       setConversionValue(`$${totalValue.toLocaleString()}`);
 
-      setLoading(false);
-    } catch (err) {
-      console.error("Error in fetchData:", err);
-      toast.error("An unexpected error occurred");
+    } catch (err: any) {
+      console.error("Fetch error details:", err);
+      toast.error("Failed to load successful conversations. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
