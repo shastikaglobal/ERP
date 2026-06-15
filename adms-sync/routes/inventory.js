@@ -70,8 +70,8 @@ router.post('/:table', requireAuth, async (req, res) => {
     
     res.status(201).json(Array.isArray(req.body) ? results : results[0]);
   } catch (err) {
-    console.error(`Error POST ${table}:`, err.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(`Error POST ${table}:`, err.message, err.detail || '');
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 

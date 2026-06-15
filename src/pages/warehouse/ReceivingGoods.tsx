@@ -319,7 +319,7 @@ export default function ReceivingGoods() {
                         status,
                         is_export_ready: isExportReady,
                         received_date: formData.entryDate,
-                        notes: formData.notes || null
+                        ...(formData.notes ? { damaged_notes: formData.notes } : {})
                     })
                 });
 
