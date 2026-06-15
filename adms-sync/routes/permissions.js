@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const db = require('../db');
+const { createClient } = require('@supabase/supabase-js');
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // GET /api/user-permissions - fetch permissions (all users or specific user)
 router.get('/', requireAuth, async (req, res) => {
@@ -19,20 +24,33 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     // Otherwise, fetch all users and their permissions (Admin Matrix View)
-    // 1. Fetch users from 'profiles' using pg
-    const { rows: profiles } = await db.query(
-      'SELECT id, full_name, email, role FROM profiles'
-    );
+    // 1. Fetch users from 'profiles' using pg; fall back to Supabase if missing
+    let profiles = [];
+    try {
+      const { rows } = await db.query('SELECT id, full_name, email, role FROM profiles');
+      profiles = rows || [];
+    } catch (err) {
+      console.warn('[API /user-permissions] profiles table not available in local DB, falling back to Supabase:', err.message);
+      const { data: supaProfiles, error: supaErr } = await supabase.from('profiles').select('id, full_name, email, role');
+      if (supaErr) throw supaErr;
+      profiles = supaProfiles || [];
+    }
 
-    // 2. Fetch all user permissions using pg
-    const { rows: perms } = await db.query(
-      'SELECT * FROM user_permissions'
-    );
-
+    // 2. Fetch all user permissions using pg; fall back to Supabase if missing
+    let perms = [];
+    try {
+      const { rows } = await db.query('SELECT * FROM user_permissions');
+      perms = rows || [];
+    } catch (err) {
+      console.warn('[API /user-permissions] user_permissions table not available in local DB, falling back to Supabase:', err.message);
+      const { data: supaPerms, error: supaErr } = await supabase.from('user_permissions').select('*');
+      if (supaErr) throw supaErr;
+      perms = supaPerms || [];
+    }
     // 3. Map permissions to users
     const mapped = profiles.map(p => {
        const userPerms = perms
-         .filter(up => up.user_id === p.id)
+         .filter(up => String(up.user_id) === String(p.id))
          .map(up => ({
             section: up.section,
             has_access: up.has_access
@@ -97,6 +115,16 @@ router.post('/', requireAuth, async (req, res) => {
       );
     }
 
+    // Mirror change to Supabase so realtime subscribers pick it up
+    try {
+      const upsertPayload = { user_id, section, has_access, granted_by: req.user?.sub || null };
+      const { data: supaData, error: supaErr } = await supabase
+        .from('user_permissions')
+        .upsert(upsertPayload, { onConflict: 'user_id,section' });
+      if (supaErr) console.warn('[API /user-permissions] Supabase upsert warning:', supaErr.message);
+    } catch (sErr) {
+      console.warn('[API /user-permissions] Failed to mirror permission to Supabase:', sErr.message || sErr);
+    }
     console.log(`[API /user-permissions] Saved permission for user ${user_id}, section ${section}: ${has_access}`);
     return res.json({ success: true, message: 'Permission updated' });
   } catch (err) {

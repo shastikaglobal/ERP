@@ -26,15 +26,15 @@ export default function InvoicePreview() {
           .from("export_shipments")
           .select("*, export_orders(*)")
           .eq("id", id)
-          .single();
+          .maybeSingle();
 
-        if (fetchErr) {
+        if (fetchErr || !data) {
           // If not found, try fetching as an Order directly
           const { data: orderOnly, error: orderErr } = await supabase
             .from("export_orders")
             .select("*, export_shipments(*)")
             .eq("id", id)
-            .single();
+            .maybeSingle();
 
           if (orderErr) throw orderErr;
           
@@ -61,16 +61,16 @@ export default function InvoicePreview() {
             .from("companies")
             .select("signature_url")
             .eq("id", orderData.company_id)
-            .single();
+            .maybeSingle();
           setCompany(compData);
         }
-        
+
         if (orderData?.created_by) {
           const { data: userData } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("id", orderData.created_by)
-            .single();
+            .maybeSingle();
           if (userData) orderData.creator_name = userData.full_name;
         }
       } catch (err: any) {

@@ -5,6 +5,7 @@ import { Section } from "@/components/shared/FormShell";
 import { toast } from "sonner";
 import Approvals from "@/pages/Approvals";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const SECTION_MAPPING: Record<string, string[]> = {
   "DASHBOARDS": ["Executive & Activities", "Sales Analytics", "Shipment Analytics", "Financial Overview", "Employee Productivity", "Roles & Permissions"],
@@ -52,6 +53,25 @@ export default function RolesPermissions() {
     if (session?.access_token) {
       loadData();
     }
+  }, [session?.access_token]);
+
+  // Subscribe to Supabase realtime changes on user_permissions to refresh UI
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel('sidebar-permissions')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_permissions' }, (payload) => {
+          console.log('Realtime permission change detected, re-fetching...', payload);
+          setTimeout(() => loadData(), 500);
+        })
+        .subscribe();
+    } catch (err) {
+      console.warn('Could not subscribe to realtime permissions:', err);
+    }
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [session?.access_token]);
 
   const loadData = async () => {

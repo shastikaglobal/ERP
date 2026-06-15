@@ -22,14 +22,18 @@ router.get('/invoices', requireAuth, async (req, res) => {
 router.get('/invoices/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows: invoiceRows } = await db.query('SELECT * FROM invoices WHERE id = $1', [id]);
+    const { rows: invoiceRows } = await db.query('SELECT * FROM invoices WHERE id = $1 LIMIT 1', [id]);
     if (invoiceRows.length === 0) return res.status(404).json({ error: "Invoice not found" });
-    
+
+    if (invoiceRows.length > 1) {
+      console.warn(`Warning: multiple invoices returned for id=${id}, using the first row.`);
+    }
+
     const { rows: itemRows } = await db.query('SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY id ASC', [id]);
-    
+
     const invoice = invoiceRows[0];
-    invoice.items = itemRows;
-    
+    invoice.items = itemRows || [];
+
     res.json(invoice);
   } catch (err) {
     console.error("DB Error (get single invoice):", err);

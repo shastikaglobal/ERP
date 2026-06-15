@@ -305,9 +305,9 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
           const direction = parts[2]?.trim() === '0' ? 'in' : (parts[2]?.trim() === '1' ? 'out' : parts[2]?.trim());
           await db.query(
             'INSERT INTO "AttLogs" ("EmployeeCode", "LogDateTime", "DownloadDateTime", "Direction", "DeviceId") VALUES ($1, $2, $3, $4, $5)',
-            [biometricId, punchTimeIso, new Date().toISOString(), direction, sn]
+            [biometricId, punchTimeStr, new Date().toISOString(), direction, sn]
           );
-          console.log(`🔒 Safely stored immutable raw punch in AttLogs for [${biometricId}] at ${punchTimeIso}`);
+          console.log(`🔒 Safely stored immutable raw punch in AttLogs for [${biometricId}] at ${punchTimeStr}`);
         } catch (rawLogErr) {
           console.error(`❌ Failed to store raw punch in AttLogs for [${biometricId}]:`, rawLogErr.message);
         }
