@@ -82,6 +82,41 @@ export default function AvailableStock() {
     notes: ""
   });
 
+  const { data: products = [] } = useQuery({
+    queryKey: ['products-list', profile?.company_id],
+    queryFn: async () => {
+      let query = supabase.from('products').select('*').eq('is_active', true);
+      
+      // If profile is available and company_id exists, we might filter by it,
+      // but to ensure defaults load, we can get all or fallback.
+      // Usually default products might have null company_id or match the current company.
+      if (profile?.company_id) {
+        query = query.or(`company_id.eq.${profile.company_id},company_id.is.null`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['warehouses-list', profile?.company_id],
+    enabled: !!profile?.company_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('id, name')
+        .eq('company_id', profile?.company_id)
+        .eq('is_active', true)
+        .neq('is_deleted', true)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const { data: stockData = [], isLoading } = useQuery({
     queryKey: ['available-stock', products.length, warehouses.length],
     enabled: products.length > 0 && warehouses.length > 0,
@@ -115,41 +150,6 @@ export default function AvailableStock() {
           updated_at: item.last_updated || item.created_at
         };
       });
-    }
-  });
-
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-list', profile?.company_id],
-    queryFn: async () => {
-      let query = supabase.from('products').select('*').eq('is_active', true);
-      
-      // If profile is available and company_id exists, we might filter by it,
-      // but to ensure defaults load, we can get all or fallback.
-      // Usually default products might have null company_id or match the current company.
-      if (profile?.company_id) {
-        query = query.or(`company_id.eq.${profile.company_id},company_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: warehouses = [] } = useQuery({
-    queryKey: ['warehouses-list', profile?.company_id],
-    enabled: !!profile?.company_id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('warehouses')
-        .select('id, name')
-        .eq('company_id', profile?.company_id)
-        .eq('is_active', true)
-        .neq('is_deleted', true)
-        .order('name');
-      if (error) throw error;
-      return data || [];
     }
   });
 
