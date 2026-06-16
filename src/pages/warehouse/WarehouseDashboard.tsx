@@ -17,11 +17,14 @@ export default function WarehouseDashboard() {
     const { data: inventoryData, isLoading: inventoryLoading, refetch: refetchInventory } = useQuery({
         queryKey: ["warehouse-inventory"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("inventory_batches")
-                .select("quantity_remaining_kg, status")
-                .limit(100);
-            if (error) throw error;
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = {};
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch('/api/inventory/inventory_batches', { headers });
+            if (!res.ok) throw new Error('Failed to fetch inventory');
+            const data = await res.json();
             return data || [];
         },
         staleTime: 30000, // Cache for 30 seconds
@@ -32,13 +35,23 @@ export default function WarehouseDashboard() {
     const { data: lowStockData, isLoading: lowStockLoading, refetch: refetchLowStock } = useQuery({
         queryKey: ["low-stock-alerts"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("products")
-                .select("id, name, current_stock, minimum_stock")
-                .lt("current_stock", "minimum_stock")
-                .limit(100);
-            if (error) throw error;
-            return data || [];
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = {};
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch('/api/inventory/available_stock', { headers });
+            if (!res.ok) throw new Error('Failed to fetch available stock');
+            const data = await res.json();
+            const lowStock = (data || []).filter((item: any) => 
+                parseFloat(item.available_quantity || 0) < parseFloat(item.minimum_level || 0)
+            );
+            return lowStock.map((item: any) => ({
+                id: item.id,
+                name: item.product_name,
+                current_stock: parseFloat(item.available_quantity || 0),
+                minimum_stock: parseFloat(item.minimum_level || 0)
+            }));
         },
         staleTime: 30000,
         gcTime: 5 * 60 * 1000,
@@ -49,14 +62,18 @@ export default function WarehouseDashboard() {
         queryKey: ["shipments-today"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-                .from("shipments")
-                .select("id, shipment_number, status, created_at")
-                .gte("created_at", today)
-                .eq("status", "dispatched")
-                .limit(50);
-            if (error) throw error;
-            return data || [];
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = {};
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch('/api/finance/export_shipments', { headers });
+            if (!res.ok) throw new Error('Failed to fetch shipments');
+            const data = await res.json();
+            return (data || []).filter((s: any) => {
+                const createdDate = s.created_at ? s.created_at.split('T')[0] : '';
+                return createdDate === today;
+            });
         },
         staleTime: 15000,
         gcTime: 5 * 60 * 1000,
@@ -67,14 +84,18 @@ export default function WarehouseDashboard() {
         queryKey: ["warehouse-activities"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-                .from("activity_logs")
-                .select("id, action, user_id, created_at")
-                .gte("created_at", today)
-                .order("created_at", { ascending: false })
-                .limit(5);
-            if (error) throw error;
-            return data || [];
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = {};
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch('/api/analytics/activity_logs', { headers });
+            if (!res.ok) throw new Error('Failed to fetch activity logs');
+            const data = await res.json();
+            return (data || []).filter((log: any) => {
+                const createdDate = log.created_at ? log.created_at.split('T')[0] : '';
+                return createdDate === today;
+            });
         },
         staleTime: 10000,
         gcTime: 5 * 60 * 1000,
@@ -85,8 +106,8 @@ export default function WarehouseDashboard() {
     const exportReadyStock = inventoryData?.filter(item => item.status === 'export_ready').reduce((sum, item) => sum + (parseFloat(item.quantity_remaining_kg) || 0), 0) || 0;
     const pendingPacking = inventoryData?.filter(item => item.status !== 'export_ready').length || 0;
     const lowStockCount = lowStockData?.length || 0;
-    const dispatchedToday = shipmentsData?.length || 0;
-    const containerLoading = shipmentsData?.filter(s => s.status === 'loading').length || 0;
+    const dispatchedToday = shipmentsData?.filter((s: any) => s.status === 'dispatched' || String(s.status).toLowerCase() === 'dispatched').length || 0;
+    const containerLoading = shipmentsData?.filter((s: any) => s.status === 'loading' || String(s.status).toLowerCase() === 'loading').length || 0;
     const activityCount = activityLogs?.length || 0;
 
     const handleSync = async () => {
@@ -298,7 +319,7 @@ export default function WarehouseDashboard() {
                                                 {log.created_at ? new Date(log.created_at).toLocaleTimeString() : '—'}
                                             </div>
                                             <div>
-                                                <span className="text-xs font-bold text-white mb-0.5 block">{log.user_id || 'System'}</span>
+                                                <span className="text-xs font-bold text-white mb-0.5 block">{log.user_name || log.actor_name || log.user_id || 'System'}</span>
                                                 <span className="text-sm text-muted-foreground">{log.description || log.action || '—'}</span>
                                             </div>
                                         </div>

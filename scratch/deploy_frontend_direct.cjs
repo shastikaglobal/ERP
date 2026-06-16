@@ -1,19 +1,31 @@
 const { Client } = require('ssh2');
+const fs = require('fs');
 
 const conn = new Client();
 
+const dashboardCode = fs.readFileSync('d:/ERP/ERP/src/pages/warehouse/WarehouseDashboard.tsx', 'utf8');
+
+const script = `
+cat << 'EOF' > /var/www/erp/src/pages/warehouse/WarehouseDashboard.tsx
+${dashboardCode.replace(/\$/g, '\\$')}
+EOF
+
+cd /var/www/erp
+npm run build
+pm2 restart erp-frontend
+`;
+
 conn.on('ready', () => {
   console.log('Client :: ready');
-  conn.exec('pm2 logs adms-sync --lines 50 --nostream', (err, stream) => {
+  conn.exec(script, (err, stream) => {
     if (err) throw err;
-    let out = "";
     stream.on('close', (code, signal) => {
-      console.log(out);
+      console.log('Frontend deployment stream closed with code: ' + code);
       conn.end();
     }).on('data', (data) => {
-      out += data.toString();
+      process.stdout.write(data);
     }).stderr.on('data', (data) => {
-      out += data.toString();
+      process.stderr.write(data);
     });
   });
 }).on('error', (err) => {

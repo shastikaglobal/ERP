@@ -2,6 +2,48 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const db = require('../db');
+const { createClient } = require('@supabase/supabase-js');
+
+// profiles live in Supabase, not VPS DB
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// GET /api/analytics/sidebar_counts
+// Returns counts for the CRM Sidebar (client acquisition, successful conversions, customers)
+router.get('/sidebar_counts', requireAuth, async (req, res) => {
+  try {
+    const { company_id } = req.query;
+    
+    let acqQuery = `SELECT COUNT(*) as count FROM client_acquisition WHERE is_deleted = false`;
+    let convQuery = `SELECT COUNT(*) as count FROM leads WHERE is_deleted = false AND stage IN ('Won', 'Client Successfully Acquired')`;
+    let custQuery = `SELECT COUNT(*) as count FROM customers WHERE is_deleted = false`;
+    
+    let params = [];
+    if (company_id) {
+      acqQuery += ` AND company_id = $1`;
+      convQuery += ` AND company_id = $1`;
+      custQuery += ` AND company_id = $1`;
+      params.push(company_id);
+    }
+    
+    const [acqRes, convRes, custRes] = await Promise.all([
+      db.query(acqQuery, params),
+      db.query(convQuery, params),
+      db.query(custQuery, params)
+    ]);
+    
+    res.json({
+      clientAcq: parseInt(acqRes.rows[0].count, 10),
+      conversions: parseInt(convRes.rows[0].count, 10),
+      customers: parseInt(custRes.rows[0].count, 10)
+    });
+  } catch (err) {
+    console.error("Analytics Error (sidebar_counts):", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // GET /api/analytics/dashboard
 // Returns high-level metrics for the Dashboard
@@ -263,8 +305,18 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
       }
     };
 
-    // Profiles doesn't have is_deleted typically, let's just select all
-    const profilesRes = await db.query(`SELECT id, full_name, avatar_url, role, monthly_target FROM profiles ${company_id ? 'WHERE company_id = $1' : ''}`, company_id ? [company_id] : []);
+    // Profiles — from Supabase (not in VPS DB)
+    let profilesData = [];
+    try {
+      const { data: supaProfiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, requested_role, monthly_target')
+        .eq('is_deleted', false);
+      if (!profErr) profilesData = supaProfiles || [];
+      if (company_id) profilesData = profilesData.filter(p => p.company_id === company_id);
+    } catch (e) {
+      console.warn('Could not fetch profiles from Supabase:', e.message);
+    }
     
     const [
       leads, activities, followUps, quotations, exportOrders, acquisitions, dailyReports
@@ -279,7 +331,7 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
     ]);
 
     res.json({
-      profiles: profilesRes.rows || [],
+      profiles: profilesData || [],
       leads: leads || [],
       activities: activities || [],
       followUps: followUps || [],
@@ -321,11 +373,23 @@ router.post('/daily_reports', requireAuth, async (req, res) => {
 // Returns real employee productivity stats from VPS DB
 router.get('/employee_productivity', requireAuth, async (req, res) => {
   try {
-    // 1. Active employees count
-    const empRes = await db.query(
-      `SELECT COUNT(*) as total FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted IS NOT TRUE`
-    );
-    const activeEmployees = parseInt(empRes.rows[0].total, 10);
+    // 1. Active employees count — from Supabase (profiles not in VPS DB)
+    const { data: empData, error: empErr } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'approved')
+      .eq('is_active', true)
+      .eq('is_deleted', false);
+    const activeEmployees = empErr ? 0 : (empData?.length ?? 0);
+
+    // Also get count properly
+    const { count: activeCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved')
+      .eq('is_active', true)
+      .eq('is_deleted', false);
+    const empCount = activeCount || 0;
 
     // 2. Avg Attendance this week (Mon-today)
     const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -368,17 +432,20 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     );
     const avgResponseHours = parseFloat(responseRes.rows[0].avg_hours || 0);
 
-    // Compute week-over-week deltas using last week's data
+    // Last week comparison for employees — from Supabase
     const lastWeekStart = new Date(weekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
     const lastWeekEnd = new Date(weekStart);
     lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
 
-    const prevEmpRes = await db.query(
-      `SELECT COUNT(*) as total FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted IS NOT TRUE AND created_at <= $1`,
-      [lastWeekEnd.toISOString()]
-    );
-    const prevActiveEmployees = parseInt(prevEmpRes.rows[0].total, 10);
+    const { count: prevEmpCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved')
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .lte('created_at', lastWeekEnd.toISOString());
+    const prevActiveEmployees = prevEmpCount || 0;
 
     const prevAttRes = await db.query(
       `SELECT COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR is_deleted = false)) as present_count
@@ -397,7 +464,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     );
     const prevTasks = parseInt(prevTasksRes.rows[0].total, 10);
 
-    const empDelta = activeEmployees - prevActiveEmployees;
+    const empDelta = empCount - prevActiveEmployees;
     const attDelta = avgAttendance - prevAvgAttendance;
     const tasksDelta = tasksCompleted - prevTasks;
     const responseFormatted = avgResponseHours > 0
@@ -405,7 +472,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
       : 'N/A';
 
     res.json({
-      activeEmployees,
+      activeEmployees: empCount,
       avgAttendance,
       tasksCompleted,
       avgResponseHours: avgResponseHours > 0 ? avgResponseHours.toFixed(1) : null,
@@ -418,6 +485,22 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("Analytics Error (employee_productivity):", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET /api/analytics/activity_logs
+router.get('/activity_logs', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, action, user_id, user_name, actor_name, created_at 
+       FROM activity_logs 
+       ORDER BY created_at DESC 
+       LIMIT 100`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching activity_logs:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

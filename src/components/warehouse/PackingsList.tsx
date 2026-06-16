@@ -170,10 +170,10 @@ export function PackingsList({
                                         {item.carton_count}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {item.net_weight.toFixed(2)} kg
+                                        {Number(item.net_weight || 0).toFixed(2)} kg
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {item.gross_weight.toFixed(2)} kg
+                                        {Number(item.gross_weight || 0).toFixed(2)} kg
                                     </TableCell>
                                     <TableCell>{item.pallet_config}</TableCell>
                                     <TableCell className="text-right">

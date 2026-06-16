@@ -1,19 +1,30 @@
 const { Client } = require('ssh2');
+const fs = require('fs');
 
 const conn = new Client();
 
+const analyticsCode = fs.readFileSync('d:/ERP/ERP/adms-sync/routes/analytics.js', 'utf8');
+
+const script = `
+cat << 'EOF' > /var/www/adms-sync/routes/analytics.js
+${analyticsCode.replace(/\$/g, '\\$')}
+EOF
+
+pm2 restart adms-sync
+pm2 logs adms-sync --lines 20 --nostream
+`;
+
 conn.on('ready', () => {
   console.log('Client :: ready');
-  conn.exec('pm2 logs adms-sync --lines 50 --nostream', (err, stream) => {
+  conn.exec(script, (err, stream) => {
     if (err) throw err;
-    let out = "";
     stream.on('close', (code, signal) => {
-      console.log(out);
+      console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
       conn.end();
     }).on('data', (data) => {
-      out += data.toString();
+      process.stdout.write(data);
     }).stderr.on('data', (data) => {
-      out += data.toString();
+      process.stderr.write(data);
     });
   });
 }).on('error', (err) => {

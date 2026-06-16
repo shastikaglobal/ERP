@@ -41,6 +41,7 @@ const statusColorMap: Record<string, string> = {
 
 export default function BatchWiseStock() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,72 +50,105 @@ export default function BatchWiseStock() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null);
 
-  const { data: batches = [], isLoading: isBatchesLoading } = useQuery({
-    queryKey: ["inventory-batches"],
+  const { data: warehouses = [] } = useQuery({
+    key: ['warehouses-list', profile?.company_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("inventory_batches")
-        .select("*")
-        .neq("is_deleted", true)
-        .order("received_date", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const res = await fetch('/api/warehouse/warehouses', { headers });
+      if (!res.ok) throw new Error('Failed to fetch warehouses');
+      const data = await res.json();
+      return (data || []).filter((w: any) => !w.is_deleted && (!profile?.company_id || w.company_id === profile.company_id));
+    }
+  } as any);
+
+  const { data: products = [] } = useQuery({
+    key: ['products-list', profile?.company_id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const res = await fetch('/api/products', { headers });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      return (data || []).filter((p: any) => p.is_active && !p.is_deleted && (!profile?.company_id || p.company_id === profile.company_id));
+    }
+  } as any);
+
+  const { data: rawBatches = [], isLoading: isBatchesLoading } = useQuery({
+    queryKey: ["inventory-batches", profile?.company_id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const res = await fetch('/api/inventory/inventory_batches', { headers });
+      if (!res.ok) throw new Error('Failed to fetch batches');
+      const data = await res.json();
+      return (data || []).filter((b: any) => !b.is_deleted && (!profile?.company_id || b.company_id === profile.company_id));
     },
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('name');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const batches = useMemo(() => {
+    return rawBatches.map((b: any) => {
+      const prod = products.find((p: any) => p.id === b.product_id);
+      const wh = warehouses.find((w: any) => w.id === b.warehouse_id);
+      return {
+        ...b,
+        batch_number: b.lot_number,
+        product_name: prod ? prod.name : 'Unknown Product',
+        total_quantity: b.quantity_kg,
+        remaining_quantity: b.quantity_remaining_kg,
+        unit: prod ? prod.unit : 'kg',
+        warehouse: wh ? wh.name : 'Unknown Warehouse',
+        notes: b.damaged_notes || ''
+      };
+    });
+  }, [rawBatches, products, warehouses]);
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      } : { 'Content-Type': 'application/json' };
+
+      let company_id = profile?.company_id;
+      if (!company_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', session?.user?.id)
+          .single();
+        company_id = profileData?.company_id;
+      }
+
+      const body = {
+        company_id,
+        lot_number: payload.batch_number,
+        product_id: products.find((p: any) => p.name === payload.product_name)?.id,
+        warehouse_id: warehouses.find((w: any) => w.name === payload.warehouse)?.id,
+        quantity_kg: Number(payload.total_quantity),
+        quantity_remaining_kg: Number(payload.remaining_quantity),
+        status: payload.status,
+        received_date: payload.received_date,
+        expiry_date: payload.expiry_date,
+        damaged_notes: payload.notes || null,
+        is_deleted: false
+      };
+
       if (payload.id) {
-        const { error } = await supabase
-          .from("inventory_batches")
-          .update({
-            batch_number: payload.batch_number,
-            product_name: payload.product_name,
-            total_quantity: payload.total_quantity,
-            remaining_quantity: payload.remaining_quantity,
-            unit: payload.unit,
-            received_date: payload.received_date,
-            expiry_date: payload.expiry_date,
-            status: payload.status,
-            warehouse: payload.warehouse,
-            notes: payload.notes,
-          })
-          .eq("id", payload.id);
-        if (error) throw error;
-      } else {
-        const { data: { session: __session_ins } } = await supabase.auth.getSession();
-        const __res_ins = await fetch(`/api/inventory/inventory_batches`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${__session_ins?.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify([
-          {
-            batch_number: payload.batch_number,
-            product_name: payload.product_name,
-            total_quantity: payload.total_quantity,
-            remaining_quantity: payload.remaining_quantity,
-            unit: payload.unit,
-            received_date: payload.received_date,
-            expiry_date: payload.expiry_date,
-            status: payload.status,
-            warehouse: payload.warehouse,
-            notes: payload.notes,
-          },
-        ])
+        const res = await fetch(`/api/inventory/inventory_batches/${payload.id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(body)
         });
-        const error = __res_ins.ok ? null : new Error('Insert failed');
-        if (error) throw error;
+        if (!res.ok) throw new Error('Update failed');
+      } else {
+        const res = await fetch(`/api/inventory/inventory_batches`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('Insert failed');
       }
     },
     onSuccess: () => {
@@ -129,13 +163,13 @@ export default function BatchWiseStock() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: profile } = await supabase.auth.getUser();
-      const { error } = await supabase.from("inventory_batches").update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.user?.id || null,
-      }).eq("id", id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) throw new Error('Delete failed');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-batches"] });
@@ -452,11 +486,23 @@ export default function BatchWiseStock() {
               </div>
               <div className="space-y-2">
                 <Label>Warehouse</Label>
-                <Input
+                <Select
                   value={formState.warehouse}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, warehouse: e.target.value }))}
-                  placeholder="e.g., Main Warehouse"
-                />
+                  onValueChange={(val) => setFormState((prev) => ({ ...prev, warehouse: val }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">No warehouses available</div>
+                    ) : (
+                      warehouses.map((w: any) => (
+                        <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

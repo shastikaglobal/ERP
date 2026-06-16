@@ -55,29 +55,37 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     const fetchCounts = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
         const userId = session?.user?.id;
-        let companyFilter: any = null;
+        let companyFilter = "";
         if (userId) {
           const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', userId).single();
-          companyFilter = profile?.company_id || null;
+          if (profile?.company_id) {
+            companyFilter = `?company_id=${profile.company_id}`;
+          }
         }
 
-        const [acqRes, convRes, custRes] = await Promise.all([
-          supabase.from('client_acquisition' as any).select('id', { count: 'exact', head: true }).maybeSingle(),
-          supabase.from('leads' as any).select('id', { count: 'exact', head: true }).in('stage', ['Won', 'Client Successfully Acquired']).maybeSingle(),
-          supabase.from('customers' as any).select('id', { count: 'exact', head: true }).maybeSingle()
-        ]);
-
+        const res = await fetch(`/api/analytics/sidebar_counts${companyFilter}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch sidebar counts");
+        
+        const data = await res.json();
+        
         if (!mounted) return;
         setCounts({
-          clientAcq: acqRes?.count || 0,
-          conversions: convRes?.count || 0,
-          customers: custRes?.count || 0
+          clientAcq: data.clientAcq || 0,
+          conversions: data.conversions || 0,
+          customers: data.customers || 0
         });
       } catch (err) {
         // ignore
+        console.error("Sidebar count fetch error:", err);
       }
     };
+    
     fetchCounts();
     const interval = setInterval(fetchCounts, 30000);
     return () => { mounted = false; clearInterval(interval); };

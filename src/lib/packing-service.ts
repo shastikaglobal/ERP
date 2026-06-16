@@ -34,35 +34,36 @@ export async function createPackingProtocol(
     userId: string
 ): Promise<PackingProtocol> {
     try {
-        const { data: packing, error } = await supabase
-            .from("packing_protocols")
-            .insert([
-                {
-                    receiving_id: data.receiving_id,
-                    carton_count: data.carton_count,
-                    net_weight: data.net_weight,
-                    gross_weight: data.gross_weight,
-                    pallet_config: data.pallet_config,
-                    export_marks: data.export_marks,
-                    status: (data.status || "draft") as any,
-                    company_id: companyId,
-                    created_by: userId,
-                    is_deleted: false,
-                    deleted_at: null,
-                    deleted_by: null,
-                },
-            ])
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Supabase error:", error);
-            throw new Error(
-                error.message || "Failed to create packing protocol. Please ensure the database table exists."
-            );
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-
-        return packing as PackingProtocol;
+        const res = await fetch('/api/warehouse/packing_protocols', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                receiving_id: data.receiving_id,
+                carton_count: data.carton_count,
+                net_weight: data.net_weight,
+                gross_weight: data.gross_weight,
+                pallet_config: data.pallet_config,
+                export_marks: data.export_marks,
+                status: data.status || "draft",
+                company_id: companyId,
+                created_by: userId,
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by: null,
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Failed to create packing protocol: ${res.status}`);
+        }
+        return await res.json();
     } catch (error: any) {
         console.error("Error in createPackingProtocol:", error);
         throw error;
@@ -77,35 +78,54 @@ export async function getPackingProtocols(
         search?: string;
     }
 ): Promise<PackingProtocol[]> {
-    let query = supabase
-        .from("packing_protocols")
-        .select("*")
-        .eq("company_id", companyId)
-        .neq("is_deleted", true)
-        .order("created_at", { ascending: false });
-
-    if (filters?.status) {
-        query = query.eq("status", filters.status);
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch('/api/warehouse/packing_protocols', { headers });
+        if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
+        const data = await res.json();
+        
+        let filtered = (data || []).filter((p: any) => 
+            !p.is_deleted && 
+            p.company_id === companyId
+        );
+        
+        if (filters?.status) {
+            filtered = filtered.filter((p: any) => p.status === filters.status);
+        }
+        // order by created_at desc
+        filtered.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        return filtered as PackingProtocol[];
+    } catch (error) {
+        console.error("Error in getPackingProtocols:", error);
+        throw error;
     }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return (data as PackingProtocol[]) || [];
 }
 
 // Get single packing protocol
 export async function getPackingProtocolById(
     id: string
 ): Promise<PackingProtocol> {
-    const { data, error } = await supabase
-        .from("packing_protocols")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-    if (error) throw error;
-    return data as PackingProtocol;
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch(`/api/warehouse/packing_protocols`, { headers });
+        if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
+        const data = await res.json();
+        const found = (data || []).find((p: any) => p.id === id);
+        if (!found) throw new Error("Packing protocol not found");
+        return found as PackingProtocol;
+    } catch (error) {
+        console.error("Error in getPackingProtocolById:", error);
+        throw error;
+    }
 }
 
 // Update packing protocol
@@ -113,52 +133,68 @@ export async function updatePackingProtocol(
     id: string,
     updates: Partial<PackingProtocol>
 ): Promise<PackingProtocol> {
-    const { product_name, ...dbUpdates } = updates;
-    const { data, error } = await supabase
-        .from("packing_protocols")
-        .update({
-            ...(dbUpdates as any),
-            updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", id)
-        .select()
-        .single();
-
-    if (error) throw error;
-    return data as PackingProtocol;
+    try {
+        const { product_name, ...dbUpdates } = updates;
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch(`/api/warehouse/packing_protocols/${id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                ...dbUpdates,
+                updated_at: new Date().toISOString()
+            })
+        });
+        if (!res.ok) throw new Error(`Failed to update packing protocol: ${res.status}`);
+        return await getPackingProtocolById(id);
+    } catch (error) {
+        console.error("Error in updatePackingProtocol:", error);
+        throw error;
+    }
 }
 
 // Delete packing protocol (Soft-delete)
 export async function deletePackingProtocol(id: string): Promise<void> {
-    const { error } = await supabase
-        .from("packing_protocols")
-        .update({
-            is_deleted: true,
-            deleted_at: new Date().toISOString()
-        } as any)
-        .eq("id", id);
-
-    if (error) throw error;
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch(`/api/warehouse/packing_protocols/${id}`, {
+            method: 'DELETE',
+            headers
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Failed to delete packing protocol: ${res.status}`);
+        }
+    } catch (error) {
+        console.error("Error in deletePackingProtocol:", error);
+        throw error;
+    }
 }
 
 // Get packing statistics
 export async function getPackingStats(companyId: string) {
-    const { data, error } = await supabase
-        .from("packing_protocols")
-        .select("status")
-        .eq("company_id", companyId)
-        .neq("is_deleted", true);
-
-    if (error) throw error;
-
-    const stats = {
-        total: data?.length || 0,
-        completed: data?.filter((p) => p.status === "completed").length || 0,
-        in_progress: data?.filter((p) => p.status === "in_progress").length || 0,
-        pending: data?.filter((p) => p.status === "draft").length || 0,
-    };
-
-    return stats;
+    try {
+        const protocols = await getPackingProtocols(companyId);
+        const stats = {
+            total: protocols.length,
+            completed: protocols.filter((p) => p.status === "completed").length,
+            in_progress: protocols.filter((p) => p.status === "in_progress").length,
+            pending: protocols.filter((p) => p.status === "draft").length,
+        };
+        return stats;
+    } catch (error) {
+        console.error("Error in getPackingStats:", error);
+        throw error;
+    }
 }
 
 // Get packing data for PDF generation
@@ -168,26 +204,37 @@ export async function getPackingListPDF(packingId: string) {
     let receiving = { receiving_number: packing.receiving_id };
 
     try {
-        // Try to fetch receiving details from inventory_batches if possible
-        if (packing.receiving_id && packing.receiving_id.length === 36 && packing.receiving_id.includes('-')) {
-            const { data } = await supabase.from("inventory_batches").select("lot_number").eq("id", packing.receiving_id).maybeSingle();
-            if (data) receiving.receiving_number = data.lot_number;
-        } else {
-            const { data } = await supabase.from("inventory_batches").select("lot_number").eq("lot_number", packing.receiving_id).maybeSingle();
-            if (data) receiving.receiving_number = data.lot_number;
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        
+        // Fetch batches from VPS
+        const resBatches = await fetch('/api/inventory/inventory_batches', { headers });
+        if (resBatches.ok) {
+            const batches = await resBatches.json();
+            const foundBatch = (batches || []).find((b: any) => 
+                b.id === packing.receiving_id || 
+                b.lot_number === packing.receiving_id
+            );
+            if (foundBatch) {
+                receiving.receiving_number = foundBatch.lot_number;
+            }
         }
     } catch (e) {
         console.warn("Could not fetch receiving info, using raw ID", e);
     }
 
     // Get company details
-    const { data: company, error: compError } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", packing.company_id)
-        .single();
-
-    if (compError) throw compError;
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {};
+    if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+    const resCompany = await fetch('/api/settings', { headers });
+    if (!resCompany.ok) throw new Error('Failed to fetch company settings');
+    const company = await resCompany.json();
 
     return {
         packing,
@@ -200,39 +247,43 @@ export async function getPackingListPDF(packingId: string) {
 export async function getUnpackedReceivings(
     companyId: string
 ): Promise<any[]> {
-    let query = supabase
-        .from("inventory_batches")
-        .select(`
-            id,
-            lot_number,
-            status,
-            quantity_kg,
-            received_date,
-            products (
-                name
-            )
-        `)
-        .order("received_date", { ascending: false });
-
-    if (companyId) {
-        query = query.eq('company_id', companyId);
-    }
-    
-    const { data, error } = await query;
-
-    if (error) {
-        console.error("Error fetching batches:", error);
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        
+        // Fetch batches from VPS
+        const resBatches = await fetch('/api/inventory/inventory_batches', { headers });
+        if (!resBatches.ok) throw new Error('Failed to fetch inventory batches');
+        const batches = await resBatches.json();
+        
+        // Fetch products from VPS to map product name
+        const resProducts = await fetch('/api/products', { headers });
+        if (!resProducts.ok) throw new Error('Failed to fetch products');
+        const products = await resProducts.json();
+        
+        const filteredBatches = (batches || []).filter((batch: any) => 
+            !batch.is_deleted && 
+            (!companyId || batch.company_id === companyId)
+        );
+        
+        return filteredBatches.map((batch: any) => {
+            const product = (products || []).find((p: any) => p.id === batch.product_id);
+            return {
+                id: batch.id,
+                receiving_number: batch.lot_number || `BATCH-${batch.id.substring(0, 6)}`,
+                product_name: product?.name || "Unknown Product",
+                status: batch.status,
+                total_items: batch.quantity_kg,
+                created_at: batch.received_date
+            };
+        });
+    } catch (err) {
+        console.error("Error in getUnpackedReceivings:", err);
         return [];
     }
-
-    return (data || []).map((batch: any) => ({
-        id: batch.id,
-        receiving_number: batch.lot_number || `BATCH-${batch.id.substring(0, 6)}`,
-        product_name: batch.products?.name || "Unknown Product",
-        status: batch.status,
-        total_items: batch.quantity_kg,
-        created_at: batch.received_date
-    }));
 }
 
 // Validate packing data

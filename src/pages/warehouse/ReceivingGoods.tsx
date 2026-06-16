@@ -57,7 +57,6 @@ export default function ReceivingGoods() {
     const queryClient = useQueryClient();
     const { profile } = useAuth();
     const [activeTab, setActiveTab] = useState<"entry" | "list">("entry");
-    const [savedStocks, setSavedStocks] = useState<any[]>([]);
 
     const { data: suppliers = [], isLoading: suppliersLoading, error: suppliersError } = useQuery({
         queryKey: ["warehouse-suppliers"],
@@ -109,17 +108,33 @@ export default function ReceivingGoods() {
         }
     });
 
-    useEffect(() => {
-        const saved = localStorage.getItem("warehouseStockEntries");
-        if (saved) {
-            try {
-                setSavedStocks(JSON.parse(saved));
-            } catch (e) {
-                console.error("Error parsing saved stocks:", e);
-                setSavedStocks([]);
-            }
+    const { data: dbBatches = [] } = useQuery({
+        queryKey: ["warehouse-received-batches", profile?.company_id],
+        queryFn: async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+            const res = await fetch('/api/inventory/inventory_batches', { headers });
+            if (!res.ok) throw new Error('Failed to fetch batches');
+            const data = await res.json();
+            return (data || []).filter((b: any) => !b.is_deleted && (!profile?.company_id || b.company_id === profile.company_id));
         }
-    }, []);
+    });
+
+    const savedStocks = useMemo(() => {
+        return dbBatches.map((b: any) => {
+            const prod = products.find((p: any) => p.id === b.product_id);
+            const supplier = suppliers.find((s: any) => s.id === b.farmer_id);
+            return {
+                id: b.id,
+                entryDate: b.received_date ? b.received_date.split('T')[0] : '—',
+                grn: b.grn_number || '—',
+                batchNumber: b.lot_number,
+                supplierInfo: supplier ? supplier.full_name : 'Direct Stock',
+                receivedQty: b.quantity_kg,
+                qualityStatus: b.status === 'approved' ? 'pass' : 'rejected'
+            };
+        });
+    }, [dbBatches, products, suppliers]);
 
     const [currentStage, setCurrentStage] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -365,11 +380,7 @@ export default function ReceivingGoods() {
                     console.warn('Warehouse stock update skipped:', stockErr);
                 }
 
-                const timestampId = new Date().getTime();
-                const newEntry = { ...formData, id: timestampId, supplierName: selectedSupplier?.full_name || formData.supplierInfo };
-                const updated = [newEntry, ...savedStocks];
-                setSavedStocks(updated);
-                localStorage.setItem("warehouseStockEntries", JSON.stringify(updated));
+                queryClient.invalidateQueries({ queryKey: ["warehouse-received-batches"] });
 
                 toast.success("Goods received and saved to database successfully!");
                 queryClient.invalidateQueries({ queryKey: ["warehouse-inventory"] });

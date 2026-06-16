@@ -14,28 +14,28 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       "/api/ai-chat": {
-        target: "http://127.0.0.1:3001",
+        target: "http://195.35.22.13:3001",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ai-chat/, "/api/chat"),
       },
       "/api/vehicles": {
-        target: "http://127.0.0.1:3001",
+        target: "http://195.35.22.13:3001",
         changeOrigin: true,
       },
       "/api/drivers": {
-        target: "http://127.0.0.1:3001",
+        target: "http://195.35.22.13:3001",
         changeOrigin: true,
       },
       "/api/employees": {
-        target: "http://127.0.0.1:8082",
+        target: "http://195.35.22.13:8082",
         changeOrigin: true,
       },
       "/api/user-permissions": {
-        target: "http://127.0.0.1:8082",
+        target: "http://195.35.22.13:8082",
         changeOrigin: true,
       },
       "/api": {
-        target: "http://127.0.0.1:8082",
+        target: "http://195.35.22.13:8082",
         changeOrigin: true,
       },
     },

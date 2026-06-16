@@ -6,7 +6,8 @@ const { requireAuth } = require('../middleware/auth');
 const WAREHOUSE_TABLES = [
   'warehouses',
   'warehouse_locations',
-  'receiving_goods'
+  'receiving_goods',
+  'packing_protocols'
 ];
 
 const isValidTable = (table) => WAREHOUSE_TABLES.includes(table);
