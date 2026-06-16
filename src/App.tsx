@@ -142,6 +142,7 @@ import Dispatch from "./pages/shipments/Dispatch";
 
 // Documents
 import Invoices from "./pages/documents/Invoices";
+import CommercialInvoices from "./pages/documents/CommercialInvoices";
 import PackingLists from "./pages/documents/PackingLists";
 import Certificates from "./pages/documents/Certificates";
 import DocumentViewer from "./pages/documents/DocumentViewer";
@@ -367,7 +368,7 @@ const App = () => (
               <Route path="/documents/invoices/create" element={<CreateInvoice />} />
               <Route path="/documents/invoices/:id" element={<InvoiceReport />} />
               <Route path="/documents/packing-lists" element={<PackingLists />} />
-              <Route path="/documents/commercial-invoices" element={<Invoices />} />
+              <Route path="/documents/commercial-invoices" element={<CommercialInvoices />} />
               <Route path="/documents/certificates" element={<Certificates />} />
               <Route path="/documents/viewer" element={<DocumentViewer />} />
 

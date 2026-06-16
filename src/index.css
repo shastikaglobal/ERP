@@ -381,3 +381,64 @@
     animation: fly-across 4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 }
+
+/* --- Global Print Media Styles --- */
+@media print {
+  /* Hide sidebars, headers, panels, buttons, and close controllers */
+  aside,
+  header,
+  nav,
+  .no-print,
+  .print\:hidden,
+  #team-chat-panel,
+  .TeamChatPanel,
+  .AIChatPanel,
+  button,
+  .btn,
+  .absolute.-top-14,
+  .absolute.top-4.right-4 {
+    display: none !important;
+  }
+
+  /* Reset outer layout boundaries and background colors */
+  body, html, #root, .min-h-screen, main, .flex-1, .bg-background {
+    background: white !important;
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* Format modal wrapper overlays to align perfectly as plain document pages */
+  .fixed.inset-0.z-\[9999\] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    background-color: white !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+    display: block !important;
+    box-shadow: none !important;
+  }
+
+  /* Target and size the printable page wrapper to exactly A4 page parameters */
+  .relative.w-full.max-w-\[210mm\] {
+    max-width: 210mm !important;
+    width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+

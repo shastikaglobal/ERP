@@ -2,6 +2,14 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase admin client for syncing role changes
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 
 // GET /api/employees - Fetch all approved employees
 router.get('/', requireAuth, async (req, res) => {
@@ -110,6 +118,62 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
     const values = [id, ...Object.values(updates)];
     
     await db.query(`UPDATE profiles SET ${setClause} WHERE id = $1`, values);
+
+    // If requested_role is being updated, sync it everywhere
+    if (updates.requested_role) {
+      const slug = updates.requested_role;
+
+      // 1. Update local user_roles
+      const { rows: roleRows } = await db.query('SELECT id, name FROM roles WHERE slug = $1', [slug]);
+      if (roleRows.length > 0) {
+        const roleId = roleRows[0].id;
+        const { rows: existingUserRole } = await db.query('SELECT * FROM user_roles WHERE user_id = $1', [id]);
+        if (existingUserRole.length > 0) {
+          await db.query('UPDATE user_roles SET role_id = $1 WHERE user_id = $2', [roleId, id]);
+        } else {
+          await db.query('INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)', [id, roleId]);
+        }
+      }
+
+      // 2. CRITICAL: Also update Supabase user_roles so frontend permissions refresh
+      try {
+        // Get the Supabase role id matching this slug
+        const { data: supaRoles, error: roleErr } = await supabase
+          .from('roles')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+
+        if (!roleErr && supaRoles) {
+          const supaRoleId = supaRoles.id;
+
+          // Check if a user_roles row exists for this user in Supabase
+          const { data: existing } = await supabase
+            .from('user_roles')
+            .select('id')
+            .eq('user_id', id);
+
+          if (existing && existing.length > 0) {
+            // Update all role assignments for this user to the new role
+            await supabase
+              .from('user_roles')
+              .update({ role_id: supaRoleId })
+              .eq('user_id', id);
+          } else {
+            // Insert a new role assignment
+            await supabase
+              .from('user_roles')
+              .insert({ user_id: id, role_id: supaRoleId });
+          }
+          console.log(`[ROLE SYNC] User ${id} role synced to Supabase as '${slug}'`);
+        } else {
+          console.warn(`[ROLE SYNC] Role '${slug}' not found in Supabase roles table:`, roleErr?.message);
+        }
+      } catch (supaErr) {
+        console.error('[ROLE SYNC] Failed to sync role to Supabase:', supaErr.message);
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (update profile):", err);

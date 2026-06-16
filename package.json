@@ -69,6 +69,7 @@
     "next-themes": "^0.3.0",
     "node-cron": "^4.2.1",
     "node-windows": "^1.0.0-beta.8",
+    "number-to-words": "^1.2.4",
     "papaparse": "^5.5.3",
     "pg": "^8.21.0",
     "qrcode": "^1.5.4",

@@ -222,11 +222,12 @@ export function ProformaInvoice({ shipment, onClose }: ProformaInvoiceProps) {
 
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            @page { margin: 0; size: auto; }
+            @page { margin: 10mm; size: A4; }
             body { background: white !important; -webkit-print-color-adjust: exact; }
             .fixed { position: absolute !important; inset: 0 !important; padding: 0 !important; background: white !important; backdrop-filter: none !important; }
             .print\\:hidden { display: none !important; }
             .shadow-2xl { box-shadow: none !important; }
+            .max-w-\\[210mm\\] { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
           }
         `}} />
       </div>

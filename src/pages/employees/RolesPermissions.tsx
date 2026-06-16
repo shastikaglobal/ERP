@@ -104,10 +104,9 @@ export default function RolesPermissions() {
       const dbEmployees = employeesRes.ok ? await employeesRes.json() : [];
 
       const mappedUsers = (dbUsers || []).map((u: any) => {
-        const emp = dbEmployees?.find((e: any) => e.email?.toLowerCase() === u.email?.toLowerCase());
         return {
           ...u,
-          employeeRole: emp?.role || "User"
+          employeeRole: u.requested_role || "User"
         };
       });
       setUsers(mappedUsers);

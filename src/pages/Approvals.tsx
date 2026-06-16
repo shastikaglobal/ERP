@@ -125,7 +125,15 @@ export default function Approvals() {
   const rejected = rows.filter((r) => r.status === "rejected");
 
   const changeRole = async (r: ProfileRow) => {
-    const role = pendingRoleSel[r.id] || r.requested_role || "bde";
+    const role = pendingRoleSel[r.id];
+    if (!role) {
+      toast.error("Please select a new role first.");
+      return;
+    }
+    if (role === r.requested_role) {
+      toast.info("This is already the current role. Select a different one.");
+      return;
+    }
     setBusyId(r.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -135,7 +143,9 @@ export default function Approvals() {
         body: JSON.stringify({ requested_role: role })
       });
       if (!res.ok) throw new Error("Failed to change role");
-      toast.success(`${r.email} role changed to ${role}`);
+      toast.success(`✅ ${r.full_name || r.email} role changed to ${role.toUpperCase()}`);
+      // Clear the selection and reload
+      setPendingRoleSel(p => { const n = {...p}; delete n[r.id]; return n; });
       load();
     } catch (error: any) {
       toast.error(error.message);
@@ -243,17 +253,28 @@ export default function Approvals() {
                       <TableCell className="text-right">
                         {canAction && (
                           <div className="flex items-center justify-end gap-2">
+                            <div className="text-xs text-muted-foreground mr-1">
+                              Current: <span className="font-semibold text-foreground">{r.requested_role?.toUpperCase() || 'NONE'}</span>
+                            </div>
                             <Select
-                              value={pendingRoleSel[r.id] || r.requested_role || "bde"}
+                              value={pendingRoleSel[r.id] || ""}
                               onValueChange={(v) => setPendingRoleSel((p) => ({ ...p, [r.id]: v }))}
                             >
-                              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="w-36 h-8 text-xs">
+                                <SelectValue placeholder="Select new role" />
+                              </SelectTrigger>
                               <SelectContent>
                                 {ROLE_OPTIONS.map((rOpt) => <SelectItem key={rOpt.slug} value={rOpt.slug}>{rOpt.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <Button size="sm" variant="outline" onClick={() => changeRole(r)} disabled={busyId === r.id}>
-                              <Check className="h-3.5 w-3.5 mr-1" /> Change
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => changeRole(r)} 
+                              disabled={busyId === r.id || !pendingRoleSel[r.id]}
+                            >
+                              <Check className="h-3.5 w-3.5 mr-1" /> 
+                              {pendingRoleSel[r.id] ? `Set ${pendingRoleSel[r.id].toUpperCase()}` : 'Change'}
                             </Button>
                           </div>
                         )}

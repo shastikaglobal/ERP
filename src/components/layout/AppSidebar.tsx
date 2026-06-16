@@ -169,7 +169,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
 
   const activeIsAdmin = isAdmin || employeeAdmin;
 
-  console.log('[AppSidebar] 🛠 Recalculating visibleGroups. Admin:', activeIsAdmin, 'Permissions Count:', permissions.length);
+  // BDE role: if no explicit user_permissions are set, default to CRM only
+  const BDE_ALLOWED_GROUPS = ['CRM', 'HR & Employees'];
+  const hasBdeDefaults = isBde && permissions.length === 0;
+
+  console.log('[AppSidebar] 🛠 Recalculating visibleGroups. Admin:', activeIsAdmin, 'BDE:', isBde, 'Permissions Count:', permissions.length);
 
   const visibleGroups = navGroups
     .map(g => {
@@ -177,8 +181,18 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       if (activeIsAdmin) {
         return g;
       }
+
+      // 2. BDE with no explicit permissions → show only CRM group
+      if (hasBdeDefaults) {
+        if (!BDE_ALLOWED_GROUPS.includes(g.title)) return { ...g, items: [] };
+        // For HR & Employees, only show Face Attendance (not salary, directory etc)
+        if (g.title === 'HR & Employees') {
+          return { ...g, items: g.items.filter(i => i.title === 'Face Attendance') };
+        }
+        return g; // Show full CRM group
+      }
       
-      // 2. Filter items in the group
+      // 3. Filter items by explicit user_permissions
       const filteredItems = g.items.map(item => {
         // If it has sub-items (like Warehouse -> Inventory -> Available Stock)
         if (item.items && item.items.length > 0) {

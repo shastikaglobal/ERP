@@ -19,7 +19,7 @@ export default function Invoices() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("No active session");
-        const res = await fetch('/api/invoices', {
+        const res = await fetch('/api/orders', {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
         if (!res.ok) throw new Error("Failed to fetch invoices");
@@ -40,7 +40,7 @@ export default function Invoices() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/invoices/${id}`, {
+      const res = await fetch(`/api/orders/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });

@@ -4,7 +4,7 @@ from zk import ZK
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-candidates = ['192.168.1.3', '192.168.1.4', '192.168.1.5', '192.168.1.7', '192.168.1.11', '192.168.1.23', '192.168.1.27']
+candidates = ['192.168.1.4', '192.168.1.6', '192.168.1.13', '192.168.1.27', '192.168.1.33', '192.168.1.100', '192.168.1.101']
 for ip in candidates:
     print(f"\n📡 Trying ZK connection to {ip} on port 4370...")
     for use_udp in [False, True]:

@@ -329,10 +329,11 @@ export default function PackingListPreview() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          .print\\:hidden { display: none !important; }
+          @page { margin: 10mm; size: A4; }
           body { background: white !important; -webkit-print-color-adjust: exact; }
-          @page { margin: 0; size: A4; }
-          .w-\\[210mm\\] { width: 100% !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+          .print\\:hidden { display: none !important; }
+          .shadow-2xl { box-shadow: none !important; }
+          .w-\\[210mm\\] { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
         }
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
         .font-sans { font-family: 'Roboto', sans-serif !important; }

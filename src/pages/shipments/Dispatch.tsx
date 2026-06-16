@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const Dispatch = () => {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const canDispatch = useCan('shipments.dispatch');
   const navigate = useNavigate();
 
@@ -22,6 +22,7 @@ const Dispatch = () => {
   const [statusLogs, setStatusLogs] = useState<any[]>([]);
   const [hasShipments, setHasShipments] = useState<boolean | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [debugError, setDebugError] = useState<string>('');
 
   // Real‑time subscription
   useEffect(() => {
@@ -39,9 +40,15 @@ const Dispatch = () => {
   useEffect(() => {
     const checkShipments = async () => {
       try {
-        const { count, error } = await supabase.from('shipment_dispatches').select('id', { count: 'exact', head: true });
-        if (!error) {
-          setHasShipments((count || 0) > 0);
+        if (!session?.access_token) return;
+        const res = await fetch('/api/dispatch/shipment_dispatches/count', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (res.ok) {
+          const { count } = await res.json();
+          setHasShipments(count > 0);
+        } else {
+          setHasShipments(false);
         }
       } catch (err) {
         console.error('Failed to check shipment count', err);
@@ -49,7 +56,7 @@ const Dispatch = () => {
       }
     };
     checkShipments();
-  }, []);
+  }, [session?.access_token]);
 
   const handleCreateShipment = async () => {
     if (!vehicleId || !driverId) {
@@ -69,25 +76,29 @@ const Dispatch = () => {
 
     setIsCreating(true);
     try {
-      const { data: shipment, error } = await supabase.from('shipment_dispatches').insert([
-        {
+      if (!session?.access_token) throw new Error("Authentication session missing");
+      const res = await fetch('/api/dispatch/shipment_dispatches', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` 
+        },
+        body: JSON.stringify({
           vehicle_id: vehicleId,
           driver_id: driverId,
           schedule_start: schedule.start,
           schedule_end: schedule.end,
-          status: 'pending',
-        },
-      ]).select().single();
+          status: 'pending'
+        })
+      });
 
-      if (error || !shipment) {
-        throw error || new Error('Failed to create shipment');
+      if (!res.ok) {
+        throw new Error(await res.text() || 'Failed to create shipment');
       }
 
-      const token = `SHIP-${shipment.id}-${Date.now()}`;
-      const { error: updateError } = await supabase.from('shipment_dispatches').update({ gate_pass_token: token }).eq('id', shipment.id);
-      if (updateError) throw updateError;
+      const shipment = await res.json();
 
-      setGatePassToken(token);
+      setGatePassToken(shipment.gate_pass_token);
       setHasShipments(true);
       toast.success('Shipment created successfully.');
       navigate(`/shipments/${shipment.id}`);
@@ -115,6 +126,7 @@ const Dispatch = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {debugError && <div className="p-4 bg-red-100 text-red-800 font-bold border border-red-500 mb-4 rounded">DEBUG ERROR: {debugError}</div>}
       <h1 className="text-2xl font-semibold">New Shipment Dispatch</h1>
       <VehicleEntryForm onSelect={setVehicleId} />
       <DriverSelect onSelect={setDriverId} />

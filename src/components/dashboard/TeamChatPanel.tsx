@@ -590,7 +590,7 @@ export function TeamChatPanel() {
   return (
     <>
       {/* MENTION POPUPS */}
-      <div className="fixed top-6 right-6 z-[99999] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed top-6 right-6 z-[99999] flex flex-col gap-3 pointer-events-none print:hidden">
         {mentionPopups.map((popup) => (
           <div 
             key={popup.popupId} 
@@ -653,7 +653,7 @@ export function TeamChatPanel() {
               setIsOpen(true);
             }
           }}
-          className="h-14 w-14 rounded-full bg-[#1a1a1a] border-2 border-[#f0a500] flex items-center justify-center shadow-lg hover:scale-105 transition-transform group relative cursor-move select-none touch-none"
+          className="h-14 w-14 rounded-full bg-[#1a1a1a] border-2 border-[#f0a500] flex items-center justify-center shadow-lg hover:scale-105 transition-transform group relative cursor-move select-none touch-none print:hidden"
           style={
             position
               ? {
@@ -696,7 +696,7 @@ export function TeamChatPanel() {
       {/* BACKDROP OVERLAY */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 print:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -704,7 +704,7 @@ export function TeamChatPanel() {
       {/* SLIDING SIDEBAR PANEL */}
       <div 
         ref={popupRef}
-        className={`fixed top-0 right-0 w-[380px] h-screen bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col z-50 overflow-hidden shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 w-[380px] h-screen bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col z-50 overflow-hidden shadow-2xl transition-transform duration-300 ease-in-out print:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

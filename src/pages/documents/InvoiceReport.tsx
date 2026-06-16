@@ -14,13 +14,46 @@ export default function InvoiceReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("export_shipments")
           .select("*, export_orders(*)")
           .eq("id", id)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error || !data) {
+          // If not found in shipments, try export_orders directly
+          let { data: orderOnly, error: orderErr } = await supabase
+            .from("export_orders")
+            .select("*, export_shipments(*)")
+            .eq("id", id)
+            .maybeSingle();
+            
+          if (orderErr || !orderOnly) {
+            // Try fetching from Node API
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(`/api/invoices/${id}`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            if (!res.ok) throw new Error('Invoice not found');
+            const apiData = await res.json();
+            data = {
+              export_orders: {
+                id: apiData.id,
+                order_number: apiData.invoice_number || 'INV-' + apiData.id.slice(0, 4),
+                customer_name: apiData.customer,
+                currency: apiData.currency,
+                total_amount: apiData.amount,
+                status: apiData.status,
+                created_at: apiData.created_at,
+                product: apiData.items?.[0]?.description || 'Custom Order',
+                quantity: apiData.items?.[0]?.quantity || 1,
+                unit_price: apiData.items?.[0]?.unit_price || apiData.amount,
+              }
+            };
+          } else {
+            data = { export_orders: orderOnly };
+          }
+        }
         setShipment(data);
       } catch (err) {
         console.error("Report load error:", err);

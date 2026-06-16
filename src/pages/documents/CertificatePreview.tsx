@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -151,9 +151,17 @@ export default function CertificatePreview() {
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <div style={{ background: '#f5f5f5', color: 'black', minHeight: '100vh', padding: '40px 20px', fontFamily: 'sans-serif' }} className="flex flex-col items-center">
+    <div style={{ background: '#f5f5f5', color: 'black', minHeight: '100vh', padding: '40px 20px', fontFamily: 'sans-serif' }} className="flex flex-col items-center print:bg-white print:py-0">
       
-      <div className="mb-6 w-full max-w-[210mm] flex justify-end px-2">
+      <div className="mb-6 w-full max-w-[210mm] flex justify-end px-2 print:hidden">
+        <Button 
+          variant="outline"
+          onClick={() => window.print()}
+          className="bg-white border-[#1A5276] text-[#1A5276] hover:bg-[#1A5276]/5 font-bold py-2 px-6 rounded-lg shadow-lg flex items-center gap-2 transition-all active:scale-95 mr-2"
+        >
+          <Printer className="h-4 w-4" />
+          PRINT
+        </Button>
         <Button 
           onClick={handleDownloadPDF} 
           disabled={downloading}
@@ -309,6 +317,16 @@ export default function CertificatePreview() {
           </div>
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { margin: 10mm; size: A4; }
+          body { background: white !important; margin: 0 !important; -webkit-print-color-adjust: exact; }
+          .print\\:hidden { display: none !important; }
+          .shadow-xl { box-shadow: none !important; }
+          .max-w-\\[210mm\\] { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+        }
+      `}} />
     </div>
   );
 }

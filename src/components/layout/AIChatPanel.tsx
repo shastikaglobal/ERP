@@ -106,7 +106,7 @@ export function AIChatPanel({
 
   return (
     <div
-      className="fixed bottom-6 z-50 w-80 h-[480px] bg-background border border-border rounded-xl shadow-2xl flex flex-col"
+      className="fixed bottom-6 z-50 w-80 h-[480px] bg-background border border-border rounded-xl shadow-2xl flex flex-col print:hidden"
       style={{ left: "272px" }}
     >
 
