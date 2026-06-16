@@ -239,12 +239,24 @@ export async function getUnpackedReceivings(
 export function validatePackingData(data: CreatePackingInput): string[] {
     const errors: string[] = [];
 
+    // Basic required checks
     if (!data.receiving_id) errors.push("Receiving ID is required");
-    if (data.carton_count <= 0) errors.push("Carton count must be greater than 0");
-    if (data.net_weight <= 0) errors.push("Net weight must be greater than 0");
-    if (data.gross_weight <= 0) errors.push("Gross weight must be greater than 0");
-    if (data.net_weight > data.gross_weight) {
-        errors.push("Net weight cannot be greater than gross weight");
+
+    // Cartons must be at least 1
+    if (!data.carton_count || data.carton_count < 1) errors.push("Carton count must be at least 1");
+
+    // Allow zero weights for draft or when weight is not yet measured.
+    // Only enforce that gross >= net when weights are provided.
+    if (typeof data.net_weight !== 'number' || isNaN(data.net_weight) || data.net_weight < 0) {
+        errors.push("Net weight must be a non-negative number");
+    }
+    if (typeof data.gross_weight !== 'number' || isNaN(data.gross_weight) || data.gross_weight < 0) {
+        errors.push("Gross weight must be a non-negative number");
+    }
+    if (typeof data.net_weight === 'number' && typeof data.gross_weight === 'number') {
+        if (data.net_weight > data.gross_weight) {
+            errors.push("Net weight cannot be greater than gross weight");
+        }
     }
 
     return errors;
