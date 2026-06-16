@@ -471,23 +471,9 @@ startPgListener();
 
 // Start Server
 const ensureUserPermissionsSetup = async () => {
-  try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS user_permissions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-        section TEXT NOT NULL,
-        has_access BOOLEAN DEFAULT false,
-        created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
-      );
-    `);
-    console.log('✅ user_permissions table is ready.');
-  } catch (err) {
-    console.error('❌ Could not ensure user_permissions table:', err);
-    process.exit(1);
-  }
+  // user_permissions lives in Supabase — no local DB setup needed
+  // Local VPS DB only holds: attendance_logs, drivers, vehicles, AttLogs, etc.
+  console.log('✅ Skipping local user_permissions setup — managed in Supabase.');
 };
 
 const startServer = async () => {

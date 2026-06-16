@@ -4,16 +4,22 @@ const conn = new Client();
 
 conn.on('ready', () => {
   console.log('Client :: ready');
-  conn.exec('pm2 logs --lines 50 --nostream', (err, stream) => {
+  conn.exec('pm2 delete erp-frontend', (err, stream) => {
     if (err) throw err;
     let out = "";
     stream.on('close', (code, signal) => {
-      console.log(out);
-      conn.end();
+      console.log('PM2 command closed.');
+      conn.exec('pm2 save', (err2, stream2) => {
+        if (err2) throw err2;
+        stream2.on('close', () => {
+          console.log('PM2 state saved.');
+          conn.end();
+        });
+      });
     }).on('data', (data) => {
-      out += data.toString();
+      console.log(data.toString());
     }).stderr.on('data', (data) => {
-      out += data.toString();
+      console.error(data.toString());
     });
   });
 }).on('error', (err) => {

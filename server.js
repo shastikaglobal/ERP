@@ -172,40 +172,124 @@ app.post('/api/drivers', async (req, res) => {
   }
 })
 
+// GET /api/employees — returns approved employees from Supabase profiles
+app.get('/api/employees', requireAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, requested_role, department, is_active, status')
+      .eq('status', 'approved')
+      .eq('is_deleted', false)
+      .order('full_name')
+    if (error) throw error
+    res.json(data || [])
+  } catch (err) {
+    console.error('GET /api/employees error:', err?.message || err)
+    res.status(500).json({ error: 'Failed to fetch employees' })
+  }
+})
+
+// GET /api/employees/all/profiles — returns ALL profiles (for approvals page)
 app.get('/api/employees/all/profiles', requireAuth, async (req, res) => {
   try {
-    const executor = (db && db.query) ? db : pool
-    if (!executor) return res.status(500).json({ error: 'Database not configured' })
-    const { rows } = await executor.query('SELECT * FROM profiles ORDER BY created_at DESC')
-    res.json(rows)
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, phone, requested_role, status, rejection_reason, created_at, department, is_active')
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    res.json(data || [])
   } catch (err) {
     console.error('GET /api/employees/all/profiles error:', err?.message || err)
     res.status(500).json({ error: 'Failed to fetch profiles' })
   }
 })
 
+// PUT /api/employees/all/profiles/:id — approve/reject or change role
+// Enforces ONE role per person: deletes existing user_roles before assigning new one
+app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const { status, requested_role, rejection_reason } = req.body
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+
+    // Build profile update payload
+    const profileUpdate = {}
+    if (status) profileUpdate.status = status
+    if (requested_role) profileUpdate.requested_role = requested_role
+    if (status === 'approved') {
+      profileUpdate.approved_by = req.user?.sub || null
+      profileUpdate.approved_at = new Date().toISOString()
+      profileUpdate.rejection_reason = null
+    }
+    if (status === 'rejected') {
+      profileUpdate.rejection_reason = rejection_reason || null
+      profileUpdate.approved_by = null
+      profileUpdate.approved_at = null
+    }
+
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update(profileUpdate)
+      .eq('id', id)
+    if (profileErr) throw profileErr
+
+    // Assign role in user_roles (one role per person — delete old, insert new)
+    if (requested_role && (status === 'approved' || !status)) {
+      // Look up role_id for this slug
+      const { data: roleRow, error: roleErr } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('slug', requested_role)
+        .maybeSingle()
+      if (roleErr) throw roleErr
+
+      if (roleRow?.id) {
+        // Remove ALL existing roles for this user (enforce one role per person)
+        await supabase.from('user_roles').delete().eq('user_id', id)
+        // Insert new role
+        const { error: insertErr } = await supabase
+          .from('user_roles')
+          .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() })
+        if (insertErr) throw insertErr
+      } else {
+        console.warn(`Role slug '${requested_role}' not found in roles table — skipping user_roles update`)
+      }
+    }
+
+    res.json({ success: true })
+  } catch (err) {
+    console.error('PUT /api/employees/all/profiles/:id error:', err?.message || err)
+    res.status(500).json({ error: 'Failed to update profile' })
+  }
+})
+
+// GET /api/user-permissions — profiles + their permissions (all from Supabase)
 app.get('/api/user-permissions', requireAuth, async (req, res) => {
   try {
-    const executor = (db && db.query) ? db : pool
-    if (!executor) return res.status(500).json({ error: 'Database not configured' })
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
 
-    const { rows: profiles } = await executor.query('SELECT id, full_name, email, role FROM profiles')
-    const { rows: perms } = await executor.query('SELECT user_id, section, has_access FROM user_permissions')
+    const { data: profiles, error: profErr } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, requested_role')
+      .eq('is_deleted', false)
+      .order('full_name')
+    if (profErr) throw profErr
 
-    const mapped = profiles.map((p) => {
-      const userPerms = perms
+    const { data: perms, error: permsErr } = await supabase
+      .from('user_permissions')
+      .select('user_id, section, has_access')
+    if (permsErr) throw permsErr
+
+    const mapped = (profiles || []).map((p) => {
+      const userPerms = (perms || [])
         .filter((up) => String(up.user_id) === String(p.id))
-        .map((up) => ({
-          section: up.section,
-          has_access: up.has_access,
-        }))
-      return {
-        ...p,
-        permissions: userPerms,
-      }
+        .map((up) => ({ section: up.section, has_access: up.has_access }))
+      return { ...p, permissions: userPerms }
     })
 
-    mapped.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
     res.json(mapped)
   } catch (err) {
     console.error('GET /api/user-permissions error:', err?.message || err)
@@ -213,44 +297,23 @@ app.get('/api/user-permissions', requireAuth, async (req, res) => {
   }
 })
 
+// POST /api/user-permissions — upsert a single permission in Supabase
 app.post('/api/user-permissions', requireAuth, async (req, res) => {
   try {
-    const executor = (db && db.query) ? db : pool
-    if (!executor) return res.status(500).json({ error: 'Database not configured' })
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
 
     const { user_id, section, has_access } = req.body
     if (!user_id || !section || typeof has_access !== 'boolean') {
       return res.status(400).json({ error: 'Missing or invalid body parameters' })
     }
 
-    const { rows: existing } = await executor.query(
-      'SELECT id FROM user_permissions WHERE user_id = $1 AND section = $2',
-      [user_id, section]
-    )
-
-    if (existing.length > 0) {
-      await executor.query(
-        'UPDATE user_permissions SET has_access = $1, updated_at = NOW() WHERE id = $2',
-        [has_access, existing[0].id]
+    const { error } = await supabase
+      .from('user_permissions')
+      .upsert(
+        { user_id, section, has_access, granted_by: req.user?.sub || null },
+        { onConflict: 'user_id,section' }
       )
-    } else {
-      await executor.query(
-        'INSERT INTO user_permissions (user_id, section, has_access) VALUES ($1, $2, $3)',
-        [user_id, section, has_access]
-      )
-    }
-
-    if (supabase) {
-      try {
-        const upsertPayload = { user_id, section, has_access, granted_by: req.user?.sub || null }
-        const { error: supaErr } = await supabase
-          .from('user_permissions')
-          .upsert(upsertPayload, { onConflict: 'user_id,section' })
-        if (supaErr) console.warn('Supabase upsert warning:', supaErr.message)
-      } catch (sErr) {
-        console.warn('Failed to mirror permission to Supabase:', sErr.message || sErr)
-      }
-    }
+    if (error) throw error
 
     res.json({ success: true })
   } catch (err) {

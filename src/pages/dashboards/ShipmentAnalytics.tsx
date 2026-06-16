@@ -25,34 +25,22 @@ export default function ShipmentAnalytics() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       
-      const { data, error } = await supabase
-        .from('export_shipments')
-        .select(`
-          id,
-          shipment_number,
-          status,
-          total_quantity_kg,
-          carton_count,
-          container_number,
-          created_at,
-          dispatch_date,
-          estimated_delivery,
-          destination_port,
-          customer:customers(id, name)
-        `)
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) {
-        console.error('Error fetching shipments:', error);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch export shipments from VPS");
+        const data = await res.json();
+        
+        return (data || []).map((s: any) => ({
+          ...s,
+          dbId: s.id
+        }));
+      } catch (error) {
+        console.error('Error fetching shipments from VPS:', error);
         return [];
       }
-      
-      return (data || []).map((s: any) => ({
-        ...s,
-        dbId: s.id
-      }));
     },
     enabled: !!profile?.company_id,
     staleTime: 20000,

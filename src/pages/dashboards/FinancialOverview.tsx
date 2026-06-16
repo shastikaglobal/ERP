@@ -7,32 +7,69 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 export default function FinancialOverview() {
-  const { data: realSales } = useQuery({
-    queryKey: ['dashboard_sales'],
+  const { data: exportOrders = [] } = useQuery({
+    queryKey: ['financial_export_orders'],
     queryFn: async () => {
-      return [];
-    },
-    retry: false
-  });
-
-  const { data: receivablesData } = useQuery({
-    queryKey: ['financial_receivables'],
-    queryFn: async () => {
-      return [];
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/finance/export_orders', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) return [];
+      return await res.json();
     }
   });
 
-  const chartSales = [];
-  const receivables = 0;
+  const { data: purchaseOrders = [] } = useQuery({
+    queryKey: ['financial_purchase_orders'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/finance/purchase_orders', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    }
+  });
+
+  // Calculations
+  const receivables = exportOrders
+    .filter((o: any) => o.payment_status === 'unpaid' || o.payment_status === 'pending')
+    .reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0);
+
+  const payables = purchaseOrders
+    .filter((po: any) => po.payment_status === 'unpaid' || po.payment_status === 'pending')
+    .reduce((sum: number, po: any) => sum + (Number(po.total_amount || po.total) || 0), 0);
+
+  const cashIn = exportOrders
+    .filter((o: any) => o.payment_status === 'paid')
+    .reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0);
+
+  const cashOut = purchaseOrders
+    .filter((po: any) => po.payment_status === 'paid')
+    .reduce((sum: number, po: any) => sum + (Number(po.total_amount || po.total) || 0), 0);
+
+  const cashOnHand = cashIn - cashOut;
+
+  // Chart data (Revenue by month)
+  const chartSales = (() => {
+    const monthlyData: Record<string, { month: string; revenue: number }> = {};
+    exportOrders.forEach((o: any) => {
+      const date = new Date(o.created_at || o.order_date || Date.now());
+      const monthKey = date.toLocaleString('default', { month: 'short' });
+      if (!monthlyData[monthKey]) monthlyData[monthKey] = { month: monthKey, revenue: 0 };
+      monthlyData[monthKey].revenue += Number(o.total_amount) || 0;
+    });
+    return Object.values(monthlyData).slice(-6);
+  })();
 
   return (
     <div>
       <PageHeader title="Financial Overview" description="Cash position, receivables and currency exposure" breadcrumbs={[{ label: "Dashboards" }, { label: "Financial" }]} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Receivables" value="$0K" delta={{ value: "Live", positive: false }} />
-        <StatCard label="Payables" value="$0K" delta={{ value: "Live", positive: true }} />
-        <StatCard label="Cash on Hand" value="$0K" delta={{ value: "Live", positive: true }} />
-        <StatCard label="Overdue" value="$0K" delta={{ value: "Live", positive: false }} />
+        <StatCard label="Receivables" value={`$${(receivables/1000).toFixed(1)}K`} delta={{ value: "Live", positive: true }} hint="from VPS" />
+        <StatCard label="Payables" value={`$${(payables/1000).toFixed(1)}K`} delta={{ value: "Live", positive: false }} hint="from VPS" />
+        <StatCard label="Cash on Hand" value={`$${(cashOnHand/1000).toFixed(1)}K`} delta={{ value: "Live", positive: cashOnHand >= 0 }} hint="from VPS" />
+        <StatCard label="Overdue" value="$0K" delta={{ value: "Pending Logic", positive: false }} />
       </div>
       <Section title="Cash Flow">
         <div className="h-72 flex items-center justify-center">

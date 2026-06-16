@@ -24,11 +24,20 @@ type ProfileRow = {
 const ROLE_OPTIONS = [
   { slug: "admin", name: "Admin" },
   { slug: "manager", name: "Manager" },
+  { slug: "secretary", name: "Secretary" },
+  { slug: "hr", name: "HR" },
+  { slug: "accounts", name: "Accounts" },
+  { slug: "operations", name: "Operations" },
+  { slug: "procurement", name: "Procurement" },
+  { slug: "qc", name: "QC" },
   { slug: "bde", name: "BDE" },
+  { slug: "bd", name: "BD" },
+  { slug: "marketing", name: "Marketing" },
+  { slug: "digital_marketing", name: "Digital Marketing" },
   { slug: "software_dev", name: "Software Dev" },
   { slug: "net_security", name: "Net & Security" },
   { slug: "data_analyst", name: "Data Analyst" },
-  { slug: "secretary", name: "Secretary" },
+  { slug: "employee", name: "Employee" },
 ];
 
 export default function Approvals() {

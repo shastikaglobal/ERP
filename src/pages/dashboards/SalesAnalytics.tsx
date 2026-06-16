@@ -32,22 +32,23 @@ export default function SalesAnalytics() {
     gcTime: 5 * 60 * 1000
   });
 
-  // Query 2: Export Orders
+  // Query 2: Export Orders (From VPS backend)
   const { data: orders = [] } = useQuery({
     queryKey: ['sales_analytics_orders', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('export_orders')
-        .select('id, order_number, customer_name, customer_country, total_amount, order_date, created_at, status')
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(1000);
-      if (error) {
-        console.error('Error fetching orders:', error);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch export orders from VPS");
+        const data = await res.json();
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching orders from VPS:', error);
         return [];
       }
-      return data || [];
     },
     enabled: !!profile?.company_id,
     staleTime: 30000,
@@ -82,19 +83,19 @@ export default function SalesAnalytics() {
     const monthlyData: Record<string, { month: string; orders: number; revenue: number }> = {};
     
     orders.forEach(order => {
-      const date = new Date(order.created_at);
+      const date = new Date(order.created_at || order.order_date || Date.now());
       const monthKey = format(date, 'MMM');
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { month: monthKey, orders: 0, revenue: 0 };
       }
       monthlyData[monthKey].orders += 1;
-      monthlyData[monthKey].revenue += order.total_amount || 0;
+      monthlyData[monthKey].revenue += Number(order.total_amount) || 0;
     });
 
     return Object.values(monthlyData).slice(-6);
   })();
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
   
   const totalLeads = leads.length;
   const wonLeads = leads.filter(l => l.stage === 'closed_won').length;
