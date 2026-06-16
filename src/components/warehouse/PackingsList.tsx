@@ -103,7 +103,7 @@ export function PackingsList({
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4" style={{ position: 'relative', zIndex: 9999, pointerEvents: 'auto' }}>
             {/* Filters */}
             <div className="flex gap-4 flex-col md:flex-row">
                 <div className="flex-1 relative">
@@ -142,7 +142,7 @@ export function PackingsList({
                     </div>
                 </div>
             ) : (
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-hidden" style={{ pointerEvents: 'auto' }}>
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50">
