@@ -3,10 +3,18 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
+const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 // GET /api/leads - Fetch all leads
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM leads WHERE is_deleted = false ORDER BY created_at DESC');
+    const companyId = req.query.company_id;
+    if (companyId) {
+      const { rows } = await db.query('SELECT * FROM leads WHERE company_id = $1 AND is_deleted IS NOT TRUE ORDER BY created_at DESC', [companyId]);
+      return res.json(rows);
+    }
+
+    const { rows } = await db.query('SELECT * FROM leads WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get leads):", err);
@@ -14,11 +22,104 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/leads/converted - Fetch converted leads for client acquisition view
+router.get('/converted', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.query.company_id;
+    if (!companyId) {
+      return res.status(400).json({ error: "company_id query parameter is required" });
+    }
+    // Validate company_id format to avoid passing invalid UUIDs to Postgres
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(companyId)) {
+      console.log(`[DEBUG] Invalid company_id format received: ${companyId}`);
+      return res.status(400).json({ error: "Invalid company_id format" });
+    }
+
+    console.log(`[DEBUG] GET /api/leads/converted - company_id=${companyId} user=${req.user?.sub || 'anon'} headers=${JSON.stringify(req.headers ? {authorization: req.headers.authorization} : {})}`);
+
+    const { rows } = await db.query(`
+      SELECT
+        l.id,
+        COALESCE(l.company_name, NULLIF(TRIM(l.contact_name), ''), 'Unknown') AS client_name,
+        COALESCE(l.country, 'Unknown') AS country,
+        COALESCE(ac.channel_name, 'Direct / Unknown') AS source,
+        COALESCE(l.assigned_to, 'Unassigned') AS assigned_bde,
+        COALESCE(l.converted_at, l.created_at) AS acquisition_date,
+        COALESCE(l.interested_product, l.product_type, 'N/A') AS product_interested,
+        0 AS deal_value,
+        l.stage AS status
+      FROM leads l
+      LEFT JOIN acquisition_channels ac
+        ON ac.id = l.source_id
+      WHERE l.company_id = $1
+        AND l.is_deleted IS NOT TRUE
+        AND (
+          l.stage ILIKE '%client%'
+          OR l.stage ILIKE '%convert%'
+          OR l.stage ILIKE '%won%'
+        )
+      ORDER BY l.created_at DESC
+    `, [companyId]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("DB Error (get converted leads):", err);
+    if (err && err.stack) console.error(err.stack);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Debug endpoint - bypasses auth to help local development/diagnostics only
+router.get('/converted/debug', async (req, res) => {
+  try {
+    const companyId = req.query.company_id;
+    if (!companyId) return res.status(400).json({ error: 'company_id required' });
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(companyId)) return res.status(400).json({ error: 'Invalid company_id format' });
+
+    console.log(`[DEBUG] GET /api/leads/converted/debug - company_id=${companyId}`);
+
+    const { rows } = await db.query(`
+      SELECT
+        l.id,
+        COALESCE(l.company_name, NULLIF(TRIM(l.contact_name), ''), 'Unknown') AS client_name,
+        COALESCE(l.country, 'Unknown') AS country,
+        COALESCE(ac.channel_name, 'Direct / Unknown') AS source,
+        COALESCE(l.assigned_to, 'Unassigned') AS assigned_bde,
+        COALESCE(l.converted_at, l.created_at) AS acquisition_date,
+        COALESCE(l.interested_product, l.product_type, 'N/A') AS product_interested,
+        0 AS deal_value,
+        l.stage AS status
+      FROM leads l
+      LEFT JOIN acquisition_channels ac ON ac.id = l.source_id
+      WHERE l.company_id = $1
+        AND l.is_deleted IS NOT TRUE
+        AND (
+          l.stage ILIKE '%client%'
+          OR l.stage ILIKE '%convert%'
+          OR l.stage ILIKE '%won%'
+        )
+      ORDER BY l.created_at DESC
+    `, [companyId]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('DB Error (debug converted leads):', err);
+    if (err && err.stack) console.error(err.stack);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // GET /api/leads/:id - Fetch single lead
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND is_deleted = false', [id]);
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({ error: "Invalid lead id" });
+    }
+
+    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND is_deleted IS NOT TRUE', [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -121,15 +222,25 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/leads/meta/sources - Fetch acquisition channels
+// GET /api/leads/meta/sources - Fetch acquisition channels (only those with leads)
 router.get('/meta/sources', requireAuth, async (req, res) => {
   try {
     const companyId = req.query.company_id;
     if (companyId) {
-      const { rows } = await db.query('SELECT * FROM acquisition_channels WHERE company_id = $1 ORDER BY channel_name', [companyId]);
+      const { rows } = await db.query(`
+        SELECT DISTINCT ac.* FROM acquisition_channels ac
+        INNER JOIN leads l ON ac.id = l.source_id
+        WHERE ac.company_id = $1 AND ac.is_deleted IS NOT TRUE AND l.is_deleted IS NOT TRUE
+        ORDER BY ac.channel_name
+      `, [companyId]);
       return res.json(rows);
     }
-    const { rows } = await db.query('SELECT * FROM acquisition_channels ORDER BY channel_name');
+    const { rows } = await db.query(`
+      SELECT DISTINCT ac.* FROM acquisition_channels ac
+      INNER JOIN leads l ON ac.id = l.source_id
+      WHERE ac.is_deleted IS NOT TRUE AND l.is_deleted IS NOT TRUE
+      ORDER BY ac.channel_name
+    `);
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get sources):", err);
@@ -155,6 +266,18 @@ router.post('/meta/sources', requireAuth, async (req, res) => {
     res.status(201).json(Array.isArray(req.body) ? results : results[0]);
   } catch (err) {
     console.error("DB Error (post sources):", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// DELETE /api/leads/meta/sources/:id - Delete acquisition channel (soft delete)
+router.delete('/meta/sources/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('UPDATE acquisition_channels SET is_deleted = true WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DB Error (delete source):", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

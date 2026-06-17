@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --max-old-space-size=4096 node_modules/vite/bin/vite.js",
+    "dev:backend": "cd adms-sync && node server.js",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

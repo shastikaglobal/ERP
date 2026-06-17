@@ -10,7 +10,7 @@ router.get('/', requireAuth, async (req, res) => {
       `SELECT po.*, json_build_object('full_name', f.full_name) as farmers 
        FROM purchase_orders po
        LEFT JOIN farmers f ON po.farmer_id = f.id
-       WHERE (po.is_deleted = false OR po.is_deleted IS NULL)
+       WHERE po.is_deleted IS NOT TRUE
        ORDER BY po.order_date DESC`
     );
     res.json(rows);

@@ -9,7 +9,7 @@ router.get('/vehicles', requireAuth, async (req, res) => {
         const query = `
             SELECT id, vehicle_number, vehicle_type 
             FROM vehicles 
-            WHERE is_active = true 
+            WHERE is_active = true AND is_deleted IS NOT TRUE
             ORDER BY vehicle_number ASC
         `;
         const { rows } = await db.query(query);
@@ -26,7 +26,7 @@ router.get('/drivers', requireAuth, async (req, res) => {
         const query = `
             SELECT id, name, license_number 
             FROM drivers 
-            WHERE is_active = true 
+            WHERE is_active = true AND is_deleted IS NOT TRUE
             ORDER BY name ASC
         `;
         const { rows } = await db.query(query);

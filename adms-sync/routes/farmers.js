@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM farmers WHERE is_deleted = false ORDER BY created_at DESC`
+      `SELECT * FROM farmers WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC`
     );
     res.json(rows);
   } catch (err) {

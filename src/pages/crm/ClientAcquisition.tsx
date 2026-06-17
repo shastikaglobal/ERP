@@ -5,42 +5,23 @@ import Card from "@/components/Card";
 import { UserPlus, Star, BarChart3, TrendingUp, Search, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-
-const DEFAULT_ACQUISITION_CHANNELS = [
-  "Social Media (Instagram, Facebook)",
-  "LinkedIn",
-  "Instagram",
-  "Google",
-  "Chrome / Direct Browsing",
-  "Trade Fair / Exhibition",
-  "Referral",
-  "Cold Call / Direct Outreach",
-  "Website / Online Inquiry",
-  "WhatsApp Marketing",
-  "Agent / Broker",
-];
 
 export default function ClientAcquisition() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [sources, setSources] = useState<any[]>([]);
+  // channels are fetched locally in fetchData for resolving source names
   const [loading, setLoading] = useState(true);
 
-  // New Channel State
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newChannelName, setNewChannelName] = useState("");
-  const [newChannelCost, setNewChannelCost] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // New Channel State (removed modal UI)
 
   const [totalLeads, setTotalLeads] = useState(0);
   const [convertedClients, setConvertedClients] = useState(0);
   const [avgAcquisitionRate, setAvgAcquisitionRate] = useState("0%");
   const [totalPipeValue, setTotalPipeValue] = useState("$0");
+  const [convertedList, setConvertedList] = useState<any[]>([]);
+
 
   useEffect(() => {
     fetchData();
@@ -54,17 +35,14 @@ export default function ClientAcquisition() {
           fetchData();
         }
       )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'acquisition_channels' },
-        () => {
-          fetchData();
-        }
-      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        if (channel) supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('Error removing supabase channel:', err);
+      }
     };
   }, []);
 
@@ -85,39 +63,11 @@ export default function ClientAcquisition() {
     return profileData.company_id || null;
   }
 
-  async function ensureDefaultChannels(companyId: string, currentChannels: any[]) {
-    const existingNames = new Set(
-      currentChannels.map(ch => String(ch.channel_name || '').trim().toLowerCase())
-    );
-
-    const missingChannels = DEFAULT_ACQUISITION_CHANNELS
-      .filter(name => !existingNames.has(name.trim().toLowerCase()))
-      .map(name => ({
-        company_id: companyId,
-        channel_name: name,
-        avg_lead_cost: 0,
-      }));
-
-    if (missingChannels.length === 0) return;
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    await fetch('/api/leads/meta/sources', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(missingChannels)
-    });
-  }
-
   async function fetchData() {
     setLoading(true);
 
     const companyId = await getCompanyId();
     if (!companyId) {
-      setSources([]);
       setLoading(false);
       return;
     }
@@ -126,99 +76,42 @@ export default function ClientAcquisition() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No active session");
 
-      const [channelsRes, leadsRes] = await Promise.all([
-        fetch(`/api/leads/meta/sources?company_id=${companyId}`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        }),
-        fetch('/api/leads', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        })
+      const authHeader = { 'Authorization': `Bearer ${session.access_token}` };
+      const [leadsRes, convertedRes] = await Promise.all([
+        fetch(`/api/leads?company_id=${companyId}`, { headers: authHeader }),
+        fetch(`/api/leads/converted?company_id=${companyId}`, { headers: authHeader })
       ]);
 
-      if (!channelsRes.ok) throw new Error("Failed to fetch channels");
-      if (!leadsRes.ok) throw new Error("Failed to fetch leads");
+      if (!leadsRes.ok) {
+        const errorText = await leadsRes.text();
+        throw new Error(`Failed to fetch leads (${leadsRes.status}): ${errorText}`);
+      }
+      if (!convertedRes.ok) {
+        const errorText = await convertedRes.text();
+        throw new Error(`Failed to fetch converted clients (${convertedRes.status}): ${errorText}`);
+      }
 
-      const channels = await channelsRes.json();
       const leads = await leadsRes.json();
+      const converted = await convertedRes.json();
 
-      if (channels) {
-        await ensureDefaultChannels(companyId, channels);
+      const tLeads = leads.length;
+      const tClients = converted.length;
+      const tRevenue = converted.reduce((sum: number, item: any) => sum + Number(item.deal_value || 0), 0);
+
+      setTotalLeads(tLeads);
+      setConvertedClients(tClients);
+
+      const overallRate = tLeads > 0 ? ((tClients / tLeads) * 100).toFixed(1) + "%" : "0.0%";
+      setAvgAcquisitionRate(overallRate);
+
+      let formattedRev = `$${tRevenue.toLocaleString()}`;
+      if (tRevenue >= 1000000) {
+        formattedRev = `$${(tRevenue / 1000000).toFixed(2)}M`;
+      } else if (tRevenue >= 1000) {
+        formattedRev = `$${(tRevenue / 1000).toFixed(1)}K`;
       }
-
-      // Fetch all channels again after ensuring defaults
-      const allChannelsRes = await fetch(`/api/leads/meta/sources?company_id=${companyId}`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      if (!allChannelsRes.ok) throw new Error("Failed to fetch updated channels");
-      const allChannels = await allChannelsRes.json();
-
-      if (allChannels && leads) {
-        const isClient = (stage: string) => {
-          if (!stage) return false;
-          const s = stage.toLowerCase();
-          return ['won', 'client', 'converted', 'client successfully acquired'].some(keyword => s.includes(keyword));
-        };
-
-        const tLeads = leads.length;
-        const tClients = leads.filter((l: any) => isClient(l.stage)).length;
-        const tRevenue = tClients * 12000;
-
-        const processed = allChannels.map((ch: any) => {
-          const chLeads = leads.filter((l: any) => l.source_id === ch.id);
-          const chClients = chLeads.filter((l: any) => isClient(l.stage));
-
-          const leadsCount = chLeads.length;
-          const clientsCount = chClients.length;
-          const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
-
-          const revenue = clientsCount * 12000;
-
-          return {
-            id: ch.id,
-            channel: ch.channel_name,
-            leads: leadsCount,
-            clients: clientsCount,
-            cost: `$${parseFloat(ch.avg_lead_cost || 0).toFixed(2)}`,
-            rate: rate,
-            value: `$${revenue.toLocaleString()}`
-          };
-        });
-
-        // Add "Direct / Unknown" row for leads without a source
-        const unknownLeads = leads.filter((l: any) => !l.source_id);
-        if (unknownLeads.length > 0) {
-          const unknownClients = unknownLeads.filter((l: any) => isClient(l.stage));
-          const leadsCount = unknownLeads.length;
-          const clientsCount = unknownClients.length;
-          const rate = leadsCount > 0 ? ((clientsCount / leadsCount) * 100).toFixed(1) + "%" : "0.0%";
-          const revenue = clientsCount * 12000;
-          
-          processed.push({
-            id: 'unknown-source',
-            channel: 'Direct / Unknown',
-            leads: leadsCount,
-            clients: clientsCount,
-            cost: `$0.00`,
-            rate: rate,
-            value: `$${revenue.toLocaleString()}`
-          });
-        }
-
-        setSources(processed);
-        setTotalLeads(tLeads);
-        setConvertedClients(tClients);
-
-        const overallRate = tLeads > 0 ? ((tClients / tLeads) * 100).toFixed(1) + "%" : "0.0%";
-        setAvgAcquisitionRate(overallRate);
-
-        let formattedRev = `$${tRevenue.toLocaleString()}`;
-        if (tRevenue >= 1000000) {
-          formattedRev = `$${(tRevenue / 1000000).toFixed(2)}M`;
-        } else if (tRevenue >= 1000) {
-          formattedRev = `$${(tRevenue / 1000).toFixed(1)}K`;
-        }
-        setTotalPipeValue(formattedRev);
-      }
+      setTotalPipeValue(formattedRev);
+      setConvertedList(converted);
     } catch (err: any) {
       console.error("Fetch client acquisition data error:", err);
       toast.error(err.message || "Failed to load acquisition data");
@@ -227,44 +120,7 @@ export default function ClientAcquisition() {
     }
   };
 
-  const handleAddChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newChannelName) return;
-    setSubmitting(true);
-
-    try {
-      const companyId = await getCompanyId();
-      if (!companyId) throw new Error("Could not find company ID");
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-
-      const res = await fetch('/api/leads/meta/sources', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          company_id: companyId,
-          channel_name: newChannelName,
-          avg_lead_cost: parseFloat(newChannelCost) || 0,
-        })
-      });
-
-      if (!res.ok) throw new Error("Failed to add channel");
-
-      toast.success("Channel added successfully!");
-      setIsDialogOpen(false);
-      setNewChannelName("");
-      setNewChannelCost("");
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to add channel");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // channel deletion UI removed
 
   return (
     <div className="space-y-6 animate-fade-in text-foreground">
@@ -273,32 +129,6 @@ export default function ClientAcquisition() {
         sub="Trace customer generation channels, review marketing ROI, and analyze channel conversion ratios"
         actions={
           <div className="flex gap-2">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="border-border/50 shadow-sm">
-                  <UserPlus className="h-4 w-4 mr-1.5" /> New Channel
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border">
-                <DialogHeader>
-                  <DialogTitle className="text-foreground">Add Acquisition Channel</DialogTitle>
-                  <DialogDescription className="text-muted-foreground/60 text-xs">Track a new marketing channel.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddChannel} className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-foreground">Channel Name *</Label>
-                    <Input required value={newChannelName} onChange={e => setNewChannelName(e.target.value)} placeholder="e.g. Google Ads" className="bg-background border-input" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-foreground">Average Lead Cost ($) *</Label>
-                    <Input required type="number" step="0.01" value={newChannelCost} onChange={e => setNewChannelCost(e.target.value)} placeholder="0.00" className="bg-background border-input" />
-                  </div>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={submitting}>
-                    {submitting ? "Saving..." : "Save Channel"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
             <Button size="sm" className="btn-gold shadow-md" onClick={() => navigate('/crm/reports')}>
               <BarChart3 className="h-4 w-4 mr-1.5" /> Funnel Reports
             </Button>
@@ -346,38 +176,44 @@ export default function ClientAcquisition() {
         </Card>
       </div>
 
+      {/* Acquisition Channels Register removed per request */}
+
       <Card className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-foreground">Acquisition Channels Register</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Cost efficiency and inquiry volume analysis across all sales routes</p>
+          <h3 className="text-lg font-bold text-foreground">Converted / Acquired Clients</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Detailed list of converted clients and deal details</p>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-neutral-900/60 text-muted-foreground font-semibold border-b border-border">
-                <th className="p-3">Inbound Channel</th>
-                <th className="p-3">Leads Captured</th>
-                <th className="p-3">Converted Clients</th>
-                <th className="p-3">Avg Lead Cost</th>
-                <th className="p-3">Conversion Rate</th>
-                <th className="p-3 font-semibold">Total Revenue Acquired</th>
+                <th className="p-3">Client Name</th>
+                <th className="p-3">Country</th>
+                <th className="p-3">Inquiry Source</th>
+                <th className="p-3">Assigned BDE</th>
+                <th className="p-3">Acquisition Date</th>
+                <th className="p-3">Product Interested</th>
+                <th className="p-3">Deal Value</th>
+                <th className="p-3">Conversion Status</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Loading channels...</td></tr>
-              ) : sources.length === 0 ? (
-                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No channels found.</td></tr>
+                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Loading clients...</td></tr>
+              ) : convertedList.length === 0 ? (
+                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">No converted clients found.</td></tr>
               ) : (
-                sources.map((item, i) => (
-                  <tr key={item.id || i} className="border-b border-border/40 hover:bg-neutral-900/30 transition-colors">
-                    <td className="p-3 font-semibold text-foreground">{item.channel}</td>
-                    <td className="p-3 font-mono text-muted-foreground">{item.leads}</td>
-                    <td className="p-3 font-mono text-muted-foreground">{item.clients}</td>
-                    <td className="p-3 font-mono text-muted-foreground">{item.cost}</td>
-                    <td className="p-3 font-mono text-primary font-semibold">{item.rate}</td>
-                    <td className="p-3 font-mono text-emerald-500 font-bold">{item.value}</td>
+                convertedList.map((c, idx) => (
+                  <tr key={c.id || idx} className="border-b border-border/40 hover:bg-neutral-900/30 transition-colors">
+                    <td className="p-3 font-semibold text-foreground">{c.client_name}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{c.country}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{c.source}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{c.assigned_bde}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{c.acquisition_date ? new Date(c.acquisition_date).toLocaleDateString() : '-'}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{c.product_interested}</td>
+                    <td className="p-3 font-mono text-emerald-500 font-bold">{`$${(c.deal_value || 0).toLocaleString()}`}</td>
+                    <td className="p-3 font-mono text-primary font-semibold">{c.status}</td>
                   </tr>
                 ))
               )}

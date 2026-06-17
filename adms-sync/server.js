@@ -115,6 +115,47 @@ app.use('/api/security', securityRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/purchase_orders', purchaseOrdersRoutes);
 
+// Temporary top-level debug endpoint to fetch converted leads without router/auth issues
+app.get('/api/leads/converted/debug2', async (req, res) => {
+  try {
+    const companyId = req.query.company_id;
+    if (!companyId) return res.status(400).json({ error: 'company_id required' });
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(companyId)) return res.status(400).json({ error: 'Invalid company_id format' });
+
+    console.log(`[DEBUG] /api/leads/converted/debug2 - company_id=${companyId}`);
+
+    const q = `
+      SELECT
+        l.id,
+        COALESCE(l.company_name, NULLIF(TRIM(l.contact_name), ''), 'Unknown') AS client_name,
+        COALESCE(l.country, 'Unknown') AS country,
+        COALESCE(ac.channel_name, 'Direct / Unknown') AS source,
+        COALESCE(l.assigned_to, 'Unassigned') AS assigned_bde,
+        COALESCE(l.converted_at, l.created_at) AS acquisition_date,
+        COALESCE(l.interested_product, l.product_type, 'N/A') AS product_interested,
+        0 AS deal_value,
+        l.stage AS status
+      FROM leads l
+      LEFT JOIN acquisition_channels ac ON ac.id = l.source_id
+      WHERE l.company_id = $1
+        AND l.is_deleted IS NOT TRUE
+        AND (
+          l.stage ILIKE '%client%'
+          OR l.stage ILIKE '%convert%'
+          OR l.stage ILIKE '%won%'
+        )
+      ORDER BY l.created_at DESC
+    `;
+
+    const { rows } = await db.query(q, [companyId]);
+    res.json(rows);
+  } catch (err) {
+    console.error('DB Error (debug2 converted leads):', err);
+    if (err && err.stack) console.error(err.stack);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 console.log("🚀 Starting ADMS Sync Server...");
 console.log(`🔗 Supabase Target URL: ${SUPABASE_URL}`);

@@ -13,7 +13,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
 
     // 1. Total Suppliers (Farmers)
     const supRes = await db.query(
-      `SELECT COUNT(*) as total FROM farmers WHERE company_id = $1 AND is_deleted = false`,
+      `SELECT COUNT(*) as total FROM farmers WHERE company_id = $1 AND is_deleted IS NOT TRUE`,
       [company_id]
     );
     const totalSuppliers = parseInt(supRes.rows[0].total, 10);
@@ -23,7 +23,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
       `SELECT po.id, po.status, po.total, po.order_date, f.full_name as supplier_name 
        FROM purchase_orders po
        LEFT JOIN farmers f ON po.farmer_id = f.id
-       WHERE po.company_id = $1 AND po.is_deleted = false`,
+       WHERE po.company_id = $1 AND po.is_deleted IS NOT TRUE`,
       [company_id]
     );
 

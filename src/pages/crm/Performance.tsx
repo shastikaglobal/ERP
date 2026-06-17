@@ -40,7 +40,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import {
@@ -458,8 +458,7 @@ export default function Performance() {
         tableRows.push(["No data available", "", "", "", "", "", ""]);
       }
 
-      // @ts-ignore
-      doc.autoTable({
+      autoTable(doc, {
         startY: headerHeight,
         head: [tableHeaders],
         body: tableRows,
