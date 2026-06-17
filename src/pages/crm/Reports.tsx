@@ -759,7 +759,7 @@ export default function Reports() {
       {/* HEADER SECTION */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-2 border-b border-white/5">
         <SectionHeader
-          title="Executive and Activities"
+          title="Executive and Daily Report"
           sub="Official dashboard for operational monitoring and targets verification"
         />
         <div className="flex items-center gap-3">
@@ -810,7 +810,7 @@ export default function Reports() {
                 activeTab === "activities" ? "bg-[#c8a84b] text-black" : "text-muted-foreground hover:text-white"
               )}
             >
-              Activities
+              Daily Report
             </button>
           </div>
         </div>
@@ -877,7 +877,7 @@ export default function Reports() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
               <CalendarIcon className="h-3 w-3 text-[#c8a84b]" />
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Activities Date</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Daily Report Date</span>
             </div>
             <Popover>
               <PopoverTrigger asChild>

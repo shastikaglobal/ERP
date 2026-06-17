@@ -38,7 +38,7 @@ export const navGroups: NavGroup[] = [
     title: "Dashboards",
     icon: LayoutDashboard,
     items: [
-      { title: "Executive & Activities", url: "/dashboards/executive", icon: LayoutDashboard },
+      { title: "Executive & Daily Report", url: "/dashboards/executive", icon: LayoutDashboard },
       { title: "Sales Analytics", url: "/dashboards/sales", icon: TrendingUp },
       { title: "Shipment Analytics", url: "/dashboards/shipments", icon: Truck },
       { title: "Financial Overview", url: "/dashboards/financial", icon: DollarSign },
