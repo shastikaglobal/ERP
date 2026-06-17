@@ -23,14 +23,21 @@ export default function PackingLists() {
       
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("packing_protocols")
-          .select("*")
-          .eq("company_id", profile.company_id)
-          .neq("is_deleted", true)
-          .order("created_at", { ascending: false });
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
 
-        if (error) throw error;
+        const res = await fetch("http://localhost:8082/api/warehouse/packing_protocols", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch from VPS");
+        
+        let data = await res.json();
+        
+        // Filter by company_id and sort descending by created_at
+        data = data.filter((pl: any) => pl.company_id === profile.company_id);
+        data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
         setPackingLists(data || []);
       } catch (err) {
         console.error("PL load error:", err);
@@ -46,16 +53,16 @@ export default function PackingLists() {
     if (!confirm("Are you sure you want to delete this packing list?")) return;
 
     try {
-      const { error } = await supabase
-        .from("packing_protocols")
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: null,
-        })
-        .eq("id", id);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
 
-      if (error) throw error;
+      const res = await fetch(`http://localhost:8082/api/warehouse/packing_protocols/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+      
       toast.success("Packing list hidden successfully");
       setPackingLists(prev => prev.filter(pl => pl.id !== id));
     } catch (err: any) {

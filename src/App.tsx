@@ -145,6 +145,7 @@ import Invoices from "./pages/documents/Invoices";
 import CommercialInvoices from "./pages/documents/CommercialInvoices";
 import PackingLists from "./pages/documents/PackingLists";
 import Certificates from "./pages/documents/Certificates";
+import CreateCertificate from "./pages/documents/CreateCertificate";
 import DocumentViewer from "./pages/documents/DocumentViewer";
 import InvoiceReport from "./pages/documents/InvoiceReport";
 import CreateInvoice from "./pages/documents/CreateInvoice";
@@ -370,6 +371,7 @@ const App = () => (
               <Route path="/documents/packing-lists" element={<PackingLists />} />
               <Route path="/documents/commercial-invoices" element={<CommercialInvoices />} />
               <Route path="/documents/certificates" element={<Certificates />} />
+              <Route path="/certificates/create" element={<CreateCertificate />} />
               <Route path="/documents/viewer" element={<DocumentViewer />} />
 
               {/* Payments */}

@@ -88,6 +88,7 @@ const permissionsRoutes = require('./routes/permissions');
 const securityRoutes = require('./routes/security');
 const procurementRoutes = require('./routes/procurement');
 const purchaseOrdersRoutes = require('./routes/purchase_orders');
+const documentsRoutes = require('./routes/documents');
 
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/employees', employeesRoutes);
@@ -114,6 +115,7 @@ app.use('/api/meta', metaRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/purchase_orders', purchaseOrdersRoutes);
+app.use('/api/documents', documentsRoutes);
 
 // Temporary top-level debug endpoint to fetch converted leads without router/auth issues
 app.get('/api/leads/converted/debug2', async (req, res) => {

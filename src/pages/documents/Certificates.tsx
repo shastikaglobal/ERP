@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Award, Loader2, Trash2, FileText, Package } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Certificates() {
+  const navigate = useNavigate();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,14 +17,46 @@ export default function Certificates() {
     const fetchCerts = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // 1. Fetch from Supabase (automated export orders)
+        const { data: supabaseData, error } = await supabase
           .from("export_orders")
           .select("*, export_shipments(*)")
           .neq("is_deleted", true)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setShipments(data || []);
+        
+        // 2. Fetch from VPS DB (standalone certificates)
+        let standaloneCerts = [];
+        try {
+          const res = await fetch('/api/documents/certificates', {
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          });
+          if (res.ok) {
+            standaloneCerts = await res.json();
+            // Map standalone format to match the card expectations
+            standaloneCerts = standaloneCerts.map((c: any) => ({
+              ...c,
+              order_number: c.ref_number,
+              customer_name: c.consignee_name,
+              customer_country: c.port_of_discharge?.split(',').pop()?.trim() || 'International',
+              product: c.product_name,
+              status: 'Completed',
+              isStandalone: true,
+            }));
+          }
+        } catch (e) {
+          console.error("Failed to fetch standalone certs:", e);
+        }
+
+        // 3. Combine and sort
+        const combined = [...(supabaseData || []), ...standaloneCerts].sort((a, b) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        setShipments(combined);
       } catch (err) {
         console.error("Cert load error:", err);
         toast.error("Failed to load certificates");
@@ -37,16 +71,28 @@ export default function Certificates() {
     if (!confirm("Are you sure you want to delete this certificate record?")) return;
 
     try {
-      const { error } = await supabase
-        .from("export_orders")
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: null,
-        })
-        .eq("id", id);
-
-      if (error) throw error;
+      const isStandalone = shipments.find(s => s.id === id)?.isStandalone;
+      
+      if (isStandalone) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/documents/certificates/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error("Failed to delete from database");
+      } else {
+        const { error } = await supabase
+          .from("export_orders")
+          .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString(),
+            deleted_by: null,
+          })
+          .eq("id", id);
+  
+        if (error) throw error;
+      }
+      
       toast.success("Certificate record hidden successfully");
       setShipments(prev => prev.filter(s => s.id !== id));
     } catch (err: any) {
@@ -69,13 +115,13 @@ export default function Certificates() {
       ) : shipments.length === 0 ? (
         <div className="text-center p-20 border-2 border-dashed border-primary/20 rounded-2xl bg-primary/5">
           <Award className="h-16 w-16 mx-auto text-primary/40 mb-4" />
-          <h3 className="text-xl font-bold text-primary mb-2">No Export Orders Found</h3>
+          <h3 className="text-xl font-bold text-primary mb-2">No Certificates of Origin Found</h3>
           <p className="text-muted-foreground max-w-md mx-auto mb-8">
-            Certificates of Origin are automatically generated for every Export Order. 
-            Create your first order to see it here!
+            You have not generated any Certificates of Origin yet.
+            Create your first certificate to see it here!
           </p>
-          <Button onClick={() => window.location.href = '/orders/create'}>
-            Create New Export Order
+          <Button onClick={() => navigate('/certificates/create')}>
+            Create New Certificate
           </Button>
         </div>
       ) : (

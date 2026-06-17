@@ -47,23 +47,70 @@ export default function CertificatePreview() {
           .eq("id", id)
           .maybeSingle();
 
-        if (orderErr) throw orderErr;
-        if (!orderOnly) throw new Error("Order or Shipment not found in database.");
+        if (orderOnly) {
+          console.log("Found as order");
+          // Create a mock shipment object for the UI
+          const mockShipment = {
+            customer_name: orderOnly.customer_name,
+            shipment_number: orderOnly.order_number?.replace('EXP', 'SHP') || 'TBD',
+            origin_port: 'CHENNAI, INDIA', // Default
+            destination_port: 'AS PER ORDER',
+            carrier: 'TBD',
+            export_orders: orderOnly,
+            export_containers: []
+          };
+          
+          setShipment(mockShipment);
+          await fetchExtraDetails(orderOnly);
+          return;
+        }
 
-        console.log("Found as order");
-        // Create a mock shipment object for the UI
-        const mockShipment = {
-          customer_name: orderOnly.customer_name,
-          shipment_number: orderOnly.order_number?.replace('EXP', 'SHP') || 'TBD',
-          origin_port: 'CHENNAI, INDIA', // Default
-          destination_port: 'AS PER ORDER',
-          carrier: 'TBD',
-          export_orders: orderOnly,
-          export_containers: []
-        };
+        // 3. Try finding as Standalone Certificate from VPS DB
+        console.log("Order not found, trying as standalone certificate...");
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/documents/certificates', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
         
-        setShipment(mockShipment);
-        await fetchExtraDetails(orderOnly);
+        if (res.ok) {
+          const standaloneCerts = await res.json();
+          const standalone = standaloneCerts.find((c: any) => c.id === id);
+          
+          if (standalone) {
+            console.log("Found as standalone certificate");
+            
+            // Map standalone format to the mock shipment format
+            const mockStandalone = {
+              customer_name: standalone.consignee_name,
+              shipment_number: standalone.ref_number,
+              origin_port: standalone.port_of_loading,
+              destination_port: standalone.port_of_discharge,
+              carrier: standalone.vessel,
+              export_orders: {
+                order_number: standalone.ref_number,
+                shipping_address: standalone.consignee_address,
+                customer_country: standalone.port_of_discharge?.split(',').pop()?.trim(),
+                product: standalone.product_name,
+                packing_details: standalone.packing_details,
+                hsn_code: standalone.hs_code,
+                quantity: standalone.quantity,
+                unit: standalone.unit,
+                gross_weight: standalone.gross_weight,
+                company_id: standalone.company_id,
+                created_by: standalone.created_by
+              },
+              export_containers: [],
+              isStandalone: true,
+              marks_and_nos: standalone.marks_and_nos // Special field for standalone
+            };
+            
+            setShipment(mockStandalone);
+            await fetchExtraDetails(mockStandalone.export_orders);
+            return;
+          }
+        }
+
+        throw new Error("Certificate not found in database.");
 
       } catch (err: any) {
         console.error("Report load error:", err);
@@ -243,10 +290,12 @@ export default function CertificatePreview() {
                 <tbody className="bg-transparent font-medium">
                   <tr>
                     <td className="p-4 text-center align-top border-r-[1px] border-black">01</td>
-                    <td className="p-4 align-top border-r-[1px] border-black text-[9px] font-mono">
-                      {shipment.shipment_number?.slice(-4)}<br/>
-                      PACKED IN<br/>
-                      BULK/BAGS
+                    <td className="p-4 align-top border-r-[1px] border-black text-[9px] font-mono whitespace-pre-wrap">
+                      {shipment.isStandalone ? shipment.marks_and_nos : (
+                        <>{shipment.shipment_number?.slice(-4)}<br/>
+                        PACKED IN<br/>
+                        BULK/BAGS</>
+                      )}
                     </td>
                     <td className="p-4 align-top border-r-[1px] border-black">
                       <div className="font-bold text-[11px] mb-2 uppercase">{order.product || 'Fresh Produce'}</div>
