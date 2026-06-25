@@ -3,19 +3,20 @@ import { Client } from 'ssh2';
 const conn = new Client();
 
 conn.on('ready', () => {
-  console.log('📡 SSH Connection Ready');
-  // First get the log files using pm2 show, then read the last 50 lines of the log file
-  conn.exec('cat /etc/nginx/sites-available/default', (err, stream) => {
+  console.log('SSH connection ready. Fetching PM2 logs...');
+  conn.exec('pm2 logs adms-sync --lines 50 --nostream', (err, stream) => {
     if (err) throw err;
     let stdout = '';
-    stream.on('close', (code, signal) => {
-      console.log('--- NGINX CONFIGURATION ---');
+    let stderr = '';
+    stream.on('close', (code) => {
+      console.log('--- VPS PM2 LOGS ---');
       console.log(stdout);
+      if (stderr) console.error('STDERR:', stderr);
       conn.end();
     }).on('data', (data) => {
       stdout += data.toString();
     }).stderr.on('data', (data) => {
-      console.log('STDERR:\n' + data);
+      stderr += data.toString();
     });
   });
 }).connect({

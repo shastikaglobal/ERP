@@ -4,18 +4,14 @@ const conn = new Client();
 
 conn.on('ready', () => {
   console.log('📡 SSH Connection Ready');
-  // First get the log files using pm2 show, then read the last 50 lines of the log file
-  conn.exec('cat /etc/nginx/sites-available/default', (err, stream) => {
+  conn.exec('df -h; echo "--- MEMORY ---"; free -m; echo "--- PM2 STATUS ---"; pm2 status', (err, stream) => {
     if (err) throw err;
-    let stdout = '';
     stream.on('close', (code, signal) => {
-      console.log('--- NGINX CONFIGURATION ---');
-      console.log(stdout);
       conn.end();
     }).on('data', (data) => {
-      stdout += data.toString();
+      console.log(data.toString());
     }).stderr.on('data', (data) => {
-      console.log('STDERR:\n' + data);
+      console.error(data.toString());
     });
   });
 }).connect({

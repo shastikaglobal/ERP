@@ -1,71 +1,121 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+function parseHashParams(hash: string) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  return {
+    access_token: params.get('access_token'),
+    refresh_token: params.get('refresh_token'),
+    error: params.get('error'),
+    error_description: params.get('error_description'),
+    type: params.get('type'),
+  };
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
   const [searchParams] = useSearchParams();
-  const { session } = useAuth();
 
   useEffect(() => {
-    const error = searchParams.get('error');
-    const error_description = searchParams.get('error_description');
-    const code = searchParams.get('code');
-    const hash = window.location.hash;
+    let active = true;
 
-    if (error) {
-      setErrorMsg(error_description || "Authentication failed.");
-      return;
-    }
+    async function handleAuth() {
+      try {
+        const error = searchParams.get('error');
+        const error_description = searchParams.get('error_description');
+        const code = searchParams.get('code');
+        const hash = window.location.hash;
+        const hashParams = parseHashParams(hash);
 
-    if (code) {
-      // Exchange the code for a session (PKCE flow)
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) {
-          setErrorMsg(error.message);
-        } else {
-          const isRecovery = hash.includes("type=recovery") || searchParams.get("type") === "recovery";
-          if (isRecovery) {
-            navigate("/auth?mode=reset", { replace: true });
+        // Check for error in query params or hash
+        const finalError = error || hashParams.error;
+        const finalErrorDesc = error_description || hashParams.error_description;
+
+        if (finalError) {
+          if (active) setErrorMsg(finalErrorDesc || "Authentication failed.");
+          return;
+        }
+
+        const isRecovery = searchParams.get("type") === "recovery" || hashParams.type === "recovery" || hash.includes("type=recovery");
+
+        if (isRecovery) {
+          console.log("[AuthCallback] Recovery flow detected. Clearing any existing session...");
+          // Explicitly sign out of any existing session (like admin) to avoid session cross-talk
+          await supabase.auth.signOut();
+          
+          if (code) {
+            console.log("[AuthCallback] Exchanging recovery code for session...");
+            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeError) throw exchangeError;
+            if (active) navigate("/auth?mode=reset", { replace: true });
+          } else if (hashParams.access_token && hashParams.refresh_token) {
+            console.log("[AuthCallback] Setting session from recovery hash tokens...");
+            const { error: setSessionError } = await supabase.auth.setSession({
+              access_token: hashParams.access_token,
+              refresh_token: hashParams.refresh_token,
+            });
+            if (setSessionError) throw setSessionError;
+            if (active) navigate("/auth?mode=reset", { replace: true });
           } else {
-            navigate("/employees/face-attendance?mode=checkin", { replace: true });
+            // Check if there is already a session that got set automatically
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              console.log("[AuthCallback] Active session found after signOut. Proceeding to reset.");
+              if (active) navigate("/auth?mode=reset", { replace: true });
+            } else {
+              throw new Error("No recovery code or tokens found in the URL. Please request a new password reset link.");
+            }
+          }
+        } else {
+          // Standard login callback flow
+          if (code) {
+            console.log("[AuthCallback] Exchanging login code for session...");
+            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeError) throw exchangeError;
+            if (active) navigate("/employees/face-attendance?mode=checkin", { replace: true });
+          } else {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              if (active) navigate("/employees/face-attendance?mode=checkin", { replace: true });
+            } else {
+              // Wait a tiny bit for auto-sign in if hash is present
+              setTimeout(async () => {
+                const { data: { session: retrySession } } = await supabase.auth.getSession();
+                if (retrySession && active) {
+                  navigate("/employees/face-attendance?mode=checkin", { replace: true });
+                } else if (active) {
+                  setErrorMsg("No active session found. Please sign in.");
+                }
+              }, 1000);
+            }
           }
         }
-      });
-    } else {
-      // Check for hash-based/implicit flow recovery fallback
-      const isRecovery = hash.includes("type=recovery") || searchParams.get("type") === "recovery";
-
-      if (isRecovery) {
-        if (session) {
-          navigate("/auth?mode=reset", { replace: true });
-        } else {
-          // Explicitly query session as fallback if context is not yet populated
-          supabase.auth.getSession().then(({ data }) => {
-            if (data.session) {
-              navigate("/auth?mode=reset", { replace: true });
-            }
-          });
-        }
-      } else if (session) {
-        navigate("/employees/face-attendance?mode=checkin", { replace: true });
+      } catch (err: any) {
+        console.error("[AuthCallback] Error during callback handling:", err);
+        if (active) setErrorMsg(err.message || "An unexpected error occurred during authentication.");
       }
     }
-  }, [session, navigate, searchParams]);
 
-  // Timeout just in case it hangs forever (10 seconds)
+    handleAuth();
+
+    return () => {
+      active = false;
+    };
+  }, [searchParams, navigate]);
+
+  // Timeout just in case it hangs forever (15 seconds)
   useEffect(() => {
-    if (session || errorMsg) return;
+    if (errorMsg) return;
     
     const timer = setTimeout(() => {
       setErrorMsg("Authentication timed out. The session could not be established. Please try again.");
-    }, 10000);
+    }, 15000);
 
     return () => clearTimeout(timer);
-  }, [session, errorMsg]);
+  }, [errorMsg]);
 
   if (errorMsg) {
     return (
