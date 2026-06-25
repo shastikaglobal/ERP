@@ -204,7 +204,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 
     // 2. Generate programmatic reset link using Supabase Admin Auth API
-    const redirectTo = `${req.headers.origin || 'http://localhost:8080'}/auth`;
+    const redirectTo = `${req.headers.origin || 'http://localhost:8080'}/auth/callback`;
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: employee.email,

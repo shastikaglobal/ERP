@@ -14,6 +14,7 @@ export default function AuthCallback() {
     const error = searchParams.get('error');
     const error_description = searchParams.get('error_description');
     const code = searchParams.get('code');
+    const hash = window.location.hash;
 
     if (error) {
       setErrorMsg(error_description || "Authentication failed.");
@@ -21,12 +22,12 @@ export default function AuthCallback() {
     }
 
     if (code) {
-      // Exchange the code for a session
+      // Exchange the code for a session (PKCE flow)
       supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) {
           setErrorMsg(error.message);
         } else {
-          const isRecovery = window.location.hash.includes("type=recovery") || searchParams.get("type") === "recovery";
+          const isRecovery = hash.includes("type=recovery") || searchParams.get("type") === "recovery";
           if (isRecovery) {
             navigate("/auth?mode=reset", { replace: true });
           } else {
@@ -34,11 +35,22 @@ export default function AuthCallback() {
           }
         }
       });
-    } else if (session) {
-      const isRecovery = window.location.hash.includes("type=recovery") || searchParams.get("type") === "recovery";
+    } else {
+      // Check for hash-based/implicit flow recovery fallback
+      const isRecovery = hash.includes("type=recovery") || searchParams.get("type") === "recovery";
+
       if (isRecovery) {
-        navigate("/auth?mode=reset", { replace: true });
-      } else {
+        if (session) {
+          navigate("/auth?mode=reset", { replace: true });
+        } else {
+          // Explicitly query session as fallback if context is not yet populated
+          supabase.auth.getSession().then(({ data }) => {
+            if (data.session) {
+              navigate("/auth?mode=reset", { replace: true });
+            }
+          });
+        }
+      } else if (session) {
         navigate("/employees/face-attendance?mode=checkin", { replace: true });
       }
     }
