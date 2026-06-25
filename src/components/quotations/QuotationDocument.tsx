@@ -368,7 +368,7 @@ export function QuotationDocument({ quotation, onClose }: QuotationDocumentProps
             {/* Tax */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px", fontSize: "9.5px", borderBottom: "1px solid #000" }}>
               <span style={{ fontWeight: 600 }}>Tax</span>
-              <span style={{ textAlign: "right", fontWeight: 600 }}>{taxAmount.toFixed(2)}%</span>
+              <span style={{ textAlign: "right", fontWeight: 600 }}>{taxAmount.toFixed(2)} {currencySym}</span>
             </div>
             {/* Total */}
             <div
