@@ -1,0 +1,7184 @@
+{
+  "vps": {
+    "tables": [
+      "AttLogs",
+      "acquisition_channels",
+      "active_sessions",
+      "activities",
+      "activity_logs",
+      "app_notifications",
+      "approval_audit_log",
+      "attendance",
+      "attendance_logs",
+      "audit_logs",
+      "available_stock",
+      "barcodes",
+      "batch_barcodes",
+      "bde_daily_reports",
+      "bills_of_lading",
+      "call_logs",
+      "certificates_of_origin",
+      "chart_of_accounts",
+      "client_acquisition",
+      "companies",
+      "container_loading",
+      "container_types",
+      "corporate_subnets",
+      "crm_audit_log",
+      "crm_tasks",
+      "currency_ledger",
+      "customers",
+      "damaged_stock",
+      "drivers",
+      "email_templates",
+      "emails",
+      "expiry_monitoring",
+      "export_containers",
+      "export_orders",
+      "export_ready_inventory",
+      "export_shipments",
+      "face_attendance",
+      "face_embeddings",
+      "face_scan_events",
+      "farmers",
+      "farms",
+      "finance",
+      "follow_ups",
+      "gst_transactions",
+      "hr&employees",
+      "inventory_batches",
+      "inventory_movements",
+      "inventory_stock_summary",
+      "invoices",
+      "journal_entries",
+      "lead_activities",
+      "leads",
+      "meeting_messages",
+      "meetings",
+      "overdue_payments",
+      "packaging_types",
+      "packing_lists",
+      "packing_protocols",
+      "parties",
+      "payments",
+      "permissions",
+      "products",
+      "profiles",
+      "purchase_order_items",
+      "purchase_orders",
+      "qc_inspections",
+      "quality_control",
+      "quotation_approval_logs",
+      "quotation_items",
+      "quotations",
+      "receiving_goods",
+      "reserved_stock",
+      "role_permissions",
+      "roles",
+      "sales_orders",
+      "screen_signals",
+      "security_settings",
+      "shift_config",
+      "shipment_batches",
+      "shipment_dispatches",
+      "shipment_events",
+      "shipping_carriers",
+      "shipping_ports",
+      "suppliers",
+      "system_settings",
+      "tasks",
+      "team_chat",
+      "tenants",
+      "user_credentials",
+      "user_permissions",
+      "user_preferences",
+      "user_roles",
+      "user_sessions",
+      "users",
+      "vehicles",
+      "view_revenue_by_country",
+      "view_sales_by_month",
+      "view_shipment_analytics",
+      "warehouse_locations",
+      "warehouse_stock",
+      "warehouses",
+      "zoho_accounts"
+    ],
+    "columnsMap": {
+      "AttLogs": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "EmployeeCode",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "LogDateTime",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "DownloadDateTime",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "Direction",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "DeviceId",
+          "type": "character varying",
+          "nullable": "YES"
+        }
+      ],
+      "acquisition_channels": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "channel_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "avg_lead_cost",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "active_sessions": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "profile_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "profile_role",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "login_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_active",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "device_info",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "activities": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "due_date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "activity_logs": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "actor_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "actor_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "entity",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "team",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "user_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "module",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "session_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "app_notifications": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_read",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "approval_audit_log": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "target_user_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "previous_status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "new_status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "role_slug",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "attendance": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "employee_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "check_in",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "check_out",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "confidence_score",
+          "type": "double precision",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "attendance_logs": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "employee_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "clock_in",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "clock_out",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_manual",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "confidence_score",
+          "type": "double precision",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_excused",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "audit_logs": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "action",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "resource_type",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "resource_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "resource_name",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "old_values",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "new_values",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "ip_address",
+          "type": "inet",
+          "nullable": "YES"
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "error_message",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "changes_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "team",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "available_stock": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "warehouse",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "available_quantity",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "minimum_level",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_updated",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "barcodes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "barcode_value",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "barcode_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "level",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "box_number",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "current_location",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "sku_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "carton_number_total",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "scan_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_scanned_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "batch_barcodes": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "level",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "box_number",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "current_location",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "sku_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "carton_number_total",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "scan_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_scanned_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "bde_daily_reports": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "bde_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "report_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_calls",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "calls_attended",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "attended_names",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "linkedin_messages",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "emails_sent",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "new_leads",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "not_attended_calls",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "report_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "metrics",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "bills_of_lading": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "bol_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "vessel_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "voyage_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_loading",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_discharge",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "date_of_issue",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "consignee",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notify_party",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "call_logs": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "company",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "call_type",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "call_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "call_time",
+          "type": "time without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "jitsi_room_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "certificates_of_origin": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "ref_number",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "consignee_name",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "consignee_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "vessel",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_loading",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_discharge",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "marks_and_nos",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_name",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_details",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "hs_code",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "gross_weight",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "chart_of_accounts": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "group",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "type",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "balance",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "gst",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "client_acquisition": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "client_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_bde",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "inquiry_source",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "acquisition_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_interested",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "deal_value",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "workflow_stage",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "companies": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "base_currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "plan",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "invoice_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quotation_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_host",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_port",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_user",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_pass",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "from_email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "imap_host",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "imap_port",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "signature_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "api_key",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "container_loading": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "container_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "seal_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "loading_date",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "stuffing_details",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "weight_verification",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "container_image_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "container_types": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "corporate_subnets": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "ip_cidr",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "crm_audit_log": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "user_email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "record_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "crm_tasks": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "task_number",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "due_date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_to",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "currency_ledger": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "transaction_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "party_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reference_no",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "exchange_rate",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "amount_inr",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "customers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "crops",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "satisfaction_notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "relationship_status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "complaints_notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "feedback_records",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "repeat_order_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "repeat_business_alert",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "business_notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_activity_date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "satisfaction_score",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "farmer_id",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "damaged_stock": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reported_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "reported_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "damage_reason",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "damage_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "damage_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "estimated_loss",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "action_taken",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "drivers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "license_number",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "driver_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "email_templates": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "emails": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "zoho_message_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "from_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "to_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "body_html",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "body_text",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_read",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "folder",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "account_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "error_message",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "attachments",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "cc_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "bcc_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_starred",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "expiry_monitoring": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "expiry_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "manufacture_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "export_containers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "container_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "container_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "seal_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "weight_kg",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "export_orders": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "order_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "customer_email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer_country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit_price",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "total_amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "expected_delivery",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipping_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "hsn_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_details",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_terms",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "incoterms",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer_gst",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer_phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_weight",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "gross_weight",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "mode_of_transport",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_cartons",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit_net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "country_of_origin",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_loading",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_discharge",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "container_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "loading_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "qty_per_carton",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "gross_weight_per_carton",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_gross_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "bank_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "bank_branch",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "account_no",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "ifsc_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "swift_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "export_ready_inventory": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packed_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "container_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "ready_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "export_ready_quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "certificate_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "clearance_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "destination_country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "export_shipments": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "carrier",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "origin_port",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "destination_port",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "departure_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "eta",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_cartons",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit_net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "face_attendance": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "employee_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "clock_in",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "clock_out",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "confidence",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "face_embeddings": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "employee_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "face_embedding",
+          "type": "jsonb",
+          "nullable": "NO"
+        },
+        {
+          "name": "sample_index",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "quality_score",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "model_version",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "face_scan_events": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "employee_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "scanned_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "match_score",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "liveness_score",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "motion_pass",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "blink_pass",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "depth_pass",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "spoof_pass",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "face_snapshot_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "error_reason",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "ip_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "farmers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "village",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "district",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "primary_crops",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "bank_account",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "ifsc_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "rating",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "farms": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "farmer_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "area_acres",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "crops",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "latitude",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "longitude",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "certifications",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "village",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "district",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "soil_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "irrigation_type",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "finance": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "follow_ups": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "follow_up_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_to",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_notified",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "reminder_time",
+          "type": "time without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "business_category",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "mobile",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "gst_transactions": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "transaction_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "party_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "gstin",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "invoice_no",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "taxable_amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "cgst_rate",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "sgst_rate",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "igst_rate",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "cgst_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "sgst_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "igst_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "hr&employees": [],
+      "inventory_batches": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "lot_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "farmer_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "po_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity_kg",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "quantity_remaining_kg",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "moisture_pct",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "received_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "expiry_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "cost_per_kg",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "quantity_reserved_kg",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "damaged_notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_export_ready",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "inventory_movements": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "sku",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "qty",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "reference",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "inventory_stock_summary": [
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_physical_stock",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_reserved_stock",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_available_stock",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "near_expiry_batches",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "damaged_batches",
+          "type": "bigint",
+          "nullable": "YES"
+        }
+      ],
+      "invoices": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "order_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "journal_entries": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "entry_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "entry_no",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reference_no",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "debit_account",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "credit_account",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "narration",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "lead_activities": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "leads": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "interested_product",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "stage",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_to",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "industry",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "job_title",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "business_category",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "mobile",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "contact_person",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "remark",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "converted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "meeting_messages": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "meeting_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "sender_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "meetings": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "meeting_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "meeting_time",
+          "type": "time without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "meeting_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "participant_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "participant_company",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "host_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "host_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "meeting_link",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "recording_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "agenda",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "reminder_sent",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "recurrence_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "messages",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "attendees",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "jitsi_room_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "password",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "lobby_enabled",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "participant_email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "zoho_session_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "start_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "meeting_key",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "overdue_payments": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "invoice_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "method",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "packaging_types": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "packing_lists": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "document_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "total_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_packages",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "gross_weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "marks_and_numbers",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "packing_protocols": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "receiving_id",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "carton_count",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "net_weight",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "gross_weight",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "pallet_config",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "export_marks",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "parties": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "gstin",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "type",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "credit_limit",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "outstanding",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "overdue",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "payments": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "invoice_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "method",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payer_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reference_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "permissions": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "module",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "products": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "sku",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "hs_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "default_grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "profiles": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "avatar_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "requested_role",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "approved_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "rejection_reason",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email_signature",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "biometric_id",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "employee_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "department",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "monthly_salary",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "punch_deadline",
+          "type": "time without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "monthly_target",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "zoho_meeting_link",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "dob",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "joining_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "system_mode",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "purchase_order_items": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "po_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "unit_price",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "expected_grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "line_total",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "purchase_orders": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "po_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "farmer_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_date",
+          "type": "date",
+          "nullable": "NO"
+        },
+        {
+          "name": "expected_delivery",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "subtotal",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "tax",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "total",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "qc_inspections": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "batch_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "inspector_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "inspected_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "moisture_pct",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "foreign_matter_pct",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "broken_pct",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "result",
+          "type": "USER-DEFINED",
+          "nullable": "NO"
+        },
+        {
+          "name": "lab_notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "attachments",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "quality_control": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "batch_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "moisture_level",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "weight",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "condition_check",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "lab_report_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "rejected_material",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "quotation_approval_logs": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "quotation_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "actor_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "quotation_items": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "quotation_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "unit_price",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_price",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "hsn_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "quotations": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "customer_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "quotation_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "total_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_charge",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "transport_method",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "transport_charges",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "tax_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "subtotal",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "tax_rate",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "container_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packaging_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_terms",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "incoterms",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "items_count",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer_gst",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "customer_phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "net_weight",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "gross_weight",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_loading",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "port_of_discharge",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "mode_of_transport",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packaging_cost",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipping_cost",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "incoterm",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country_of_origin",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "estimated_shipment_date",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "packing_per_bag",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "bag_weight",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "receiving_goods": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "po_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "supplier_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "received_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "received_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "reserved_stock": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reservation_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "reserved_by",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "reserved_quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_reference",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "reserved_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "expected_release_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "role_permissions": [
+        {
+          "name": "role_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "permission_id",
+          "type": "uuid",
+          "nullable": "NO"
+        }
+      ],
+      "roles": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_system",
+          "type": "boolean",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "sales_orders": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "customer_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_number",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "amount",
+          "type": "numeric",
+          "nullable": "NO"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "USER-DEFINED",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "delivery_date",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "items",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "tax_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "discount_amount",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipping_address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "screen_signals": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "from_user_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "to_user_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "signal_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "payload",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "security_settings": [
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "ip_whitelisting",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "hardware_token",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "screenshot_protection",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "shift_config": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "shift_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "start_time",
+          "type": "time without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "end_time",
+          "type": "time without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "late_threshold_mins",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "salary_cut_per_min",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "shipment_batches": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "shipment_id",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "shipment_uuid",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "carton_number_total",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "shipment_dispatches": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "vehicle_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "driver_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "schedule_start",
+          "type": "timestamp without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "schedule_end",
+          "type": "timestamp without time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "gate_pass_token",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "shipment_events": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        }
+      ],
+      "shipping_carriers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "shipping_ports": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "NO"
+        }
+      ],
+      "suppliers": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_categories",
+          "type": "ARRAY",
+          "nullable": "YES"
+        },
+        {
+          "name": "rating",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "gst_number",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "bank_details",
+          "type": "jsonb",
+          "nullable": "YES"
+        },
+        {
+          "name": "payment_terms",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "credit_limit",
+          "type": "numeric",
+          "nullable": "YES"
+        }
+      ],
+      "system_settings": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "tax_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "seal_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "invoice_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quotation_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "order_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "shipment_prefix",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_host",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_port",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_user",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_password",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "smtp_from",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "idle_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "idle_seconds",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "eod_hour",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "eod_minute",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "morning_login_time",
+          "type": "time without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "morning_login_enabled",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "idle_logout_enabled",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "lunch_break_start",
+          "type": "time without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "lunch_break_end",
+          "type": "time without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "lunch_break_enabled",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "evening_logout_enabled",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "eod_time",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "tasks": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_to",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "assigned_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "client_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "incomplete_reason",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "team_chat": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "sender_name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "file_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "file_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "file_size",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "edited",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "tenants": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "base_currency",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "plan",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "user_credentials": [
+        {
+          "name": "profile_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "refresh_token",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_login",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "user_permissions": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "section",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "has_access",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "granted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "user_preferences": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "date_format",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "theme",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "dashboard_layout",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "user_roles": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "role_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "user_sessions": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "login_time",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "logout_time",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "active_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "idle_minutes",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "last_activity",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "users": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "avatar_url",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "vehicles": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "vehicle_number",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "vehicle_type",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        }
+      ],
+      "view_revenue_by_country": [
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "nullable": "YES"
+        }
+      ],
+      "view_sales_by_month": [
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "month",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "month_num",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "revenue",
+          "type": "numeric",
+          "nullable": "YES"
+        }
+      ],
+      "view_shipment_analytics": [
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "total_shipments",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "delivered_shipments",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "pending_shipments",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "in_transit_shipments",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "avg_transit_days",
+          "type": "numeric",
+          "nullable": "YES"
+        }
+      ],
+      "warehouse_locations": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "location_code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        }
+      ],
+      "warehouse_stock": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "warehouse_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "product_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "grade",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "batch_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "min_stock_level",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ],
+      "warehouses": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "capacity_kg",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "NO"
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "warehouse_type",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "manager_name",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "manager_phone",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "fssai_license",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_cold_chain",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        }
+      ],
+      "zoho_accounts": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": "NO"
+        },
+        {
+          "name": "company_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "account_email",
+          "type": "text",
+          "nullable": "NO"
+        },
+        {
+          "name": "access_token",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "refresh_token",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "expiry_time",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "zoho_account_id",
+          "type": "text",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_deleted",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid",
+          "nullable": "YES"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": "YES"
+        },
+        {
+          "name": "account_name",
+          "type": "text",
+          "nullable": "YES"
+        }
+      ]
+    }
+  },
+  "supabase": null
+}

@@ -1,0 +1,6181 @@
+{
+  "tables": {
+    "email_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "details",
+        "format": "jsonb"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "view_shipment_analytics": [
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "total_shipments",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "delivered_shipments",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "pending_shipments",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "in_transit_shipments",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "avg_transit_days",
+        "type": "number",
+        "format": "numeric"
+      }
+    ],
+    "quality_control": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "batch_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product_grade",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "moisture_level",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "condition_check",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "lab_report_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "rejected_material",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp without time zone"
+      }
+    ],
+    "acquisition_channels": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "channel_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "avg_lead_cost",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "shipping_ports": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "payments": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "invoice_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `invoices.id`.<fk table='invoices' column='id'/>"
+      },
+      {
+        "name": "customer",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "method",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "received_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "call_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "contact_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "company",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "call_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "call_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "call_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "duration_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "jitsi_room_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "purchase_order_items": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "po_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `purchase_orders.id`.<fk table='purchase_orders' column='id'/>"
+      },
+      {
+        "name": "product_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `products.id`.<fk table='products' column='id'/>"
+      },
+      {
+        "name": "quantity",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "unit_price",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "expected_grade",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "line_total",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "bills_of_lading": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "bol_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "vessel_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "voyage_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "quotation_items": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "quotation_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `quotations.id`.<fk table='quotations' column='id'/>"
+      },
+      {
+        "name": "product_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `products.id`.<fk table='products' column='id'/>"
+      },
+      {
+        "name": "quantity",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "unit_price",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "product_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "total_price",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "hsn_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "inventory_batches": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "lot_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `products.id`.<fk table='products' column='id'/>"
+      },
+      {
+        "name": "warehouse_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `warehouses.id`.<fk table='warehouses' column='id'/>"
+      },
+      {
+        "name": "farmer_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "po_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `purchase_orders.id`.<fk table='purchase_orders' column='id'/>"
+      },
+      {
+        "name": "quantity_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "quantity_remaining_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "grade",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "moisture_pct",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "received_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "expiry_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.batch_status"
+      },
+      {
+        "name": "cost_per_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "quantity_reserved_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "damaged_notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_export_ready",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "qc_inspections": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "batch_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `inventory_batches.id`.<fk table='inventory_batches' column='id'/>"
+      },
+      {
+        "name": "inspector_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "inspected_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "moisture_pct",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "foreign_matter_pct",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "broken_pct",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "grade",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "result",
+        "type": "string",
+        "format": "public.qc_result"
+      },
+      {
+        "name": "lab_notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "attachments",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "approval_audit_log": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "target_user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "actor_user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "previous_status",
+        "type": "string",
+        "format": "public.user_approval_status"
+      },
+      {
+        "name": "new_status",
+        "type": "string",
+        "format": "public.user_approval_status"
+      },
+      {
+        "name": "role_slug",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "reason",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "sales_orders": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "customer_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `customers.id`.<fk table='customers' column='id'/>"
+      },
+      {
+        "name": "order_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.order_status"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "delivery_date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "farmers": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "full_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "village",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "district",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "state",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "primary_crops",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "bank_account",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "ifsc_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "rating",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "role_permissions": [
+      {
+        "name": "role_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `roles.id`.<fk table='roles' column='id'/>"
+      },
+      {
+        "name": "permission_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `permissions.id`.<fk table='permissions' column='id'/>"
+      }
+    ],
+    "export_shipments": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "order_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `export_orders.id`.<fk table='export_orders' column='id'/>"
+      },
+      {
+        "name": "shipment_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "carrier",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "origin_port",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "destination_port",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "departure_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "eta",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.export_shipment_status"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "total_cartons",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "unit_net_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "gst_transactions": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "transaction_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "party_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "gstin",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "invoice_no",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "taxable_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "cgst_rate",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "sgst_rate",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "igst_rate",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "cgst_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "sgst_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "igst_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "leads": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "contact_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "interested_product",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "stage",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "assigned_to",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "industry",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "source",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "website",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "job_title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "business_category",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "mobile",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "contact_person",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "remark",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "source_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `acquisition_channels.id`.<fk table='acquisition_channels' column='id'/>"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "meetings": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "meeting_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "meeting_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "meeting_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "participant_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "participant_company",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "host_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "host_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "meeting_link",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "recording_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "agenda",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "duration_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "reminder_sent",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "started_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "recurrence_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "messages",
+        "format": "jsonb"
+      },
+      {
+        "name": "attendees",
+        "format": "jsonb"
+      },
+      {
+        "name": "jitsi_room_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "password",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "lobby_enabled",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "participant_email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "zoho_session_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "start_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "meeting_key",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "user_preferences": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "language",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "timezone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "date_format",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "theme",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "dashboard_layout",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "overdue_payments": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "invoice_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `invoices.id`.<fk table='invoices' column='id'/>"
+      },
+      {
+        "name": "customer",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "method",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "received_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "today_attendance": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `employees.id`.<fk table='employees' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "department",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "check_in",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "check_out",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.attendance_status"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "client_acquisition": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "client_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "assigned_bde",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "inquiry_source",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "acquisition_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "product_interested",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "deal_value",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "workflow_stage",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "customers": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "crops",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "satisfaction_notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "relationship_status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "complaints_notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "feedback_records",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "repeat_order_count",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "repeat_business_alert",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "business_notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "last_activity_date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "farmer_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `farmers.id`.<fk table='farmers' column='id'/>"
+      }
+    ],
+    "export_orders": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "order_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "quantity",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "unit",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "unit_price",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "payment_status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "order_date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "expected_delivery",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "shipping_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "hsn_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "packing_details",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "payment_terms",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "incoterms",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "customer_gst",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "net_weight",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "gross_weight",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "mode_of_transport",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "total_cartons",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "unit_net_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "country_of_origin",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "port_of_loading",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "port_of_discharge",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "container_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "loading_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "qty_per_carton",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "gross_weight_per_carton",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_net_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_gross_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "bank_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "bank_branch",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "account_no",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "ifsc_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "swift_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "face_embeddings": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `employees.id`.<fk table='employees' column='id'/>"
+      },
+      {
+        "name": "face_embedding",
+        "type": "string",
+        "format": "public.vector(128)"
+      },
+      {
+        "name": "sample_index",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "image_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "model_version",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "confidence",
+        "type": "number",
+        "format": "double precision"
+      },
+      {
+        "name": "metadata",
+        "format": "jsonb"
+      },
+      {
+        "name": "quality_score",
+        "type": "number",
+        "format": "double precision"
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "AttLogs": [
+      {
+        "name": "id",
+        "type": "integer",
+        "format": "integer",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "EmployeeCode",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "LogDateTime",
+        "type": "string",
+        "format": "timestamp without time zone"
+      },
+      {
+        "name": "DownloadDateTime",
+        "type": "string",
+        "format": "timestamp without time zone"
+      },
+      {
+        "name": "Direction",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "DeviceId",
+        "type": "string",
+        "format": "character varying"
+      }
+    ],
+    "tasks": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "priority",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "assigned_to",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "assigned_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "client_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "due_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "incomplete_reason",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "companies": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "slug",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "base_currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "plan",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "invoice_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "quotation_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "order_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "shipment_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_host",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_port",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_user",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_pass",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "from_email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "imap_host",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "imap_port",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "signature_url",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "profiles": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "full_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "avatar_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.user_approval_status"
+      },
+      {
+        "name": "requested_role",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "approved_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "approved_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "rejection_reason",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email_signature",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "biometric_id",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "role",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "department",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "monthly_salary",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "punch_deadline",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "monthly_target",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "zoho_meeting_link",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "dob",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "joining_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "system_mode",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "currency_ledger": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "transaction_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "party_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "reference_no",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "exchange_rate",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "amount_inr",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "app_notifications": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "body",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_read",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "employees": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "full_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "role",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "bio_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "face_embedding",
+        "type": "string",
+        "format": "public.vector(128)"
+      },
+      {
+        "name": "face_registered_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "face_image_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "shift_start",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "late_threshold_mins",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "salary_cut_per_min",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "department",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "activity_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "actor_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "actor_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "entity",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "team",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "user_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "module",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "event_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "inventory_movements": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "sku",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "direction",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "qty",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "reference",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "warehouse",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "zoho_accounts": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "account_email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "access_token",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "refresh_token",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "expiry_time",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "zoho_account_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "products": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "sku",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "category",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "hs_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "unit",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "default_grade",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "attendance_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `employees.id`.<fk table='employees' column='id'/>"
+      },
+      {
+        "name": "date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "clock_in",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "clock_out",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.attendance_status"
+      },
+      {
+        "name": "is_manual",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "confidence_score",
+        "type": "number",
+        "format": "double precision"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_excused",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "chart_of_accounts": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "group",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "public.account_type"
+      },
+      {
+        "name": "balance",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "gst",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.account_status"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "updated_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "contact_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product_categories",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "rating",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "view_sales_by_month": [
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "month",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "month_num",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "revenue",
+        "type": "number",
+        "format": "numeric"
+      }
+    ],
+    "permissions": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "module",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "shift_config": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "shift_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "start_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "end_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "late_threshold_mins",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "salary_cut_per_min",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "is_default",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "parties": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "gstin",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "public.party_type"
+      },
+      {
+        "name": "state",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "credit_limit",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "outstanding",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "overdue",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.party_status"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "updated_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "container_types": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "bde_daily_reports": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "bde_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "report_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "total_calls",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "calls_attended",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "attended_names",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "linkedin_messages",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "emails_sent",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "new_leads",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "not_attended_calls",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "report_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "metrics",
+        "format": "jsonb"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "warehouses": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "capacity_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "location",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "warehouse_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "state",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "manager_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "manager_phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "fssai_license",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_cold_chain",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "shipment_batches": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "shipment_uuid",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "batch_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "carton_number_total",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "available_stock": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "product_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "warehouse",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "available_quantity",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "unit",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "minimum_level",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "last_updated",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "inventory_stock_summary": [
+      {
+        "name": "product_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `products.id`.<fk table='products' column='id'/>"
+      },
+      {
+        "name": "warehouse_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `warehouses.id`.<fk table='warehouses' column='id'/>"
+      },
+      {
+        "name": "total_physical_stock",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_reserved_stock",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "net_available_stock",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "near_expiry_batches",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "damaged_batches",
+        "type": "integer",
+        "format": "bigint"
+      }
+    ],
+    "quotation_approval_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "quotation_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `quotations.id`.<fk table='quotations' column='id'/>"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "actor_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "container_loading": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "container_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "seal_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "loading_date",
+        "type": "string",
+        "format": "timestamp without time zone"
+      },
+      {
+        "name": "stuffing_details",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "weight_verification",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "container_image_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp without time zone"
+      }
+    ],
+    "shipment_events": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `export_shipments.id`.<fk table='export_shipments' column='id'/>"
+      },
+      {
+        "name": "event_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "location",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "view_revenue_by_country": [
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "value",
+        "type": "number",
+        "format": "numeric"
+      }
+    ],
+    "packing_protocols": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "receiving_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "carton_count",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "net_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "gross_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "pallet_config",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "export_marks",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "invoices": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "order_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "issued_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "due_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "screen_signals": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "from_user_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "to_user_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "signal_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "payload",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "farms": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "farmer_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "area_acres",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "crops",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "latitude",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "longitude",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "certifications",
+        "type": "array",
+        "format": "text[]"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "email_templates": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "subject",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "body",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "security_settings": [
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "ip_whitelisting",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "hardware_token",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "screenshot_protection",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "user_roles": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "role_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>\nThis is a Foreign Key to `roles.id`.<fk table='roles' column='id'/>"
+      },
+      {
+        "name": "assigned_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "meeting_messages": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "meeting_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `meetings.id`.<fk table='meetings' column='id'/>"
+      },
+      {
+        "name": "sender_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "sender_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "packaging_types": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "quotations": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "customer_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `customers.id`.<fk table='customers' column='id'/>"
+      },
+      {
+        "name": "quotation_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "total_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "valid_until",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "packing_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "packing_charge",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "transport_method",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "transport_charges",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "tax_amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "subtotal",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "tax_rate",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "container_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "packaging_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "payment_terms",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "incoterms",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "items_count",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "customer_gst",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "customer_phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "net_weight",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "gross_weight",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "port_of_loading",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "port_of_discharge",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "mode_of_transport",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "packaging_cost",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "shipping_cost",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "shipment_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "incoterm",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country_of_origin",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "estimated_shipment_date",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "packing_per_bag",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "bag_weight",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "face_scan_events": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `employees.id`.<fk table='employees' column='id'/>"
+      },
+      {
+        "name": "scanned_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "match_score",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "liveness_score",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "motion_pass",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "blink_pass",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "depth_pass",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "spoof_pass",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "face_snapshot_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "error_reason",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "ip_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "system_settings": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "company_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "tax_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "timezone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "seal_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "invoice_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "quotation_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "order_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "shipment_prefix",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_host",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_port",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_user",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_password",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "smtp_from",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "idle_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "idle_seconds",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "eod_hour",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "eod_minute",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "morning_login_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "morning_login_enabled",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "idle_logout_enabled",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "lunch_break_start",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "lunch_break_end",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "lunch_break_enabled",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "evening_logout_enabled",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "eod_time",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "crm_tasks": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "task_number",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "assigned_to",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "priority",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "due_date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "email_attachments": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "email_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `emails.id`.<fk table='emails' column='id'/>"
+      },
+      {
+        "name": "filename",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "storage_path",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "content_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "size_bytes",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "emails": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "zoho_message_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "subject",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "from_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "to_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "body_html",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "body_text",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "received_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_read",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "folder",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "account_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `zoho_accounts.id`.<fk table='zoho_accounts' column='id'/>"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "delivered_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "error_message",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "attachments",
+        "format": "jsonb"
+      },
+      {
+        "name": "cc_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "bcc_address",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "shipping_carriers": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      }
+    ],
+    "tenants": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "slug",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "base_currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "plan",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "active_sessions": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "profile_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "profile_role",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "login_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "last_active",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "device_info",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "finance": [
+      {
+        "name": "id",
+        "type": "integer",
+        "format": "bigint",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "attendance": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "employee_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `employees.id`.<fk table='employees' column='id'/>"
+      },
+      {
+        "name": "check_in",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "check_out",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "confidence_score",
+        "type": "number",
+        "format": "double precision"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "hr&employees": [],
+    "users": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "tenant_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "full_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "avatar_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "phone",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_active",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "user_permissions": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "section",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "has_access",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "granted_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "user_sessions": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "login_time",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "logout_time",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "duration_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "active_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "idle_minutes",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "last_activity",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "crm_audit_log": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "user_email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "record_count",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "roles": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "slug",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_system",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "packing_lists": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "document_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "total_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total_packages",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      }
+    ],
+    "activities": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `leads.id`.<fk table='leads' column='id'/>"
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "format": "text",
+        "description": "Allowed types: email, email_inbound, call, note, meeting, status_change, internal_note"
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "due_date",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "completed",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `profiles.id`.<fk table='profiles' column='id'/>"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "content",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "metadata",
+        "format": "jsonb"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "journal_entries": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "entry_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "entry_no",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "reference_no",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "debit_account",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "credit_account",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "amount",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "narration",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "follow_ups": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "lead_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "company_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "contact_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "follow_up_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "note",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "assigned_to",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_notified",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp without time zone"
+      },
+      {
+        "name": "reminder_time",
+        "type": "string",
+        "format": "time without time zone"
+      },
+      {
+        "name": "business_category",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "product_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "mobile",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "website",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "purchase_orders": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      },
+      {
+        "name": "po_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "farmer_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `farmers.id`.<fk table='farmers' column='id'/>"
+      },
+      {
+        "name": "warehouse_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `warehouses.id`.<fk table='warehouses' column='id'/>"
+      },
+      {
+        "name": "order_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "expected_delivery",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "public.po_status"
+      },
+      {
+        "name": "subtotal",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "tax",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "total",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_by",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "updated_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "batch_barcodes": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "batch_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "level",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "box_number",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "current_location",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "net_weight",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "packing_date",
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "name": "sku_code",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "carton_number_total",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "product_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "order_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `export_orders.id`.<fk table='export_orders' column='id'/>"
+      }
+    ],
+    "export_containers": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "shipment_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `export_shipments.id`.<fk table='export_shipments' column='id'/>"
+      },
+      {
+        "name": "container_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "container_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "seal_number",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "weight_kg",
+        "type": "number",
+        "format": "numeric"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "company_id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Foreign Key to `companies.id`.<fk table='companies' column='id'/>"
+      }
+    ],
+    "team_chat": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "sender_name",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "sender_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "file_url",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "file_type",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "file_size",
+        "type": "integer",
+        "format": "bigint"
+      },
+      {
+        "name": "edited",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ],
+    "audit_logs": [
+      {
+        "name": "id",
+        "type": "string",
+        "format": "uuid",
+        "description": "Note:\nThis is a Primary Key.<pk/>"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "resource_type",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "resource_id",
+        "type": "string",
+        "format": "uuid"
+      },
+      {
+        "name": "resource_name",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "old_values",
+        "format": "jsonb"
+      },
+      {
+        "name": "new_values",
+        "format": "jsonb"
+      },
+      {
+        "name": "ip_address",
+        "type": "string",
+        "format": "inet"
+      },
+      {
+        "name": "user_agent",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "error_message",
+        "type": "string",
+        "format": "text"
+      },
+      {
+        "name": "changes_count",
+        "type": "integer",
+        "format": "integer"
+      },
+      {
+        "name": "team",
+        "type": "string",
+        "format": "character varying"
+      },
+      {
+        "name": "timestamp",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "created_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "is_deleted",
+        "type": "boolean",
+        "format": "boolean"
+      },
+      {
+        "name": "deleted_at",
+        "type": "string",
+        "format": "timestamp with time zone"
+      },
+      {
+        "name": "deleted_by",
+        "type": "string",
+        "format": "uuid"
+      }
+    ]
+  },
+  "rpcs": [
+    "get_monthly_country_sales",
+    "employee_login",
+    "is_user_approved",
+    "has_permission",
+    "reject_user",
+    "is_admin_or_manager",
+    "mark_attendance",
+    "approve_user",
+    "log_activity",
+    "current_company_id",
+    "is_company_admin",
+    "delete_user",
+    "get_monthly_top_products",
+    "record_inventory_movement",
+    "match_face",
+    "get_my_company",
+    "get_monthly_sales_report",
+    "insert_notification",
+    "soft_delete_record",
+    "get_weekly_performance_report",
+    "scan_barcode"
+  ]
+}

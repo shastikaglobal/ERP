@@ -1,39 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenvConfig from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-const envFile = fs.readFileSync('.env', 'utf-8');
-const env = Object.fromEntries(
-  envFile.split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#') && line.includes('='))
-    .map(line => {
-      const idx = line.indexOf('=');
-      const key = line.slice(0, idx).trim();
-      const val = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-      return [key, val];
-    })
-);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const env = dotenvConfig.parse(fs.readFileSync(path.join(__dirname, '../.env')));
+const SUPABASE_URL = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(
-  env.VITE_SUPABASE_URL,
-  env.VITE_SUPABASE_ANON_KEY
-);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function run() {
-  const email = "shastikaglobal11@gmail.com";
-  const password = "Shastika@2026";
-  console.log(`Attempting login for ${email} with password: ${password}`);
-
+  console.log("Testing sign in for shastikaglobal11@gmail.com...");
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
+    email: 'shastikaglobal11@gmail.com',
+    password: 'Welcome@Shastika2026'
   });
-
   if (error) {
-    console.error("Login failed:", error.message, error);
+    console.error("❌ Sign in failed:", error.message);
   } else {
-    console.log("Login successful! Session data:", JSON.stringify(data.session, null, 2));
+    console.log("✅ Sign in successful! Session user:", data.user.email);
   }
 }
-
 run();

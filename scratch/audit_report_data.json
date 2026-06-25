@@ -1,0 +1,1040 @@
+{
+  "routing": {
+    "definedRoutesCount": 140,
+    "activeRoutes": [
+      "/",
+      "/auth",
+      "/auth/callback",
+      "/pending",
+      "/complete-profile",
+      "/waiting-approval",
+      "/select-profile",
+      "/invoices/:id/preview",
+      "/packing-lists/:id/preview",
+      "/documents/packing-lists/:id/preview",
+      "/documents/commercial-invoices/:id/preview",
+      "/certificates/:id/preview",
+      "/share/quote/:id",
+      "/dashboard",
+      "/approvals",
+      "/dashboards/executive",
+      "/dashboards/finance-tally",
+      "/dashboards/bde",
+      "/dashboards/sales",
+      "/dashboards/shipments",
+      "/dashboards/financial",
+      "/dashboards/employees",
+      "/farmers",
+      "/farmers/create",
+      "/farmers/convert",
+      "/farmers/:id",
+      "/procurement/orders",
+      "/procurement/orders/create",
+      "/procurement/orders/edit/:id",
+      "/procurement/suppliers",
+      "/procurement/suppliers/:id",
+      "/procurement/dashboard",
+      "/procurement/analytics",
+      "/qc/inspections",
+      "/qc/inspections/create",
+      "/qc/approvals",
+      "/warehouse/qc",
+      "/warehouse/container-loading",
+      "/barcodes",
+      "/barcodes/generate",
+      "/barcodes/scan",
+      "/barcodes/:id",
+      "/inventory/products",
+      "/inventory/products/create",
+      "/inventory/stock",
+      "/inventory/movements",
+      "/inventory/warehouses",
+      "/inventory/alerts",
+      "/inventory/damaged",
+      "/inventory/available-stock",
+      "/inventory/reserved-stock",
+      "/inventory/export-ready",
+      "/inventory/batch-wise",
+      "/inventory/damaged-stock-management",
+      "/inventory/expiry-monitoring",
+      "/inventory/multi-warehouse",
+      "/warehouse/dashboard",
+      "/warehouse/racks",
+      "/warehouse/zones",
+      "/warehouse/receiving",
+      "/warehouse/packing",
+      "/warehouse",
+      "/reports",
+      "/reports/stock-summary",
+      "/reports/batch-tracking",
+      "/reports/dispatch",
+      "/reports/container-loading",
+      "/reports/damage-wastage",
+      "/reports/inventory-aging",
+      "/reports/export-ready",
+      "/quotations",
+      "/quotations/create",
+      "/quotations/edit/:id",
+      "/quotations/approvals",
+      "/quotations/convert",
+      "/quotations/:id",
+      "/quotations/:id/report",
+      "/crm",
+      "/crm/dashboard",
+      "/crm/activities",
+      "/crm/leads",
+      "/crm/follow-ups",
+      "/crm/leads/:id",
+      "/crm/pipeline",
+      "/crm/email",
+      "/crm/tasks",
+      "/crm/security",
+      "/crm/client-acquisition",
+      "/crm/advanced-security",
+      "/crm/reports",
+      "/crm/performance",
+      "/crm/revenue",
+      "/crm/communication",
+      "/crm/customer-database",
+      "/crm/employee-activity",
+      "/crm/convert",
+      "/crm/customers",
+      "/orders",
+      "/orders/create",
+      "/orders/status",
+      "/orders/fulfillment",
+      "/orders/:id",
+      "/shipments",
+      "/shipments/create",
+      "/shipments/:id",
+      "/shipments/containers",
+      "/shipments/delivery",
+      "/shipments/dispatch",
+      "/documents",
+      "/documents/invoices",
+      "/documents/invoices/create",
+      "/documents/invoices/:id",
+      "/documents/packing-lists",
+      "/documents/commercial-invoices",
+      "/documents/certificates",
+      "/certificates/create",
+      "/documents/viewer",
+      "/payments",
+      "/payments/overdue",
+      "/payments/ledger",
+      "/payments/reports",
+      "/tally/*",
+      "/journal",
+      "/gst-reports",
+      "/employees",
+      "/employees/attendance",
+      "/employees/salary",
+      "/employees/face-attendance",
+      "/employees/register-face",
+      "/employees/roles",
+      "/system/notifications",
+      "/system/logs",
+      "/system/audit-logs",
+      "/system/subscriptions",
+      "/system/settings",
+      "/system/account",
+      "/system/maintenance",
+      "/system/integrations/zoho",
+      "/system/mailbox",
+      "*"
+    ],
+    "brokenLinks": [],
+    "orphanPages": [
+      {
+        "path": "/auth/callback",
+        "line": 207,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/pending",
+        "line": 208,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/select-profile",
+        "line": 211,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/invoices/:id/preview",
+        "line": 214,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/packing-lists/:id/preview",
+        "line": 215,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/documents/packing-lists/:id/preview",
+        "line": 216,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/documents/commercial-invoices/:id/preview",
+        "line": 217,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/certificates/:id/preview",
+        "line": 218,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/share/quote/:id",
+        "line": 219,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/approvals",
+        "line": 223,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/farmers/:id",
+        "line": 238,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/procurement/analytics",
+        "line": 248,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/warehouse/qc",
+        "line": 254,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/barcodes/:id",
+        "line": 261,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/products",
+        "line": 264,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/products/create",
+        "line": 265,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/stock",
+        "line": 266,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/movements",
+        "line": 267,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/warehouses",
+        "line": 268,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/alerts",
+        "line": 269,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/inventory/damaged",
+        "line": 270,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/warehouse/racks",
+        "line": 281,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/warehouse/zones",
+        "line": 282,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/warehouse",
+        "line": 285,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports",
+        "line": 288,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/stock-summary",
+        "line": 289,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/batch-tracking",
+        "line": 290,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/dispatch",
+        "line": 291,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/container-loading",
+        "line": 292,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/damage-wastage",
+        "line": 293,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/inventory-aging",
+        "line": 294,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/reports/export-ready",
+        "line": 295,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/quotations/edit/:id",
+        "line": 300,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/quotations/:id/report",
+        "line": 304,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm",
+        "line": 307,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm/activities",
+        "line": 309,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm/leads/:id",
+        "line": 312,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm/performance",
+        "line": 320,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm/revenue",
+        "line": 321,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/crm/employee-activity",
+        "line": 324,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/shipments/containers",
+        "line": 348,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/shipments/delivery",
+        "line": 349,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/shipments/dispatch",
+        "line": 350,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/documents/invoices/create",
+        "line": 355,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/documents/invoices/:id",
+        "line": 356,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/documents/commercial-invoices",
+        "line": 358,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/gst-reports",
+        "line": 372,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/system/audit-logs",
+        "line": 385,
+        "file": "src/App.tsx"
+      },
+      {
+        "path": "/system/account",
+        "line": 388,
+        "file": "src/App.tsx"
+      }
+    ],
+    "anchorLinks": []
+  },
+  "vpsDb": {
+    "tablesInDbCount": 102,
+    "missingTables": [
+      {
+        "table": "information_schema",
+        "references": [
+          {
+            "file": "adms-sync/check_cols_tmp.js",
+            "line": 16
+          },
+          {
+            "file": "adms-sync/check_customers_schema.cjs",
+            "line": 3
+          },
+          {
+            "file": "adms-sync/check_emp_table.cjs",
+            "line": 2
+          },
+          {
+            "file": "adms-sync/check_movements_cols.js",
+            "line": 16
+          },
+          {
+            "file": "adms-sync/check_tables.cjs",
+            "line": 3
+          },
+          {
+            "file": "adms-sync/check_tables.mjs",
+            "line": 26
+          },
+          {
+            "file": "adms-sync/check_vps_tables_tmp.js",
+            "line": 16
+          },
+          {
+            "file": "adms-sync/inspect_columns.js",
+            "line": 20
+          },
+          {
+            "file": "adms-sync/routes/finance.js",
+            "line": 177
+          },
+          {
+            "file": "adms-sync/routes/finance.js",
+            "line": 261
+          },
+          {
+            "file": "adms-sync/routes/inventory.js",
+            "line": 65
+          },
+          {
+            "file": "adms-sync/routes/inventory.js",
+            "line": 140
+          },
+          {
+            "file": "adms-sync/routes/warehouse.js",
+            "line": 54
+          },
+          {
+            "file": "adms-sync/routes/warehouse.js",
+            "line": 128
+          },
+          {
+            "file": "adms-sync/scratch.js",
+            "line": 8
+          }
+        ]
+      },
+      {
+        "table": "invoice_items",
+        "references": [
+          {
+            "file": "adms-sync/check_invoice.cjs",
+            "line": 1
+          },
+          {
+            "file": "adms-sync/routes/invoices.js",
+            "line": 32
+          },
+          {
+            "file": "adms-sync/routes/invoices.js",
+            "line": 78
+          }
+        ]
+      },
+      {
+        "table": "local",
+        "references": [
+          {
+            "file": "adms-sync/deploy.py",
+            "line": 40
+          }
+        ]
+      },
+      {
+        "table": "supabase",
+        "references": [
+          {
+            "file": "adms-sync/middleware/auth.js",
+            "line": 88
+          },
+          {
+            "file": "adms-sync/middleware/auth.js",
+            "line": 96
+          },
+          {
+            "file": "adms-sync/routes/analytics.js",
+            "line": 323
+          },
+          {
+            "file": "adms-sync/routes/employees.js",
+            "line": 41
+          },
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 35
+          },
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 367
+          },
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 375
+          },
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 523
+          },
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 135
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 412
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 219
+          }
+        ]
+      },
+      {
+        "table": "lead",
+        "references": [
+          {
+            "file": "adms-sync/routes/crm.js",
+            "line": 320
+          },
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 582
+          }
+        ]
+      },
+      {
+        "table": "task",
+        "references": [
+          {
+            "file": "adms-sync/routes/crm_tasks.js",
+            "line": 92
+          }
+        ]
+      },
+      {
+        "table": "for",
+        "references": [
+          {
+            "file": "adms-sync/routes/employees.js",
+            "line": 103
+          }
+        ]
+      },
+      {
+        "table": "your",
+        "references": [
+          {
+            "file": "adms-sync/routes/employees.js",
+            "line": 436
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 243
+          }
+        ]
+      },
+      {
+        "table": "sync",
+        "references": [
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 296
+          }
+        ]
+      },
+      {
+        "table": "farmer",
+        "references": [
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 302
+          }
+        ]
+      },
+      {
+        "table": "customer",
+        "references": [
+          {
+            "file": "adms-sync/routes/farmers.js",
+            "line": 496
+          }
+        ]
+      },
+      {
+        "table": "follow",
+        "references": [
+          {
+            "file": "adms-sync/routes/follow_ups.js",
+            "line": 45
+          }
+        ]
+      },
+      {
+        "table": "invoice",
+        "references": [
+          {
+            "file": "adms-sync/routes/invoices.js",
+            "line": 112
+          }
+        ]
+      },
+      {
+        "table": "quotation",
+        "references": [
+          {
+            "file": "adms-sync/routes/invoices.js",
+            "line": 253
+          },
+          {
+            "file": "adms-sync/routes/quotations.js",
+            "line": 340
+          }
+        ]
+      },
+      {
+        "table": "email",
+        "references": [
+          {
+            "file": "adms-sync/routes/mailbox.js",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "table": "product",
+        "references": [
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 69
+          }
+        ]
+      },
+      {
+        "table": "categories",
+        "references": [
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 98
+          },
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 116
+          },
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 138
+          },
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 150
+          },
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 150
+          }
+        ]
+      },
+      {
+        "table": "category",
+        "references": [
+          {
+            "file": "adms-sync/routes/products.js",
+            "line": 141
+          }
+        ]
+      },
+      {
+        "table": "settings",
+        "references": [
+          {
+            "file": "adms-sync/routes/settings.js",
+            "line": 100
+          }
+        ]
+      },
+      {
+        "table": "device",
+        "references": [
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 87
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 364
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 171
+          }
+        ]
+      },
+      {
+        "table": "sn",
+        "references": [
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 115
+          },
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 282
+          },
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 295
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 392
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 578
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 591
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 199
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 385
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 398
+          }
+        ]
+      },
+      {
+        "table": "frontend",
+        "references": [
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 311
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 607
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 414
+          }
+        ]
+      },
+      {
+        "table": "error",
+        "references": [
+          {
+            "file": "adms-sync/server.cjs",
+            "line": 351
+          },
+          {
+            "file": "adms-sync/server.js",
+            "line": 647
+          },
+          {
+            "file": "adms-sync/test-server.js",
+            "line": 454
+          }
+        ]
+      }
+    ],
+    "unusedTables": [
+      "active_sessions",
+      "app_notifications",
+      "approval_audit_log",
+      "available_stock",
+      "barcodes",
+      "batch_barcodes",
+      "bills_of_lading",
+      "call_logs",
+      "container_loading",
+      "crm_audit_log",
+      "currency_ledger",
+      "damaged_stock",
+      "email_templates",
+      "expiry_monitoring",
+      "export_containers",
+      "export_ready_inventory",
+      "face_scan_events",
+      "farms",
+      "finance",
+      "gst_transactions",
+      "hr&employees",
+      "inventory_movements",
+      "inventory_stock_summary",
+      "meeting_messages",
+      "meetings",
+      "overdue_payments",
+      "packing_lists",
+      "packing_protocols",
+      "permissions",
+      "purchase_order_items",
+      "quality_control",
+      "quotation_approval_logs",
+      "receiving_goods",
+      "reserved_stock",
+      "role_permissions",
+      "roles",
+      "screen_signals",
+      "security_settings",
+      "shift_config",
+      "shipment_batches",
+      "shipment_events",
+      "shipping_carriers",
+      "shipping_ports",
+      "suppliers",
+      "system_settings",
+      "tasks",
+      "team_chat",
+      "tenants",
+      "user_credentials",
+      "user_permissions",
+      "user_preferences",
+      "user_roles",
+      "user_sessions",
+      "users",
+      "view_revenue_by_country",
+      "view_sales_by_month",
+      "view_shipment_analytics",
+      "warehouse_locations",
+      "warehouse_stock"
+    ]
+  },
+  "supabaseDb": {
+    "tablesInDbCount": 90,
+    "missingTables": [
+      {
+        "table": "warehouse_stock",
+        "references": [
+          {
+            "file": "src/pages/warehouse/ReceivingGoods.tsx",
+            "line": 529,
+            "columns": [
+              "quantity",
+              "unit",
+              "last_updated",
+              "notes"
+            ]
+          },
+          {
+            "file": "src/pages/warehouse/ReceivingGoods.tsx",
+            "line": 536,
+            "columns": [
+              "warehouse_id",
+              "product_name",
+              "quantity",
+              "unit",
+              "last_updated",
+              "notes"
+            ]
+          }
+        ]
+      }
+    ],
+    "missingColumns": [
+      {
+        "table": "audit_logs",
+        "column": "details",
+        "file": "src/services/crmAudit.ts",
+        "line": 8
+      },
+      {
+        "table": "screen_signals",
+        "column": "adminId",
+        "file": "src/pages/crm/ScreenMonitor.tsx",
+        "line": 88
+      },
+      {
+        "table": "employees",
+        "column": "salary_cut",
+        "file": "src/lib/supabase.js",
+        "line": 296
+      },
+      {
+        "table": "attendance_logs",
+        "column": "salary_cut",
+        "file": "src/lib/supabase.js",
+        "line": 297
+      },
+      {
+        "table": "attendance_logs",
+        "column": "salary_cut",
+        "file": "src/lib/supabase.js",
+        "line": 298
+      },
+      {
+        "table": "attendance_logs",
+        "column": "salary_cut",
+        "file": "src/lib/supabase.js",
+        "line": 299
+      },
+      {
+        "table": "attendance_logs",
+        "column": "match",
+        "file": "src/pages/FaceAttendance.tsx",
+        "line": 56
+      }
+    ],
+    "missingRpcs": [],
+    "unusedTables": [
+      "email_logs",
+      "view_shipment_analytics",
+      "quality_control",
+      "acquisition_channels",
+      "shipping_ports",
+      "payments",
+      "call_logs",
+      "purchase_order_items",
+      "bills_of_lading",
+      "quotation_items",
+      "qc_inspections",
+      "approval_audit_log",
+      "sales_orders",
+      "role_permissions",
+      "gst_transactions",
+      "overdue_payments",
+      "today_attendance",
+      "client_acquisition",
+      "customers",
+      "face_embeddings",
+      "AttLogs",
+      "tasks",
+      "currency_ledger",
+      "app_notifications",
+      "inventory_movements",
+      "suppliers",
+      "view_sales_by_month",
+      "permissions",
+      "shift_config",
+      "bde_daily_reports",
+      "warehouses",
+      "shipment_batches",
+      "available_stock",
+      "inventory_stock_summary",
+      "quotation_approval_logs",
+      "container_loading",
+      "view_revenue_by_country",
+      "packing_protocols",
+      "invoices",
+      "farms",
+      "email_templates",
+      "security_settings",
+      "user_roles",
+      "meeting_messages",
+      "quotations",
+      "face_scan_events",
+      "system_settings",
+      "crm_tasks",
+      "email_attachments",
+      "emails",
+      "shipping_carriers",
+      "tenants",
+      "active_sessions",
+      "finance",
+      "attendance",
+      "hr&employees",
+      "users",
+      "user_permissions",
+      "user_sessions",
+      "crm_audit_log",
+      "roles",
+      "packing_lists",
+      "activities",
+      "journal_entries",
+      "follow_ups",
+      "export_containers"
+    ],
+    "tablesMissingRls": [
+      "quality_control",
+      "shipping_ports",
+      "call_logs",
+      "bills_of_lading",
+      "meetings",
+      "overdue_payments",
+      "today_attendance",
+      "face_embeddings",
+      "AttLogs",
+      "currency_ledger",
+      "suppliers",
+      "shift_config",
+      "container_types",
+      "shipment_batches",
+      "inventory_stock_summary",
+      "quotation_approval_logs",
+      "container_loading",
+      "security_settings",
+      "meeting_messages",
+      "system_settings",
+      "crm_tasks",
+      "shipping_carriers",
+      "tenants",
+      "finance",
+      "attendance",
+      "hr&employees",
+      "users",
+      "user_permissions",
+      "crm_audit_log",
+      "packing_lists",
+      "activities",
+      "team_chat"
+    ],
+    "tablesMissingPolicies": [
+      "email_logs",
+      "email_attachments"
+    ]
+  }
+}
