@@ -28,11 +28,20 @@ export default function CompleteProfile() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (profile?.full_name) setFullName(profile.full_name);
     if (profile?.phone) setPhone((profile as any).phone || "");
+    if (profile?.biometric_id) {
+      setEmployeeId(profile.biometric_id);
+    } else if (profile?.email) {
+      const parts = profile.email.split('@');
+      if (parts[0] && /^\d+$/.test(parts[0])) {
+        setEmployeeId(parts[0]);
+      }
+    }
   }, [profile]);
 
   const isSecretary = roleSlugs?.has("secretary");
@@ -65,21 +74,51 @@ export default function CompleteProfile() {
       toast.error("Please enter your full name");
       return;
     }
-    setBusy(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, phone, requested_role: role, status: "pending" })
-      .eq("id", session.user.id);
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
+    if (!employeeId.trim()) {
+      toast.error("Please enter your Employee ID / eSSL ID");
       return;
     }
-    await refresh();
-    nav("/waiting-approval", { replace: true });
+    setBusy(true);
+
+    try {
+      // Check if biometric_id/employee_id is already registered to someone else
+      const { data: existingId, error: checkError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .or(`employee_id.eq.${employeeId.trim()},biometric_id.eq.${employeeId.trim()}`)
+        .neq("id", session.user.id)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingId) {
+        toast.error(`Employee ID/eSSL ID "${employeeId.trim()}" is already assigned to ${existingId.full_name || 'another user'}.`);
+        setBusy(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          full_name: fullName, 
+          phone, 
+          requested_role: role, 
+          employee_id: employeeId.trim(),
+          biometric_id: employeeId.trim(),
+          status: "pending" 
+        })
+        .eq("id", session.user.id);
+
+      if (error) throw error;
+
+      await refresh();
+      nav("/waiting-approval", { replace: true });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile");
+    } finally {
+      setBusy(false);
+    }
   };
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
@@ -102,6 +141,15 @@ export default function CompleteProfile() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your full name"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="employeeId">Employee ID / eSSL ID</Label>
+            <Input
+              id="employeeId"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              placeholder="Enter your ID (e.g. 1022)"
             />
           </div>
           <div className="space-y-1.5">

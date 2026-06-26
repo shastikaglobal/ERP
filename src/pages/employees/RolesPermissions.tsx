@@ -107,12 +107,14 @@ export default function RolesPermissions() {
       }
       const dbEmployees = employeesRes.ok ? await employeesRes.json() : [];
 
-      const mappedUsers = (dbUsers || []).map((u: any) => {
-        return {
-          ...u,
-          employeeRole: u.requested_role || "User"
-        };
-      });
+      const mappedUsers = (dbUsers || [])
+        .filter((u: any) => u.status === "approved")
+        .map((u: any) => {
+          return {
+            ...u,
+            employeeRole: u.requested_role || "User"
+          };
+        });
       setUsers(mappedUsers);
 
       console.log('Fetching permissions from /api/user-permissions...');

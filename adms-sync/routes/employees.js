@@ -156,6 +156,79 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/employees/register - Public signup route to bypass email verification constraints
+router.post('/register', async (req, res) => {
+  try {
+    const { employeeId, email, password } = req.body;
+    
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+    
+    let signUpEmail = email;
+    let empId = null;
+    
+    if (employeeId) {
+      empId = employeeId.trim();
+      const host = req.headers.host || 'local.erp';
+      const hostname = host.split(':')[0];
+      const domain = hostname === 'localhost' || hostname === '127.0.0.1' ? 'local.erp' : hostname;
+      signUpEmail = `${empId}@${domain}`;
+    } else if (email) {
+      signUpEmail = email.trim();
+    } else {
+      return res.status(400).json({ error: 'Employee ID or Email is required' });
+    }
+    
+    // Check if biometric_id/employee_id is already registered
+    if (empId) {
+      const { data: existingId, error: checkError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .or(`employee_id.eq.${empId},biometric_id.eq.${empId}`)
+        .maybeSingle();
+        
+      if (checkError) throw checkError;
+      if (existingId) {
+        return res.status(400).json({ error: `Employee ID "${empId}" is already registered.` });
+      }
+    } else {
+      const { data: existingEmail, error: checkError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('email', signUpEmail)
+        .maybeSingle();
+        
+      if (checkError) throw checkError;
+      if (existingEmail) {
+        return res.status(400).json({ error: `Email "${signUpEmail}" is already registered.` });
+      }
+    }
+    
+    console.log(`[Signup API] Creating auth user for email ${signUpEmail}...`);
+    
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: signUpEmail,
+      password: password,
+      email_confirm: true,
+      user_metadata: empId ? {
+        employee_id: empId,
+        biometric_id: empId
+      } : {}
+    });
+    
+    if (error) {
+      console.error('[Signup API] Supabase error:', error.message);
+      return res.status(400).json({ error: error.message });
+    }
+    
+    res.json({ success: true, email: signUpEmail });
+  } catch (err) {
+    console.error('[Signup API] Error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
 // POST /api/employees - Add new employee
 router.post('/', requireAuth, async (req, res) => {
   try {

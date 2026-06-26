@@ -20,6 +20,7 @@ type ProfileRow = {
   status: "pending" | "approved" | "rejected";
   rejection_reason: string | null;
   created_at: string;
+  biometric_id?: string | null;
 };
 
 const ROLE_OPTIONS = [
@@ -196,6 +197,7 @@ export default function Approvals() {
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>Employee ID / eSSL ID</TableHead>
           <TableHead>Phone</TableHead>
           <TableHead>Requested Role</TableHead>
           <TableHead>Status</TableHead>
@@ -205,7 +207,7 @@ export default function Approvals() {
       <TableBody>
         {list.length === 0 && (
           <TableRow>
-            <TableCell colSpan={showActions ? 6 : 5} className="text-center text-sm text-muted-foreground py-8">
+            <TableCell colSpan={showActions ? 7 : 6} className="text-center text-sm text-muted-foreground py-8">
               No records
             </TableCell>
           </TableRow>
@@ -214,6 +216,7 @@ export default function Approvals() {
           <TableRow key={r.id}>
             <TableCell>{r.full_name || "—"}</TableCell>
             <TableCell className="text-sm">{r.email}</TableCell>
+            <TableCell className="font-mono text-xs text-amber-500">{r.biometric_id || "—"}</TableCell>
             <TableCell className="text-sm">{r.phone || "—"}</TableCell>
             <TableCell>{r.requested_role || <span className="text-muted-foreground text-sm">—</span>}</TableCell>
             <TableCell>
@@ -278,6 +281,7 @@ export default function Approvals() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Employee ID / eSSL ID</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
                   {showColumns && <TableHead className="text-right">Change Role</TableHead>}
@@ -286,7 +290,7 @@ export default function Approvals() {
               <TableBody>
                 {approved.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={showColumns ? 5 : 4} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={showColumns ? 6 : 5} className="text-center text-sm text-muted-foreground py-8">
                       No records
                     </TableCell>
                   </TableRow>
@@ -295,6 +299,7 @@ export default function Approvals() {
                   <TableRow key={r.id}>
                     <TableCell>{r.full_name || "—"}</TableCell>
                     <TableCell className="text-sm">{r.email}</TableCell>
+                    <TableCell className="font-mono text-xs text-amber-500">{r.biometric_id || "—"}</TableCell>
                     <TableCell className="text-sm">{r.phone || "—"}</TableCell>
                     <TableCell><Badge variant="default">{r.status}</Badge></TableCell>
                     {showColumns && (

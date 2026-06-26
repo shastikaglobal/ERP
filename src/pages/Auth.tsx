@@ -15,6 +15,8 @@ export default function Auth() {
   const [busyEmail, setBusyEmail] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpId, setSignUpId] = useState("");
 
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
@@ -62,6 +64,63 @@ export default function Auth() {
     } catch (err: any) {
       console.error("Login exception:", err);
       toast.error(err?.message || "An unexpected error occurred during login.");
+      setBusyEmail(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+    setBusyEmail(true);
+
+    try {
+      const input = signUpId.trim();
+      const payload = {};
+      if (input.includes('@')) {
+        payload.email = input;
+      } else {
+        payload.employeeId = input;
+      }
+      payload.password = password;
+
+      // Call public backend registration endpoint
+      const response = await fetch('/api/employees/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to sign up");
+      }
+
+      toast.success("Account registered! Logging you in...");
+
+      // Automatically sign in the user
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: result.email,
+        password
+      });
+
+      if (signInError) throw signInError;
+
+      toast.success("Logged in successfully!");
+      setIsSignUp(false);
+      setPassword("");
+      setConfirmPassword("");
+      setSignUpId("");
+    } catch (err: any) {
+      console.error("Sign up exception:", err);
+      toast.error(err?.message || "An unexpected error occurred during sign up.");
+    } finally {
       setBusyEmail(false);
     }
   };
@@ -152,6 +211,65 @@ export default function Auth() {
                 </Button>
               </form>
             </>
+          ) : isSignUp ? (
+            <>
+              <div className="text-center space-y-1">
+                <h1 className="text-lg font-semibold">Create an account</h1>
+                <p className="text-sm text-muted-foreground">
+                  Enter your details to register.
+                </p>
+              </div>
+
+              <form onSubmit={handleEmailSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="Employee ID / Email"
+                    value={signUpId}
+                    onChange={(e) => setSignUpId(e.target.value)}
+                    required
+                    className="bg-white/5"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-white/5"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="bg-white/5"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={busyEmail}
+                >
+                  {busyEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign Up"}
+                </Button>
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(false);
+                      setPassword("");
+                      setConfirmPassword("");
+                      setSignUpId("");
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    Already have an account? Sign In
+                  </button>
+                </div>
+              </form>
+            </>
           ) : (
             <>
               <div className="text-center space-y-1">
@@ -180,7 +298,18 @@ export default function Auth() {
                     className="bg-white/5"
                   />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setPassword("");
+                      setConfirmPassword("");
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    Create Account (Sign Up)
+                  </button>
                   <button
                     type="button"
                     onClick={() => setIsResetModalOpen(true)}
