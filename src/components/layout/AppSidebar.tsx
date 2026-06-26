@@ -178,7 +178,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const activeIsAdmin = isAdmin || employeeAdmin;
 
   // BDE role: if no explicit user_permissions are set, default to CRM only
-  const BDE_ALLOWED_GROUPS = ['CRM', 'HR & Employees'];
+  const BDE_ALLOWED_GROUPS = ['CRM'];
   const hasBdeDefaults = isBde && permissions.length === 0;
 
   console.log('[AppSidebar] 🛠 Recalculating visibleGroups. Admin:', activeIsAdmin, 'BDE:', isBde, 'Permissions Count:', permissions.length);
@@ -207,9 +207,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           };
         }
         if (!BDE_ALLOWED_GROUPS.includes(g.title)) return { ...g, items: [] };
-        // For HR & Employees, only show Face Attendance (not salary, directory etc)
+        // For HR & Employees, hide all items for BDE users (Face Attendance is role-restricted)
         if (g.title === 'HR & Employees') {
-          return { ...g, items: g.items.filter(i => i.title === 'Face Attendance') };
+          return { ...g, items: [] };
         }
         return g; // Show full CRM group
       }
@@ -219,7 +219,13 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         // If it has sub-items (like Warehouse -> Inventory -> Available Stock)
         if (item.items && item.items.length > 0) {
           const filteredSubItems = item.items.filter(sub => {
-            const isAllowed = permissions.includes(sub.title.toLowerCase().trim());
+            const subTitle = sub.title.toLowerCase().trim();
+            // Match plain title OR "SECTION__sub" format stored in DB
+            const isAllowed = permissions.some(p => {
+              if (p === subTitle) return true;
+              const parts = p.split('__');
+              return parts.length > 1 && parts[parts.length - 1] === subTitle;
+            });
             if (isAllowed) console.log(`[AppSidebar] ✔️ Allowed (sub): ${sub.title}`);
             return isAllowed;
           });
@@ -230,7 +236,13 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         return item;
       }).filter(item => {
         // Keep item if it has allowed sub-items OR if its own title is allowed
-        const isSelfAllowed = permissions.includes(item.title.toLowerCase().trim());
+        const itemTitle = item.title.toLowerCase().trim();
+        // Match plain title OR "SECTION__sub" format stored in DB
+        const isSelfAllowed = permissions.some(p => {
+          if (p === itemTitle) return true;
+          const parts = p.split('__');
+          return parts.length > 1 && parts[parts.length - 1] === itemTitle;
+        });
         const hasAllowedChildren = item.items && item.items.length > 0;
         
         if (isSelfAllowed) console.log(`[AppSidebar] ✔️ Allowed (item): ${item.title}`);

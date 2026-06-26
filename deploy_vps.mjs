@@ -108,7 +108,7 @@ async function main() {
       console.log('\n💾 STEP 1 - Backing Up VPS PostgreSQL Database');
       await runCommand(conn, 'mkdir -p /var/backups/shastika-erp', 'Creating remote backup directory');
       const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-      const backupCmd = `PGPASSWORD="Shastika2026" pg_dump -h localhost -U postgres shastika_erp > /var/backups/shastika-erp/backup_${timestamp}.sql`;
+      const backupCmd = `PGPASSWORD="Shastika2026" pg_dump -h 127.0.0.1 -U erp_admin shastika_erp > /var/backups/shastika-erp/backup_${timestamp}.sql`;
       await runCommand(conn, backupCmd, `Executing pg_dump shastika_erp to backup_${timestamp}.sql`);
       // Keep only last 7 backups
       await runCommand(conn, 'ls -1t /var/backups/shastika-erp/backup_*.sql | tail -n +8 | xargs -r rm --', 'Pruning old backups');
@@ -175,6 +175,10 @@ async function main() {
       for (const [k, v] of Object.entries(localEnv)) {
         if (k === 'VITE_SUPABASE_URL') {
           remoteEnv['SUPABASE_URL'] = v;
+        } else if (k === 'PG_HOST') {
+          remoteEnv['PG_HOST'] = '127.0.0.1'; // Always connect locally on VPS
+        } else if (k === 'PG_USER') {
+          remoteEnv['PG_USER'] = 'erp_admin'; // Connect as erp_admin on VPS
         } else {
           remoteEnv[k] = v;
         }
@@ -226,7 +230,7 @@ async function main() {
 
       // 7. DB Health Check
       console.log('\n🗄️ STEP 7 - Database Health Check');
-      await runCommand(conn, 'pg_isready -h localhost -p 5432 -U postgres -d shastika_erp', 'pg_isready check');
+      await runCommand(conn, 'pg_isready -h 127.0.0.1 -p 5432 -U erp_admin -d shastika_erp', 'pg_isready check');
 
       console.log('\n' + '='.repeat(60));
       console.log('🎉 DEPLOYMENT COMPLETE!');

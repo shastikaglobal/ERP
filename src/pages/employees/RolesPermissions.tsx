@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 const SECTION_MAPPING: Record<string, string[]> = {
   "DASHBOARDS": ["Executive & Activities", "Sales Analytics", "Shipment Analytics", "Financial Overview", "Employee Productivity", "Roles & Permissions"],
   "FARMERS": ["Farmers List", "Create Farmer", "Convert to Customer"],
-  "CRM": ["Dashboard", "Leads", "Pipelines", "Follow-Ups", "Communication", "Client Acquisition", "Successful Conversation", "Client Success", "Customer Database", "Task", "Mail Box"],
+  "CRM": ["Dashboard", "Leads", "Pipelines", "Follow-Ups", "Communication", "Client Acquisition", "Successful Conversation", "Client Success", "Customer Database", "Task", "Reports", "Mail Box"],
   "MOBILE CRM": ["Mobile Login", "Push Notifications", "Call Logging", "GPS Tracking", "IP Tracking", "Device Authorization"],
   "PROCUREMENT": ["Dashboard", "Purchase Orders", "Suppliers"],
   "WAREHOUSE & INVENTORY": ["Dashboard", "Receiving Goods", "Available Stock Management", "Reserved Stock Tracking", "Export Ready Inventory", "Batch-wise Stock Tracking", "Damaged Stock Management", "Expiry Monitoring", "Multi-Warehouse Management", "Packing Management", "Inspection", "New Inspection", "Approvals", "WH Quality Control", "Container Loading", "Dispatch", "Shipment Register", "Create Shipment", "Container Tracking", "Delivery Status", "Barcodes", "Generate QR", "Scan", "Quotations", "Create Quotation", "Convert to Order", "Orders", "Create Order", "Status Tracking", "Fulfillment", "Invoices", "Packing Lists", "Certificate of Origin", "Document Viewer"],
@@ -137,7 +137,16 @@ export default function RolesPermissions() {
           if (Array.isArray(p.permissions)) {
             p.permissions.forEach((perm: any) => {
               if (perm.has_access) {
-                newDynamicMap[`${p.id}_${perm.section}`] = true;
+                // DB stores section as "SECTION__sub" (double underscore) — convert to "userId_SECTION_sub" map key
+                // Also support legacy format where section was just "sub" (single word, no __)
+                const sectionStr: string = perm.section || '';
+                if (sectionStr.includes('__')) {
+                  const [secPart, subPart] = sectionStr.split('__');
+                  newDynamicMap[`${p.id}_${secPart}_${subPart}`] = true;
+                } else {
+                  // Legacy: try to match against known sections
+                  newDynamicMap[`${p.id}_${sectionStr}`] = true;
+                }
               }
             });
           }
@@ -156,18 +165,21 @@ export default function RolesPermissions() {
 
   const [savingBulk, setSavingBulk] = useState(false);
 
-  const toggleDynamicAccess = async (userId: string, subsection: string) => {
+  const toggleDynamicAccess = async (userId: string, section: string, sub: string) => {
     if (!isAdmin) {
       toast.error("Only Administrators can modify user permissions.");
       return;
     }
     
-    const currentVal = !!dynamicAccessMap[`${userId}_${subsection}`];
+    // Use section+sub as unique key to avoid collision (e.g. PROCUREMENT/Dashboard vs WAREHOUSE/Dashboard)
+    const mapKey = `${userId}_${section}_${sub}`;
+    const permKey = `${section}__${sub}`; // stored in DB
+    const currentVal = !!dynamicAccessMap[mapKey];
     const newVal = !currentVal;
     
     setDynamicAccessMap(prev => ({
       ...prev,
-      [`${userId}_${subsection}`]: newVal
+      [mapKey]: newVal
     }));
 
     try {
@@ -179,7 +191,7 @@ export default function RolesPermissions() {
         },
         body: JSON.stringify({
           user_id: userId,
-          section: subsection,
+          section: permKey,
           has_access: newVal,
         }),
       });
@@ -187,13 +199,13 @@ export default function RolesPermissions() {
       if (!saveRes.ok || saveData.error) {
         throw new Error(saveData.error || 'Failed to save permission');
       }
-      toast.success(`Permission ${newVal ? 'granted' : 'revoked'} for ${subsection}`);
+      toast.success(`Permission ${newVal ? 'granted' : 'revoked'} for ${sub}`);
     } catch (err: any) {
       console.error('Save permission error:', err);
       // Revert UI automatically if failure happens
       setDynamicAccessMap(prev => ({
         ...prev,
-        [`${userId}_${subsection}`]: currentVal
+        [mapKey]: currentVal
       }));
       toast.error("Failed to update user permission: " + err.message);
     }
@@ -209,18 +221,18 @@ export default function RolesPermissions() {
     let anyMissing = false;
     users.forEach(u => {
       subs.forEach(sub => {
-        if (!dynamicAccessMap[`${u.id}_${sub}`]) anyMissing = true;
+        if (!dynamicAccessMap[`${u.id}_${sectionName}_${sub}`]) anyMissing = true;
       });
     });
 
-    const newVal = anyMissing; // if any missing, select all (true). else unselect all (false).
+    const newVal = anyMissing;
     
     // Optimistically update UI
     setDynamicAccessMap(prev => {
       const next = { ...prev };
       users.forEach(u => {
         subs.forEach(sub => {
-          next[`${u.id}_${sub}`] = newVal;
+          next[`${u.id}_${sectionName}_${sub}`] = newVal;
         });
       });
       return next;
@@ -242,7 +254,7 @@ export default function RolesPermissions() {
               },
               body: JSON.stringify({
                 user_id: u.id,
-                section: sub,
+                section: `${sectionName}__${sub}`,
                 has_access: newVal,
               }),
             })
@@ -369,12 +381,12 @@ export default function RolesPermissions() {
                           </div>
                         </td>
                         {allSubsections.map(({ section, sub }) => {
-                          const hasAccess = dynamicAccessMap[`${u.id}_${sub}`];
+                          const hasAccess = dynamicAccessMap[`${u.id}_${section}_${sub}`];
                           return (
                             <td 
-                              key={`${section}-${sub}`} 
+                              key={`${u.id}-${section}-${sub}`} 
                               className={`text-center px-4 py-3 select-none border-r border-border/40 transition-colors ${isAdmin && !savingBulk ? 'cursor-pointer hover:bg-primary/10' : 'cursor-default opacity-60'}`}
-                              onClick={() => { if(!savingBulk) toggleDynamicAccess(u.id, sub); }}
+                              onClick={() => { if(!savingBulk) toggleDynamicAccess(u.id, section, sub); }}
                             >
                               <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded-[6px] border transition-all duration-200 ${hasAccess ? 'bg-amber-500 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)] scale-110' : 'border-input bg-background/50 group-hover:border-amber-500/40'}`}>
                                 {hasAccess && <Check className="h-4 w-4 text-white stroke-[3.5]" />}

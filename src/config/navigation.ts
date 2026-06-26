@@ -14,7 +14,7 @@ import {
   UsersRound, CalendarCheck, ShieldCheck,
   Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare, Trash2, Inbox,
   Smartphone, Activity, ShieldAlert, Monitor, PhoneCall, Key, MessageSquare, Database, Globe,
-  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer
+  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer, Calendar, CheckCircle
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -69,6 +69,7 @@ export const navGroups: NavGroup[] = [
       { title: "Client Success", url: "/crm/customers", icon: Award, permission: "farmers.view" },
       { title: "Customer Database", url: "/crm/customer-database", icon: Database, permission: "farmers.view" },
       { title: "Task", url: "/crm/tasks", icon: ClipboardCheck, permission: "farmers.view" },
+      { title: "Reports", url: "/crm/reports", icon: BarChart3, permission: "farmers.view" },
       { title: "Mail Box", url: "/system/mailbox", icon: Inbox, permission: "farmers.view" },
       { title: "Email Integration", url: "/crm/email", icon: Mail, permission: "farmers.view" },
       // { title: "Security", url: "/crm/security", icon: ShieldCheck, permission: "farmers.view" },
@@ -233,6 +234,20 @@ export const navGroups: NavGroup[] = [
       { title: "Salary Report", url: "/employees/salary", icon: Coins, permission: "hr.view" },
       { title: "Face Attendance", url: "/employees/face-attendance", icon: ScanLine },
       { title: "Register Face", url: "/employees/register-face", icon: UserCheck, permission: "hr.view" },
+    ],
+  },
+  {
+    title: "Reports & Analytics",
+    icon: BarChart3,
+    items: [
+      { title: "Dashboard", url: "/reports", icon: BarChart3 },
+      { title: "Stock Summary", url: "/reports/stock-summary", icon: Package },
+      { title: "Batch Tracking", url: "/reports/batch-tracking", icon: BarChart3 },
+      { title: "Dispatch Report", url: "/reports/dispatch", icon: Truck },
+      { title: "Container Loading", url: "/reports/container-loading", icon: Container },
+      { title: "Damage/Wastage", url: "/reports/damage-wastage", icon: AlertTriangle },
+      { title: "Inventory Aging", url: "/reports/inventory-aging", icon: Calendar },
+      { title: "Export Ready Stock", url: "/reports/export-ready", icon: CheckCircle },
     ],
   },
   {

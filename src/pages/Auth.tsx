@@ -142,7 +142,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast.success("Password updated successfully!");
-      navigate("/employees/face-attendance?mode=checkin", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Failed to update password");
     } finally {
@@ -150,7 +150,7 @@ export default function Auth() {
     }
   };
 
-  const from = (location.state as { from?: string })?.from || "/employees/face-attendance";
+  const from = (location.state as { from?: string })?.from || "/dashboard";
   
   if (!loading && session && !isResetMode) return <Navigate to={from} replace />;
 

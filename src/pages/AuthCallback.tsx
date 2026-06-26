@@ -75,17 +75,17 @@ export default function AuthCallback() {
             console.log("[AuthCallback] Exchanging login code for session...");
             const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
             if (exchangeError) throw exchangeError;
-            if (active) navigate("/employees/face-attendance?mode=checkin", { replace: true });
+            if (active) navigate("/dashboard", { replace: true });
           } else {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              if (active) navigate("/employees/face-attendance?mode=checkin", { replace: true });
+              if (active) navigate("/dashboard", { replace: true });
             } else {
               // Wait a tiny bit for auto-sign in if hash is present
               setTimeout(async () => {
                 const { data: { session: retrySession } } = await supabase.auth.getSession();
                 if (retrySession && active) {
-                  navigate("/employees/face-attendance?mode=checkin", { replace: true });
+                  navigate("/dashboard", { replace: true });
                 } else if (active) {
                   setErrorMsg("No active session found. Please sign in.");
                 }

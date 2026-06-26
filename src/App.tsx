@@ -97,6 +97,7 @@ const WarehouseZones = lazy(() => import("./pages/warehouse/WarehouseZones"));
 const ReceivingGoods = lazy(() => import("./pages/warehouse/ReceivingGoods"));
 const PackingManagement = lazy(() => import("./pages/warehouse/PackingManagement"));
 // Reports
+const ReportsHub = lazy(() => import("./pages/reports/ReportsHub"));
 const StockSummaryReport = lazy(() => import("./pages/reports/StockSummaryReport"));
 const BatchTrackingReport = lazy(() => import("./pages/reports/BatchTrackingReport"));
 const DispatchReport = lazy(() => import("./pages/reports/DispatchReport"));
@@ -282,6 +283,7 @@ const App = () => (
               <Route path="/warehouse" element={<Navigate to="/warehouse/dashboard" replace />} />
 
               {/* Reports */}
+              <Route path="/reports" element={<ReportsHub />} />
               <Route path="/reports/stock-summary" element={<StockSummaryReport />} />
               <Route path="/reports/batch-tracking" element={<BatchTrackingReport />} />
               <Route path="/reports/dispatch" element={<DispatchReport />} />

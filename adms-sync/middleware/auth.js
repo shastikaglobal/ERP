@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 const fs = require('fs');
 const db = require('../db');
+const jwt = require('jsonwebtoken');
 
 let dir = __dirname;
 let envPath;
@@ -36,6 +37,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   }
 });
 
+// ─── Auth Middleware ──────────────────────────────────────────────────────────
+// Uses jwt.decode() to read the Supabase JWT locally WITHOUT a network call.
+// This eliminates ECONNRESET 500 errors caused by calling supabase.auth.getUser()
+// on every request. Token expiry is checked manually.
+// Falls back to Supabase API only if the token cannot be decoded at all.
+
 const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -45,39 +52,39 @@ const requireAuth = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   let user = null;
-  let lastError = null;
-  const maxAttempts = 3;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  // ── Strategy 1: Decode JWT locally (no network needed) ───────────────────
+  try {
+    const decoded = jwt.decode(token);
+    if (decoded && decoded.sub) {
+      // Check expiry
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (decoded.exp && decoded.exp < nowSec) {
+        return res.status(401).json({ error: "Token expired" });
+      }
+      user = { id: decoded.sub, email: decoded.email || null };
+    }
+  } catch (decodeErr) {
+    console.warn('[requireAuth] jwt.decode failed:', decodeErr.message);
+  }
+
+  // ── Strategy 2: Fallback to Supabase API if decode failed ────────────────
+  if (!user) {
+    console.log(`[requireAuth] Falling back to Supabase API for ${req.method} ${req.url}`);
     try {
       const { data, error } = await supabase.auth.getUser(token);
-      if (error) {
-        lastError = error;
-        // Do not retry on definite client auth errors
-        if (error.status === 400 || error.status === 401 || error.message?.includes('invalid') || error.message?.includes('expired')) {
-          break;
-        }
-        console.warn(`[requireAuth] Attempt ${attempt}/${maxAttempts} returned error:`, error.message);
-      } else if (data?.user) {
-        user = data.user;
-        break;
+      if (error || !data?.user) {
+        console.log(`[DEBUG] requireAuth: Token check failed for ${req.method} ${req.url}:`, error?.message || 'User not found');
+        return res.status(401).json({ error: "Invalid or expired token" });
       }
-    } catch (err) {
-      lastError = err;
-      console.warn(`[requireAuth] Attempt ${attempt}/${maxAttempts} connection failed:`, err.message);
-    }
-
-    if (attempt < maxAttempts && !user) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      user = data.user;
+    } catch (netErr) {
+      console.error(`[requireAuth] Supabase API call failed for ${req.method} ${req.url}:`, netErr.message);
+      return res.status(503).json({ error: "Auth service temporarily unavailable" });
     }
   }
 
-  if (!user) {
-    console.log(`[DEBUG] requireAuth: Token check failed for ${req.method} ${req.url}:`, lastError?.message || 'User not found');
-    return res.status(401).json({ error: "Invalid or expired token" });
-  }
-
-  // Ensure user's profile exists in the local VPS database to prevent foreign key violations on created_by columns
+  // ── Ensure user profile exists in local VPS DB ───────────────────────────
   try {
     const { rows: localProfile } = await db.query(
       'SELECT id FROM profiles WHERE id = $1 LIMIT 1',
@@ -98,8 +105,8 @@ const requireAuth = async (req, res, next) => {
         console.log(`[requireAuth] Found profile in Supabase. Syncing to local profiles: ${sbProfile.full_name}`);
         await db.query(
           `INSERT INTO profiles (
-            id, company_id, full_name, email, avatar_url, phone, employee_id, role, department, 
-            zoho_meeting_link, requested_role, system_mode, city, status, rejection_reason, 
+            id, company_id, full_name, email, avatar_url, phone, employee_id, role, department,
+            zoho_meeting_link, requested_role, system_mode, city, status, rejection_reason,
             email_signature, biometric_id, is_active, is_deleted, created_at, updated_at
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
