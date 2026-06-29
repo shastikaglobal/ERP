@@ -141,7 +141,7 @@ router.get('/all/profiles', requireAuth, async (req, res) => {
   try {
     try {
       const { rows } = await db.query(`
-        SELECT id, company_id, full_name, email, phone, requested_role, status, rejection_reason, 
+        SELECT id, company_id, full_name, email, phone, role, requested_role, status, rejection_reason, 
                created_at, department, is_active, biometric_id, monthly_salary, joining_date 
         FROM profiles 
         WHERE is_deleted IS NOT TRUE 
@@ -154,7 +154,7 @@ router.get('/all/profiles', requireAuth, async (req, res) => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, phone, requested_role, status, rejection_reason, created_at, department, is_active, biometric_id, monthly_salary, joining_date')
+      .select('id, full_name, email, phone, role, requested_role, status, rejection_reason, created_at, department, is_active, biometric_id, monthly_salary, joining_date')
       .eq('is_deleted', false)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -412,7 +412,10 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
     // Build profile update payload
     const profileUpdate = { ...otherUpdates };
     if (status) profileUpdate.status = status;
-    if (requested_role) profileUpdate.requested_role = requested_role;
+    if (requested_role) {
+      profileUpdate.requested_role = requested_role;
+      profileUpdate.role = requested_role; // Synchronize active role field!
+    }
     if (status === 'approved') {
       profileUpdate.approved_by = req.user?.sub || null;
       profileUpdate.approved_at = new Date().toISOString();
@@ -445,14 +448,24 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
       if (roleErr) throw roleErr;
 
       if (roleRow?.id) {
-        // Remove ALL existing roles for this user (enforces one role per person)
+        // Remove ALL existing roles for this user in Supabase (enforces one role per person)
         await supabase.from('user_roles').delete().eq('user_id', id);
-        // Insert single new role
+        // Insert single new role in Supabase
         const { error: insertErr } = await supabase
           .from('user_roles')
           .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
         if (insertErr) throw insertErr;
-        console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' (one-role enforced)`);
+        console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
+
+        // === SYNC TO LOCAL VPS DATABASE user_roles ===
+        // Update user_roles in local database (upsert conflict handles it gracefully!)
+        await db.query(`
+          INSERT INTO user_roles (user_id, role_id) 
+          VALUES ($1, $2) 
+          ON CONFLICT (user_id) 
+          DO UPDATE SET role_id = EXCLUDED.role_id, is_deleted = false, deleted_at = NULL, deleted_by = NULL
+        `, [id, roleRow.id]);
+        console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in local DB`);
       } else {
         console.warn(`[ROLE SYNC] Role slug '${requested_role}' not found in Supabase roles table`);
       }

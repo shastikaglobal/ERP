@@ -112,7 +112,7 @@ export default function RolesPermissions() {
         .map((u: any) => {
           return {
             ...u,
-            employeeRole: u.requested_role || "User"
+            employeeRole: u.role || u.requested_role || "User"
           };
         });
       setUsers(mappedUsers);
