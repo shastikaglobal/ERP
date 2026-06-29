@@ -480,47 +480,81 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
       profileUpdate.approved_at = null;
     }
 
+    // 1. Update profiles table locally first
     if (Object.keys(profileUpdate).length > 0) {
-      const { error: profileErr } = await supabase
-        .from('profiles')
-        .update(profileUpdate)
-        .eq('id', id);
-      if (profileErr) throw profileErr;
+      try {
+        await syncProfileToLocalDb(id, profileUpdate);
+        console.log(`[Sync] Profile ${id} successfully updated in local DB`);
+      } catch (dbErr) {
+        console.error(`[Sync] Local DB profile update failed:`, dbErr.message);
+        throw dbErr;
+      }
 
-      // Sync changes to local VPS database profiles table
-      await syncProfileToLocalDb(id, profileUpdate);
+      // Try Supabase update
+      try {
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update(profileUpdate)
+          .eq('id', id);
+        if (profileErr) throw profileErr;
+      } catch (supaErr) {
+        console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, supaErr.message);
+      }
     }
 
-    // Assign role — ONE ROLE PER PERSON
+    // 2. Assign role locally first
     if (requested_role && (status === 'approved' || !status)) {
-      const { data: roleRow, error: roleErr } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('slug', requested_role)
-        .maybeSingle();
-      if (roleErr) throw roleErr;
+      // Find role ID locally from the local database
+      let roleId = null;
+      try {
+        const { rows: localRoles } = await db.query(
+          `SELECT id FROM roles WHERE slug = $1 LIMIT 1`,
+          [requested_role]
+        );
+        if (localRoles.length > 0) {
+          roleId = localRoles[0].id;
+        }
+      } catch (localRoleErr) {
+        console.error(`[Sync] Local role search failed for slug '${requested_role}':`, localRoleErr.message);
+      }
 
-      if (roleRow?.id) {
-        // Remove ALL existing roles for this user in Supabase (enforces one role per person)
-        await supabase.from('user_roles').delete().eq('user_id', id);
-        // Insert single new role in Supabase
-        const { error: insertErr } = await supabase
-          .from('user_roles')
-          .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
-        if (insertErr) throw insertErr;
-        console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
-
-        // === SYNC TO LOCAL VPS DATABASE user_roles ===
+      if (roleId) {
         // Update user_roles in local database (upsert conflict handles it gracefully!)
-        await db.query(`
-          INSERT INTO user_roles (user_id, role_id) 
-          VALUES ($1, $2) 
-          ON CONFLICT (user_id) 
-          DO UPDATE SET role_id = EXCLUDED.role_id, is_deleted = false, deleted_at = NULL, deleted_by = NULL
-        `, [id, roleRow.id]);
-        console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in local DB`);
+        try {
+          await db.query(`
+            INSERT INTO user_roles (user_id, role_id) 
+            VALUES ($1, $2) 
+            ON CONFLICT (user_id) 
+            DO UPDATE SET role_id = EXCLUDED.role_id, is_deleted = false, deleted_at = NULL, deleted_by = NULL
+          `, [id, roleId]);
+          console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in local DB`);
+        } catch (localUrErr) {
+          console.error(`[Sync] Local user_roles insertion failed:`, localUrErr.message);
+          throw localUrErr;
+        }
+
+        // Try Supabase role sync in a try-catch block
+        try {
+          const { data: roleRow, error: roleErr } = await supabase
+            .from('roles')
+            .select('id')
+            .eq('slug', requested_role)
+            .maybeSingle();
+          
+          if (!roleErr && roleRow?.id) {
+            // Remove ALL existing roles for this user in Supabase
+            await supabase.from('user_roles').delete().eq('user_id', id);
+            // Insert single new role in Supabase
+            await supabase
+              .from('user_roles')
+              .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
+            console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
+          }
+        } catch (supaRoleErr) {
+          console.warn(`[Sync] Supabase role sync failed/ignored:`, supaRoleErr.message);
+        }
       } else {
-        console.warn(`[ROLE SYNC] Role slug '${requested_role}' not found in Supabase roles table`);
+        console.warn(`[ROLE SYNC] Role slug '${requested_role}' not found in local roles table`);
       }
     }
 
