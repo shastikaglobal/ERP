@@ -233,6 +233,10 @@ app.post('/api/auth/login', async (req, res) => {
         }
       }
     });
+  } catch (err) {
+    console.error('Local auth login error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.post('/api/face-scan', async (req, res) => {
