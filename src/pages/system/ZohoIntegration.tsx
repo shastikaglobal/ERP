@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function ZohoIntegration() {
-  const { profile } = useAuth();
+  const { profile, roleSlugs } = useAuth();
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
@@ -27,7 +27,12 @@ export default function ZohoIntegration() {
     });
     if (res.ok) {
       const data = await res.json();
-      setAccounts(data.filter((a: any) => a.user_id === profile.id));
+      const isAdmin = Array.from(roleSlugs || []).map(s => s.toLowerCase()).includes("admin");
+      if (isAdmin) {
+        setAccounts(data);
+      } else {
+        setAccounts(data.filter((a: any) => a.user_id === profile.id));
+      }
     }
     setLoading(false);
   }
