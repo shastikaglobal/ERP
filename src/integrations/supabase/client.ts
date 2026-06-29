@@ -109,10 +109,8 @@ class CustomAuthWrapper {
     try {
       const { data, error } = await client.auth.signInWithPassword(credentials as any);
       if (error) {
-        if (error.message?.includes("restricted") || error.message?.includes("quota") || error.status === 402) {
-          throw new Error("Supabase restricted");
-        }
-        return { data: null, error };
+        // Fallback to local auth for ANY error (e.g. quota limit, paused project, or user not found in Supabase Auth but exists locally)
+        throw new Error(error.message || "Supabase auth failed");
       }
       
       this.currentSession = data.session;
