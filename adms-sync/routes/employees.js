@@ -401,13 +401,14 @@ router.put('/:id', requireAuth, async (req, res) => {
       throw dbErr;
     }
 
-    // 2. Try to update Supabase in the background / catch quota errors
-    try {
-      const { error } = await supabase.from('profiles').update(updates).eq('id', id);
-      if (error) throw error;
-    } catch (supabaseErr) {
-      console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, supabaseErr.message);
-    }
+    // 2. Try to update Supabase in the background (non-blocking)
+    supabase.from('profiles').update(updates).eq('id', id)
+      .then(({ error }) => {
+        if (error) console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, error.message);
+      })
+      .catch(supabaseErr => {
+        console.warn(`[Sync] Supabase profile update exception:`, supabaseErr.message);
+      });
 
     res.json({ success: true });
   } catch (err) {
@@ -490,16 +491,14 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
         throw dbErr;
       }
 
-      // Try Supabase update
-      try {
-        const { error: profileErr } = await supabase
-          .from('profiles')
-          .update(profileUpdate)
-          .eq('id', id);
-        if (profileErr) throw profileErr;
-      } catch (supaErr) {
-        console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, supaErr.message);
-      }
+      // Try Supabase update in background (non-blocking)
+      supabase.from('profiles').update(profileUpdate).eq('id', id)
+        .then(({ error: profileErr }) => {
+          if (profileErr) console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, profileErr.message);
+        })
+        .catch(supaErr => {
+          console.warn(`[Sync] Supabase profile update exception:`, supaErr.message);
+        });
     }
 
     // 2. Assign role locally first
@@ -533,26 +532,22 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
           throw localUrErr;
         }
 
-        // Try Supabase role sync in a try-catch block
-        try {
-          const { data: roleRow, error: roleErr } = await supabase
-            .from('roles')
-            .select('id')
-            .eq('slug', requested_role)
-            .maybeSingle();
-          
-          if (!roleErr && roleRow?.id) {
-            // Remove ALL existing roles for this user in Supabase
-            await supabase.from('user_roles').delete().eq('user_id', id);
-            // Insert single new role in Supabase
-            await supabase
-              .from('user_roles')
-              .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
-            console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
-          }
-        } catch (supaRoleErr) {
-          console.warn(`[Sync] Supabase role sync failed/ignored:`, supaRoleErr.message);
-        }
+        // Try Supabase role sync in background (non-blocking)
+        supabase.from('roles').select('id').eq('slug', requested_role).maybeSingle()
+          .then(async ({ data: roleRow, error: roleErr }) => {
+            if (!roleErr && roleRow?.id) {
+              // Remove ALL existing roles for this user in Supabase
+              await supabase.from('user_roles').delete().eq('user_id', id);
+              // Insert single new role in Supabase
+              await supabase
+                .from('user_roles')
+                .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
+              console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
+            }
+          })
+          .catch(supaRoleErr => {
+            console.warn(`[Sync] Supabase role sync exception:`, supaRoleErr.message);
+          });
       } else {
         console.warn(`[ROLE SYNC] Role slug '${requested_role}' not found in local roles table`);
       }
