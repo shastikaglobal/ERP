@@ -52,16 +52,22 @@ export default function ZohoIntegration() {
   const handleSync = async (accountId: string) => {
     setSyncing(accountId);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-zoho-emails", {
-        body: { accountId }
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/emails/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ accountId })
       });
       
-      if (error) {
-        toast.error(`Connection Error: ${error.message}`);
+      if (!res.ok) {
+        toast.error(`Sync Failed: Server error`);
         return;
       }
-
-      if (data?.success === false) {
+      const data = await res.json();
+      if (data.success === false) {
         toast.error(`Sync Failed: ${data.error}`);
         return;
       }

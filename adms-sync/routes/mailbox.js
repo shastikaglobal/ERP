@@ -172,9 +172,13 @@ router.post('/sync', requireAuth, async (req, res) => {
     const { accountId } = req.body;
     if (!accountId) return res.status(400).json({ success: false, error: 'accountId required' });
 
-    const { data: account, error: accError } = await supabase
-      .from('zoho_accounts').select('*').eq('id', accountId).single();
-    if (accError || !account) return res.status(404).json({ success: false, error: 'Account not found' });
+    // Fetch account from local database
+    const { rows: accRows } = await db.query(
+      "SELECT * FROM zoho_accounts WHERE id = $1 LIMIT 1",
+      [accountId]
+    );
+    if (accRows.length === 0) return res.status(404).json({ success: false, error: 'Account not found' });
+    const account = accRows[0];
 
     const apiDomain = account.account_email?.endsWith('.com') ? 'zoho.com' : 'zoho.in';
 
@@ -199,10 +203,16 @@ router.post('/sync', requireAuth, async (req, res) => {
       if (refreshData.access_token) {
         accessToken = refreshData.access_token;
         const newExpiry = new Date(Date.now() + refreshData.expires_in * 1000).toISOString();
-        await supabase.from('zoho_accounts').update({ access_token: accessToken, expiry_time: newExpiry }).eq('id', accountId);
+        await db.query(
+          "UPDATE zoho_accounts SET access_token = $1, expiry_time = $2 WHERE id = $3",
+          [accessToken, newExpiry, accountId]
+        );
+        // Background sync to Supabase (if possible)
+        supabase.from('zoho_accounts').update({ access_token: accessToken, expiry_time: newExpiry }).eq('id', accountId).then(({ error }) => {
+          if (error) console.warn('[Sync] Background zoho_accounts update failed:', error.message);
+        });
       } else {
         console.warn(`[Sync] Token refresh failed for ${account.account_email}:`, refreshData.error_description || refreshData.error);
-        // Continue with existing token
       }
     }
 
@@ -227,7 +237,7 @@ router.post('/sync', requireAuth, async (req, res) => {
 
     // Fetch messages
     const messagesResponse = await fetch(
-      `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/messages/view?folderId=${inboxFolder.folderId}&limit=100`,
+      `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/folders/${inboxFolder.folderId}/messages/view?limit=100`,
       { headers: { Authorization: `Zoho-oauthtoken ${accessToken}` } }
     );
     const messagesData = await messagesResponse.json();
@@ -238,7 +248,7 @@ router.post('/sync', requireAuth, async (req, res) => {
     const messages = messagesData.data || [];
     let syncCount = 0;
     for (const msg of messages) {
-      const { error } = await supabase.from('emails').upsert({
+      const emailPayload = {
         company_id: account.company_id,
         account_id: account.id,
         zoho_message_id: msg.messageId,
@@ -250,8 +260,41 @@ router.post('/sync', requireAuth, async (req, res) => {
         is_read: msg.status === '1',
         folder: 'Inbox',
         status: 'received',
-      }, { onConflict: 'zoho_message_id' });
-      if (!error) syncCount++;
+      };
+
+      try {
+        await db.query(`
+          INSERT INTO emails (
+            company_id, account_id, zoho_message_id, subject, from_address, to_address, 
+            body_text, received_at, is_read, folder, status
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+          ) ON CONFLICT (zoho_message_id) DO UPDATE SET
+            company_id = EXCLUDED.company_id,
+            account_id = EXCLUDED.account_id,
+            subject = EXCLUDED.subject,
+            from_address = EXCLUDED.from_address,
+            to_address = EXCLUDED.to_address,
+            body_text = EXCLUDED.body_text,
+            received_at = EXCLUDED.received_at,
+            is_read = EXCLUDED.is_read,
+            folder = EXCLUDED.folder,
+            status = EXCLUDED.status
+        `, [
+          emailPayload.company_id, emailPayload.account_id, emailPayload.zoho_message_id,
+          emailPayload.subject, emailPayload.from_address, emailPayload.to_address,
+          emailPayload.body_text, emailPayload.received_at, emailPayload.is_read,
+          emailPayload.folder, emailPayload.status
+        ]);
+        syncCount++;
+
+        // Async backup in Supabase
+        supabase.from('emails').upsert(emailPayload, { onConflict: 'zoho_message_id' }).then(({ error }) => {
+          if (error) console.warn('[Sync] Background email upsert failed:', error.message);
+        });
+      } catch (insertErr) {
+        console.error('[Sync] Local email insert error:', insertErr.message);
+      }
     }
 
     res.json({ success: true, syncCount });
@@ -271,15 +314,14 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
     }
 
     // 1. Get account from DB
-    const { data: account, error: accError } = await supabase
-      .from("zoho_accounts")
-      .select("*")
-      .eq("id", accountId)
-      .single();
-
-    if (accError || !account) {
+    const { rows: accRows } = await db.query(
+      "SELECT * FROM zoho_accounts WHERE id = $1 LIMIT 1",
+      [accountId]
+    );
+    if (accRows.length === 0) {
       return res.status(404).json({ success: false, error: "Account record not found." });
     }
+    const account = accRows[0];
 
     const apiDomain = account.account_email?.endsWith('.com') ? 'zoho.com' : 'zoho.in';
     
@@ -305,10 +347,17 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
       if (refreshData.access_token) {
         accessToken = refreshData.access_token;
         const newExpiry = new Date(Date.now() + refreshData.expires_in * 1000).toISOString();
-        await supabase.from("zoho_accounts").update({
+        await db.query(
+          "UPDATE zoho_accounts SET access_token = $1, expiry_time = $2 WHERE id = $3",
+          [accessToken, newExpiry, accountId]
+        );
+        // Background sync
+        supabase.from("zoho_accounts").update({
           access_token: accessToken,
           expiry_time: newExpiry,
-        }).eq("id", accountId);
+        }).eq("id", accountId).then(({ error }) => {
+          if (error) console.warn('[Sync] Background zoho_accounts token update failed:', error.message);
+        });
       }
     }
 
@@ -388,7 +437,7 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
       htmlContent = `<div style="font-family: sans-serif; white-space: pre-wrap; font-size: 14px; padding: 12px;">${htmlContent}</div>`;
     }
 
-    // 6. Fetch attachments info and download them (use foundFolder since message was located there)
+    // 6. Fetch attachments info and download them
     const attachmentInfoUrl = `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/folders/${foundFolder.folderId}/messages/${messageId}/attachmentinfo?includeInline=true`;
     const attachmentInfoResponse = await fetch(attachmentInfoUrl, {
       headers: { Authorization: `Zoho-oauthtoken ${accessToken}` },
@@ -459,7 +508,6 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
                   htmlContent = htmlContent.replace(rawRegex, dataUri);
                 }
                 
-                // Generic fallback: replace ANY remaining /mail/ImageDisplay?... src with this image
                 if (htmlContent.includes('/mail/ImageDisplay')) {
                   console.log(`[Backend] Applying generic /mail/ImageDisplay replacement with ${filenameRaw}`);
                   htmlContent = htmlContent.replace(/src=(['"])\/?mail\/ImageDisplay\?[^'"]*\1/gi, `src=$1${dataUri}$1`);
@@ -469,25 +517,23 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
               }
             }
 
-            // Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
+            // Upload to Supabase Storage in the background
+            supabase.storage
               .from("email-attachments")
               .upload(storagePath, fileBuffer, {
                 contentType: contentType || "application/octet-stream",
                 upsert: true
+              }).then(({ error: uploadError }) => {
+                if (uploadError) console.error(`[Backend] Failed to upload ${filenameRaw} to Supabase:`, uploadError);
+                else console.log(`[Backend] Successfully uploaded ${filenameRaw} to Supabase!`);
               });
-              
-            if (uploadError) {
-              console.error(`[Backend] Failed to upload ${filenameRaw} to Supabase:`, uploadError);
-            } else {
-              console.log(`[Backend] Successfully uploaded ${filenameRaw} to Supabase!`);
-              dbAttachments.push({
-                filename: filenameRaw,
-                path: storagePath,
-                contentType: contentType,
-                isInline: isInline
-              });
-            }
+
+            dbAttachments.push({
+              filename: filenameRaw,
+              path: storagePath,
+              contentType: contentType,
+              isInline: isInline
+            });
           } else {
             console.error(`[Backend] Failed to download attachment ${filenameRaw}. Status: ${downloadResponse.status}`);
           }
@@ -495,12 +541,17 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
       }
     }
 
-    // 7. Cache in DB
-    const updatePayload = { body_html: htmlContent };
-    if (dbAttachments.length > 0) {
-      updatePayload.attachments = dbAttachments;
-    }
-    await supabase.from("emails").update(updatePayload).eq("id", emailId);
+    // 7. Cache in Local DB
+    const updatePayload = { body_html: htmlContent, attachments: dbAttachments };
+    await db.query(
+      "UPDATE emails SET body_html = $1, attachments = $2 WHERE id = $3",
+      [updatePayload.body_html, JSON.stringify(updatePayload.attachments), emailId]
+    );
+
+    // Background update Supabase
+    supabase.from("emails").update(updatePayload).eq("id", emailId).then(({ error }) => {
+      if (error) console.warn('[Sync] Background email update failed:', error.message);
+    });
 
     res.json({
       success: true,
