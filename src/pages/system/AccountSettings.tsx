@@ -77,8 +77,16 @@ export default function AccountSettings() {
       setEmployeeId(profile.biometric_id || ""); // Using biometric_id as employee ID for now
       setDesignation(profile.requested_role || "");
       
-      // Extract YYYY-MM-DD from ISO date string so HTML5 date input parses and displays it
-      const formatDateForInput = (d: string | null | undefined) => d ? d.substring(0, 10) : "";
+      // Extract YYYY-MM-DD in the local timezone so that timezone-shifted ISO strings (e.g. 18:30 UTC for midnight IST) display the correct local day
+      const formatDateForInput = (d: string | null | undefined) => {
+        if (!d) return "";
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return d.substring(0, 10);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
       setDob(formatDateForInput(profile.dob));
       setJoiningDate(formatDateForInput(profile.joining_date));
       
