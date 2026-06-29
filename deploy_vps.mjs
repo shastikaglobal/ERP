@@ -60,6 +60,20 @@ function runCommand(conn, cmd, label = '') {
   });
 }
 
+function uploadFile(sftp, localPath, remotePath) {
+  return new Promise((resolve, reject) => {
+    try {
+      const data = fs.readFileSync(localPath);
+      sftp.writeFile(remotePath, data, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 async function uploadDir(sftp, localDir, remoteDir, skip = []) {
   try {
     await new Promise((resolve) => {
@@ -77,16 +91,7 @@ async function uploadDir(sftp, localDir, remoteDir, skip = []) {
       await uploadDir(sftp, localPath, remotePath, skip);
     } else {
       console.log(`   📤 Uploading ${item} -> ${remotePath}...`);
-      await new Promise((resolve, reject) => {
-        sftp.fastPut(localPath, remotePath, (err) => {
-          if (err) {
-            console.error(`❌ Failed to upload ${localPath} to ${remotePath}:`, err);
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
+      await uploadFile(sftp, localPath, remotePath);
     }
   }
 }
@@ -135,17 +140,7 @@ async function main() {
       await runCommand(conn, `mkdir -p ${REMOTE_FRONTEND}`, 'Creating frontend remote directory');
       await runCommand(conn, `rm -rf ${REMOTE_FRONTEND}/*`, 'Clearing old frontend files');
       
-      console.log('   Uploading dist.tar.gz to VPS...');
-      await new Promise((resolve, reject) => {
-        sftp.fastPut(path.join(LOCAL_ROOT, 'dist.tar.gz'), `${REMOTE_FRONTEND}/dist.tar.gz`, (err) => {
-          if (err) {
-            console.error('❌ SFTP fastPut error for dist.tar.gz:', err);
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
+      await uploadFile(sftp, path.join(LOCAL_ROOT, 'dist.tar.gz'), `${REMOTE_FRONTEND}/dist.tar.gz`);
       console.log('   Uploaded dist.tar.gz successfully.');
       
       await runCommand(conn, `tar -xzf ${REMOTE_FRONTEND}/dist.tar.gz -C ${REMOTE_FRONTEND}`, 'Extracting frontend files on VPS');

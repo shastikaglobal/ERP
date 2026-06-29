@@ -138,10 +138,103 @@ router.get('/all/profiles', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/employees/lookup-id/:id - Resolve employee ID or biometric ID to email
+router.get('/lookup-id/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`[Lookup ID] Checking local database for ID: ${id}`);
+    
+    const { rows } = await db.query(
+      `SELECT email, full_name, role FROM profiles WHERE (employee_id = $1 OR biometric_id = $2) AND is_deleted IS NOT TRUE LIMIT 1`,
+      [id, id]
+    );
+
+    if (rows.length > 0) {
+      console.log(`[Lookup ID] Found locally: ${rows[0].email} (${rows[0].full_name})`);
+      return res.json({ email: rows[0].email, full_name: rows[0].full_name, role: rows[0].role });
+    }
+
+    console.log(`[Lookup ID] Not found locally, checking Supabase...`);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email, full_name, role')
+      .or(`employee_id.eq.${id},biometric_id.eq.${id}`)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[Lookup ID] Supabase fallback error:`, error.message);
+    }
+
+    if (data && data.email) {
+      return res.json({ email: data.email, full_name: data.full_name, role: data.role });
+    }
+
+    return res.status(404).json({ error: 'Employee ID not found' });
+  } catch (err) {
+    console.error('GET /api/employees/lookup-id/:id error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/employees/:id/roles-permissions - Fetch role slugs and permission codes from local DB
+router.get('/:id/roles-permissions', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`[Roles/Perms] Checking local database for user: ${id}`);
+    
+    // 1. Get roles
+    const { rows: roles } = await db.query(
+      `SELECT r.slug 
+       FROM user_roles ur
+       JOIN roles r ON ur.role_id = r.id
+       WHERE ur.user_id = $1 AND ur.is_deleted IS NOT TRUE`,
+      [id]
+    );
+
+    // 2. Get permissions
+    const { rows: perms } = await db.query(
+      `SELECT p.code 
+       FROM user_roles ur
+       JOIN role_permissions rp ON ur.role_id = rp.role_id
+       JOIN permissions p ON rp.permission_id = p.id
+       WHERE ur.user_id = $1 AND ur.is_deleted IS NOT TRUE`,
+      [id]
+    );
+
+    // 3. Fallback: if user is not in user_roles, but has a role in profiles table, use that
+    const roleSlugs = roles.map(r => r.slug);
+    if (roleSlugs.length === 0) {
+      const { rows: profile } = await db.query(
+        `SELECT role FROM profiles WHERE id = $1 LIMIT 1`,
+        [id]
+      );
+      if (profile.length > 0 && profile[0].role) {
+        roleSlugs.push(profile[0].role);
+      }
+    }
+
+    res.json({
+      roleSlugs,
+      permissions: perms.map(p => p.code)
+    });
+  } catch (err) {
+    console.error('GET /api/employees/:id/roles-permissions error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // GET /api/employees/:id - Fetch single employee
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Try local database first
+    const { rows } = await db.query('SELECT * FROM profiles WHERE id = $1 LIMIT 1', [id]);
+    if (rows.length > 0) {
+      return res.json(rows[0]);
+    }
+
+    // Fallback: check Supabase
     const { data, error } = await supabase
       .from('profiles')
       .select('*')

@@ -157,15 +157,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const loadUserData = async (userId: string, userEmail?: string, userMetadata?: any) => {
-    // 1. Fetch Profile
-    let { data: prof, error: fetchErr } = await supabase
-      .from("profiles")
-      .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role")
-      .eq("id", userId)
-      .maybeSingle();
+    let prof: any = null;
+    let rolesData: { roleSlugs: string[]; permissions: string[] } | null = null;
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
 
-    if (fetchErr) {
-      console.error('[Auth] Error fetching profile:', fetchErr.message);
+    // 1. Fetch Profile
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from("profiles")
+        .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (fetchErr) throw fetchErr;
+      prof = data;
+    } catch (err: any) {
+      console.warn('[Auth] Supabase profile fetch failed, trying local API:', err.message || err);
+      try {
+        const res = await fetch(`/api/employees/${userId}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          prof = await res.json();
+        }
+      } catch (localErr) {
+        console.error('[Auth] Local profile fetch also failed:', localErr);
+      }
     }
 
     if (!prof && (userEmail || session?.user?.email)) {
@@ -197,12 +214,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Fetch Company Name separately
       let companyName = null;
       if (prof.company_id) {
-        const { data: comp } = await supabase
-          .from("companies")
-          .select("name")
-          .eq("id", prof.company_id)
-          .maybeSingle();
-        companyName = comp?.name || null;
+        try {
+          const { data: comp } = await supabase
+            .from("companies")
+            .select("name")
+            .eq("id", prof.company_id)
+            .maybeSingle();
+          companyName = comp?.name || null;
+        } catch (compErr) {
+          companyName = "Shastika Global Impex";
+        }
       }
 
       setProfile({
@@ -214,18 +235,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // 3. Fetch Roles & Permissions
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role_id, roles(slug, role_permissions(permissions(code)))")
-      .eq("user_id", userId);
     const codes = new Set<string>();
     const slugs = new Set<string>();
-    roles?.forEach((r: any) => {
-      if (r.roles?.slug) slugs.add(r.roles.slug);
-      r.roles?.role_permissions?.forEach((rp: any) => {
-        if (rp.permissions?.code) codes.add(rp.permissions.code);
+
+    try {
+      const { data: roles, error: rolesErr } = await supabase
+        .from("user_roles")
+        .select("role_id, roles(slug, role_permissions(permissions(code)))")
+        .eq("user_id", userId);
+      
+      if (rolesErr) throw rolesErr;
+
+      roles?.forEach((r: any) => {
+        if (r.roles?.slug) slugs.add(r.roles.slug);
+        r.roles?.role_permissions?.forEach((rp: any) => {
+          if (rp.permissions?.code) codes.add(rp.permissions.code);
+        });
       });
-    });
+    } catch (err: any) {
+      console.warn('[Auth] Supabase user_roles fetch failed, trying local API:', err.message || err);
+      try {
+        const res = await fetch(`/api/employees/${userId}/roles-permissions`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          rolesData = await res.json();
+          if (rolesData) {
+            rolesData.roleSlugs?.forEach(s => slugs.add(s));
+            rolesData.permissions?.forEach(p => codes.add(p));
+          }
+        }
+      } catch (localErr) {
+        console.error('[Auth] Local roles/perms fetch also failed:', localErr);
+      }
+    }
+
     setPermissions(codes);
     setRoleSlugs(slugs);
   };

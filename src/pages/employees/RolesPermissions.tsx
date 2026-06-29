@@ -14,7 +14,7 @@ const SECTION_MAPPING: Record<string, string[]> = {
   "MOBILE CRM": ["Mobile Login", "Push Notifications", "Call Logging", "GPS Tracking", "IP Tracking", "Device Authorization"],
   "PROCUREMENT": ["Dashboard", "Purchase Orders", "Suppliers"],
   "WAREHOUSE & INVENTORY": ["Dashboard", "Receiving Goods", "Available Stock Management", "Reserved Stock Tracking", "Export Ready Inventory", "Batch-wise Stock Tracking", "Damaged Stock Management", "Expiry Monitoring", "Multi-Warehouse Management", "Packing Management", "Inspection", "New Inspection", "Approvals", "WH Quality Control", "Container Loading", "Dispatch", "Shipment Register", "Create Shipment", "Container Tracking", "Delivery Status", "Barcodes", "Generate QR", "Scan", "Quotations", "Create Quotation", "Convert to Order", "Orders", "Create Order", "Status Tracking", "Fulfillment", "Invoices", "Packing Lists", "Certificate of Origin", "Document Viewer"],
-  "REPORTS & ANALYTICS": ["Stock Summary", "Batch Tracking", "Dispatch Report", "Container Loading", "Damage/Wastage", "Inventory Aging", "Export Ready Stock"],
+
   "FINANCE": ["Payment Register", "Overdue", "Multi-Currency Ledger", "Financial Reports"],
   "TALLY": ["Tally Module", "Counts"],
   "ACCOUNTS": ["Journal Entry", "Ledger", "Trial Balance"],

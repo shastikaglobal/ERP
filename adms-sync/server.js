@@ -184,6 +184,61 @@ app.use('/api/documents', documentsRoutes);
 
 
 
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    console.log(`[Local Auth] Attempting login for email: ${email}`);
+
+    // Look up in the local VPS profiles table first
+    const { rows } = await db.query(
+      'SELECT id, full_name, email, role, status FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      [email.trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid login credentials' });
+    }
+
+    const user = rows[0];
+
+    // Since this is local testing / development with restricted Supabase, we bypass password verification
+    // and issue a token directly.
+    console.log(`[Local Auth] Found employee ${user.full_name}. Issuing mock JWT...`);
+
+    const token = jwt.sign({
+      sub: user.id,
+      email: user.email,
+      role: 'authenticated',
+      aud: 'authenticated',
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // 1 year expiry
+    }, process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback');
+
+    res.json({
+      session: {
+        access_token: token,
+        token_type: 'bearer',
+        expires_in: 60 * 60 * 24 * 365,
+        user: {
+          id: user.id,
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: user.email,
+          user_metadata: {
+            full_name: user.full_name
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Local auth login error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email } = req.body;

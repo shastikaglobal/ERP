@@ -36,28 +36,45 @@ export default function Auth() {
 
       // If it doesn't look like an email, assume it's an Employee ID or eSSL/Biometric ID
       if (!loginEmail.includes('@')) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('email')
-          .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
-          .maybeSingle();
+        let resolvedEmail = "";
+        try {
+          const res = await fetch(`/api/employees/lookup-id/${loginEmail}`);
+          if (res.ok) {
+            const resData = await res.json();
+            resolvedEmail = resData?.email || "";
+          }
+        } catch (localLookupErr) {
+          console.warn("Local ID lookup failed, trying Supabase direct client...", localLookupErr);
+        }
 
-        if (error || !data || !data.email) {
-          toast.error("Employee ID not found. Please check your ID or contact Admin.");
-          setBusyEmail(false);
-          return;
+        if (!resolvedEmail) {
+          // Fallback to direct client-side supabase query
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('email')
+            .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
+            .maybeSingle();
+
+          if (error || !data || !data.email) {
+            toast.error("Employee ID not found. Please check your ID or contact Admin.");
+            setBusyEmail(false);
+            return;
+          }
+          resolvedEmail = data.email;
         }
         
         // Use the found email to log in
-        loginEmail = data.email;
+        loginEmail = resolvedEmail;
       }
 
+      console.log(`Attempting login for email: ${loginEmail}`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       
       if (error) {
         toast.error(error.message || "Invalid login credentials");
         setBusyEmail(false);
-      } else if (!data.session) {
+      } else if (!data?.session) {
         toast.error("Please confirm your email address before logging in.");
         setBusyEmail(false);
       }
