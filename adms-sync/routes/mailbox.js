@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { createClient } = require('@supabase/supabase-js');
+const db = require('../db');
 
 // Initialize Supabase Client
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -11,8 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // GET /api/emails/accounts - Fetch zoho accounts
 router.get('/accounts', requireAuth, async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from('zoho_accounts').select('*').eq('is_deleted', false);
-    if (error) throw error;
+    const { rows } = await db.query("SELECT * FROM zoho_accounts WHERE is_deleted IS NOT TRUE");
     res.json(rows || []);
   } catch (err) {
     console.error("DB Error (get zoho accounts):", err);
@@ -24,12 +24,14 @@ router.get('/accounts', requireAuth, async (req, res) => {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { account_id } = req.query;
-    let query = supabase.from('emails').select('*').eq('is_deleted', false);
+    let queryText = "SELECT * FROM emails WHERE is_deleted IS NOT TRUE";
+    const params = [];
     if (account_id) {
-      query = query.eq('account_id', account_id);
+      queryText += " AND account_id = $1";
+      params.push(account_id);
     }
-    const { data: rows, error } = await query.order('received_at', { ascending: false }).limit(500);
-    if (error) throw error;
+    queryText += " ORDER BY received_at DESC LIMIT 500";
+    const { rows } = await db.query(queryText, params);
     res.json(rows || []);
   } catch (err) {
     console.error("DB Error (get emails):", err);
@@ -41,8 +43,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { data: rows, error } = await supabase.from('emails').select('*').eq('id', id).eq('is_deleted', false);
-    if (error) throw error;
+    const { rows } = await db.query("SELECT * FROM emails WHERE id = $1 AND is_deleted IS NOT TRUE LIMIT 1", [id]);
     if (!rows || rows.length === 0) return res.status(404).json({ error: "Email not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -58,8 +59,11 @@ router.put('/:id', requireAuth, async (req, res) => {
     const updates = req.body;
     if (Object.keys(updates).length === 0) return res.json({ success: true });
     
-    const { error } = await supabase.from('emails').update(updates).eq('id', id);
-    if (error) throw error;
+    const keys = Object.keys(updates);
+    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
+    const values = Object.values(updates);
+    
+    await db.query(`UPDATE emails SET ${setClauses.join(', ')} WHERE id = $${values.length + 1}`, [...values, id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (update email):", err);
@@ -71,9 +75,15 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const data = req.body;
+    const keys = Object.keys(data);
+    const columns = keys.map(k => `"${k}"`).join(', ');
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+    const values = Object.values(data);
     
-    const { data: rows, error } = await supabase.from('emails').insert([data]).select();
-    if (error) throw error;
+    const { rows } = await db.query(
+      `INSERT INTO emails (${columns}) VALUES (${placeholders}) RETURNING *`,
+      values
+    );
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error("DB Error (create email log):", err);
@@ -85,8 +95,10 @@ router.post('/', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabase.from('emails').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', id);
-    if (error) throw error;
+    await db.query(
+      "UPDATE emails SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
+      [id]
+    );
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete email):", err);
@@ -98,8 +110,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
 router.delete('/accounts/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabase.from('zoho_accounts').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', id);
-    if (error) throw error;
+    await db.query(
+      "UPDATE zoho_accounts SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
+      [id]
+    );
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete zoho account):", err);
