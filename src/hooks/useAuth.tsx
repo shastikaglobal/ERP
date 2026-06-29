@@ -161,27 +161,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let rolesData: { roleSlugs: string[]; permissions: string[] } | null = null;
     const token = (await supabase.auth.getSession()).data.session?.access_token;
 
-    // 1. Fetch Profile
+    // 1. Fetch Profile (Try local VPS API first, then fallback to Supabase)
     try {
-      const { data, error: fetchErr } = await supabase
-        .from("profiles")
-        .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (fetchErr) throw fetchErr;
-      prof = data;
-    } catch (err: any) {
-      console.warn('[Auth] Supabase profile fetch failed, trying local API:', err.message || err);
+      const res = await fetch(`/api/employees/${userId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        prof = await res.json();
+      } else {
+        throw new Error("Local profile API returned error status");
+      }
+    } catch (localErr) {
+      console.warn('[Auth] Local profile fetch failed, trying Supabase:', localErr);
       try {
-        const res = await fetch(`/api/employees/${userId}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (res.ok) {
-          prof = await res.json();
-        }
-      } catch (localErr) {
-        console.error('[Auth] Local profile fetch also failed:', localErr);
+        const { data, error: fetchErr } = await supabase
+          .from("profiles")
+          .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (fetchErr) throw fetchErr;
+        prof = data;
+      } catch (err: any) {
+        console.error('[Auth] Supabase profile fetch also failed:', err.message || err);
       }
     }
 
@@ -234,39 +236,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
     }
 
-    // 3. Fetch Roles & Permissions
+    // 3. Fetch Roles & Permissions (Try local VPS API first, then fallback to Supabase)
     const codes = new Set<string>();
     const slugs = new Set<string>();
 
     try {
-      const { data: roles, error: rolesErr } = await supabase
-        .from("user_roles")
-        .select("role_id, roles(slug, role_permissions(permissions(code)))")
-        .eq("user_id", userId);
-      
-      if (rolesErr) throw rolesErr;
-
-      roles?.forEach((r: any) => {
-        if (r.roles?.slug) slugs.add(r.roles.slug);
-        r.roles?.role_permissions?.forEach((rp: any) => {
-          if (rp.permissions?.code) codes.add(rp.permissions.code);
-        });
+      const res = await fetch(`/api/employees/${userId}/roles-permissions`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-    } catch (err: any) {
-      console.warn('[Auth] Supabase user_roles fetch failed, trying local API:', err.message || err);
-      try {
-        const res = await fetch(`/api/employees/${userId}/roles-permissions`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (res.ok) {
-          rolesData = await res.json();
-          if (rolesData) {
-            rolesData.roleSlugs?.forEach(s => slugs.add(s));
-            rolesData.permissions?.forEach(p => codes.add(p));
-          }
+      if (res.ok) {
+        rolesData = await res.json();
+        if (rolesData) {
+          rolesData.roleSlugs?.forEach(s => slugs.add(s));
+          rolesData.permissions?.forEach(p => codes.add(p));
         }
-      } catch (localErr) {
-        console.error('[Auth] Local roles/perms fetch also failed:', localErr);
+      } else {
+        throw new Error("Local roles-permissions API returned error status");
+      }
+    } catch (localErr) {
+      console.warn('[Auth] Local roles/perms fetch failed, trying Supabase:', localErr);
+      try {
+        const { data: roles, error: rolesErr } = await supabase
+          .from("user_roles")
+          .select("role_id, roles(slug, role_permissions(permissions(code)))")
+          .eq("user_id", userId);
+        
+        if (rolesErr) throw rolesErr;
+
+        roles?.forEach((r: any) => {
+          if (r.roles?.slug) slugs.add(r.roles.slug);
+          r.roles?.role_permissions?.forEach((rp: any) => {
+            if (rp.permissions?.code) codes.add(rp.permissions.code);
+          });
+        });
+      } catch (err: any) {
+        console.error('[Auth] Supabase user_roles fetch also failed:', err.message || err);
       }
     }
 
