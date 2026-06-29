@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { createClient } = require('@supabase/supabase-js');
 
-// profiles and user_permissions live in Supabase, NOT in local VPS DB
+// profiles and user_permissions live in Supabase, with fallbacks to local VPS DB
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -16,6 +17,16 @@ router.get('/', requireAuth, async (req, res) => {
 
     if (user_id) {
       // Single user — return their permissions array
+      try {
+        const { rows } = await db.query(
+          'SELECT section, has_access FROM user_permissions WHERE user_id = $1',
+          [user_id]
+        );
+        return res.json(rows);
+      } catch (dbErr) {
+        console.warn('[API /user-permissions] Local query failed, trying Supabase:', dbErr.message);
+      }
+
       const { data, error } = await supabase
         .from('user_permissions')
         .select('section, has_access')
@@ -25,17 +36,35 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     // All users + their permissions (for admin matrix view)
-    const { data: profiles, error: profErr } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, requested_role')
-      .eq('is_deleted', false)
-      .order('full_name');
-    if (profErr) throw profErr;
+    let profiles = [];
+    let perms = [];
 
-    const { data: perms, error: permsErr } = await supabase
-      .from('user_permissions')
-      .select('user_id, section, has_access');
-    if (permsErr) throw permsErr;
+    try {
+      const { rows: localProfiles } = await db.query(
+        "SELECT id, full_name, email, requested_role FROM profiles WHERE is_deleted IS NOT TRUE ORDER BY full_name"
+      );
+      const { rows: localPerms } = await db.query(
+        "SELECT user_id, section, has_access FROM user_permissions"
+      );
+      profiles = localProfiles;
+      perms = localPerms;
+    } catch (dbErr) {
+      console.warn('[API /user-permissions] Local profiles/perms query failed, trying Supabase:', dbErr.message);
+
+      const { data: sbProfiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, requested_role')
+        .eq('is_deleted', false)
+        .order('full_name');
+      if (profErr) throw profErr;
+      profiles = sbProfiles || [];
+
+      const { data: sbPerms, error: permsErr } = await supabase
+        .from('user_permissions')
+        .select('user_id, section, has_access');
+      if (permsErr) throw permsErr;
+      perms = sbPerms || [];
+    }
 
     const mapped = (profiles || []).map(p => {
       const userPerms = (perms || [])
@@ -56,6 +85,16 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:user_id', requireAuth, async (req, res) => {
   try {
     const { user_id } = req.params;
+    try {
+      const { rows } = await db.query(
+        'SELECT section, has_access FROM user_permissions WHERE user_id = $1',
+        [user_id]
+      );
+      return res.json(rows);
+    } catch (dbErr) {
+      console.warn('[API /user-permissions/:user_id] Local query failed, trying Supabase:', dbErr.message);
+    }
+
     const { data, error } = await supabase
       .from('user_permissions')
       .select('section, has_access')
@@ -76,10 +115,24 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid body parameters' });
     }
 
+    const granted_by = req.user?.sub || null;
+
+    try {
+      await db.query(
+        `INSERT INTO user_permissions (user_id, section, has_access, granted_by, updated_at) 
+         VALUES ($1, $2, $3, $4, NOW()) 
+         ON CONFLICT (user_id, section) 
+         DO UPDATE SET has_access = EXCLUDED.has_access, granted_by = EXCLUDED.granted_by, updated_at = NOW()`,
+        [user_id, section, has_access, granted_by]
+      );
+    } catch (dbErr) {
+      console.warn('[API /user-permissions POST] Local upsert failed, trying Supabase:', dbErr.message);
+    }
+
     const { error } = await supabase
       .from('user_permissions')
       .upsert(
-        { user_id, section, has_access, granted_by: req.user?.sub || null },
+        { user_id, section, has_access, granted_by },
         { onConflict: 'user_id,section' }
       );
     if (error) throw error;

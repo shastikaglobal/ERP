@@ -105,9 +105,23 @@ async function syncProfileToLocalDb(id, updates) {
 }
 
 
-// GET /api/employees - Fetch all approved employees from Supabase
+// GET /api/employees - Fetch all approved employees from local DB/Supabase
 router.get('/', requireAuth, async (req, res) => {
   try {
+    try {
+      const { rows } = await db.query(`
+        SELECT id, company_id, full_name, email, phone, requested_role, status, is_active, 
+               avatar_url, biometric_id, dob, joining_date, system_mode, city, 
+               monthly_salary, punch_deadline, department 
+        FROM profiles 
+        WHERE status = 'approved' AND (is_deleted IS NOT TRUE)
+        ORDER BY full_name
+      `);
+      return res.json(rows);
+    } catch (dbErr) {
+      console.warn('[API /employees] Local query failed, trying Supabase:', dbErr.message);
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id, dob, joining_date, system_mode, city, monthly_salary, punch_deadline, department')
@@ -122,9 +136,22 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/employees/all/profiles - Fetch ALL profiles (for approvals page)
+// GET /api/employees/all/profiles - Fetch ALL profiles from local DB/Supabase
 router.get('/all/profiles', requireAuth, async (req, res) => {
   try {
+    try {
+      const { rows } = await db.query(`
+        SELECT id, company_id, full_name, email, phone, requested_role, status, rejection_reason, 
+               created_at, department, is_active, biometric_id, monthly_salary, joining_date 
+        FROM profiles 
+        WHERE is_deleted IS NOT TRUE 
+        ORDER BY created_at DESC
+      `);
+      return res.json(rows);
+    } catch (dbErr) {
+      console.warn('[API /employees/all/profiles] Local query failed, trying Supabase:', dbErr.message);
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, email, phone, requested_role, status, rejection_reason, created_at, department, is_active, biometric_id, monthly_salary, joining_date')
