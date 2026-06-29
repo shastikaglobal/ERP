@@ -233,9 +233,232 @@ app.post('/api/auth/login', async (req, res) => {
         }
       }
     });
+});
+
+app.post('/api/face-scan', async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const { embedding, livenessResult } = req.body;
+
+  if (!embedding || !Array.isArray(embedding) || embedding.length !== 128) {
+    return res.status(400).json({ error: 'Invalid face embedding. Expected 128-dim array.' });
+  }
+
+  // 1. Liveness check FIRST
+  if (!livenessResult?.allPassed) {
+    try {
+      await db.query(`
+        INSERT INTO face_scan_events (
+          match_score, liveness_score, motion_pass, blink_pass, depth_pass, spoof_pass, 
+          status, error_reason, ip_address, scanned_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `, [
+        0, 
+        livenessResult?.livenessScore || 0,
+        livenessResult?.checks?.motion?.pass || false,
+        livenessResult?.checks?.blink?.pass || false,
+        livenessResult?.checks?.depth?.pass || false,
+        false,
+        'spoof_detected',
+        'Liveness check failed',
+        ip
+      ]);
+    } catch (err) {
+      console.error('[Face Scan] Event log failed:', err.message);
+    }
+
+    return res.status(200).json({
+      matched: false,
+      error: 'Liveness check failed. Please look at the camera naturally and blink.',
+      code: 'LIVENESS_FAIL'
+    });
+  }
+
+  try {
+    // 2. Fetch all face embeddings from local database
+    const { rows: storedEmbeddings } = await db.query(`
+      SELECT f.employee_id, f.face_embedding, p.full_name as name, p.department, p.biometric_id, p.punch_deadline
+      FROM face_embeddings f
+      LEFT JOIN profiles p ON f.employee_id::text = p.id::text
+      WHERE p.is_deleted IS NOT TRUE
+    `);
+
+    // 3. Find the best match locally using Euclidean distance
+    let bestDistance = Infinity;
+    let bestMatch = null;
+
+    for (const row of storedEmbeddings) {
+      let stored = row.face_embedding;
+      if (typeof stored === 'string') {
+        try {
+          stored = JSON.parse(stored);
+        } catch (e) {
+          stored = stored.replace(/[\[\]]/g, '').split(',').map(Number);
+        }
+      }
+      
+      if (!Array.isArray(stored) || stored.length !== 128) continue;
+
+      // Calculate Euclidean distance
+      let sum = 0;
+      for (let i = 0; i < 128; i++) {
+        const diff = embedding[i] - stored[i];
+        sum += diff * diff;
+      }
+      const distance = Math.sqrt(sum);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestMatch = row;
+      }
+    }
+
+    const MATCH_DISTANCE_THRESHOLD = 0.50; // standard same-person Euclidean threshold
+    const confidenceScore = Math.round((1 - Math.min(Math.max(bestDistance, 0), 1)) * 100);
+    const matched = bestDistance <= MATCH_DISTANCE_THRESHOLD;
+
+    if (!matched || !bestMatch) {
+      // Log failed match scan event
+      try {
+        await db.query(`
+          INSERT INTO face_scan_events (
+            match_score, liveness_score, motion_pass, blink_pass, depth_pass, spoof_pass, 
+            status, error_reason, ip_address, scanned_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+        `, [
+          0,
+          livenessResult.livenessScore || 0,
+          livenessResult.checks.motion.pass,
+          livenessResult.checks.blink.pass,
+          livenessResult.checks.depth.pass,
+          true,
+          'failed',
+          'No matching employee found',
+          ip
+        ]);
+      } catch (logErr) {
+        console.error('[Face Scan] Failed log attempt:', logErr.message);
+      }
+
+      return res.status(200).json({
+        matched: false,
+        error: 'Face not recognized. Please contact your admin.',
+        code: 'NO_MATCH'
+      });
+    }
+
+    // 4. Match found! Mark attendance locally
+    const employeeId = bestMatch.employee_id;
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const nowIso = new Date().toISOString();
+    const nowTimeStr = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false }); // "HH:MM:SS"
+
+    // Check if check-in exists for today
+    const { rows: existingLogs } = await db.query(
+      'SELECT * FROM attendance_logs WHERE employee_id = $1 AND date = $2 LIMIT 1',
+      [employeeId, todayStr]
+    );
+
+    let action = 'punch_in';
+    let is_late = false;
+    let late_by_mins = 0;
+    let salary_cut = 0;
+
+    if (existingLogs.length === 0) {
+      // Determine if check-in is late
+      const deadline = bestMatch.punch_deadline || '09:15:00';
+      if (nowTimeStr > deadline) {
+        is_late = true;
+        // Calculate late minutes
+        const [nowH, nowM] = nowTimeStr.split(':').map(Number);
+        const [deadH, deadM] = deadline.split(':').map(Number);
+        late_by_mins = Math.max(0, (nowH * 60 + nowM) - (deadH * 60 + deadM));
+        
+        if (late_by_mins > 30) {
+          salary_cut = 100;
+        }
+      }
+
+      const status = is_late ? 'late' : 'present';
+
+      // Insert check-in log
+      await db.query(
+        `INSERT INTO attendance_logs (employee_id, date, status, clock_in) 
+         VALUES ($1, $2, $3, $4)`,
+        [employeeId, todayStr, status, nowIso]
+      );
+
+      // Insert to face_attendance
+      await db.query(
+        `INSERT INTO face_attendance (employee_id, date, clock_in, status) 
+         VALUES ($1, $2, $3, $4)`,
+        [employeeId, todayStr, nowIso, status]
+      );
+
+      action = 'punch_in';
+    } else {
+      const log = existingLogs[0];
+      if (!log.clock_out) {
+        // Punch Out
+        await db.query(
+          'UPDATE attendance_logs SET clock_out = $1 WHERE id = $2',
+          [nowIso, log.id]
+        );
+
+        // Update face_attendance clock_out
+        await db.query(
+          'UPDATE face_attendance SET clock_out = $1 WHERE employee_id = $2 AND date = $3',
+          [nowIso, employeeId, todayStr]
+        );
+
+        action = 'punch_out';
+      } else {
+        action = 'punch_out';
+      }
+    }
+
+    // 5. Log successful scan event
+    try {
+      await db.query(`
+        INSERT INTO face_scan_events (
+          employee_id, match_score, liveness_score, motion_pass, blink_pass, depth_pass, 
+          spoof_pass, status, ip_address, scanned_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `, [
+        employeeId,
+        confidenceScore,
+        livenessResult.livenessScore,
+        livenessResult.checks.motion.pass,
+        livenessResult.checks.blink.pass,
+        livenessResult.checks.depth.pass,
+        true,
+        'matched',
+        ip
+      ]);
+    } catch (logErr) {
+      console.error('[Face Scan] Event log failed:', logErr.message);
+    }
+
+    return res.status(200).json({
+      matched: true,
+      employee: {
+        id: employeeId,
+        name: bestMatch.name,
+        bio_id: bestMatch.biometric_id,
+        department: bestMatch.department
+      },
+      attendance: {
+        action,
+        is_late,
+        late_by_mins,
+        salary_cut,
+        confidence: confidenceScore,
+        timestamp: nowIso
+      }
+    });
+
   } catch (err) {
-    console.error('Local auth login error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('[face-scan API] Local error:', err.message);
+    return res.status(500).json({ error: 'Server error during local face scan', detail: err.message });
   }
 });
 
