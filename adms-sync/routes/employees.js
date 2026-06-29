@@ -353,10 +353,31 @@ router.post('/register', async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { id, full_name, email, requested_role } = req.body;
-    const { error } = await supabase
-      .from('profiles')
-      .insert({ id, full_name, email, requested_role, status: 'approved' });
-    if (error) throw error;
+    
+    // Insert locally first
+    try {
+      await db.query(
+        `INSERT INTO profiles (id, full_name, email, requested_role, status) 
+         VALUES ($1, $2, $3, $4, 'approved') 
+         ON CONFLICT (id) DO NOTHING`,
+        [id, full_name, email, requested_role]
+      );
+      console.log(`[Sync] Profile ${id} inserted locally`);
+    } catch (localErr) {
+      console.error('[Sync] Local profile insert failed:', localErr.message);
+      throw localErr;
+    }
+
+    // Try Supabase
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .insert({ id, full_name, email, requested_role, status: 'approved' });
+      if (error) throw error;
+    } catch (supaErr) {
+      console.warn('[Sync] Supabase profile insert failed/ignored:', supaErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('POST /api/employees error:', err.message);
@@ -371,11 +392,22 @@ router.put('/:id', requireAuth, async (req, res) => {
     const updates = req.body;
     if (Object.keys(updates).length === 0) return res.json({ success: true });
 
-    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
-    if (error) throw error;
+    // 1. Update local VPS database first since it is the active source of truth!
+    try {
+      await syncProfileToLocalDb(id, updates);
+      console.log(`[Sync] Profile ${id} successfully updated in local DB`);
+    } catch (dbErr) {
+      console.error(`[Sync] Local DB profile update failed:`, dbErr.message);
+      throw dbErr;
+    }
 
-    // Sync changes to local VPS database profiles table
-    await syncProfileToLocalDb(id, updates);
+    // 2. Try to update Supabase in the background / catch quota errors
+    try {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+      if (error) throw error;
+    } catch (supabaseErr) {
+      console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, supabaseErr.message);
+    }
 
     res.json({ success: true });
   } catch (err) {
@@ -390,11 +422,32 @@ router.delete('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const deleted_by = req.user.sub;
     const deleted_at = new Date().toISOString();
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_active: false, is_deleted: true, deleted_at, deleted_by })
-      .eq('id', id);
-    if (error) throw error;
+
+    // 1. Soft-delete locally first
+    try {
+      await db.query(
+        `UPDATE profiles 
+         SET is_active = false, is_deleted = true, deleted_at = $1, deleted_by = $2 
+         WHERE id = $3`,
+        [deleted_at, deleted_by, id]
+      );
+      console.log(`[Sync] Profile ${id} soft-deleted locally`);
+    } catch (localErr) {
+      console.error('[Sync] Local profile soft-delete failed:', localErr.message);
+      throw localErr;
+    }
+
+    // 2. Try Supabase
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: false, is_deleted: true, deleted_at, deleted_by })
+        .eq('id', id);
+      if (error) throw error;
+    } catch (supaErr) {
+      console.warn('[Sync] Supabase profile soft-delete failed/ignored:', supaErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('DELETE /api/employees/:id error:', err.message);
