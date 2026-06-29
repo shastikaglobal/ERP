@@ -76,8 +76,12 @@ export default function AccountSettings() {
       setSignature(profile.email_signature || "");
       setEmployeeId(profile.biometric_id || ""); // Using biometric_id as employee ID for now
       setDesignation(profile.requested_role || "");
-      setDob(profile.dob || "");
-      setJoiningDate(profile.joining_date || "");
+      
+      // Extract YYYY-MM-DD from ISO date string so HTML5 date input parses and displays it
+      const formatDateForInput = (d: string | null | undefined) => d ? d.substring(0, 10) : "";
+      setDob(formatDateForInput(profile.dob));
+      setJoiningDate(formatDateForInput(profile.joining_date));
+      
       setDepartment(profile.department || "");
     }
     setLoading(false);
