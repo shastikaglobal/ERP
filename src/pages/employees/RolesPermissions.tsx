@@ -144,8 +144,19 @@ export default function RolesPermissions() {
                   const [secPart, subPart] = sectionStr.split('__');
                   newDynamicMap[`${p.id}_${secPart}_${subPart}`] = true;
                 } else {
-                  // Legacy: try to match against known sections
-                  newDynamicMap[`${p.id}_${sectionStr}`] = true;
+                  // Legacy: try to match against known sections in SECTION_MAPPING
+                  let matchedSec = "";
+                  for (const [secName, subs] of Object.entries(SECTION_MAPPING)) {
+                    if (subs.includes(sectionStr)) {
+                      matchedSec = secName;
+                      break;
+                    }
+                  }
+                  if (matchedSec) {
+                    newDynamicMap[`${p.id}_${matchedSec}_${sectionStr}`] = true;
+                  } else {
+                    newDynamicMap[`${p.id}_${sectionStr}`] = true;
+                  }
                 }
               }
             });
