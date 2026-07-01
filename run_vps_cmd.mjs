@@ -4,7 +4,7 @@ const conn = new Client();
 
 conn.on('ready', () => {
   console.log('📡 SSH Connection Ready');
-  conn.exec('ls /var/www/adms-sync/routes/security.js && pm2 restart adms-sync && sleep 3 && pm2 status adms-sync', (err, stream) => {
+  conn.exec('nginx -T', (err, stream) => {
     if (err) throw err;
     stream.on('close', (code, signal) => {
       console.log(`Stream closed with code: ${code}`);

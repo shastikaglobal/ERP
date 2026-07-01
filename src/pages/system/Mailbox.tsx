@@ -409,7 +409,10 @@ export default function Mailbox() {
 
       if (!isAdmin) {
         if (isBde) {
-          data = data.filter((a: any) => a.account_email.toLowerCase().startsWith("bde@"));
+          data = data.filter((a: any) => 
+            a.account_email.toLowerCase().includes("bde") || 
+            a.user_id === profile?.id
+          );
         } else {
           data = data.filter((a: any) => a.user_id === profile?.id);
         }
@@ -417,7 +420,7 @@ export default function Mailbox() {
 
       if (data && data.length > 0) {
         setAccounts(data);
-        const bdeAccount = data.find(acc => acc.account_email.toLowerCase().startsWith("bde@"));
+        const bdeAccount = data.find(acc => acc.account_email.toLowerCase().includes("bde"));
         const defaultId = bdeAccount ? bdeAccount.id : data[0].id;
         setSelectedAccount(defaultId);
         await fetchHistory(defaultId);

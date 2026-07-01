@@ -941,6 +941,288 @@ app.post('/force-logout', express.json(), async (req, res) => {
   res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
 });
 
+// --- Generic VPS Database Fallback Query API ---
+const ALLOWED_FALLBACK_TABLES = new Set([
+  'profiles', 'companies', 'user_sessions', 'activity_logs', 'attendance_logs',
+  'user_roles', 'roles', 'permissions', 'role_permissions', 'active_sessions',
+  'quotations', 'leads', 'tasks', 'follow_ups', 'customers', 'products',
+  'inventory', 'warehouse', 'dispatch', 'invoices', 'emails', 'farmers',
+  'procurement', 'purchase_orders', 'documents'
+]);
+
+app.post('/api/vps-fallback', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { table, action, select, filters, data, order, limit, single, maybeSingle } = req.body;
+    
+    if (!table || !ALLOWED_FALLBACK_TABLES.has(table)) {
+      return res.status(400).json({ error: `Table '${table}' is not allowed or invalid.` });
+    }
+
+    const queryParams = [];
+    let sql = '';
+
+    // Helper to add parameter and return its $placeholder
+    function addParam(val) {
+      queryParams.push(val);
+      return `$${queryParams.length}`;
+    }
+
+    // Build WHERE clause
+    let whereClause = '';
+    if (filters && Array.isArray(filters) && filters.length > 0) {
+      const parts = [];
+      for (const filter of filters) {
+        const col = filter.column;
+        if (filter.type !== 'or' && !/^[a-zA-Z0-9_]+$/.test(col)) {
+          return res.status(400).json({ error: `Invalid column name in filter: ${col}` });
+        }
+
+        if (filter.type === 'eq') {
+          parts.push(`"${col}" = ${addParam(filter.value)}`);
+        } else if (filter.type === 'neq') {
+          parts.push(`"${col}" != ${addParam(filter.value)}`);
+        } else if (filter.type === 'gt') {
+          parts.push(`"${col}" > ${addParam(filter.value)}`);
+        } else if (filter.type === 'gte') {
+          parts.push(`"${col}" >= ${addParam(filter.value)}`);
+        } else if (filter.type === 'lt') {
+          parts.push(`"${col}" < ${addParam(filter.value)}`);
+        } else if (filter.type === 'lte') {
+          parts.push(`"${col}" <= ${addParam(filter.value)}`);
+        } else if (filter.type === 'like') {
+          parts.push(`"${col}" LIKE ${addParam(filter.value)}`);
+        } else if (filter.type === 'ilike') {
+          parts.push(`"${col}" ILIKE ${addParam(filter.value)}`);
+        } else if (filter.type === 'is') {
+          if (filter.value === null) {
+            parts.push(`"${col}" IS NULL`);
+          } else {
+            parts.push(`"${col}" IS ${addParam(filter.value)}`);
+          }
+        } else if (filter.type === 'in') {
+          if (Array.isArray(filter.value) && filter.value.length > 0) {
+            const placeholders = filter.value.map(v => addParam(v)).join(', ');
+            parts.push(`"${col}" IN (${placeholders})`);
+          } else {
+            parts.push('FALSE');
+          }
+        } else if (filter.type === 'or') {
+          const conds = filter.value.split(',');
+          const orParts = [];
+          for (const cond of conds) {
+            const match = cond.match(/^([a-zA-Z0-9_]+)\.(eq|neq|gt|gte|lt|lte|like|ilike|is)\.(.+)$/);
+            if (match) {
+              const [_, orCol, orOp, orVal] = match;
+              if (/^[a-zA-Z0-9_]+$/.test(orCol)) {
+                let cleanVal = orVal;
+                if (cleanVal.startsWith('"') && cleanVal.endsWith('"')) {
+                  cleanVal = cleanVal.slice(1, -1);
+                } else if (cleanVal.startsWith("'") && cleanVal.endsWith("'")) {
+                  cleanVal = cleanVal.slice(1, -1);
+                }
+                
+                if (orOp === 'eq') {
+                  orParts.push(`"${orCol}" = ${addParam(cleanVal)}`);
+                } else if (orOp === 'neq') {
+                  orParts.push(`"${orCol}" != ${addParam(cleanVal)}`);
+                } else if (orOp === 'gt') {
+                  orParts.push(`"${orCol}" > ${addParam(cleanVal)}`);
+                } else if (orOp === 'gte') {
+                  orParts.push(`"${orCol}" >= ${addParam(cleanVal)}`);
+                } else if (orOp === 'lt') {
+                  orParts.push(`"${orCol}" < ${addParam(cleanVal)}`);
+                } else if (orOp === 'lte') {
+                  orParts.push(`"${orCol}" <= ${addParam(cleanVal)}`);
+                } else if (orOp === 'like') {
+                  orParts.push(`"${orCol}" LIKE ${addParam(cleanVal)}`);
+                } else if (orOp === 'ilike') {
+                  orParts.push(`"${orCol}" ILIKE ${addParam(cleanVal)}`);
+                } else if (orOp === 'is') {
+                  if (cleanVal === 'null') {
+                    orParts.push(`"${orCol}" IS NULL`);
+                  } else {
+                    orParts.push(`"${orCol}" IS ${addParam(cleanVal === 'true' ? true : cleanVal === 'false' ? false : cleanVal)}`);
+                  }
+                }
+              }
+            }
+          }
+          if (orParts.length > 0) {
+            parts.push(`(${orParts.join(' OR ')})`);
+          }
+        }
+      }
+      if (parts.length > 0) {
+        whereClause = ' WHERE ' + parts.join(' AND ');
+      }
+    }
+
+    if (action === 'select') {
+      let selectCols = '*';
+      if (select && typeof select === 'string' && select !== '*') {
+        const parts = select.split(',').map(s => s.trim());
+        const valid = parts.every(p => /^[a-zA-Z0-9_:\s\*]+$/.test(p) || p.includes('(') || p.includes(')'));
+        if (valid) {
+          selectCols = parts.map(p => {
+            if (/^[a-zA-Z0-9_]+$/.test(p)) return `"${p}"`;
+            return p;
+          }).join(', ');
+        }
+      }
+      
+      sql = `SELECT ${selectCols} FROM "${table}"${whereClause}`;
+      
+      if (order && order.column) {
+        if (/^[a-zA-Z0-9_]+$/.test(order.column)) {
+          sql += ` ORDER BY "${order.column}" ${order.ascending ? 'ASC' : 'DESC'}`;
+        }
+      }
+      
+      if (typeof limit === 'number') {
+        sql += ` LIMIT ${limit}`;
+      }
+
+      console.log(`[VPS Fallback Query] Running: ${sql} with params:`, queryParams);
+      const { rows } = await db.query(sql, queryParams);
+      
+      if (single || maybeSingle) {
+        return res.json({ data: rows[0] || null, error: null });
+      }
+      return res.json({ data: rows, error: null });
+
+    } else if (action === 'insert') {
+      if (!data || typeof data !== 'object') {
+        return res.status(400).json({ error: 'Data object required for insert' });
+      }
+
+      const rowsToInsert = Array.isArray(data) ? data : [data];
+      if (rowsToInsert.length === 0) {
+        return res.json({ data: [], error: null });
+      }
+
+      const allColsSet = new Set();
+      for (const row of rowsToInsert) {
+        Object.keys(row).forEach(k => allColsSet.add(k));
+      }
+      const cols = Array.from(allColsSet);
+      for (const col of cols) {
+        if (!/^[a-zA-Z0-9_]+$/.test(col)) {
+          return res.status(400).json({ error: `Invalid column name in insert: ${col}` });
+        }
+      }
+
+      const valueRows = [];
+      for (const row of rowsToInsert) {
+        const valuePlaceholders = [];
+        for (const col of cols) {
+          valuePlaceholders.push(addParam(row[col] !== undefined ? row[col] : null));
+        }
+        valueRows.push(`(${valuePlaceholders.join(', ')})`);
+      }
+
+      sql = `INSERT INTO "${table}" (${cols.map(c => `"${c}"`).join(', ')}) VALUES ${valueRows.join(', ')} RETURNING *`;
+      console.log(`[VPS Fallback Insert] Running: ${sql} with params:`, queryParams);
+      const { rows } = await db.query(sql, queryParams);
+      
+      if (!Array.isArray(data) && rows.length > 0) {
+        return res.json({ data: rows[0], error: null });
+      }
+      return res.json({ data: rows, error: null });
+
+    } else if (action === 'update') {
+      if (!data || typeof data !== 'object') {
+        return res.status(400).json({ error: 'Data object required for update' });
+      }
+
+      const keys = Object.keys(data);
+      const setClauses = [];
+      for (const key of keys) {
+        if (!/^[a-zA-Z0-9_]+$/.test(key)) {
+          return res.status(400).json({ error: `Invalid column name in update: ${key}` });
+        }
+        setClauses.push(`"${key}" = ${addParam(data[key])}`);
+      }
+
+      sql = `UPDATE "${table}" SET ${setClauses.join(', ')}${whereClause} RETURNING *`;
+      console.log(`[VPS Fallback Update] Running: ${sql} with params:`, queryParams);
+      const { rows } = await db.query(sql, queryParams);
+      return res.json({ data: rows, error: null });
+
+    } else if (action === 'upsert') {
+      if (!data || typeof data !== 'object') {
+        return res.status(400).json({ error: 'Data object required for upsert' });
+      }
+
+      const rowsToInsert = Array.isArray(data) ? data : [data];
+      if (rowsToInsert.length === 0) {
+        return res.json({ data: [], error: null });
+      }
+
+      const allColsSet = new Set();
+      for (const row of rowsToInsert) {
+        Object.keys(row).forEach(k => allColsSet.add(k));
+      }
+      const cols = Array.from(allColsSet);
+      for (const col of cols) {
+        if (!/^[a-zA-Z0-9_]+$/.test(col)) {
+          return res.status(400).json({ error: `Invalid column name in upsert: ${col}` });
+        }
+      }
+
+      const valueRows = [];
+      for (const row of rowsToInsert) {
+        const valuePlaceholders = [];
+        for (const col of cols) {
+          valuePlaceholders.push(addParam(row[col] !== undefined ? row[col] : null));
+        }
+        valueRows.push(`(${valuePlaceholders.join(', ')})`);
+      }
+
+      let conflictTarget = 'id';
+      if (table === 'attendance_logs') {
+        conflictTarget = 'employee_id, date';
+      } else if (table === 'user_roles') {
+        conflictTarget = 'user_id';
+      } else if (table === 'user_sessions') {
+        conflictTarget = 'id';
+      }
+
+      const updateClauses = cols
+        .filter(c => c !== 'id' && c !== 'employee_id' && c !== 'date' && c !== 'user_id')
+        .map(c => `"${c}" = EXCLUDED."${c}"`)
+        .join(', ');
+
+      sql = `INSERT INTO "${table}" (${cols.map(c => `"${c}"`).join(', ')}) VALUES ${valueRows.join(', ')}`;
+      if (updateClauses.length > 0) {
+        sql += ` ON CONFLICT (${conflictTarget}) DO UPDATE SET ${updateClauses}`;
+      } else {
+        sql += ` ON CONFLICT (${conflictTarget}) DO NOTHING`;
+      }
+      sql += ' RETURNING *';
+
+      console.log(`[VPS Fallback Upsert] Running: ${sql} with params:`, queryParams);
+      const { rows } = await db.query(sql, queryParams);
+      
+      if (!Array.isArray(data) && rows.length > 0) {
+        return res.json({ data: rows[0], error: null });
+      }
+      return res.json({ data: rows, error: null });
+
+    } else if (action === 'delete') {
+      sql = `DELETE FROM "${table}"${whereClause} RETURNING *`;
+      console.log(`[VPS Fallback Delete] Running: ${sql} with params:`, queryParams);
+      const { rows } = await db.query(sql, queryParams);
+      return res.json({ data: rows, error: null });
+      
+    } else {
+      return res.status(400).json({ error: `Action '${action}' is not supported.` });
+    }
+  } catch (err) {
+    console.error('[VPS Fallback Query Error]:', err.message || err);
+    return res.status(500).json({ error: err.message || 'VPS Query execution failed' });
+  }
+});
+
 // --- PostgreSQL LISTEN/NOTIFY Real-Time Sync ---
 const { Client } = require('pg');
 

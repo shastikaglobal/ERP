@@ -155,10 +155,23 @@ router.delete('/:id', requireAuth, async (req, res) => {
 router.delete('/accounts/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Update local database
     await db.query(
       "UPDATE zoho_accounts SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
       [id]
     );
+
+    // Propagate deletion to Supabase so sync doesn't restore it
+    const { error } = await supabase
+      .from('zoho_accounts')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.warn('[Delete] Failed to update Supabase:', error.message);
+    }
+    
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete zoho account):", err);
@@ -237,7 +250,7 @@ router.post('/sync', requireAuth, async (req, res) => {
 
     // Fetch messages
     const messagesResponse = await fetch(
-      `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/folders/${inboxFolder.folderId}/messages/view?limit=100`,
+      `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/messages/view?folderId=${inboxFolder.folderId}&limit=100`,
       { headers: { Authorization: `Zoho-oauthtoken ${accessToken}` } }
     );
     const messagesData = await messagesResponse.json();

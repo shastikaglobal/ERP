@@ -101,7 +101,11 @@ export default function RegisterFace() {
       });
       if (!res.ok) throw new Error('Failed to fetch from API');
       const data = await res.json();
-      if (isMounted.current) setEmployees(data);
+      const filtered = data.filter((emp: any) => {
+        const name = (emp.full_name || '').toLowerCase();
+        return name.includes('navya') || name.includes('aditi');
+      });
+      if (isMounted.current) setEmployees(filtered);
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to load employees: ' + err.message });
     } finally {

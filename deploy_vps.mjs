@@ -12,7 +12,7 @@ const VPS_PORT = 22;
 const VPS_USER = 'root';
 const VPS_PASSWORD = 'SHASTIKARAM@2026';
 
-const REMOTE_FRONTEND = '/var/www/shastika-erp';
+const REMOTE_FRONTEND = '/var/www/shastika-erp/dist';
 const REMOTE_BACKEND = '/var/www/adms-sync';
 
 const LOCAL_ROOT = __dirname;
