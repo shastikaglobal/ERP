@@ -193,7 +193,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       // 2. BDE with no explicit permissions → show CRM group, and specific items in other groups
       if (hasBdeDefaults) {
         if (g.title === 'Farmers') {
-          return { ...g, items: g.items.filter(i => ['Farmers List', 'Convert to Customer'].includes(i.title)) };
+          return { ...g, items: g.items.filter(i => ['Farmers List', 'Farmer Verification', 'Farmer KYC', 'Farm Visits', 'Contract Farming', 'Supply Commitments', 'Goods Collection', 'Farmer Rating', 'Payouts & Payments', 'Convert to Customer'].includes(i.title)) };
         }
         if (g.title === 'Warehouse & Inventory') {
           return {
@@ -245,9 +245,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         });
         const hasAllowedChildren = item.items && item.items.length > 0;
         
-        if (isSelfAllowed) console.log(`[AppSidebar] ✔️ Allowed (item): ${item.title}`);
+        const isAlwaysVisible = ['contract farming', 'supply commitments', 'goods collection', 'farmer rating', 'payouts', 'payouts & payments', 'support', 'farm visits', 'farmer kyc', 'farmer verification', 'farmer documents'].includes(itemTitle);
+
+        if (isSelfAllowed || isAlwaysVisible) console.log(`[AppSidebar] ✔️ Allowed (item): ${item.title}`);
         
-        return isSelfAllowed || hasAllowedChildren;
+        return isSelfAllowed || hasAllowedChildren || isAlwaysVisible;
       });
 
       return { ...g, items: filteredItems };

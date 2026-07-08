@@ -7,14 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useFarmerContext } from "@/context/FarmerContext";
 
 export default function CreateFarmer() {
   const nav = useNavigate();
-  const qc = useQueryClient();
-  const { profile } = useAuth();
+  const { addFarmer } = useFarmerContext();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     code: "",
@@ -25,6 +22,7 @@ export default function CreateFarmer() {
     district: "",
     state: "",
     country: "India",
+    farm_area: "",
     primary_crops: "",
     bank_account: "",
     notes: "",
@@ -35,33 +33,27 @@ export default function CreateFarmer() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id) {
-      toast.error("Missing company context");
-      return;
-    }
     setBusy(true);
-    const { error } = await supabase.from("farmers").insert({
-      company_id: profile.company_id,
-      code: form.code || null,
-      full_name: form.full_name,
-      phone: form.phone || null,
-      email: form.email || null,
-      village: form.village || null,
-      district: form.district || null,
-      state: form.state || null,
-      country: form.country || null,
-      primary_crops: form.primary_crops ? form.primary_crops.split(",").map((s) => s.trim()).filter(Boolean) : null,
-      bank_account: form.bank_account || null,
-      notes: form.notes || null,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    
+    try {
+      await addFarmer({
+        id: `FMR-${Date.now()}`,
+        code: form.code || `F-${Math.floor(Math.random() * 10000)}`,
+        full_name: form.full_name,
+        phone: form.phone || "",
+        village: form.village || "",
+        district: form.district || "",
+        state: form.state || "",
+        farm_area: form.farm_area || "",
+        workflow_status: "Unverified"
+      });
+
+      toast.success("Farmer profile created!");
+      nav("/farmers");
+    } catch (err: any) {
+      toast.error(err.message);
+      setBusy(false);
     }
-    toast.success("Farmer added");
-    qc.invalidateQueries({ queryKey: ["farmers"] });
-    nav("/farmers");
   };
 
   return (
@@ -100,6 +92,9 @@ export default function CreateFarmer() {
 
         <Section title="Crops & banking">
           <FormGrid cols={2}>
+            <FormRow label="Farm Area (Acres)">
+              <Input value={form.farm_area} onChange={onChange("farm_area")} placeholder="e.g. 5" />
+            </FormRow>
             <FormRow label="Primary crops" hint="Comma separated">
               <Input value={form.primary_crops} onChange={onChange("primary_crops")} placeholder="Turmeric, Cardamom" />
             </FormRow>

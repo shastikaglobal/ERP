@@ -30,88 +30,32 @@ router.get('/', requireAuth, async (req, res) => {
       console.log(`[GET /api/farmers] company_id was missing, resolved to: ${company_id}`);
     }
 
-    if (supabase) {
-      try {
-        console.log('[Sync] Fetching latest farmers from Supabase...');
-        const { data: sbFarmers, error: sbError } = await supabase
-          .from('farmers')
-          .select('*')
-          .eq('company_id', company_id);
+// Supabase sync removed
 
-        if (sbError) {
-          console.error('[Sync] Supabase fetch failed:', sbError.message);
-        } else if (sbFarmers && sbFarmers.length > 0) {
-          console.log(`[Sync] Found ${sbFarmers.length} farmers in Supabase. Syncing to VPS DB...`);
-          for (const farmer of sbFarmers) {
-            const upsertQuery = `
-              INSERT INTO farmers (
-                id, company_id, code, full_name, email, phone, village, district, state, country, 
-                primary_crops, bank_account, notes, is_active, is_deleted, created_at, updated_at
-              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-                $11, $12, $13, $14, $15, $16, $17
-              )
-              ON CONFLICT (id) DO UPDATE SET
-                company_id = EXCLUDED.company_id,
-                code = EXCLUDED.code,
-                full_name = EXCLUDED.full_name,
-                email = EXCLUDED.email,
-                phone = EXCLUDED.phone,
-                village = EXCLUDED.village,
-                district = EXCLUDED.district,
-                state = EXCLUDED.state,
-                country = EXCLUDED.country,
-                primary_crops = EXCLUDED.primary_crops,
-                bank_account = EXCLUDED.bank_account,
-                notes = EXCLUDED.notes,
-                is_active = EXCLUDED.is_active,
-                is_deleted = EXCLUDED.is_deleted,
-                updated_at = EXCLUDED.updated_at
-            `;
-            await db.query(upsertQuery, [
-              farmer.id,
-              farmer.company_id,
-              farmer.code || null,
-              farmer.full_name,
-              farmer.email || null,
-              farmer.phone || null,
-              farmer.village || null,
-              farmer.district || null,
-              farmer.state || null,
-              farmer.country || null,
-              farmer.primary_crops || null,
-              farmer.bank_account || null,
-              farmer.notes || null,
-              farmer.is_active ?? true,
-              farmer.is_deleted ?? false,
-              farmer.created_at,
-              farmer.updated_at
-            ]);
-          }
+    const userProfRes = await db.query('SELECT role, full_name FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
 
-          // Mark any farmers in local DB that are NOT in the active/inactive list in Supabase (or deleted)
-          const sbIds = sbFarmers.map(f => f.id);
-          if (sbIds.length > 0) {
-            await db.query(
-              `UPDATE farmers SET is_deleted = true WHERE company_id = $1 AND id NOT IN (${sbIds.map((_, i) => `$${i + 2}`).join(', ')})`,
-              [company_id, ...sbIds]
-            );
-          }
-        }
-      } catch (syncErr) {
-        console.error('[Sync] Error during dynamic farmers sync:', syncErr.message);
-      }
-    }
-
-    const query = `
+    let query = `
       SELECT f.*, 
              CASE WHEN c.id IS NOT NULL THEN 'converted' ELSE 'active' END as conversion_status
       FROM farmers f
       LEFT JOIN customers c ON c.farmer_id = f.id
       WHERE f.company_id = $1 AND f.is_deleted IS NOT TRUE
-      ORDER BY f.created_at DESC
     `;
-    const { rows } = await db.query(query, [company_id]);
+    const params = [company_id];
+
+    if (!isAdmin) {
+      query += ` AND f.created_by = $2`;
+      params.push(req.user.sub);
+    }
+    
+    query += ` ORDER BY f.created_at DESC`;
+
+    const { rows } = await db.query(query, params);
+    
+    console.log(`[GET /api/farmers] User ID: ${req.user.sub}, Role: ${userRole}. Retrieved ${rows.length} records.`);
+
     res.json(rows);
   } catch (err) {
     console.error('DB Error (get farmers):', err);
@@ -138,48 +82,19 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'full_name is required' });
     }
 
+    const userProfRes = await db.query('SELECT full_name FROM profiles WHERE id = $1', [req.user.sub]);
+    const createdByName = userProfRes.rows.length > 0 ? userProfRes.rows[0].full_name : 'Unknown User';
+
+    console.log(`[POST /api/farmers] Creating farmer for User ID: ${req.user.sub} (${createdByName})`);
+
     const { rows } = await db.query(
-      `INSERT INTO farmers (company_id, full_name, email, phone, country, district, primary_crops, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [company_id, full_name, email, phone, country, district, primary_crops, is_active ?? true]
+      `INSERT INTO farmers (company_id, full_name, email, phone, country, district, primary_crops, is_active, created_by, created_by_name) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [company_id, full_name, email, phone, country, district, primary_crops, is_active ?? true, req.user.sub, createdByName]
     );
 
     const newFarmer = rows[0];
-
-    if (supabase) {
-      try {
-        console.log(`[Sync] Inserting new farmer to Supabase: ${newFarmer.id}`);
-        const { error: sbError } = await supabase
-          .from('farmers')
-          .insert([{
-            id: newFarmer.id,
-            company_id: newFarmer.company_id,
-            code: newFarmer.code || null,
-            full_name: newFarmer.full_name,
-            email: newFarmer.email || null,
-            phone: newFarmer.phone || null,
-            village: newFarmer.village || null,
-            district: newFarmer.district || null,
-            state: newFarmer.state || null,
-            country: newFarmer.country || null,
-            primary_crops: newFarmer.primary_crops || null,
-            bank_account: newFarmer.bank_account || null,
-            notes: newFarmer.notes || null,
-            is_active: newFarmer.is_active ?? true,
-            is_deleted: newFarmer.is_deleted ?? false,
-            created_at: newFarmer.created_at,
-            updated_at: newFarmer.updated_at
-          }]);
-
-        if (sbError) {
-          console.error('[Sync] Failed to sync new farmer to Supabase:', sbError.message);
-        } else {
-          console.log('[Sync] Successfully synced new farmer to Supabase');
-        }
-      } catch (syncErr) {
-        console.error('[Sync] Exception during farmer insert sync to Supabase:', syncErr.message);
-      }
-    }
+    console.log(`[POST /api/farmers] Successfully created farmer with created_by: ${newFarmer.created_by}`);
 
     res.status(201).json(newFarmer);
   } catch (err) {
@@ -218,6 +133,11 @@ router.get('/converted', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
     const { rows } = await db.query(
       `SELECT * FROM farmers WHERE id = $1 AND is_deleted IS NOT TRUE`,
       [id]
@@ -225,6 +145,10 @@ router.get('/:id', requireAuth, async (req, res) => {
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Farmer not found' });
+    }
+
+    if (!isAdmin && rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
     }
 
     res.json(rows[0]);
@@ -240,6 +164,19 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
     
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
     const { rows } = await db.query(
       `UPDATE farmers SET 
         full_name = COALESCE($1, full_name),
@@ -259,43 +196,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
     );
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-
     const updatedFarmer = rows[0];
-
-    if (supabase) {
-      try {
-        console.log(`[Sync] Updating farmer in Supabase: ${id}`);
-        const { error: sbError } = await supabase
-          .from('farmers')
-          .update({
-            code: updatedFarmer.code,
-            full_name: updatedFarmer.full_name,
-            email: updatedFarmer.email,
-            phone: updatedFarmer.phone,
-            village: updatedFarmer.village,
-            district: updatedFarmer.district,
-            state: updatedFarmer.state,
-            country: updatedFarmer.country,
-            primary_crops: updatedFarmer.primary_crops,
-            bank_account: updatedFarmer.bank_account,
-            notes: updatedFarmer.notes,
-            is_active: updatedFarmer.is_active,
-            updated_at: updatedFarmer.updated_at
-          })
-          .eq('id', id);
-
-        if (sbError) {
-          console.error('[Sync] Failed to sync updated farmer to Supabase:', sbError.message);
-        } else {
-          console.log('[Sync] Successfully synced updated farmer to Supabase');
-        }
-      } catch (syncErr) {
-        console.error('[Sync] Exception during farmer update sync to Supabase:', syncErr.message);
-      }
-    }
 
     res.json(updatedFarmer);
   } catch (err) {
@@ -307,37 +208,25 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/farmers/:id
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
-      [req.user?.id || null, req.params.id]
-    );
+    const { id } = req.params;
 
-    if (rows.length === 0) {
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
       return res.status(404).json({ error: 'Farmer not found' });
     }
-
-    if (supabase) {
-      try {
-        console.log(`[Sync] Soft-deleting farmer in Supabase: ${req.params.id}`);
-        const { error: sbError } = await supabase
-          .from('farmers')
-          .update({
-            is_deleted: true,
-            is_active: false,
-            deleted_at: new Date().toISOString(),
-            deleted_by: req.user?.id || null
-          })
-          .eq('id', req.params.id);
-
-        if (sbError) {
-          console.error('[Sync] Failed to sync deleted farmer to Supabase:', sbError.message);
-        } else {
-          console.log('[Sync] Successfully synced deleted farmer to Supabase');
-        }
-      } catch (syncErr) {
-        console.error('[Sync] Exception during farmer delete sync to Supabase:', syncErr.message);
-      }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
     }
+
+    const { rows } = await db.query(
+      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
+      [req.user.sub, id]
+    );
 
     res.json({ success: true });
   } catch (err) {
@@ -629,6 +518,175 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('DB Error (convert farmer):', err);
     return res.status(500).json({ error: err.message || 'Failed to convert farmer to customer' });
+  }
+});
+
+// GET /api/farmers/kyc
+router.get('/kyc', requireAuth, async (req, res) => {
+  try {
+    let { company_id } = req.query;
+    if (!company_id) {
+      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1 LIMIT 1', [req.user.sub]);
+      if (userRes.rows.length > 0 && userRes.rows[0].company_id) {
+        company_id = userRes.rows[0].company_id;
+      } else {
+        company_id = '00000000-0000-0000-0000-00000000ae01';
+      }
+    }
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    let query = `
+      SELECT k.* 
+      FROM farmer_kyc k
+      INNER JOIN farmers f ON f.id = k.farmer_id
+      WHERE f.company_id = $1
+    `;
+    const params = [company_id];
+
+    if (!isAdmin) {
+      query += ` AND f.created_by = $2`;
+      params.push(req.user.sub);
+    }
+
+    const { rows } = await db.query(query, params);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('DB Error (get farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// POST /api/farmers/kyc
+router.post('/kyc', requireAuth, async (req, res) => {
+  try {
+    const { farmer_id, aadhaar, pan, status } = req.body;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+    
+    // Upsert logic: Delete existing for this farmer
+    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+
+    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
+    
+    if (aadhaar) {
+      await db.query(
+        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`,
+        [farmer_id, aadhaar, dbStatus]
+      );
+    }
+    
+    if (pan) {
+      await db.query(
+        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`,
+        [farmer_id, pan, dbStatus]
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (post farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+// GET /api/farmers/kyc/:id
+router.get('/kyc/:id', requireAuth, async (req, res) => {
+  try {
+    const farmer_id = req.params.id;
+    
+    // Check ownership
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(`SELECT * FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+    
+    const record = { id: farmer_id, farmer_id: farmer_id, aadhaar: '', pan: '', bank_account: '', ifsc: '', doc_urls: {}, status: 'Pending' };
+    
+    rows.forEach(row => {
+      if (row.document_type === 'Aadhaar') record.aadhaar = row.document_number;
+      if (row.document_type === 'PAN') record.pan = row.document_number;
+      if (row.document_type === 'Bank Account') record.bank_account = row.document_number;
+      if (row.document_type === 'IFSC') record.ifsc = row.document_number;
+      if (row.document_type === 'doc_urls') {
+        try { record.doc_urls = JSON.parse(row.document_number); } catch(e){}
+      }
+      if (row.status === 'Approved') record.status = 'Completed';
+    });
+    
+    res.json(record);
+  } catch (err) {
+    console.error('DB Error (get farmer_kyc by id):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// PUT /api/farmers/kyc/:id
+router.put('/kyc/:id', requireAuth, async (req, res) => {
+  try {
+    const farmer_id = req.params.id;
+    const { aadhaar, pan, bank_account, ifsc, doc_urls, status } = req.body;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+    
+    // Delete existing EAV records for this farmer to rebuild them cleanly
+    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+
+    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
+    
+    if (aadhaar) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`, [farmer_id, aadhaar, dbStatus]);
+    }
+    if (pan) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`, [farmer_id, pan, dbStatus]);
+    }
+    if (bank_account) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Bank Account', $2, $3)`, [farmer_id, bank_account, dbStatus]);
+    }
+    if (ifsc) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'IFSC', $2, $3)`, [farmer_id, ifsc, dbStatus]);
+    }
+    if (doc_urls) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'doc_urls', $2, $3)`, [farmer_id, JSON.stringify(doc_urls), dbStatus]);
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (put farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });
 

@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
-import { useCan } from "@/hooks/useAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { FormGrid, FormRow } from "@/components/shared/FormShell";
+import { useFarmerContext } from "@/context/FarmerContext";
+import { useCan, useIsAdminOrManager } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type Farmer = {
   id: string;
@@ -25,11 +25,14 @@ type Farmer = {
   primary_crops: string[] | null;
   is_active: boolean;
   created_at: string;
+  created_by?: string;
+  created_by_name?: string;
 };
 
 export default function FarmersList() {
   const nav = useNavigate();
   const can = useCan();
+  const isAdmin = useIsAdminOrManager();
   const qc = useQueryClient();
   const canConvert = can("farmers.manage");
   
@@ -47,18 +50,25 @@ export default function FarmersList() {
     is_active: true,
   });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["farmers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("farmers")
-        .select("id, code, full_name, phone, village, district, state, primary_crops, is_active, created_at")
-        .neq("is_deleted", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Farmer[];
-    },
-  });
+  const { isLoading, farmers, updateFarmer, deleteFarmer } = useFarmerContext();
+  
+  // Map context farmers to the expected table format
+  const data = farmers.map(f => ({
+    id: f.id,
+    code: f.code,
+    full_name: f.full_name,
+    phone: f.phone,
+    village: f.village,
+    district: f.district,
+    state: f.state,
+    primary_crops: ['General'],
+    is_active: true,
+    created_at: f.created_at || new Date().toISOString(),
+    created_by: f.created_by,
+    created_by_name: f.created_by_name
+  }));
+
+
 
   const handleEditClick = (e: React.MouseEvent, f: Farmer) => {
     e.stopPropagation();
@@ -80,20 +90,16 @@ export default function FarmersList() {
     if (!editingFarmer) return;
     setBusy(true);
     try {
-      const { error } = await supabase.from("farmers").update({
-        code: editForm.code || null,
+      await updateFarmer(editingFarmer.id, {
+        code: editForm.code || "",
         full_name: editForm.full_name,
-        phone: editForm.phone || null,
-        village: editForm.village || null,
-        district: editForm.district || null,
-        state: editForm.state || null,
-        primary_crops: editForm.primary_crops ? editForm.primary_crops.split(",").map(s => s.trim()).filter(Boolean) : null,
-        is_active: editForm.is_active,
-      }).eq("id", editingFarmer.id);
+        phone: editForm.phone || "",
+        village: editForm.village || "",
+        district: editForm.district || "",
+        state: editForm.state || ""
+      });
       
-      if (error) throw error;
       toast.success("Farmer updated successfully");
-      qc.invalidateQueries({ queryKey: ["farmers"] });
       setEditingFarmer(null);
     } catch (err: any) {
       toast.error(err.message);
@@ -106,14 +112,8 @@ export default function FarmersList() {
     if (!deletingFarmer) return;
     setBusy(true);
     try {
-      const { error } = await supabase
-        .from('farmers')
-        .update({ is_active: false, is_deleted: true })
-        .eq('id', deletingFarmer.id);
-      
-      if (error) throw error;
-      toast.success("Farmer deleted successfully");
-      qc.invalidateQueries({ queryKey: ["farmers"] });
+      await deleteFarmer(deletingFarmer.id);
+      toast.success("Farmer deleted");
       setDeletingFarmer(null);
     } catch (err: any) {
       toast.error(err.message);
@@ -129,35 +129,49 @@ export default function FarmersList() {
     { key: "loc", header: "Location", render: (r: Farmer) => <span className="text-sm">{[r.village, r.district, r.state].filter(Boolean).join(", ") || "—"}</span> },
     { key: "crops", header: "Crops", render: (r: Farmer) => <span className="text-xs text-muted-foreground">{(r.primary_crops || []).join(", ") || "—"}</span> },
     { key: "status", header: "Status", render: (r: Farmer) => <StatusBadge status={r.is_active ? "Active" : "Inactive"} /> },
-    {
-      key: "actions",
-      header: "Action",
-      className: "text-right",
+  ] as any[];
+
+  if (isAdmin) {
+    columns.push({
+      key: "created_by",
+      header: "Created By",
       render: (r: Farmer) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            onClick={(e) => handleEditClick(e, r)}
-            title="Edit Farmer"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); setDeletingFarmer(r); }}
-            title="Delete Farmer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{r.created_by_name || "System"}</span>
+          <span className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
         </div>
-      ),
-    },
-  ];
+      )
+    });
+  }
+
+  columns.push({
+    key: "actions",
+    header: "Action",
+    className: "text-right",
+    render: (r: Farmer) => (
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={(e) => handleEditClick(e, r)}
+          title="Edit Farmer"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={(e) => { e.stopPropagation(); setDeletingFarmer(r); }}
+          title="Delete Farmer"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    ),
+  });
 
   return (
     <div>

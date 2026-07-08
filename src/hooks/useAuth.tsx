@@ -78,61 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsIdle(currentlyIdle);
 
       try {
-        // Fetch current values to increment
-        const { data: currentSess, error: fetchErr } = await (supabase
-          .from('user_sessions' as any) as any)
-          .select('active_minutes, idle_minutes')
-          .eq('user_id', session.user.id)
-          .is('logout_time', null)
-          .order('login_time', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-          
-        if (fetchErr) {
-          console.error('Session timer: Error fetching current minutes', fetchErr);
-          return;
-        }
-
-        if (currentSess) {
-          const newActive = currentlyIdle ? (currentSess.active_minutes || 0) : (currentSess.active_minutes || 0) + 1;
-          const newIdle = currentlyIdle ? (currentSess.idle_minutes || 0) + 1 : (currentSess.idle_minutes || 0);
-
-          const updateData: any = {
-            active_minutes: newActive,
-            idle_minutes: newIdle
-          };
-          
-          if (!currentlyIdle) {
-            updateData.last_activity = new Date().toISOString();
-          }
-          
-          console.log('Attempting session update...', {
-            userId: session.user.id,
-            activeMinutes: newActive,
-            idleMinutes: newIdle,
-            isIdle: currentlyIdle
-          });
-
-          const { data, error: updateErr } = await (supabase
-            .from('user_sessions' as any) as any)
-            .update(updateData)
-            .eq('user_id', session.user.id)
-            .is('logout_time', null)
-            .select();
-
-          console.log('Update result:', data, updateErr);
-
-          if (updateErr) {
-            console.log('Session update error:', updateErr);
-          } else if (data && data.length > 0) {
-            setActiveMinutes(data[0].active_minutes || 0);
-            setIdleMinutes(data[0].idle_minutes || 0);
-          } else {
-            setActiveMinutes(newActive);
-            setIdleMinutes(newIdle);
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const res = await fetch('/api/sessions/ping', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ user_id: session.user.id, is_idle: currentlyIdle })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setActiveMinutes(data.active_minutes || 0);
+            setIdleMinutes(data.idle_minutes || 0);
           }
         } else {
-          console.log('Session timer pulse: No active session found to update for this user');
+          console.log('Session timer pulse failed: No active session found to update for this user');
         }
       } catch (e) {
         console.error("Error in session tracking interval:", e);
@@ -283,40 +243,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const startSession = async (user: User) => {
     if (typeof window === 'undefined') return;
     
-    // First check if there's ALREADY a session with null logout_time to avoid duplicates
-    const { data: existing } = await (supabase
-      .from('user_sessions' as any) as any)
-      .select('id')
-      .eq('user_id', user.id)
-      .is('logout_time', null)
-      .maybeSingle();
-
-    if (existing) {
-      await (supabase
-        .from('user_sessions' as any) as any)
-        .update({ login_time: new Date().toISOString() })
-        .eq('id', existing.id);
-        
-      setCurrentSessionId(existing.id);
-      return;
-    }
-
     try {
-      const { data, error } = await (supabase
-        .from('user_sessions' as any) as any)
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          login_time: new Date().toISOString()
-        })
-        .select('id')
-        .maybeSingle();
-      
-      if (!error && data) {
-        setCurrentSessionId((data as any).id);
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const res = await fetch('/api/sessions/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ user_id: user.id, email: user.email })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentSessionId(data.id);
       }
     } catch (e) {
-      console.error("Error starting session:", e);
+      console.error("Error starting session on VPS:", e);
     }
   };
 
@@ -325,42 +264,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Clean up active_sessions via soft delete so session history remains auditable
-      await supabase
-        .from("active_sessions" as any)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: user.id,
-        })
-        .eq("user_id", user.id);
-
-      const { data: loginRecord } = await (supabase
-        .from('user_sessions' as any) as any)
-        .select('*')
-        .eq('user_id', user.id)
-        .is('logout_time', null)
-        .order('login_time', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (loginRecord) {
-        const logoutTime = new Date();
-        const loginTime = new Date(loginRecord.login_time);
-        const durationMinutes = Math.round((logoutTime.getTime() - loginTime.getTime()) / 60000);
-
-        await (supabase
-          .from('user_sessions' as any) as any)
-          .update({
-            logout_time: logoutTime.toISOString(),
-            duration_minutes: durationMinutes
-          })
-          .eq('id', loginRecord.id);
-          
-        setCurrentSessionId(null);
-      }
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      await fetch('/api/sessions/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ user_id: user.id })
+      });
     } catch (e) {
-      console.error("Error ending session:", e);
+      console.error("Error ending session on VPS:", e);
     }
   };
 

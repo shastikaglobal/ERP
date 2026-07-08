@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Phone, Mail, MapPin, Sprout } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -6,20 +6,29 @@ import { Section } from "@/components/shared/FormShell";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { useFarmerContext } from "@/context/FarmerContext";
+import { useIsAdminOrManager } from "@/hooks/useAuth";
 
 export default function FarmerDetail() {
   const { id } = useParams();
   const nav = useNavigate();
 
-  const { data: farmer, isLoading } = useQuery({
-    queryKey: ["farmer", id],
-    enabled: !!id,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("farmers").select("*").eq("id", id!).neq("is_deleted", true).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Redirect common module names if they accidentally hit this dynamic route (due to typos or casing issues)
+  const idLower = id?.toLowerCase() || '';
+  if (['collections', 'collection', 'goods-collection'].includes(idLower)) return <Navigate to="/farmers/collections" replace />;
+  if (['rating', 'ratings', 'farmer-rating'].includes(idLower)) return <Navigate to="/farmers/rating" replace />;
+  if (['payouts', 'payout', 'payments'].includes(idLower)) return <Navigate to="/farmers/payouts" replace />;
+  if (['commitments', 'commitment', 'supply-commitments'].includes(idLower)) return <Navigate to="/farmers/commitments" replace />;
+  if (['contracts', 'contract', 'contract-farming'].includes(idLower)) return <Navigate to="/farmers/contracts" replace />;
+  if (['farm-visits', 'visits'].includes(idLower)) return <Navigate to="/farmers/farm-visits" replace />;
+  if (['kyc'].includes(idLower)) return <Navigate to="/farmers/kyc" replace />;
+  if (['verification', 'verify'].includes(idLower)) return <Navigate to="/farmers/verification" replace />;
+
+  const { farmers } = useFarmerContext();
+  const isAdmin = useIsAdminOrManager();
+  
+  const farmer = farmers.find(f => f.id === id);
+  const isLoading = false;
 
   const { data: pos } = useQuery({
     queryKey: ["farmer-pos", id],
@@ -53,8 +62,18 @@ export default function FarmerDetail() {
         title={farmer.full_name}
         description={farmer.code || undefined}
         breadcrumbs={[{ label: "Farmers", to: "/farmers" }, { label: farmer.full_name }]}
-        actions={<StatusBadge status={farmer.is_active ? "Active" : "Inactive"} />}
+        actions={<StatusBadge status={"Active"} />}
       />
+
+      {isAdmin && farmer.created_by_name && (
+        <div className="mb-6 p-4 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
+          <h3 className="text-sm font-medium text-slate-300 mb-2">Record Ownership</h3>
+          <div className="flex gap-8 text-sm">
+            <div><span className="text-muted-foreground mr-2">Created By:</span> {farmer.created_by_name}</div>
+            {farmer.created_at && <div><span className="text-muted-foreground mr-2">Created At:</span> {new Date(farmer.created_at).toLocaleString()}</div>}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Section title="Contact" className="lg:col-span-1">

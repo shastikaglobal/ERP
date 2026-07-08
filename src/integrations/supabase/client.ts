@@ -107,42 +107,28 @@ class CustomAuthWrapper {
 
   async signInWithPassword(credentials: { email?: string; password?: string }) {
     try {
-      const { data, error } = await client.auth.signInWithPassword(credentials as any);
-      if (error) {
-        // Fallback to local auth for ANY error (e.g. quota limit, paused project, or user not found in Supabase Auth but exists locally)
-        throw new Error(error.message || "Supabase auth failed");
-      }
-      
-      this.currentSession = data.session;
-      localStorage.setItem('sb-local-auth-session', JSON.stringify(data.session));
-      this.notifyListeners('SIGNED_IN', data.session);
-      return { data, error: null };
-    } catch (err) {
-      console.warn("Supabase auth restricted. Falling back to local VPS auth...", err);
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: credentials.email, password: credentials.password })
-        });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: credentials.email, password: credentials.password })
+      });
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          return { data: null, error: { message: errData?.error || "Invalid login credentials" } };
-        }
-
-        const resData = await res.json();
-        if (resData?.session) {
-          this.currentSession = resData.session;
-          localStorage.setItem('sb-local-auth-session', JSON.stringify(resData.session));
-          this.notifyListeners('SIGNED_IN', resData.session);
-          return { data: resData, error: null };
-        } else {
-          return { data: null, error: { message: "Invalid session response from local server" } };
-        }
-      } catch (localErr: any) {
-        return { data: null, error: { message: localErr.message || "Local auth server offline" } };
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        return { data: null, error: { message: errData?.error || "Invalid login credentials" } };
       }
+
+      const resData = await res.json();
+      if (resData?.session) {
+        this.currentSession = resData.session;
+        localStorage.setItem('sb-local-auth-session', JSON.stringify(resData.session));
+        this.notifyListeners('SIGNED_IN', resData.session);
+        return { data: resData, error: null };
+      } else {
+        return { data: null, error: { message: "Invalid session response from local server" } };
+      }
+    } catch (localErr: any) {
+      return { data: null, error: { message: localErr.message || "Local auth server offline" } };
     }
   }
 

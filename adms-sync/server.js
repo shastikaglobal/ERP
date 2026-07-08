@@ -148,11 +148,13 @@ const financeRoutes = require('./routes/finance');
 const ordersRoutes = require('./routes/orders');
 const hrRoutes = require('./routes/hr');
 const farmersRoutes = require('./routes/farmers');
+const leavesRoutes = require('./routes/leaves');
 const permissionsRoutes = require('./routes/permissions');
 const securityRoutes = require('./routes/security');
 const procurementRoutes = require('./routes/procurement');
 const purchaseOrdersRoutes = require('./routes/purchase_orders');
 const documentsRoutes = require('./routes/documents');
+const sessionsRoutes = require('./routes/sessions');
 
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/employees', employeesRoutes);
@@ -169,6 +171,7 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/hr', hrRoutes);
 app.use('/api/farmers', farmersRoutes);
+app.use('/api/leaves', leavesRoutes);
 app.use('/api/permissions', permissionsRoutes);
 app.use('/api/user-permissions', permissionsRoutes);
 app.use('/api', invoicesRoutes);
@@ -181,6 +184,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/purchase_orders', purchaseOrdersRoutes);
 app.use('/api/documents', documentsRoutes);
+app.use('/api/sessions', sessionsRoutes);
 
 
 

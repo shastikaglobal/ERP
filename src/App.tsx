@@ -59,6 +59,18 @@ const FarmersList = lazy(() => import("./pages/farmers/FarmersList"));
 const CreateFarmer = lazy(() => import("./pages/farmers/CreateFarmer"));
 const FarmerDetail = lazy(() => import("./pages/farmers/FarmerDetail"));
 const ConvertToCustomer = lazy(() => import("./pages/farmers/ConvertToCustomer"));
+const FarmerVerification = lazy(() => import("./pages/farmers/FarmerVerification"));
+const FarmerKYC = lazy(() => import("./pages/farmers/KYC"));
+const FarmVisits = lazy(() => import("./pages/farmers/FarmVisits"));
+const ContractFarming = lazy(() => import("./pages/farmers/ContractFarming"));
+const SupplyCommitments = lazy(() => import("./pages/farmers/SupplyCommitments"));
+const GoodsCollection = lazy(() => import("./pages/farmers/GoodsCollection"));
+const FarmerRating = lazy(() => import("./pages/farmers/FarmerRating"));
+const FarmerPayouts = lazy(() => import("./pages/farmers/FarmerPayouts"));
+const FarmerSupport = lazy(() => import("./pages/farmers/FarmerSupport"));
+const FarmerDocuments = lazy(() => import("./pages/farmers/FarmerDocuments"));
+import { FarmerProvider } from "@/context/FarmerContext";
+
 // Procurement (live)
 const PurchaseOrdersListLive = lazy(() => import("./pages/procurement/PurchaseOrdersListLive"));
 const PurchaseOrderDetailLive = lazy(() => import("./pages/procurement/PurchaseOrderDetailLive"));
@@ -145,6 +157,7 @@ const FinancialReports = lazy(() => import("./pages/payments/FinancialReports"))
 const EmployeeDirectory = lazy(() => import("./pages/employees/EmployeeDirectory"));
 const Attendance = lazy(() => import("./pages/employees/Attendance"));
 const SalaryReport = lazy(() => import("./pages/employees/SalaryReport"));
+const LeaveManagement = lazy(() => import("./pages/employees/LeaveManagement"));
 const RolesPermissions = lazy(() => import("./pages/employees/RolesPermissions"));
 import FaceAttendanceGuard from '@/guards/FaceAttendanceGuard';
 const FaceAttendance = lazy(() => import("./pages/FaceAttendance.tsx"));
@@ -231,10 +244,26 @@ const App = () => (
               <Route path="/dashboards/employees" element={<EmployeeProductivity />} />
 
               {/* Farmers */}
-              <Route path="/farmers" element={<FarmersList />} />
-              <Route path="/farmers/create" element={<CreateFarmer />} />
-              <Route path="/farmers/convert" element={<ConvertToCustomer />} />
-              <Route path="/farmers/:id" element={<FarmerDetail />} />
+              <Route path="/farmers/*" element={
+                <FarmerProvider>
+                  <Routes>
+                    <Route path="/" element={<FarmersList />} />
+                    <Route path="/create" element={<CreateFarmer />} />
+                    <Route path="/verification" element={<FarmerVerification />} />
+                    <Route path="/kyc" element={<FarmerKYC />} />
+                    <Route path="/farm-visits" element={<FarmVisits />} />
+                    <Route path="/contracts" element={<ContractFarming />} />
+                    <Route path="/commitments" element={<SupplyCommitments />} />
+                    <Route path="/collections" element={<GoodsCollection />} />
+                    <Route path="/payouts" element={<FarmerPayouts />} />
+                    <Route path="/rating" element={<FarmerRating />} />
+                    <Route path="/documents" element={<FarmerDocuments />} />
+                    <Route path="/support" element={<FarmerSupport />} />
+                    <Route path="/convert" element={<ConvertToCustomer />} />
+                    <Route path="/:id" element={<FarmerDetail />} />
+                  </Routes>
+                </FarmerProvider>
+              } />
 
               {/* Procurement */}
 
@@ -371,11 +400,12 @@ const App = () => (
 
               {/* Employees */}
               <Route path="/employees" element={<EmployeeDirectory />} />
+              <Route path="/employees/roles" element={<RolesPermissions />} />
               <Route path="/employees/attendance" element={<Attendance />} />
               <Route path="/employees/salary" element={<SalaryReport />} />
+              <Route path="/employees/leaves" element={<LeaveManagement />} />
               <Route path="/employees/face-attendance" element={<FaceAttendanceGuard><FaceAttendance /></FaceAttendanceGuard>} />
               <Route path="/employees/register-face" element={<RegisterFace />} />
-              <Route path="/employees/roles" element={<RolesPermissions />} />
 
               {/* System */}
               <Route path="/system/notifications" element={<Notifications />} />

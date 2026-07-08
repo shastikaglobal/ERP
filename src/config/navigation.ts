@@ -14,7 +14,7 @@ import {
   UsersRound, CalendarCheck, ShieldCheck,
   Bell, ScrollText, CreditCard, Settings, Mail, MinusSquare, Trash2, Inbox,
   Smartphone, Activity, ShieldAlert, Monitor, PhoneCall, Key, MessageSquare, Database, Globe,
-  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer, Calendar, CheckCircle
+  CheckSquare, Lock, Plane, Layers, AlertOctagon, Timer, Calendar, CheckCircle, FileSignature, Banknote, Headphones
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -52,7 +52,16 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Create Farmer", url: "/farmers/create", icon: UserPlus, permission: "farmers.create" },
       { title: "Farmers List", url: "/farmers", icon: Users, permission: "farmers.view" },
-      { title: "Convert to Customer", url: "/farmers/convert", icon: UserCheck, permission: "farmers.manage" }
+      { title: "Farmer Verification", url: "/farmers/verification", icon: ShieldCheck, permission: "farmers.manage" },
+      { title: "Farmer KYC", url: "/farmers/kyc", icon: FileText, permission: "farmers.manage" },
+      { title: "Farm Visits", url: "/farmers/farm-visits", icon: Calendar, permission: "farmers.manage" },
+      { title: "Contract Farming", url: "/farmers/contracts", icon: FileSignature, permission: "farmers.manage" },
+      { title: "Supply Commitments", url: "/farmers/commitments", icon: Truck, permission: "farmers.manage" },
+      { title: "Goods Collection", url: "/farmers/collections", icon: Package, permission: "farmers.manage" },
+      { title: "Payouts", url: "/farmers/payouts", icon: Banknote, permission: "farmers.manage" },
+      { title: "Farmer Rating", url: "/farmers/rating", icon: Star, permission: "farmers.manage" },
+      { title: "Farmer Documents", url: "/farmers/documents", icon: FileBox, permission: "farmers.manage" },
+      { title: "Support", url: "/farmers/support", icon: Headphones, permission: "farmers.manage" }
     ]
   },
   {
@@ -231,6 +240,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Directory", url: "/employees", icon: UsersRound, permission: "hr.view" },
       { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck, permission: "hr.view" },
+      { title: "Leave Management", url: "/employees/leaves", icon: Calendar, permission: "hr.view" },
       { title: "Salary Report", url: "/employees/salary", icon: Coins, permission: "hr.view" },
       { title: "Face Attendance", url: "/employees/face-attendance", icon: ScanLine },
       { title: "Register Face", url: "/employees/register-face", icon: UserCheck, permission: "hr.view" },
