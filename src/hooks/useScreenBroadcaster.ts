@@ -8,6 +8,10 @@ export function useScreenBroadcaster(userId: string | undefined, stream: MediaSt
     if (!userId || !stream) return;
 
     const channelName = `broadcaster_${userId}_${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+    
+    // NOTE: Supabase Realtime has been disabled. 
+    // This feature will degrade gracefully.
+    /*
     const channel = supabase
       .channel(channelName)
       .on("postgres_changes", {
@@ -74,9 +78,10 @@ export function useScreenBroadcaster(userId: string | undefined, stream: MediaSt
         }
       })
       .subscribe();
+    */
 
     return () => {
-      supabase.removeChannel(channel);
+      // supabase.removeChannel(channel);
       pcsRef.current.forEach(pc => pc.close());
       pcsRef.current.clear();
     };

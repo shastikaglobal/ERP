@@ -84,8 +84,7 @@ export default function ZohoIntegration() {
     if (!confirm("Are you sure you want to disconnect this account?")) return;
     
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id || null;
+      const currentUserId = profile?.id || null;
 
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/emails/accounts/${accountId}`, {

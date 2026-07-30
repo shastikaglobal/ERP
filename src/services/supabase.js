@@ -259,18 +259,25 @@ export async function getAttendanceRange(from, to) {
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
 export async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    return { session: data };
 }
 
 export async function signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    const res = await fetch('/api/auth/logout', { method: 'POST' });
+    if (!res.ok) throw new Error('Logout failed');
 }
 
 export async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!res.ok) return null;
+    const { user } = await res.json();
     return user;
 }
 

@@ -60,8 +60,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   }
 });
 
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow all origins for now to prevent CORS issues with cookies
+    callback(null, true);
+  },
+  credentials: true
+}));
 
 // Handle JSON parse errors from body-parser to avoid crashing on malformed payloads
 app.use((err, req, res, next) => {
@@ -191,15 +202,15 @@ app.use('/api/sessions', sessionsRoutes);
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    console.log(`[Local Auth] Attempting login for email: ${email}`);
+    console.log(`[VPS Auth] Attempting login for email: ${email}`);
 
-    // Look up in the local VPS profiles table first
+    // Look up in the local VPS profiles table
     const { rows } = await db.query(
-      'SELECT id, full_name, email, role, status FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      'SELECT id, full_name, email, role, status, password_hash FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
       [email.trim()]
     );
 
@@ -209,36 +220,170 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = rows[0];
 
-    // Since this is local testing / development with restricted Supabase, we bypass password verification
-    // and issue a token directly.
-    console.log(`[Local Auth] Found employee ${user.full_name}. Issuing mock JWT...`);
+    // Verify password using bcrypt
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'Invalid login credentials. Please reset your password if you migrated from Supabase.' });
+    }
 
-    const token = jwt.sign({
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid login credentials' });
+    }
+
+    console.log(`[VPS Auth] Valid credentials for ${user.full_name}. Issuing tokens...`);
+
+    const secret = process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback';
+    
+    // Issue Access Token (short lived, e.g. 1 hour)
+    const accessToken = jwt.sign({
       sub: user.id,
       email: user.email,
       role: 'authenticated',
-      aud: 'authenticated',
-      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // 1 year expiry
-    }, process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback');
+      aud: 'authenticated'
+    }, secret, { expiresIn: '1h' });
+
+    // Issue Refresh Token (long lived, e.g. 30 days)
+    const refreshToken = crypto.randomBytes(40).toString('hex');
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+
+    // Store refresh token in DB
+    await db.query(
+      'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+      [user.id, refreshHash, expiresAt]
+    );
+
+    // Set HttpOnly Cookies
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (increased from 1 hr for easier testing)
+    });
+    
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
 
     res.json({
       session: {
-        access_token: token,
-        token_type: 'bearer',
-        expires_in: 60 * 60 * 24 * 365,
         user: {
           id: user.id,
-          aud: 'authenticated',
-          role: 'authenticated',
           email: user.email,
-          user_metadata: {
-            full_name: user.full_name
-          }
+          user_metadata: { full_name: user.full_name }
         }
       }
     });
   } catch (err) {
-    console.error('Local auth login error:', err.message);
+    console.error('VPS auth login error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/auth/me', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, full_name, email, role, status FROM profiles WHERE id = $1 LIMIT 1',
+      [req.user.sub]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: rows[0] });
+  } catch(err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/auth/roles', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT r.slug, p.code 
+      FROM user_roles ur
+      JOIN roles r ON ur.role_id = r.id
+      LEFT JOIN role_permissions rp ON r.id = rp.role_id
+      LEFT JOIN permissions p ON rp.permission_id = p.id
+      WHERE ur.user_id = $1
+    `, [req.user.sub]);
+
+    res.json({ roles: rows });
+  } catch(err) {
+    console.error('Fetch roles error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/auth/logout', async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    try {
+      await db.query('DELETE FROM refresh_tokens WHERE token_hash = $1', [refreshHash]);
+    } catch(err) {
+      console.error('Logout cleanup error:', err);
+    }
+  }
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  res.json({ message: 'Logged out successfully' });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) return res.status(401).json({ error: 'No refresh token' });
+
+  try {
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const { rows } = await db.query(
+      'SELECT user_id, expires_at FROM refresh_tokens WHERE token_hash = $1',
+      [refreshHash]
+    );
+
+    if (rows.length === 0) {
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    if (new Date() > rows[0].expires_at) {
+      await db.query('DELETE FROM refresh_tokens WHERE token_hash = $1', [refreshHash]);
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+
+    const userId = rows[0].user_id;
+    const { rows: userRows } = await db.query(
+      'SELECT email FROM profiles WHERE id = $1 AND is_active = true AND is_deleted IS NOT TRUE',
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(401).json({ error: 'User inactive or deleted' });
+    }
+
+    const secret = process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback';
+    const accessToken = jwt.sign({
+      sub: userId,
+      email: userRows[0].email,
+      role: 'authenticated',
+      aud: 'authenticated'
+    }, secret, { expiresIn: '1h' });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Refresh token error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -470,128 +615,132 @@ app.post('/api/face-scan', async (req, res) => {
   }
 });
 
+const nodemailer = require('nodemailer');
+
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    // 1. Fetch user from local profiles
+    const { rows } = await db.query(
+      'SELECT id, full_name, email FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      [email.trim()]
+    );
+
+    if (rows.length === 0) {
+      // Don't leak whether the email exists, just say sent
+      return res.json({ success: true, message: 'If an account exists, a reset link was sent.' });
     }
+    const user = rows[0];
 
-    // 1. Fetch employee profile details from Supabase to find company_id and full_name
-    const { data: employee, error: empErr } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, company_id')
-      .eq('email', email.trim())
-      .maybeSingle();
+    // 2. Generate secure token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    if (empErr || !employee) {
-      console.warn(`[ResetPassword] Profile not found for email: ${email}`);
-      return res.status(404).json({ error: 'Account with this email not found.' });
-    }
+    await db.query(
+      'INSERT INTO password_resets (user_id, reset_token_hash, expires_at) VALUES ($1, $2, $3)',
+      [user.id, tokenHash, expiresAt]
+    );
 
-    // 2. Generate programmatic reset link using Supabase Admin Auth API
-    const redirectTo = `${req.headers.origin || 'http://localhost:8080'}/auth/callback?type=recovery`;
-    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: employee.email,
-      options: {
-        redirectTo: redirectTo
+    // 3. Send email using Nodemailer (Zoho SMTP or fallback)
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.zoho.in',
+      port: process.env.SMTP_PORT || 465,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER || 'erp@shastikaglobal.com',
+        pass: process.env.SMTP_PASS || 'default_password_here'
       }
     });
 
-    if (linkErr || !linkData?.properties?.action_link) {
-      console.error('[ResetPassword] Generate link failed:', linkErr);
-      return res.status(500).json({ error: linkErr?.message || 'Failed to generate reset link.' });
-    }
+    const actionLink = `${req.headers.origin || 'http://localhost:8080'}/auth?mode=reset&token=${resetToken}`;
 
-    const actionLink = linkData.properties.action_link;
-
-    // 3. Send email to shastikaglobal11@gmail.com with details and recovery link
     const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #1e293b;">🔑 Password Reset Request</h2>
-        <p>A user requested a password reset link for the following account:</p>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b; width: 150px;">Employee Name</td>
-            <td style="padding: 8px 0; color: #334155;">${employee.full_name || 'N/A'}</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Employee Email</td>
-            <td style="padding: 8px 0; color: #334155;">${employee.email}</td>
-          </tr>
-        </table>
-        <p>Click the button below to complete the password reset process for them:</p>
-        <div style="margin: 25px 0;">
-          <a href="${actionLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password Now</a>
-        </div>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-          If the button above does not work, copy and paste this URL into your web browser:<br/>
-          <span style="word-break: break-all; color: #2563eb;">${actionLink}</span>
-        </p>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>🔑 Password Reset Request</h2>
+        <p>Hello ${user.full_name || 'User'},</p>
+        <p>You requested to reset your password. Click the link below:</p>
+        <a href="${actionLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Reset Password</a>
+        <p>If you did not request this, ignore this email.</p>
       </div>
     `;
 
-    console.log(`[ResetPassword] Fetching Zoho account to send reset email to shastikaglobal11@gmail.com...`);
-    const { data: zohoAcc, error: zohoAccErr } = await supabase
-      .from('zoho_accounts')
-      .select('id, account_email')
-      .eq('is_deleted', false)
-      .limit(1)
-      .maybeSingle();
-
-    let emailSent = false;
-    let mailErrorMsg = '';
-
-    if (zohoAcc) {
-      console.log(`[ResetPassword] Using Zoho Account: ${zohoAcc.account_email}`);
-      const { data: emailRecord, error: insertErr } = await supabase
-        .from('emails')
-        .insert({
-          company_id: employee.company_id,
-          account_id: zohoAcc.id,
-          to_address: 'shastikaglobal11@gmail.com',
-          from_address: zohoAcc.account_email,
-          subject: `🔑 Password Reset Link: ${employee.full_name || employee.email}`,
-          body_html: htmlContent,
-          body_text: `A user requested a password reset link for ${employee.full_name || 'N/A'} (${employee.email}). Reset link: ${actionLink}`,
-          status: 'pending',
-          folder: 'sent',
-          received_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (!insertErr && emailRecord) {
-        const { data: mailResult, error: mailErr } = await supabase.functions.invoke('webhook-send-email', {
-          body: { record: emailRecord }
-        });
-
-        if (!mailErr && mailResult?.success !== false) {
-          emailSent = true;
-        } else {
-          mailErrorMsg = mailErr?.message || mailResult?.error || 'Webhook invocation returned failure.';
-          console.error('[ResetPassword] Zoho Mail send failed:', mailErrorMsg);
-        }
-      } else {
-        mailErrorMsg = insertErr?.message || 'Failed to insert email log record.';
-        console.error('[ResetPassword] Email record insert failed:', mailErrorMsg);
-      }
-    } else {
-      mailErrorMsg = zohoAccErr?.message || 'No connected Zoho account found in database.';
-      console.error('[ResetPassword] Zoho account query failed/empty:', mailErrorMsg);
-    }
-
-    if (!emailSent) {
-      return res.json({ 
-        success: true, 
-        message: 'Password reset request initiated, but email delivery failed. Please check the administrator Zoho Mail integration.'
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_USER || 'erp@shastikaglobal.com',
+        to: user.email, // Or 'shastikaglobal11@gmail.com' if admin needs to receive it
+        subject: 'Password Reset',
+        html: htmlContent
       });
+      return res.json({ success: true, message: 'Password reset link sent successfully.' });
+    } catch (mailErr) {
+      console.error('SMTP Error:', mailErr);
+      return res.status(500).json({ error: 'Failed to send reset email. Please contact admin.' });
+    }
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/auth/update-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password required' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const { rows } = await db.query(
+      'SELECT user_id, expires_at FROM password_resets WHERE reset_token_hash = $1',
+      [tokenHash]
+    );
+
+    if (rows.length === 0) return res.status(400).json({ error: 'Invalid or expired reset token' });
+    
+    if (new Date() > rows[0].expires_at) {
+      await db.query('DELETE FROM password_resets WHERE reset_token_hash = $1', [tokenHash]);
+      return res.status(400).json({ error: 'Token expired' });
     }
 
-    res.json({ success: true, message: 'Password reset link sent to shastikaglobal11@gmail.com successfully.' });
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update user profile
+    await db.query('UPDATE profiles SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, rows[0].user_id]);
+    
+    // Cleanup token
+    await db.query('DELETE FROM password_resets WHERE reset_token_hash = $1', [tokenHash]);
+
+    res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
-    console.error('POST /api/auth/reset-password error:', err.message);
+    console.error('Update password error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Update password for logged-in users
+app.put('/api/auth/update-password', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const userId = req.user.sub;
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update user profile
+    await db.query('UPDATE profiles SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, userId]);
+    
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Update password error (PUT):', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -639,7 +788,7 @@ app.get('/api/leads/converted/debug2', async (req, res) => {
 });
 
 console.log("🚀 Starting ADMS Sync Server...");
-console.log(`🔗 Supabase Target URL: ${SUPABASE_URL}`);
+
 
 /**
  * 1. GET /iclock/cdata - Handshake & Device Initialization
@@ -1292,9 +1441,7 @@ startPgListener();
 
 // Start Server
 const ensureUserPermissionsSetup = async () => {
-  // user_permissions lives in Supabase — no local DB setup needed
   // Local VPS DB only holds: attendance_logs, drivers, vehicles, AttLogs, etc.
-  console.log('✅ Skipping local user_permissions setup — managed in Supabase.');
 };
 
 const startServer = async () => {

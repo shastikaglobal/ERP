@@ -129,6 +129,175 @@ router.get('/converted', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/farmers/kyc
+router.get('/kyc', requireAuth, async (req, res) => {
+  try {
+    let { company_id } = req.query;
+    if (!company_id) {
+      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1 LIMIT 1', [req.user.sub]);
+      if (userRes.rows.length > 0 && userRes.rows[0].company_id) {
+        company_id = userRes.rows[0].company_id;
+      } else {
+        company_id = '00000000-0000-0000-0000-00000000ae01';
+      }
+    }
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    let query = `
+      SELECT k.* 
+      FROM farmer_kyc k
+      INNER JOIN farmers f ON f.id = k.farmer_id
+      WHERE f.company_id = $1
+    `;
+    const params = [company_id];
+
+    if (!isAdmin) {
+      query += ` AND f.created_by = $2`;
+      params.push(req.user.sub);
+    }
+
+    const { rows } = await db.query(query, params);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('DB Error (get farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// POST /api/farmers/kyc
+router.post('/kyc', requireAuth, async (req, res) => {
+  try {
+    const { farmer_id, aadhaar, pan, status } = req.body;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+    
+    // Upsert logic: Delete existing for this farmer
+    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+
+    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
+    
+    if (aadhaar) {
+      await db.query(
+        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`,
+        [farmer_id, aadhaar, dbStatus]
+      );
+    }
+    
+    if (pan) {
+      await db.query(
+        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`,
+        [farmer_id, pan, dbStatus]
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (post farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+// GET /api/farmers/kyc/:id
+router.get('/kyc/:id', requireAuth, async (req, res) => {
+  try {
+    const farmer_id = req.params.id;
+    
+    // Check ownership
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(`SELECT * FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+    
+    const record = { id: farmer_id, farmer_id: farmer_id, aadhaar: '', pan: '', bank_account: '', ifsc: '', doc_urls: {}, status: 'Pending' };
+    
+    rows.forEach(row => {
+      if (row.document_type === 'Aadhaar') record.aadhaar = row.document_number;
+      if (row.document_type === 'PAN') record.pan = row.document_number;
+      if (row.document_type === 'Bank Account') record.bank_account = row.document_number;
+      if (row.document_type === 'IFSC') record.ifsc = row.document_number;
+      if (row.document_type === 'doc_urls') {
+        try { record.doc_urls = JSON.parse(row.document_number); } catch(e){}
+      }
+      if (row.status === 'Approved') record.status = 'Completed';
+    });
+    
+    res.json(record);
+  } catch (err) {
+    console.error('DB Error (get farmer_kyc by id):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// PUT /api/farmers/kyc/:id
+router.put('/kyc/:id', requireAuth, async (req, res) => {
+  try {
+    const farmer_id = req.params.id;
+    const { aadhaar, pan, bank_account, ifsc, doc_urls, status } = req.body;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+    
+    // Delete existing EAV records for this farmer to rebuild them cleanly
+    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
+
+    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
+    
+    if (aadhaar) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`, [farmer_id, aadhaar, dbStatus]);
+    }
+    if (pan) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`, [farmer_id, pan, dbStatus]);
+    }
+    if (bank_account) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Bank Account', $2, $3)`, [farmer_id, bank_account, dbStatus]);
+    }
+    if (ifsc) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'IFSC', $2, $3)`, [farmer_id, ifsc, dbStatus]);
+    }
+    if (doc_urls) {
+      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'doc_urls', $2, $3)`, [farmer_id, JSON.stringify(doc_urls), dbStatus]);
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (put farmer_kyc):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
 // GET /api/farmers/:id
 router.get('/:id', requireAuth, async (req, res) => {
   try {
@@ -518,175 +687,6 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('DB Error (convert farmer):', err);
     return res.status(500).json({ error: err.message || 'Failed to convert farmer to customer' });
-  }
-});
-
-// GET /api/farmers/kyc
-router.get('/kyc', requireAuth, async (req, res) => {
-  try {
-    let { company_id } = req.query;
-    if (!company_id) {
-      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1 LIMIT 1', [req.user.sub]);
-      if (userRes.rows.length > 0 && userRes.rows[0].company_id) {
-        company_id = userRes.rows[0].company_id;
-      } else {
-        company_id = '00000000-0000-0000-0000-00000000ae01';
-      }
-    }
-
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    let query = `
-      SELECT k.* 
-      FROM farmer_kyc k
-      INNER JOIN farmers f ON f.id = k.farmer_id
-      WHERE f.company_id = $1
-    `;
-    const params = [company_id];
-
-    if (!isAdmin) {
-      query += ` AND f.created_by = $2`;
-      params.push(req.user.sub);
-    }
-
-    const { rows } = await db.query(query, params);
-
-    res.json(rows);
-  } catch (err) {
-    console.error('DB Error (get farmer_kyc):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// POST /api/farmers/kyc
-router.post('/kyc', requireAuth, async (req, res) => {
-  try {
-    const { farmer_id, aadhaar, pan, status } = req.body;
-
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-    
-    // Upsert logic: Delete existing for this farmer
-    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
-
-    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
-    
-    if (aadhaar) {
-      await db.query(
-        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`,
-        [farmer_id, aadhaar, dbStatus]
-      );
-    }
-    
-    if (pan) {
-      await db.query(
-        `INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`,
-        [farmer_id, pan, dbStatus]
-      );
-    }
-    
-    res.json({ success: true });
-  } catch (err) {
-    console.error('DB Error (post farmer_kyc):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-// GET /api/farmers/kyc/:id
-router.get('/kyc/:id', requireAuth, async (req, res) => {
-  try {
-    const farmer_id = req.params.id;
-    
-    // Check ownership
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    const { rows } = await db.query(`SELECT * FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
-    
-    const record = { id: farmer_id, farmer_id: farmer_id, aadhaar: '', pan: '', bank_account: '', ifsc: '', doc_urls: {}, status: 'Pending' };
-    
-    rows.forEach(row => {
-      if (row.document_type === 'Aadhaar') record.aadhaar = row.document_number;
-      if (row.document_type === 'PAN') record.pan = row.document_number;
-      if (row.document_type === 'Bank Account') record.bank_account = row.document_number;
-      if (row.document_type === 'IFSC') record.ifsc = row.document_number;
-      if (row.document_type === 'doc_urls') {
-        try { record.doc_urls = JSON.parse(row.document_number); } catch(e){}
-      }
-      if (row.status === 'Approved') record.status = 'Completed';
-    });
-    
-    res.json(record);
-  } catch (err) {
-    console.error('DB Error (get farmer_kyc by id):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// PUT /api/farmers/kyc/:id
-router.put('/kyc/:id', requireAuth, async (req, res) => {
-  try {
-    const farmer_id = req.params.id;
-    const { aadhaar, pan, bank_account, ifsc, doc_urls, status } = req.body;
-
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [farmer_id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-    
-    // Delete existing EAV records for this farmer to rebuild them cleanly
-    await db.query(`DELETE FROM farmer_kyc WHERE farmer_id = $1`, [farmer_id]);
-
-    const dbStatus = status === 'Completed' ? 'Approved' : 'Pending';
-    
-    if (aadhaar) {
-      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Aadhaar', $2, $3)`, [farmer_id, aadhaar, dbStatus]);
-    }
-    if (pan) {
-      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'PAN', $2, $3)`, [farmer_id, pan, dbStatus]);
-    }
-    if (bank_account) {
-      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'Bank Account', $2, $3)`, [farmer_id, bank_account, dbStatus]);
-    }
-    if (ifsc) {
-      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'IFSC', $2, $3)`, [farmer_id, ifsc, dbStatus]);
-    }
-    if (doc_urls) {
-      await db.query(`INSERT INTO farmer_kyc (farmer_id, document_type, document_number, status) VALUES ($1, 'doc_urls', $2, $3)`, [farmer_id, JSON.stringify(doc_urls), dbStatus]);
-    }
-    
-    res.json({ success: true });
-  } catch (err) {
-    console.error('DB Error (put farmer_kyc):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });
 

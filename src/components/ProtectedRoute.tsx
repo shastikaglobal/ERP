@@ -30,17 +30,9 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
 
     // Mobile/tablet browsers do not support getDisplayMedia for screen sharing.
     // Also, getDisplayMedia is only available in secure contexts (HTTPS or localhost).
-    // Bypass screen sharing requirement if not supported or bypassed explicitly.
-    if (
-      isMobileOrTablet() || 
-      localStorage.getItem("bypassScreenShare") === "true" || 
-      window.location.search.includes("bypass=true") ||
-      !navigator.mediaDevices || 
-      !navigator.mediaDevices.getDisplayMedia
-    ) {
-      setScreenStatus("sharing");
-      return;
-    }
+    // Bypass screen sharing requirement completely since the WebRTC signaling is disabled.
+    setScreenStatus("sharing");
+    return;
 
     const startShare = async () => {
       setScreenStatus("requesting");

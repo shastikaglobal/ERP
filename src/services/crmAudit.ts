@@ -2,7 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const logCRMAction = async (action: string, recordCount: number = 0, details?: any) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!res.ok) return;
+    const { user } = await res.json();
     if (!user) return;
     
     await supabase.from("audit_logs").insert({

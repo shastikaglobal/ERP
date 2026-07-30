@@ -17,15 +17,20 @@ export interface TransactionalEmailParams {
  */
 export const sendTransactionalEmail = async (params: TransactionalEmailParams) => {
   try {
-    const { data: userData } = await supabase.auth.getUser();
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    let userId = null;
+    if (res.ok) {
+      const { user } = await res.json();
+      userId = user?.id;
+    }
     
     // If no companyId provided, try to fetch it
     let companyId = params.companyId;
-    if (!companyId && userData.user) {
+    if (!companyId && userId) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('id', userData.user.id)
+        .eq('id', userId)
         .single();
       if (profile) {
         companyId = profile.company_id;
@@ -50,8 +55,9 @@ export const sendTransactionalEmail = async (params: TransactionalEmailParams) =
     if (data?.success) {
       toast.success("Email queued for delivery");
       
-      // Optional: Set up a one-time realtime listener for this specific log
-      // If you want robust UI feedback without keeping connections open forever
+      // NOTE: Supabase Realtime has been disabled due to quota limits.
+      // Status toasts won't appear automatically for now.
+      /*
       const channel = supabase.channel(`email_logs_status`);
       
       channel.on(
@@ -61,8 +67,6 @@ export const sendTransactionalEmail = async (params: TransactionalEmailParams) =
           schema: 'public',
           table: 'email_logs',
           filter: `status=eq.success`, 
-          // Note: In a fully fleshed out system, you'd filter by the specific log ID 
-          // returned from the Edge Function, but Resend is so fast you might not need this.
         },
         (payload) => {
           if (payload.new.details?.to === params.to || 
@@ -77,6 +81,7 @@ export const sendTransactionalEmail = async (params: TransactionalEmailParams) =
       setTimeout(() => {
         supabase.removeChannel(channel);
       }, 10000);
+      */
     }
 
     return data;

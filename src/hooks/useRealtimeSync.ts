@@ -20,6 +20,11 @@ export function useRealtimeSync() {
 
     // Only set up Supabase channel once globally (first subscriber does it)
     if (globalSyncCounter === 0 && subscribers.size === 1) {
+      // NOTE: Supabase Realtime has been disabled due to quota limits and 
+      // the authentication migration. The global sync counter remains for 
+      // future local WebSocket implementations.
+      
+      /*
       const channel = supabase.channel('global_data_sync');
       
       channel.on('broadcast', { event: 'data_changed' }, (payload) => {
@@ -38,11 +43,12 @@ export function useRealtimeSync() {
           subscribers.forEach(sub => sub(globalSyncCounter));
         }, 500); // 500ms debounce
       }).subscribe();
+      */
 
       return () => {
         subscribers.delete(handleUpdate);
         if (subscribers.size === 0) {
-          supabase.removeChannel(channel);
+          // supabase.removeChannel(channel);
         }
       };
     }

@@ -234,15 +234,31 @@ export default function AccountSettings() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setSaving(false);
     
-    if (error) {
-      toast.error("Error updating password: " + error.message);
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/auth/update-password", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ newPassword })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update password");
+      }
+      
       toast.success("Password updated successfully");
       setNewPassword("");
       setConfirmPassword("");
+    } catch (err: any) {
+      toast.error("Error updating password: " + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
