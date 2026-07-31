@@ -2,13 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { createClient } = require('@supabase/supabase-js');
 
 // profiles and user_permissions live in Supabase, with fallbacks to local VPS DB
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock'
-);
 
 // GET /api/user-permissions?user_id=xxx  OR  GET /api/user-permissions (admin matrix)
 router.get('/', requireAuth, async (req, res) => {

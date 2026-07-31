@@ -2,13 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const db = require('../db');
-const { createClient } = require('@supabase/supabase-js');
 
 // profiles live in Supabase, not VPS DB
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock'
-);
 
 // GET /api/analytics/sidebar_counts
 // Returns counts for the CRM Sidebar (client acquisition, successful conversions, customers)

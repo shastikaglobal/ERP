@@ -1,7 +1,6 @@
 // One-time migration: add farmer_id to customers table on VPS and Supabase
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { Pool } = require('pg');
-const { createClient } = require('@supabase/supabase-js');
 
 const pool = new Pool({
   user: process.env.PG_USER || 'postgres',
@@ -12,10 +11,6 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 async function run() {
   // 1. VPS migration

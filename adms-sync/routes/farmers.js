@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
-const { createClient } = require('@supabase/supabase-js');
 const nodeFetch = require('node-fetch');
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCan } from "@/hooks/useAuth";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
-import { vpsDb } from "@/lib/vpsDb";
 
 import { AIChatPanel } from "./AIChatPanel";
 
@@ -69,7 +68,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         }
 
         const res = await fetch(`/api/analytics/sidebar_counts${companyFilter}`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
+          credentials: 'include'
         });
         
         if (!res.ok) throw new Error("Failed to fetch sidebar counts");
