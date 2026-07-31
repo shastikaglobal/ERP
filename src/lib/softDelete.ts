@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { logAudit } from "@/lib/auditLog";
 
 export interface SoftDeleteOptions {
@@ -15,7 +16,7 @@ export async function softDeleteRecord(
   options: SoftDeleteOptions = {}
 ) {
   const { deletedBy, resourceType, resourceName, oldValues, extraPayload } = options;
-  const { data: authUser } = await supabase.auth.getUser();
+  const { data: authUser } = await vpsDb.auth.getUser();
   const payload = {
     is_deleted: true,
     deleted_at: new Date().toISOString(),
@@ -23,7 +24,7 @@ export async function softDeleteRecord(
     ...extraPayload,
   } as Record<string, any>;
 
-  const { data, error } = await supabase
+  const { data, error } = await vpsDb
     .from(tableName as any)
     .update(payload)
     .eq("id", id)
@@ -82,7 +83,7 @@ export async function restoreRecord(
     deleted_by: null,
   } as Record<string, any>;
 
-  const { data, error } = await supabase
+  const { data, error } = await vpsDb
     .from(tableName as any)
     .update(payload)
     .eq("id", id)

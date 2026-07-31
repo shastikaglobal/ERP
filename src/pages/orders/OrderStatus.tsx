@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function OrderStatus() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -49,7 +49,7 @@ export default function OrderStatus() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 

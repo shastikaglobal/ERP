@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Download, FileBarChart, Loader2, CheckCircle2, Zap, Eye, X, TrendingUp, DollarSign, Calendar } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DataTable } from "@/components/shared/DataTable";
 
@@ -16,6 +17,8 @@ const reports = [
 ];
 
 export default function FinancialReports() {
+  const { session } = useAuth();
+
   const [generating, setGenerating] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{ name: string; data: any[]; total: number; columns: any[] } | null>(null);
 
@@ -27,7 +30,7 @@ export default function FinancialReports() {
 
       if (isLive) {
         if (name === "Accounts Receivable Aging") {
-          const { data: { session: __session_5 } } = await supabase.auth.getSession();
+          const { data: { session: __session_5 } } = await vpsDb.auth.getSession();
           const arRes = await fetch(`/api/finance/reports/ar_aging`, {
             headers: { 'Authorization': `Bearer ${__session_5?.access_token}` }
           });
@@ -53,7 +56,7 @@ export default function FinancialReports() {
             ]
           });
         } else if (name === "Profit & Loss Statement") {
-          const { data: { session: __session_6 } } = await supabase.auth.getSession();
+          const { data: { session: __session_6 } } = await vpsDb.auth.getSession();
           const pRes = await fetch('/api/finance/payments?status=Completed', {
             headers: { 'Authorization': `Bearer ${__session_6?.access_token}` }
           });
@@ -103,7 +106,7 @@ export default function FinancialReports() {
             ]
           });
         } else if (name === "Balance Sheet") {
-          const { data: { session: __session_7 } } = await supabase.auth.getSession();
+          const { data: { session: __session_7 } } = await vpsDb.auth.getSession();
           
           const payRes = await fetch('/api/finance/payments?status=Completed', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
           const payments = payRes.ok ? await payRes.json() : [];
@@ -141,7 +144,7 @@ export default function FinancialReports() {
             ]
           });
         } else if (name === "Cash Flow Statement") {
-          const { data: { session: __session_8 } } = await supabase.auth.getSession();
+          const { data: { session: __session_8 } } = await vpsDb.auth.getSession();
           const cfRes = await fetch(`/api/finance/reports/cash_flow`, {
             headers: { 'Authorization': `Bearer ${__session_8?.access_token}` }
           });

@@ -52,7 +52,7 @@ export default function RolesPermissions() {
     }
   }, [session?.access_token]);
 
-  // Polling for updates instead of Supabase realtime
+  // Polling for updates instead of VpsDb realtime
   useEffect(() => {
     if (!session?.access_token) return;
     const interval = setInterval(() => {

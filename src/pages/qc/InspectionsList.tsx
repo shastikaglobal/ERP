@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, ClipboardCheck, Edit } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useCan } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export default function InspectionsList() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
   const can = useCan();
   const qc = useQueryClient();
@@ -35,7 +38,7 @@ export default function InspectionsList() {
     queryKey: ["qc_inspections"],
     queryFn: async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const res = await fetch('/api/inventory/qc_inspections/with-batch', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -68,7 +71,7 @@ export default function InspectionsList() {
     if (!editingInspection) return;
     setIsSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch(`/api/inventory/qc_inspections/${editingInspection.id}`, {
         method: "PUT",
         headers: {

@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 
 // ── Stock Summary Report ──────────────────────────────────────────────────
 export async function getStockSummaryData(filters: {
@@ -8,7 +9,7 @@ export async function getStockSummaryData(filters: {
   company_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("inventory_batches")
       .neq("is_deleted", true)
       .select(`
@@ -72,7 +73,7 @@ export async function getBatchTrackingData(filters: {
   limit?: number;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("inventory_batches")
       .neq("is_deleted", true)
       .select(`
@@ -119,7 +120,7 @@ export async function getBatchTrackingData(filters: {
       return [];
     }
 
-    const { data: movements, error: movementError } = await supabase
+    const { data: movements, error: movementError } = await vpsDb
       .from("inventory_movements")
       .neq("is_deleted", true)
       .select("*")
@@ -156,7 +157,7 @@ export async function getDispatchReportData(filters: {
   company_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("export_shipments")
       .neq("is_deleted", true)
       .select(`
@@ -209,7 +210,7 @@ export async function getContainerLoadingData(filters: {
   company_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("export_shipments")
       .neq("is_deleted", true)
       .select(`
@@ -266,7 +267,7 @@ export async function getDamageWastageData(filters: {
   company_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("inventory_batches")
       .neq("is_deleted", true)
       .select(`
@@ -320,7 +321,7 @@ export async function getInventoryAgingData(filters: {
   warehouse_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("inventory_batches")
       .neq("is_deleted", true)
       .select(`
@@ -382,7 +383,7 @@ export async function getExportReadyStockData(filters: {
   product_id?: string;
 }) {
   try {
-    let query = supabase
+    let query = vpsDb
       .from("inventory_batches")
       .select(`
         id,

@@ -184,7 +184,7 @@ export default function ShipmentDetail() {
   /* ── Update shipment status ── */
   const updateStatus = useMutation({
     mutationFn: async (newStatus: string) => {
-      // const error = new Error('Supabase removed');
+      // const error = new Error('VpsDb removed');
       // if (error) throw error;
 
       // Log automatic status-change event

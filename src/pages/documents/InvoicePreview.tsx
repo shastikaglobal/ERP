@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Loader2, Download, Printer } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const initialForm = {
   invoiceNo: "SGI/CI/2026/001",
@@ -65,6 +66,8 @@ const INCOTERMS_OPTIONS = [
 ];
 
 export default function InvoicePreview() {
+  const { session } = useAuth();
+
   const { id } = useParams();
   const [view, setView] = useState("print");
   const [form, setForm] = useState(initialForm);
@@ -80,7 +83,7 @@ export default function InvoicePreview() {
 
   useEffect(() => {
     async function fetchSignature() {
-      const { data } = await supabase.from('companies').select('signature_url').limit(1).maybeSingle();
+      const { data } = await vpsDb.from('companies').select('signature_url').limit(1).maybeSingle();
       if (data?.signature_url) {
         setSignatureUrl(data.signature_url);
       }
@@ -93,7 +96,7 @@ export default function InvoicePreview() {
     
     async function fetchInvoice() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const headers: Record<string, string> = {};
         if (session?.access_token) {
           headers['Authorization'] = `Bearer ${session.access_token}`;

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { vpsDb } from "./vpsDb";
 
 export interface PackingProtocol {
     id: string;
@@ -40,7 +40,7 @@ export async function createPackingProtocol(
     userId: string
 ): Promise<PackingProtocol> {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -85,7 +85,7 @@ export async function getPackingProtocols(
     }
 ): Promise<PackingProtocol[]> {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {};
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -117,7 +117,7 @@ export async function getPackingProtocolById(
     id: string
 ): Promise<PackingProtocol> {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {};
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -141,7 +141,7 @@ export async function updatePackingProtocol(
 ): Promise<PackingProtocol> {
     try {
         const { product_name, ...dbUpdates } = updates;
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -167,7 +167,7 @@ export async function updatePackingProtocol(
 // Delete packing protocol (Soft-delete)
 export async function deletePackingProtocol(id: string): Promise<void> {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {};
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -210,7 +210,7 @@ export async function getPackingListPDF(packingId: string) {
     const receiving = { receiving_number: packing.receiving_id };
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {};
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -233,7 +233,7 @@ export async function getPackingListPDF(packingId: string) {
     }
 
     // Get company details
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await vpsDb.auth.getSession();
     const headers: Record<string, string> = {};
     if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -254,7 +254,7 @@ export async function getUnpackedReceivings(
     companyId: string
 ): Promise<any[]> {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const headers: Record<string, string> = {};
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;

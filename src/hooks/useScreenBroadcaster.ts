@@ -9,7 +9,7 @@ export function useScreenBroadcaster(userId: string | undefined, stream: MediaSt
 
     const channelName = `broadcaster_${userId}_${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
     
-    // NOTE: Supabase Realtime has been disabled. 
+    // NOTE: VpsDb Realtime has been disabled. 
     // This feature will degrade gracefully.
     /*
     

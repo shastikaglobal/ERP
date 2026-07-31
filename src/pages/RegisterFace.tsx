@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import FaceScanner from '../components/FaceScanner';
-import { supabase } from '@/integrations/supabase/client';
+import { vpsDb } from "@/lib/vpsDb";
+
 import {
   saveFaceEmbedding,
   deleteFaceEmbeddings,
   getEmployeeFaceEmbeddings,
-} from '../services/supabase';
+} from '../services/vpsDb';
 import {
   loadModels,
   generateEmbedding,
@@ -95,7 +96,7 @@ export default function RegisterFace() {
   async function fetchEmployees() {
     setLoadingEmployees(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch('/api/employees', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -158,7 +159,7 @@ export default function RegisterFace() {
   /**
    * Called for each sample capture.
    * FaceScanner.onScanComplete fires with the embedding.
-   * We accumulate REQUIRED_SAMPLES then save all to Supabase.
+   * We accumulate REQUIRED_SAMPLES then save all to VpsDb.
    */
   const handleSampleCaptured = useCallback(async (embedding) => {
     if (!isMounted.current) return;

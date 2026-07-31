@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, CircleDashed, PlayCircle, ChevronLeft, ChevronRight, FileCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { useCallback, useEffect, useState } from "react";
@@ -22,7 +23,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_leads', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('leads').select('id').eq('company_id', companyId).limit(10);
+      const { data } = await vpsDb.from('leads').select('id').eq('company_id', companyId).limit(10);
       return data || [];
     },
     enabled: !!companyId
@@ -33,7 +34,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryFn: async () => {
       if (!companyId) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const res = await fetch('/api/quotations', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -52,7 +53,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_orders', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('export_orders').select('id').eq('company_id', companyId).in('status', ['pending', 'Pending']).limit(10);
+      const { data } = await vpsDb.from('export_orders').select('id').eq('company_id', companyId).in('status', ['pending', 'Pending']).limit(10);
       return data || [];
     },
     enabled: !!companyId
@@ -62,7 +63,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_pos', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('purchase_orders').select('id').eq('company_id', companyId).neq('is_deleted', true).limit(10);
+      const { data } = await vpsDb.from('purchase_orders').select('id').eq('company_id', companyId).neq('is_deleted', true).limit(10);
       return data || [];
     },
     enabled: !!companyId
@@ -72,7 +73,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_shipments', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('export_shipments').select('id').eq('company_id', companyId).limit(10);
+      const { data } = await vpsDb.from('export_shipments').select('id').eq('company_id', companyId).limit(10);
       return data || [];
     },
     enabled: !!companyId
@@ -82,7 +83,7 @@ export function WorkflowHelper({ profile }: { profile: any }) {
     queryKey: ['workflow_all_orders', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await supabase.from('export_orders').select('id').eq('company_id', companyId).limit(10);
+      const { data } = await vpsDb.from('export_orders').select('id').eq('company_id', companyId).limit(10);
       return data || [];
     },
     enabled: !!companyId

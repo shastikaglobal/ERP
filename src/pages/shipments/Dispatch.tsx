@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from "@/hooks/useAuth";
 import { useAuth, useCan } from '@/hooks/useAuth';
 
 import VehicleEntryForm from '@/components/dispatch/VehicleEntryForm';

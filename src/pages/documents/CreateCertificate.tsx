@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function CreateCertificate() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   const [saving, setSaving] = useState(false);
@@ -39,7 +39,7 @@ export default function CreateCertificate() {
   useEffect(() => {
     const fetchCompany = async () => {
       if (profile?.company_id) {
-        const { data: compData } = await supabase
+        const { data: compData } = await vpsDb
           .from("companies")
           .select("*")
           .eq("id", profile.company_id)
@@ -58,7 +58,7 @@ export default function CreateCertificate() {
   const handleSaveToDatabase = async () => {
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       
       const payload = {
         company_id: profile?.company_id,

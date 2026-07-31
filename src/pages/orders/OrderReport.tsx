@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { OrderDocument } from "@/components/orders/OrderDocument";
 import { Loader2 } from "lucide-react";
 
@@ -14,7 +14,7 @@ export default function OrderReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 

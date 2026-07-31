@@ -9,7 +9,7 @@
 //   { matched: bool, employee: {...}, attendance: {...}, error? }
 // ============================================================
 
-import { matchFaceToEmployee, markAttendance, logFaceScanEvent } from '../lib/supabase'
+import { matchFaceToEmployee, markAttendance, logFaceScanEvent } from '../lib/vpsDb'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

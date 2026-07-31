@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
 import { Loader2, User as UserIcon, Lock, Bell, Mail, Activity, Shield, LogIn, Camera, Globe } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -166,15 +166,15 @@ export default function AccountSettings() {
       const fileName = `avatar-${profile.id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
+      const formData = new FormData();
+      formData.append('file', file);
+      const _uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token || user?.access_token || ''}` },
+        body: formData
+      });
+      if (!_uploadRes.ok) throw new Error("Upload failed");
+      const { publicUrl } = await _uploadRes.json();
 
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",

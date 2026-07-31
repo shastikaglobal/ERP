@@ -179,7 +179,7 @@ export default function EmailIntegration() {
       // Detect common schema/cache error when api_key column is missing
       const msg = error.message || String(error);
       if (msg.toLowerCase().includes("api_key") || msg.toLowerCase().includes("column \"api_key\"")) {
-        toast.error("Save failed: 'api_key' column missing in database. Run the migration file supabase/migrations/20260522120000_add_api_key_to_companies.sql on your DB.");
+        toast.error("Save failed: 'api_key' column missing in database. Run the migration file vpsDb/migrations/20260522120000_add_api_key_to_companies.sql on your DB.");
       } else {
         toast.error("Error: " + msg);
       }

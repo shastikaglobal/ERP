@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Plus, FileText, Loader2, Trash2, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 
 export default function Invoices() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,8 +20,8 @@ export default function Invoices() {
     const fetchInvoices = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("No active session");
+
+
         const res = await fetch('/api/orders', {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
@@ -39,7 +42,7 @@ export default function Invoices() {
     if (!confirm(`Are you sure you want to delete invoice ${number}?`)) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch(`/api/orders/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session?.access_token}` }

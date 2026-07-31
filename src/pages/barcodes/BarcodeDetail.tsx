@@ -1,19 +1,22 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
 import Barcode from "react-barcode";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export default function BarcodeDetail() {
+  const { session } = useAuth();
+
   const { id } = useParams();
   const nav = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ["barcode", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("batch_barcodes")
         .select(`
           id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at,

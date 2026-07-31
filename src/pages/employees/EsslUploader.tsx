@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Upload, FileType, CheckCircle, Loader2 } from "lucide-react";
 import Papa from "papaparse";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { format, parse } from "date-fns";
 
 type EsslUploaderProps = {
@@ -95,7 +96,7 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
         const clockOutIso = rawOut ? new Date(`${punchDateStr}T${rawOut}`).toISOString() : null;
 
         // Upsert logic (check if exists)
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const res = await fetch(`/api/hr/attendance_logs?employee_id=${emp.id}&date=${punchDateStr}`, {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });

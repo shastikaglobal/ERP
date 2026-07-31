@@ -39,7 +39,9 @@ if (envPath) {
   require('dotenv').config();
 }
 
+const path = require('path');
 const app = express();
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const PORT = process.env.PORT || 8082;
 
 // Initialize Supabase Client (Removed)

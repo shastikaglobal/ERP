@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, Receipt, Trash2, Search, DollarSign, Package, Calendar, Globe } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ const hardcodedOrders: ExportOrder[] = [];
 
 export default function OrdersList() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [orders, setOrders] = useState<ExportOrder[]>(hardcodedOrders);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +36,7 @@ export default function OrdersList() {
     if (!confirm("Are you sure you want to delete this order?")) return;
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -62,7 +62,7 @@ export default function OrdersList() {
           setLoading(false);
           return;
         }
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 

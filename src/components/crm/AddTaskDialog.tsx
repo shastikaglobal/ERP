@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -37,7 +38,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
 
   const fetchBdes = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/employees?company_id=${profile?.company_id || ''}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -52,7 +53,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/leads`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -71,7 +72,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
     
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch('/api/crm-tasks', {
         method: 'POST',
         headers: {

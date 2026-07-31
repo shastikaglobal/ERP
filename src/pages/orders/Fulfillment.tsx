@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Fulfillment() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [shippingIds, setShippingIds] = useState<string[]>([]);
@@ -17,7 +17,7 @@ export default function Fulfillment() {
   const fetchFulfillments = async () => {
     try {
       if (!profile?.company_id) return;
-      const { data: { session } } = await supabase.auth.getSession();
+
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -44,7 +44,7 @@ export default function Fulfillment() {
   const markShipped = async (id: string) => {
     setShippingIds(prev => [...prev, id]);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 

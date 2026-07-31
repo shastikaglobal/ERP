@@ -2,7 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 
 // --- Global Fetch Interceptor for Real-Time Sync ---
 const originalFetch = window.fetch;
@@ -19,7 +20,7 @@ window.fetch = async (...args) => {
       response.ok
     ) {
       // Trigger global broadcast
-      supabase.channel('global_data_sync').send({
+      vpsDb.channel('global_data_sync').send({
         type: 'broadcast',
         event: 'data_changed',
         payload: { path: url }

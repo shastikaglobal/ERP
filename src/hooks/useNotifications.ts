@@ -23,7 +23,7 @@ export function useNotifications() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
+    const { data } = await vpsDb
       .from("app_notifications" as any)
       .select("*")
       .order("created_at", { ascending: false })
@@ -37,7 +37,7 @@ export function useNotifications() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    await supabase
+    await vpsDb
       .from("app_notifications" as any)
       .update({ is_read: true })
       .eq("id", id);
@@ -47,7 +47,7 @@ export function useNotifications() {
   const markAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     if (!profile?.company_id) return;
-    await supabase
+    await vpsDb
       .from("app_notifications" as any)
       .update({ is_read: true })
       .eq("company_id", profile.company_id)

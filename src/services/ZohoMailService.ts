@@ -1,4 +1,4 @@
-import { createClient } from '@/integrations/supabase/client';
+import { createClient } from '@/integrations/vpsDb/client';
 
 export interface ZohoTokenResponse {
   access_token: string;
@@ -19,26 +19,26 @@ export interface ZohoEmail {
 }
 
 export class ZohoMailService {
-  private supabase;
+  private vpsDb;
   private clientId: string;
   private clientSecret: string;
   private redirectUri: string;
 
   constructor() {
-    this.supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY
+    this.vpsDb = createClient(
+      import.meta.env.VITE_VPSDB_URL,
+      import.meta.env.VITE_VPSDB_ANON_KEY
     );
     this.clientId = import.meta.env.VITE_ZOHO_CLIENT_ID;
     this.clientSecret = import.meta.env.VITE_ZOHO_CLIENT_SECRET;
-    this.redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zoho-oauth`;
+    this.redirectUri = `${import.meta.env.VITE_VPSDB_URL}/functions/v1/zoho-oauth`;
   }
 
   /**
    * Get valid access token, refreshing if necessary
    */
   async getAccessToken(accountId: string): Promise<string> {
-    const { data: account, error } = await this.supabase
+    const { data: account, error } = await this.vpsDb
       .from('zoho_accounts')
       .select('*')
       .eq('id', accountId)
@@ -74,7 +74,7 @@ export class ZohoMailService {
 
     const newExpiry = new Date(Date.now() + data.expires_in * 1000).toISOString();
 
-    await this.supabase
+    await this.vpsDb
       .from('zoho_accounts')
       .update({
         access_token: data.access_token,
@@ -91,7 +91,7 @@ export class ZohoMailService {
    */
   async sendEmail(accountId: string, params: { to: string; subject: string; content: string }) {
     const token = await this.getAccessToken(accountId);
-    const { data: account } = await this.supabase.from('zoho_accounts').select('account_email').eq('id', accountId).single();
+    const { data: account } = await this.vpsDb.from('zoho_accounts').select('account_email').eq('id', accountId).single();
 
     const response = await fetch(`https://mail.zoho.in/api/accounts/${account.account_email}/messages`, {
       method: 'POST',
@@ -116,7 +116,7 @@ export class ZohoMailService {
    */
   async fetchEmails(accountId: string, folderName = 'inbox') {
     const token = await this.getAccessToken(accountId);
-    const { data: account } = await this.supabase.from('zoho_accounts').select('account_email').eq('id', accountId).single();
+    const { data: account } = await this.vpsDb.from('zoho_accounts').select('account_email').eq('id', accountId).single();
 
     const response = await fetch(`https://mail.zoho.in/api/accounts/${account.account_email}/messages/view?folderName=${folderName}`, {
       headers: { 'Authorization': `Zoho-oauthtoken ${token}` },
@@ -127,13 +127,13 @@ export class ZohoMailService {
   }
 
   /**
-   * Sync Zoho emails to Supabase
+   * Sync Zoho emails to VpsDb
    */
   async syncEmails(accountId: string, companyId: string) {
     const messages = await this.fetchEmails(accountId);
     
     for (const msg of messages) {
-      const { error } = await this.supabase
+      const { error } = await this.vpsDb
         .from('emails')
         .upsert({
           company_id: companyId,

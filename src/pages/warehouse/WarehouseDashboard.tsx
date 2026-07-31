@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useQuery } from "@tanstack/react-query";
 import {
     Boxes, PackageCheck, ClipboardList, Send,
@@ -17,7 +18,7 @@ export default function WarehouseDashboard() {
     const { data: inventoryData, isLoading: inventoryLoading, refetch: refetchInventory } = useQuery({
         queryKey: ["warehouse-inventory"],
         queryFn: async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -35,7 +36,7 @@ export default function WarehouseDashboard() {
     const { data: lowStockData, isLoading: lowStockLoading, refetch: refetchLowStock } = useQuery({
         queryKey: ["low-stock-alerts"],
         queryFn: async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -62,7 +63,7 @@ export default function WarehouseDashboard() {
         queryKey: ["shipments-today"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -84,7 +85,7 @@ export default function WarehouseDashboard() {
         queryKey: ["warehouse-activities"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -105,7 +106,7 @@ export default function WarehouseDashboard() {
     const { data: packingData, isLoading: packingLoading, refetch: refetchPacking } = useQuery({
         queryKey: ["warehouse-packing"],
         queryFn: async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;

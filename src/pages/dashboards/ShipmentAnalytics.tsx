@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { DataTable } from "@/components/shared/DataTable";

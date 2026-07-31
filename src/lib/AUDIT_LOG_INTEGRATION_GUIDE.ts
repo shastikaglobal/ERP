@@ -12,7 +12,7 @@ import { softDeleteRecord } from "@/lib/softDelete";
 
 async function createQuotation(data: any) {
   try {
-    const { data: newQuotation, error } = await supabase
+    const { data: newQuotation, error } = await vpsDb
       .from("quotations")
       .insert([data])
       .select()
@@ -52,7 +52,7 @@ async function createQuotation(data: any) {
 
 async function updateQuotation(id: string, updates: any, oldValues: any) {
   try {
-    const { data: updatedQuotation, error } = await supabase
+    const { data: updatedQuotation, error } = await vpsDb
       .from("quotations")
       .update(updates)
       .eq("id", id)
@@ -129,7 +129,7 @@ async function deleteQuotation(id: string, quotationNumber: string) {
 
 async function exportQuotations(filters: any) {
   try {
-    const { data: quotations, error } = await supabase
+    const { data: quotations, error } = await vpsDb
       .from("quotations")
       .select("*")
       .match(filters);
@@ -203,7 +203,7 @@ async function downloadQuotationPDF(quotationId: string, quotationNumber: string
 
 async function shareQuotation(quotationId: string, sharedWithUserId: string) {
   try {
-    const { error } = await supabase
+    const { error } = await vpsDb
       .from("quotation_shares")
       .insert({ quotation_id: quotationId, shared_with_user_id: sharedWithUserId });
 
@@ -238,7 +238,7 @@ async function shareQuotation(quotationId: string, sharedWithUserId: string) {
 
 async function approveQuotation(quotationId: string, approverNotes: string) {
   try {
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await vpsDb
       .from("quotations")
       .update({
         status: "approved",

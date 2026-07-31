@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate, Navigate, useLocation } from "react-route
 import { Sprout, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useAuth } from "@/hooks/useAuth";
 import { ResetPasswordModal } from "@/components/ResetPasswordModal";
 import { Input } from "@/components/ui/input";

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, User as UserIcon } from "lucide-react";
 import { worldCurrencies } from "@/lib/currencies";
@@ -100,15 +100,15 @@ export default function Settings() {
       const fileName = `signature-${profile.company_id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+        body: formData
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { publicUrl } = await res.json();
 
       setSignatureUrl(publicUrl);
       toast.success("Signature uploaded successfully!");
@@ -130,15 +130,15 @@ export default function Settings() {
       const fileName = `avatar-${profile.id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments') // Reusing the public 'chat-attachments' bucket
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+        body: formData
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { publicUrl } = await uploadRes.json();
 
       // Save to profile
       const res = await fetch(`/api/employees/${profile.id}`, {

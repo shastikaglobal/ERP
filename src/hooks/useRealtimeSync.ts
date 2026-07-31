@@ -18,9 +18,9 @@ export function useRealtimeSync() {
     };
     subscribers.add(handleUpdate);
 
-    // Only set up Supabase channel once globally (first subscriber does it)
+    // Only set up VpsDb channel once globally (first subscriber does it)
     if (globalSyncCounter === 0 && subscribers.size === 1) {
-      // NOTE: Supabase Realtime has been disabled due to quota limits and 
+      // NOTE: VpsDb Realtime has been disabled due to quota limits and 
       // the authentication migration. The global sync counter remains for 
       // future local WebSocket implementations.
       

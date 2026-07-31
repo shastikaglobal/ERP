@@ -1,5 +1,5 @@
 
-import { createClient } from '@/integrations/supabase/client';
+import { createClient } from '@/integrations/vpsDb/client';
 
 export async function fetchBdeProfiles() {
   try {

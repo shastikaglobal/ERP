@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   Camera, CameraOff, Loader2, ScanLine, ShieldCheck, X,
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -34,6 +35,8 @@ const LOCATIONS = [
 
 /* ═══════════════════════════════════════════════════════════════ */
 export default function ScanBarcode() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
 
   // scanner state
@@ -53,7 +56,7 @@ export default function ScanBarcode() {
   const { data: activeShipments = [], isLoading: shipsLoading } = useQuery<ActiveShipment[]>({
     queryKey: ["active_shipments_scan"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("export_shipments")
         .select("id, shipment_number, destination_port, status")
         .neq("status", "Delivered")
@@ -69,7 +72,7 @@ export default function ScanBarcode() {
     queryKey: ["scan_containers", shipmentId],
     enabled: shipmentId !== "none",
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("export_containers")
         .select("id, container_number, container_type")
         .eq("shipment_id", shipmentId);
@@ -88,7 +91,7 @@ export default function ScanBarcode() {
     setScanError(null);
     setResult(null);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from('batch_barcodes')
         .select('*')
         .eq('code', raw)
@@ -106,7 +109,7 @@ export default function ScanBarcode() {
          const updates: any = {};
          if (updateLoc !== "none") updates.current_location = updateLoc;
          if (shipmentId !== "none") updates.shipment_id = shipmentId;
-         await supabase.from('batch_barcodes').update(updates).eq('id', data.id);
+         await vpsDb.from('batch_barcodes').update(updates).eq('id', data.id);
       }
     } catch (e: any) {
       setScanError("Barcode not found in system");

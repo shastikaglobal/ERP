@@ -1,3 +1,0 @@
-ALTER TABLE public.companies 
-ADD COLUMN IF NOT EXISTS imap_user TEXT,
-ADD COLUMN IF NOT EXISTS imap_pass TEXT;

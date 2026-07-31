@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 
 export const logCRMAction = async (action: string, recordCount: number = 0, details?: any) => {
   try {
@@ -7,7 +8,7 @@ export const logCRMAction = async (action: string, recordCount: number = 0, deta
     const { user } = await res.json();
     if (!user) return;
     
-    await supabase.from("audit_logs").insert({
+    await vpsDb.from("audit_logs").insert({
       user_id: user.id,
       action: action,
       resource_type: "crm",

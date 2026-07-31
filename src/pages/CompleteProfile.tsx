@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useAuth } from "@/hooks/useAuth";
 
 const ROLE_OPTIONS = [
@@ -82,7 +83,7 @@ export default function CompleteProfile() {
 
     try {
       // Check if biometric_id/employee_id is already registered to someone else
-      const { data: existingId, error: checkError } = await supabase
+      const { data: existingId, error: checkError } = await vpsDb
         .from("profiles")
         .select("id, full_name")
         .or(`employee_id.eq.${employeeId.trim()},biometric_id.eq.${employeeId.trim()}`)
@@ -97,7 +98,7 @@ export default function CompleteProfile() {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await vpsDb
         .from("profiles")
         .update({ 
           full_name: fullName, 

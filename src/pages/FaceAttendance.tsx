@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FaceScanner from '../components/FaceScanner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { vpsDb } from "@/lib/vpsDb";
+
 import {
   getAllFaceEmbeddings,
   getAllEmployees,
   signOut,
-} from '../services/supabase';
+} from '../services/vpsDb';
 import {
   loadModels,
   findBestMatch,
@@ -21,7 +22,7 @@ function getTodayIST() {
 // Fetch today's attendance for an employee from VPS database
 async function fetchTodayFromVPS(employeeId: string) {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await vpsDb.auth.getSession();
     if (!session) return null;
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
@@ -33,9 +34,9 @@ async function fetchTodayFromVPS(employeeId: string) {
   } catch { return null; }
 }
 
-// Sync a check-in to VPS and Supabase
+// Sync a check-in to VPS and VpsDb
 async function syncCheckIn(employeeId: string, confidence: number) {
-  const session_data = await supabase.auth.getSession();
+  const session_data = await vpsDb.auth.getSession();
   const session = session_data.data.session;
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
@@ -51,9 +52,9 @@ async function syncCheckIn(employeeId: string, confidence: number) {
   });
   if (!res.ok) throw new Error('Failed to record check-in');
 
-  // Also sync to Supabase (best effort)
+  // Also sync to VpsDb (best effort)
   try {
-    await supabase.from('attendance_logs').upsert([{
+    await vpsDb.from('attendance_logs').upsert([{
       employee_id: employeeId, date: today, clock_in: now, status,
       is_manual: false, notes: `Face match: ${confidence.toFixed(1)}%`
     }], { onConflict: 'employee_id,date', ignoreDuplicates: false });
@@ -62,9 +63,9 @@ async function syncCheckIn(employeeId: string, confidence: number) {
   return { check_in: now, check_out: null, status };
 }
 
-// Sync a check-out to VPS and Supabase
+// Sync a check-out to VPS and VpsDb
 async function syncCheckOut(employeeId: string) {
-  const session_data = await supabase.auth.getSession();
+  const session_data = await vpsDb.auth.getSession();
   const session = session_data.data.session;
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
@@ -78,9 +79,9 @@ async function syncCheckOut(employeeId: string) {
   });
   if (!res.ok) throw new Error('Failed to record check-out');
 
-  // Also sync to Supabase (best effort)
+  // Also sync to VpsDb (best effort)
   try {
-    await supabase.from('attendance_logs')
+    await vpsDb.from('attendance_logs')
       .update({ clock_out: now })
       .eq('employee_id', employeeId).eq('date', today);
   } catch { /* ignore */ }
@@ -91,7 +92,7 @@ async function syncCheckOut(employeeId: string) {
 // Fetch today summary from VPS
 async function fetchTodaySummaryFromVPS() {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await vpsDb.auth.getSession();
     if (!session) return [];
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
@@ -222,7 +223,7 @@ export default function FaceAttendance() {
         if (isMounted.current) setModelsReady(true);
       }
 
-      // Load face embeddings from Supabase, today's summary from VPS, and employees from Supabase
+      // Load face embeddings from VpsDb, today's summary from VPS, and employees from VpsDb
       const [embeddings, summary, employeesList] = await Promise.all([
         getAllFaceEmbeddings(),
         fetchTodaySummaryFromVPS(),
