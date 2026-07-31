@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Target, Bell, CheckCircle2, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { format, parseISO } from "date-fns";
 
@@ -24,8 +24,8 @@ const COLORS = {
   green: "#3fb950",
   textPrimary: "#e6edf3",
   textSecondary: "#8b949e",
-  textMuted: "#484f58",
-};
+  textMuted: "#484f58"
+      };
 
 const statusColor = (s: string) => {
   const map: Record<string, string> = {
@@ -86,10 +86,9 @@ function Dashboard() {
   const { profile } = useAuth();
 
   const fetcher = async (url: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${session?.access_token}` }
-    });
+    
+    const res = await fetch(url, { credentials: 'include'
+      });
     if (!res.ok) throw new Error("Failed to fetch analytics");
     return res.json();
   };

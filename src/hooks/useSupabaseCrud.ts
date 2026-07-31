@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export function useSupabaseCrud(tableName: string) {
   const queryClient = useQueryClient();
@@ -10,8 +10,8 @@ export function useSupabaseCrud(tableName: string) {
       const { data, error } = await supabase.from(tableName as any).select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
-    },
-  });
+    }
+      });
 
   const createMutation = useMutation({
     mutationFn: async (newData: any) => {

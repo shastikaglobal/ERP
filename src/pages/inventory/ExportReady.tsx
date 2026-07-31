@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +37,7 @@ const statusBadgeMap: Record<string, string> = {
 
 export default function ExportReady() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -55,7 +54,7 @@ export default function ExportReady() {
     queryKey: ["export-ready-inventory"],
     queryFn: async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const res = await fetch('/api/inventory/export_ready_inventory', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -77,8 +76,11 @@ export default function ExportReady() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('name');
-      if (error) throw error;
+      const res = await fetch('/api/products', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
       // Deduplicate products by name only
       const seen = new Map<string, any>();
       for (const product of (data || [])) {
@@ -94,7 +96,6 @@ export default function ExportReady() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/inventory/warehouses', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -106,7 +107,6 @@ export default function ExportReady() {
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const body = {
         product_name: payload.product_name,
         grade: payload.grade || null,
@@ -150,7 +150,6 @@ export default function ExportReady() {
 
   const actionMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/inventory/export_ready_inventory/${id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
@@ -252,7 +251,7 @@ export default function ExportReady() {
       actionMutation.mutate({ id: confirmTargetId, status: "shipped" });
     } else {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         // Soft delete via VPS API
         const res = await fetch(`/api/inventory/export_ready_inventory/${confirmTargetId}`, {
           method: 'PUT',

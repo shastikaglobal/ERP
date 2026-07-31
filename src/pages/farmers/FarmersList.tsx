@@ -47,8 +47,8 @@ export default function FarmersList() {
     district: "",
     state: "",
     primary_crops: "",
-    is_active: true,
-  });
+    is_active: true
+      });
 
   const { isLoading, farmers, updateFarmer, deleteFarmer } = useFarmerContext();
   
@@ -81,8 +81,8 @@ export default function FarmersList() {
       district: f.district || "",
       state: f.state || "",
       primary_crops: (f.primary_crops || []).join(", "),
-      is_active: f.is_active,
-    });
+      is_active: f.is_active
+      });
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -170,8 +170,8 @@ export default function FarmersList() {
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-    ),
-  });
+    )
+      });
 
   return (
     <div>

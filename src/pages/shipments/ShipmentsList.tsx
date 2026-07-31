@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -28,7 +28,7 @@ type ExportShipment = {
 
 export default function ShipmentsList() {
   const nav = useNavigate();
-  const { profile } = useAuth();
+  const { profile , session } = useAuth();
   const [shipments, setShipments] = useState<ExportShipment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,12 +55,11 @@ export default function ShipmentsList() {
     if (!editingShipment) return;
     setIsSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_shipments/${editingShipment.id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/finance/export_shipments/${editingShipment.id}`, { method: 'PUT',
         headers,
         body: JSON.stringify({
           carrier,
@@ -68,7 +67,7 @@ export default function ShipmentsList() {
           destination_port: destinationPort,
           eta: eta ? new Date(eta).toISOString() : null,
           status
-        })
+         })
       });
 
       if (!res.ok) throw new Error(await res.text() || "Failed to update shipment");
@@ -86,13 +85,13 @@ export default function ShipmentsList() {
   const fetchShipments = async () => {
     try {
       if (!profile?.company_id) return;
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const [shipmentsRes, containersRes] = await Promise.all([
-        fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers }),
-        fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers })
+        fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  }),
+        fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  })
       ]);
 
       if (shipmentsRes.ok && containersRes.ok) {
@@ -132,14 +131,13 @@ export default function ShipmentsList() {
     if (!confirm("Are you sure you want to delete this shipment? This will also remove linked tracking data.")) return;
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_shipments/${id}`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/finance/export_shipments/${id}`, { method: 'DELETE',
         headers
-      });
+       });
       if (!res.ok) throw new Error(await res.text() || "Failed to delete shipment");
 
       toast.success("Shipment hidden successfully");

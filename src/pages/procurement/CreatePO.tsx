@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export default function CreatePO() {
   const nav = useNavigate();
@@ -22,10 +22,10 @@ export default function CreatePO() {
   });
 
   useEffect(() => {
-    supabase.from('farmers')
-      .select('id, full_name')
-      .eq('is_deleted', false)
-      .then(({ data }) => setFarmers(data || []));
+    fetch('/api/farmers', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setFarmers(data || []))
+      .catch(err => console.error("Failed to fetch farmers", err));
   }, []);
 
   const handleSave = async () => {
@@ -35,22 +35,17 @@ export default function CreatePO() {
     }
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
 
       let companyId = "default-company";
       if (session?.user?.id) {
-        const profileRes = await supabase.from('profiles').select('company_id').eq('id', session.user.id).single();
-        if (profileRes.data?.company_id) {
-          companyId = profileRes.data.company_id;
-        }
+        // Handled by profile context or backend
       }
 
-      const res = await fetch('/api/purchase_orders', {
-        method: 'POST',
+      const res = await fetch('/api/purchase_orders', { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           company_id: companyId,
           farmer_id: formData.supplier,

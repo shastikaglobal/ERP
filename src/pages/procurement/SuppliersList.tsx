@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,9 +44,8 @@ export default function SuppliersList() {
   const fetchSuppliers = async () => {
     if (!profile?.company_id) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/farmers?company_id=${profile.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/farmers?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch suppliers");
       const data = await res.json();
@@ -82,13 +81,11 @@ export default function SuppliersList() {
     try {
       const prodCategories = categories.split(",").map(c => c.trim()).filter(Boolean);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/farmers`, {
-        method: 'POST',
+      
+      const res = await fetch(`/api/farmers`, { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           company_id: profile.company_id,
           full_name: name,
@@ -122,10 +119,8 @@ export default function SuppliersList() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/farmers/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/farmers/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete supplier");
       toast.success("Supplier hidden from the app");

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -46,11 +46,9 @@ export default function EditLead() {
   useEffect(() => {
     async function fetchLead() {
       if (!id) return;
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const res = await fetch(`/api/crm/leads/${id}`, { credentials: 'include' });
+      const data = await res.json().catch(() => null);
+      const error = res.ok ? null : new Error('Failed');
 
       if (error) {
         toast.error("Failed to load lead");
@@ -84,25 +82,17 @@ export default function EditLead() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("leads")
-        .update({
-          company_name: companyName,
-          website,
-          country,
-          industry,
-          contact_name: contactName,
-          job_title: jobTitle,
-          email,
-          phone,
-          stage,
-          source,
-          interested_product: product,
-          updated_at: new Date().toISOString()
+      const res = await fetch(`/api/crm/leads/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_name: companyName, website, country, industry,
+          contact_name: contactName, job_title: jobTitle, email, phone,
+          stage, source, interested_product: product, notes
         })
-        .eq("id", id);
-
-      if (error) throw error;
+      });
+      if (!res.ok) throw new Error("Failed to update lead");
 
       toast.success("Lead updated successfully");
       nav(`/crm/leads/${id}`);

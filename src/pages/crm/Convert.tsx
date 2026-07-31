@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -24,14 +24,11 @@ const SuccessfulConversions = () => {
 
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
+      
+      
 
       const url = profile?.company_id ? `/api/leads/converted?company_id=${profile.company_id}` : `/api/leads/converted`;
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
+      const res = await fetch(url, { credentials: 'include'
       });
 
       if (!res.ok) {

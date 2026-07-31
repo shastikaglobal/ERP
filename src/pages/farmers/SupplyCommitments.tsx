@@ -98,8 +98,8 @@ export default function SupplyCommitments() {
       total: data.length,
       active: data.filter(d => d.status === 'Pending' || d.status === 'Partial').length,
       completed: data.filter(d => d.status === 'Completed').length,
-      pending: data.filter(d => d.status === 'Pending').length,
-    };
+      pending: data.filter(d => d.status === 'Pending').length
+      };
   }, [data]);
 
   // Filter & Sort Data
@@ -157,8 +157,8 @@ export default function SupplyCommitments() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      expected_delivery_date: record.expected_delivery_date.substring(0, 10),
-    });
+      expected_delivery_date: record.expected_delivery_date.substring(0, 10)
+      });
     setFormErrors({});
     setModalOpen(true);
   };
@@ -282,8 +282,8 @@ export default function SupplyCommitments() {
         `${d.delivered_quantity} ${d.unit}`,
         new Date(d.expected_delivery_date).toLocaleDateString(),
         d.status
-      ]),
-    });
+      ])
+      });
     
     doc.save("Supply_Commitments.pdf");
   };

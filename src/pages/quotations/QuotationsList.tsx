@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { exportQuotationsToPDF } from "@/lib/quotation-export";
 import { toast } from "sonner";
@@ -55,11 +55,8 @@ export default function QuotationsList() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/quotations', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      
+      const res = await fetch('/api/quotations', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch quotations");
       
@@ -76,7 +73,7 @@ export default function QuotationsList() {
         currency: q.currency,
         status: q.status,
         validUntil: q.valid_until ? new Date(q.valid_until).toLocaleDateString() : 'N/A',
-        createdAt: new Date(q.created_at).toLocaleDateString(),
+        createdAt: new Date(q.created_at).toLocaleDateString()
       }));
     },
     enabled: !!profile?.company_id
@@ -130,12 +127,8 @@ export default function QuotationsList() {
     setDeletingId(quotation.id);
     try {
       // Soft-delete the quotation via API
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/quotations/${quotation.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      
+      const res = await fetch(`/api/quotations/${quotation.id}`, { method: 'DELETE'
       });
 
       if (!res.ok) throw new Error("Failed to delete quotation");

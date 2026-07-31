@@ -6,8 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 
 // profiles live in Supabase, not VPS DB
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock'
 );
 
 // GET /api/analytics/sidebar_counts

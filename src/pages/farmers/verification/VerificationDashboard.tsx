@@ -12,37 +12,37 @@ export const VerificationDashboard: React.FC<VerificationDashboardProps> = ({
   total,
   pending,
   approved,
-  rejected,
-}) => {
+  rejected
+      }) => {
   const cards = [
     {
       title: 'Total Verifications',
       value: total,
       icon: <ShieldCheck className="w-8 h-8 text-blue-400" />,
       color: 'from-blue-900/40 to-slate-900',
-      border: 'border-blue-500/20',
-    },
+      border: 'border-blue-500/20'
+      },
     {
       title: 'Pending Review',
       value: pending,
       icon: <Clock className="w-8 h-8 text-amber-400" />,
       color: 'from-amber-900/40 to-slate-900',
-      border: 'border-amber-500/20',
-    },
+      border: 'border-amber-500/20'
+      },
     {
       title: 'Approved',
       value: approved,
       icon: <CheckCircle className="w-8 h-8 text-emerald-400" />,
       color: 'from-emerald-900/40 to-slate-900',
-      border: 'border-emerald-500/20',
-    },
+      border: 'border-emerald-500/20'
+      },
     {
       title: 'Rejected',
       value: rejected,
       icon: <XCircle className="w-8 h-8 text-red-400" />,
       color: 'from-red-900/40 to-slate-900',
-      border: 'border-red-500/20',
-    },
+      border: 'border-red-500/20'
+      },
   ];
 
   return (

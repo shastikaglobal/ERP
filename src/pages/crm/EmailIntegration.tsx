@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { 
   Mail, ShieldCheck, Server, AlertCircle, CheckCircle2, 
@@ -75,7 +75,9 @@ export default function EmailIntegration() {
 
     // 1. Fetch Company Config — handle missing api_key column gracefully
     try {
-      const { data: comp, error } = await supabase.from("companies").select("*").eq("id", profile.company_id).single();
+      const res = await fetch(`/api/companies/${profile.company_id}`, { credentials: 'include' });
+      const comp = await res.json().catch(() => null);
+      const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       if (comp) {
         setSmtpHost(comp.smtp_host || "smtppro.zoho.in");
@@ -90,11 +92,9 @@ export default function EmailIntegration() {
     } catch (err: any) {
       console.warn("Failed to select companies.* — falling back to select known columns:", err?.message);
       // Fallback: select only known columns (avoid referencing missing api_key)
-      const { data: comp2, error: err2 } = await supabase
-        .from("companies")
-        .select("id, smtp_host, smtp_port, smtp_user, from_email, imap_host, imap_port, imap_user")
-        .eq("id", profile.company_id)
-        .single();
+      const res2 = await fetch(`/api/companies/${profile.company_id}`, { credentials: 'include' });
+      const comp2 = await res2.json().catch(() => null);
+      const err2 = res2.ok ? null : new Error('Failed');
       if (err2) {
         console.error("Failed to fetch company config:", err2.message || err2);
         // leave defaults in place
@@ -112,15 +112,8 @@ export default function EmailIntegration() {
     }
 
     // 2. Fetch Recent Email Activities
-    const { data: emailData } = await supabase
-      .from("activities")
-      .select(`
-        id, lead_id, title, type, content, created_at,
-        leads:lead_id(company_name, contact_name, email)
-      `)
-      .eq("type", "email")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const emRes = await fetch('/api/emails', { credentials: 'include' });
+      const emailData = await emRes.json().catch(() => []);
     
     if (emailData) setEmails(emailData as unknown as EmailActivity[]);
     setLoading(false);
@@ -130,22 +123,7 @@ export default function EmailIntegration() {
     fetchData();
 
     // 1. Live Subscriptions for instant UI updates
-    const channel = supabase
-      .channel('live-emails')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'activities',
-          filter: `type=eq.email`
-        },
-        () => {
-          console.log("New email activity detected, refreshing...");
-          fetchData();
-        }
-      )
-      .subscribe();
+    
 
     // 2. Auto-Sync with Server every 2 minutes
     const syncInterval = setInterval(() => {
@@ -154,7 +132,7 @@ export default function EmailIntegration() {
     }, 120000);
 
     return () => {
-      supabase.removeChannel(channel);
+      
       clearInterval(syncInterval);
     };
   }, [profile?.company_id]);
@@ -163,9 +141,9 @@ export default function EmailIntegration() {
     if (!profile?.company_id) return;
     if (!silent) setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-emails", {
-        body: { companyId: profile?.company_id }
-      });
+      const res = await fetch('/api/emails/sync', { method: 'POST', credentials: 'include' });
+      const data = await res.json().catch(() => null);
+      const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       if (!silent) {
         if (data?.count > 0) {
@@ -194,7 +172,8 @@ export default function EmailIntegration() {
     if (smtpPass) updateData.smtp_pass = smtpPass;
     if (imapPass) updateData.imap_pass = imapPass;
 
-    const { error } = await supabase.from("companies").update(updateData).eq("id", profile.company_id);
+    const res = await fetch(`/api/companies/${profile.company_id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
+    const error = res.ok ? null : new Error('Failed');
     setSaving(false);
     if (error) {
       // Detect common schema/cache error when api_key column is missing

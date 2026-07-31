@@ -5,7 +5,7 @@ import { DollarSign, Package, Ship, TrendingUp, Users, AlertCircle, Bell, Clock 
 import ScreenMonitor from "@/pages/crm/ScreenMonitor";
 import EmployeeActivity from "@/pages/crm/EmployeeActivity";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";

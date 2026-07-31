@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,8 +18,8 @@ export default function ProcurementDashboard() {
   const [stats, setStats] = useState({
 
     totalSuppliers: 0,
-    totalPOValueMonth: 0,
-  });
+    totalPOValueMonth: 0
+      });
   const [topSuppliers, setTopSuppliers] = useState<any[]>([]);
   const [statusData, setStatusData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,17 +29,16 @@ export default function ProcurementDashboard() {
       try {
         if (!profile?.company_id) return;
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        
+        const res = await fetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, { credentials: 'include'
+      });
         if (!res.ok) throw new Error("Failed to load analytics");
         const data = await res.json();
 
         setStats({
           totalSuppliers: data.totalSuppliers || 0,
-          totalPOValueMonth: data.totalPOValueMonth || 0,
-        });
+          totalPOValueMonth: data.totalPOValueMonth || 0
+      });
         setTopSuppliers(data.topSuppliers || []);
         setStatusData(data.statusData || []);
 

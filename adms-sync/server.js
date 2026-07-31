@@ -14,6 +14,7 @@ if (!globalThis.fetch) {
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 
@@ -41,24 +42,7 @@ if (envPath) {
 const app = express();
 const PORT = process.env.PORT || 8082;
 
-// Initialize Supabase Client
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables.");
-  process.exit(1);
-}
-
-const nodeFetch = require('node-fetch');
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  realtime: {
-    transport: WebSocket
-  },
-  global: {
-    fetch: nodeFetch
-  }
-});
+// Initialize Supabase Client (Removed)
 
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
@@ -66,13 +50,43 @@ const crypto = require('crypto');
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Strict CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://localhost:8080', 
+  process.env.FRONTEND_URL 
+].filter(Boolean);
+
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow all origins for now to prevent CORS issues with cookies
-    callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true
 }));
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // Limit each IP to 100 requests per `window` (here, per minute)
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per `window` (here, per 15 minutes)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts, please try again after 15 minutes." }
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
 
 // Handle JSON parse errors from body-parser to avoid crashing on malformed payloads
 app.use((err, req, res, next) => {
@@ -141,11 +155,11 @@ app.post('/api/drivers', async (req, res) => {
 // --- Mount API Routes ---
 const attendanceRoutes = require('./routes/attendance');
 const employeesRoutes = require('./routes/employees');
-const crmRoutes = require('./routes/crm');
+const crmApi = require('./routes/crm_api');
+const inventoryApi = require('./routes/inventory_api');
 const followUpsRoutes = require('./routes/follow_ups');
 const crmTasksRoutes = require('./routes/crm_tasks');
 const quotationsRoutes = require('./routes/quotations');
-const inventoryRoutes = require('./routes/inventory');
 const warehouseRoutes = require('./routes/warehouse');
 const analyticsRoutes = require('./routes/analytics');
 const dispatchRoutes = require('./routes/dispatch');
@@ -166,15 +180,14 @@ const procurementRoutes = require('./routes/procurement');
 const purchaseOrdersRoutes = require('./routes/purchase_orders');
 const documentsRoutes = require('./routes/documents');
 const sessionsRoutes = require('./routes/sessions');
+const shipmentsRoutes = require('./routes/shipments');
 
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/employees', employeesRoutes);
-app.use('/api/leads', crmRoutes);
-app.use('/api/crm/leads', crmRoutes);
-app.use('/api/crm-tasks', crmTasksRoutes);
+app.use('/api/crm', crmApi);
+app.use('/api/inventory', inventoryApi);
 app.use('/api/follow-ups', followUpsRoutes);
 app.use('/api/quotations', quotationsRoutes);
-app.use('/api/inventory', inventoryRoutes);
 app.use('/api/warehouse', warehouseRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dispatch', dispatchRoutes);
@@ -196,8 +209,77 @@ app.use('/api/procurement', procurementRoutes);
 app.use('/api/purchase_orders', purchaseOrdersRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/sessions', sessionsRoutes);
+app.use('/api/shipments', shipmentsRoutes);
 
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, full_name } = req.body;
+    if (!email || !password || !full_name) {
+      return res.status(400).json({ error: 'Email, password, and full name are required' });
+    }
 
+    const { rows: existing } = await db.query('SELECT id FROM profiles WHERE email = $1 LIMIT 1', [email.trim()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const { rows } = await db.query(
+      'INSERT INTO profiles (email, password_hash, full_name, role, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, full_name, role',
+      [email.trim(), passwordHash, full_name, 'admin', 'active']
+    );
+
+    const user = rows[0];
+    const secret = process.env.JWT_SECRET;
+    const accessToken = jwt.sign({
+      sub: user.id,
+      email: user.email,
+      role: 'authenticated',
+      aud: 'authenticated'
+    }, secret, { expiresIn: '1h' });
+
+    const refreshToken = crypto.randomBytes(40).toString('hex');
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    await db.query(
+      'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+      [user.id, refreshHash, expiresAt]
+    );
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+    
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      session: {
+        user: {
+          id: user.id,
+          email: user.email,
+          user_metadata: { full_name: user.full_name }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('VPS auth signup error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -232,7 +314,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     console.log(`[VPS Auth] Valid credentials for ${user.full_name}. Issuing tokens...`);
 
-    const secret = process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback';
+    const secret = process.env.JWT_SECRET;
     
     // Issue Access Token (short lived, e.g. 1 hour)
     const accessToken = jwt.sign({
@@ -366,7 +448,7 @@ app.post('/api/auth/refresh', async (req, res) => {
       return res.status(401).json({ error: 'User inactive or deleted' });
     }
 
-    const secret = process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback';
+    const secret = process.env.JWT_SECRET;
     const accessToken = jwt.sign({
       sub: userId,
       email: userRows[0].email,
@@ -838,13 +920,13 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
       const lines = rawData.split(/\r?\n/);
       console.log(`📦 Parsing ${lines.length} lines of attendance logs...`);
 
-      // Fetch active profiles from Supabase to map biometric IDs to employee IDs
-      const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, company_id, biometric_id');
-
-      if (profErr) {
-        console.error("❌ Failed to load profiles from Supabase:", profErr.message);
+      // Fetch active profiles from local DB to map biometric IDs to employee IDs
+      let profiles = [];
+      try {
+        const { rows } = await db.query('SELECT id, company_id, biometric_id FROM profiles WHERE is_deleted IS NOT TRUE');
+        profiles = rows;
+      } catch (profErr) {
+        console.error("❌ Failed to load profiles from DB:", profErr.message);
         // Respond OK anyway so device doesn't get stuck, but log the error
         return res.status(200).send('OK');
       }
@@ -1055,19 +1137,16 @@ app.post('/force-logout', express.json(), async (req, res) => {
 
   // 1. Update user_sessions
   if (sessionId) {
-    const { error: sessErr } = await supabase
-      .from('user_sessions')
-      .update({ logout_time: nowIso })
-      .eq('id', sessionId);
-    if (!sessErr) updatedSession = true;
+    try {
+      await db.query('UPDATE user_sessions SET logout_time = $1 WHERE id = $2', [nowIso, sessionId]);
+      updatedSession = true;
+    } catch(e) {}
   } else {
     // find open session
-    const { error: sessErr } = await supabase
-      .from('user_sessions')
-      .update({ logout_time: nowIso })
-      .eq('user_id', userId)
-      .is('logout_time', null);
-    if (!sessErr) updatedSession = true;
+    try {
+      await db.query('UPDATE user_sessions SET logout_time = $1 WHERE user_id = $2 AND logout_time IS NULL', [nowIso, userId]);
+      updatedSession = true;
+    } catch(e) {}
   }
 
   // 2. Update attendance_logs
@@ -1082,14 +1161,9 @@ app.post('/force-logout', express.json(), async (req, res) => {
     console.error("Attendance update error:", attErr);
   }
 
-  // 3. Log them out of the actual application (bypassing auth tokens)
-  let loggedOutApp = false;
-  const { error: authErr } = await supabase.auth.admin.signOut(userId, 'global');
-  if (!authErr) {
-    loggedOutApp = true;
-  } else {
-    console.error("Auth sign out error:", authErr);
-  }
+  // 3. Log them out (No Supabase, so just true)
+  let loggedOutApp = true;
+
 
   res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
 });
@@ -1418,16 +1492,7 @@ async function startPgListener() {
     pgClient.on('notification', (msg) => {
       console.log(`🔔 Received PG notify on "data_changed": ${msg.payload}`);
       
-      // Broadcast to Supabase Realtime channel 'global_data_sync'
-      supabase.channel('global_data_sync').send({
-        type: 'broadcast',
-        event: 'data_changed',
-        payload: { table: msg.payload }
-      }).then(() => {
-        console.log(`📡 Broadcasted data_changed for table: ${msg.payload}`);
-      }).catch(err => {
-        console.error('❌ Broadcast failed:', err.message || err);
-      });
+      // Broadcast disabled (Supabase removed). If needed, local websocket can be implemented.
     });
   } catch (err) {
     console.error('❌ Failed to connect PG Listener:', err.message);

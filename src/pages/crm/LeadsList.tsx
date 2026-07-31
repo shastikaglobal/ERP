@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +16,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger
+      } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 
 // CRM Security Imports
@@ -64,8 +64,8 @@ const STAGE_COLORS: Record<string, string> = {
   Qualified: "bg-purple-500",
   Won: "bg-green-500",
   "Client Successfully Acquired": "bg-emerald-500",
-  Lost: "bg-red-500",
-};
+  Lost: "bg-red-500"
+      };
 
 const EMAIL_SEPARATOR_REGEX = /[;,\n]+/;
 
@@ -81,7 +81,7 @@ const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
 export default function LeadsList() {
   useCRMPageTracking(); // STEP 5: Add page tracking
-  const { roleSlugs } = useAuth();
+  const { roleSlugs , session } = useAuth();
   const { syncCounter } = useRealtimeSync();
 
   const { isAdmin, isManager, isPrivileged, canExportPDF, canExportExcel, isLoading: permissionsLoading } = useCRMPermissions();
@@ -166,10 +166,9 @@ export default function LeadsList() {
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      
+      
+      const res = await fetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       const data = await res.json();
@@ -182,11 +181,10 @@ export default function LeadsList() {
   };
 
   const fetchTeam = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const res = await fetch('/api/employees', {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
-    });
+    
+    
+    const res = await fetch('/api/employees', { credentials: 'include'
+      });
     if (res.ok) {
       const profiles = await res.json();
       setTeam(profiles);
@@ -194,11 +192,10 @@ export default function LeadsList() {
   };
 
   const fetchSources = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const res = await fetch('/api/leads/meta/sources', {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
-    });
+    
+    
+    const res = await fetch('/api/leads/meta/sources', { credentials: 'include'
+      });
     if (res.ok) {
       const data = await res.json();
       setSources(data);
@@ -213,19 +210,9 @@ export default function LeadsList() {
 
   useEffect(() => {
     // Add realtime subscription for leads
-    const channel = supabase
-      .channel('leads-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
-        () => {
-          fetchLeads();
-        }
-      )
-      .subscribe();
+    
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
   }, []);
 
   const resetForm = () => {
@@ -262,16 +249,15 @@ export default function LeadsList() {
 
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const userId = session?.user?.id;
 
       if (!userId) {
         throw new Error("You must be logged in to create a lead");
       }
 
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      const res = await fetch('/api/leads', { method: 'POST',
+        headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           date: date || null,
           business_category: businessCategory,
@@ -303,25 +289,23 @@ export default function LeadsList() {
 
   const convertToCustomer = async (lead: Lead) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       
-      const empRes = await fetch(`/api/employees/${session?.user?.id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const empRes = await fetch(`/api/employees/${session?.user?.id}`, { credentials: 'include'
       });
       const empData = await empRes.json();
       const companyId = empData?.company_id;
 
       if (!companyId) throw new Error("Could not identify your company");
 
-      const res = await fetch(`/api/leads/${lead.id}/convert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      const res = await fetch(`/api/leads/${lead.id}/convert`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           company_id: companyId,
           name: lead.company_name,
           country: lead.country,
-          email: lead.email,
-        })
+          email: lead.email
+      })
       });
 
       if (!res.ok) throw new Error("Conversion failed");
@@ -349,17 +333,16 @@ export default function LeadsList() {
 
     const assignee = followUpAssignedTo;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      
+      const res = await fetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           company_name: selectedFollowUpLead.company_name,
           contact_name: selectedFollowUpLead.contact_name,
           follow_up_date: followUpDate,
           note: followUpNote,
-          assigned_to: assignee,
-        })
+          assigned_to: assignee
+      })
       });
       
       if (!res.ok) throw new Error("Failed to save follow up");
@@ -405,10 +388,9 @@ export default function LeadsList() {
       // Ensure we store in the standardized "[Method]: Note" format
       const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/leads/${selectedRemarkLead.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      
+      const res = await fetch(`/api/leads/${selectedRemarkLead.id}`, { method: 'PUT',
+        headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({ remark: formattedRemark })
       });
 
@@ -433,10 +415,8 @@ export default function LeadsList() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/leads/${deleteId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/leads/${deleteId}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete lead");
       toast.success("Lead removed from view (soft-deleted)");
@@ -452,13 +432,11 @@ export default function LeadsList() {
 
   const toggleLeadStatus = async (lead: Lead, newStage: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/leads/${lead.id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/leads/${lead.id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ stage: newStage })
       });
       if (!res.ok) throw new Error("Failed to update status");
@@ -990,13 +968,11 @@ export default function LeadsList() {
                         defaultValue={lead.stage}
                         onValueChange={async (newStage) => {
                           try {
-                            const { data: { session } } = await supabase.auth.getSession();
-                            const res = await fetch(`/api/leads/${lead.id}`, {
-                              method: 'PUT',
+                            
+                            const res = await fetch(`/api/leads/${lead.id}`, { method: 'PUT',
                               headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${session?.access_token}`
-                              },
+                                'Content-Type': 'application/json'
+      },
                               body: JSON.stringify({ stage: newStage })
                             });
                             if (!res.ok) throw new Error("Failed to update stage");

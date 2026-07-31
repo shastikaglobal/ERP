@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
@@ -22,9 +22,8 @@ export default function AdvancedSecurity() {
     queryKey: ['corporate_subnets', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/security/subnets?company_id=${profile.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/security/subnets?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch subnets");
       return await res.json();
@@ -41,9 +40,8 @@ export default function AdvancedSecurity() {
       // However, we can simply fetch security logs for now. If company_id is available in audit_logs, we filter by it.
       // Let's assume we fetch recent security logs (we can filter on client side if needed, or if we can't join)
       // Since audit_logs is RLS protected, we will only get what we are allowed to see.
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/security/logs?company_id=${profile.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/security/logs?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch threat logs");
       return await res.json();
@@ -61,14 +59,12 @@ export default function AdvancedSecurity() {
     if (!profile?.company_id) return toast.error("Company ID not found");
 
     setIsSubmitting(true);
-    const { data: { session } } = await supabase.auth.getSession();
+    
     try {
-      const res = await fetch('/api/security/subnets', {
-        method: 'POST',
+      const res = await fetch('/api/security/subnets', { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           company_id: profile.company_id,
           ip_cidr: newSubnetIp,
@@ -91,10 +87,8 @@ export default function AdvancedSecurity() {
 
   const handleDeleteSubnet = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/security/subnets/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/security/subnets/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to archive subnet");
       toast.success("Subnet archived (soft delete)");

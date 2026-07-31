@@ -6,29 +6,19 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
-import { useCan } from "@/hooks/useAuth";
+import { useCan, useAuth } from "@/hooks/useAuth";
 
 export default function QualityControlWarehouse() {
   const nav = useNavigate();
   const can = useCan();
+  const { session } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["wh_inventory_batches_qc"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("inventory_batches")
-        .select(`
-          id,
-          lot_number,
-          quantity_remaining_kg,
-          warehouse:warehouses(name),
-          product:products(name),
-          qc_inspections(grade, result, inspected_at)
-        `)
-        .order("created_at", { ascending: false });
-        
-      if (error) throw error;
+      const res = await fetch('/api/inventory/inventory_batches', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+      if (!res.ok) throw new Error('Fetch failed');
+      const data = await res.json();
       
       // Transform data for the table
       return (data || []).map((batch: any) => {
@@ -40,8 +30,8 @@ export default function QualityControlWarehouse() {
         return {
           id: batch.id,
           lot: batch.lot_number,
-          warehouse: batch.warehouse?.name || "Unassigned",
-          product: batch.product?.name || "Unknown Product",
+          warehouse: batch.warehouses?.name || "Unassigned",
+          product: batch.products?.name || "Unknown Product",
           qty: batch.quantity_remaining_kg,
           grade: qc?.grade || "Pending QC",
           result: qc?.result || "Pending",

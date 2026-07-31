@@ -10,7 +10,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { COUNTRIES } from "@/lib/countries";
@@ -47,20 +46,25 @@ export default function CreateLead() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("leads").insert({
-        company_name: companyName,
-        contact_name: contactName,
-        email: email,
-        phone: phone,
-        country: country,
-        interested_product: product,
-        stage: stage,
-        assigned_to: (profile as any).full_name || "Unassigned", // Auto-assign name as text
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      const res = await fetch("/api/crm/leads", { method: "POST",
+        headers: { "Content-Type": "application/json"  },
+        credentials: "include",
+        body: JSON.stringify({
+          company_name: companyName,
+          contact_name: contactName,
+          email: email,
+          phone: phone,
+          country: country,
+          interested_product: product,
+          stage: stage,
+          assigned_to: (profile as any).full_name || "Unassigned", // Auto-assign name as text
+        })
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create lead");
+      }
 
       toast.success("Lead created successfully");
       nav("/crm/leads");

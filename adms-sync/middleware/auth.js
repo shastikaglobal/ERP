@@ -18,7 +18,10 @@ const requireAuth = async (req, res, next) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'supabase-jwt-secret-key-fallback';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("FATAL: JWT_SECRET environment variable is missing.");
+    }
     const decoded = jwt.verify(token, secret);
 
     // Verify user still exists and is active in DB

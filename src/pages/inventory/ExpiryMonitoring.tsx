@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -40,6 +39,7 @@ const statusColorMap: Record<string, string> = {
 
 export default function ExpiryMonitoring() {
   const queryClient = useQueryClient();
+  const { profile, session } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
@@ -56,7 +56,6 @@ export default function ExpiryMonitoring() {
     queryKey: ["expiry-monitoring"],
     queryFn: async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch('/api/inventory/expiry_monitoring', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -73,9 +72,12 @@ export default function ExpiryMonitoring() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('name');
-      if (error) throw error;
-      return data || [];
+      const res = await fetch('/api/products', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      return (data || []).filter((p: any) => p.is_active).sort((a: any, b: any) => a.name.localeCompare(b.name));
     }
   });
 
@@ -93,7 +95,6 @@ export default function ExpiryMonitoring() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/inventory/warehouses', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -105,7 +106,6 @@ export default function ExpiryMonitoring() {
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const body = {
         product_name: payload.product_name,
         batch_number: payload.batch_number || null,
@@ -145,11 +145,10 @@ export default function ExpiryMonitoring() {
     onError: (err: any) => toast.error(err.message || "Failed to save item."),
   });
 
-  const { profile } = useAuth();
+
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/inventory/expiry_monitoring/${id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { getExportReadyStockData } from "@/lib/report-services";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,9 +21,9 @@ export default function ExportReadyStockReport() {
   const { data: warehouses } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -34,7 +34,7 @@ export default function ExportReadyStockReport() {
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("id, name, sku");
+      const { data } = await fetch('/api/products', { credentials: 'include' }); 
       return data || [];
     }
   });

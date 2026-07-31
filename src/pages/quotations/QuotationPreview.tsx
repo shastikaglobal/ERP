@@ -6,7 +6,7 @@ import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { softDeleteRecord } from "@/lib/softDelete";
 import { exportQuotationsToPDF } from "@/lib/quotation-export";
 
@@ -18,16 +18,14 @@ export default function QuotationPreview() {
   const { data: q, isLoading, refetch } = useQuery({
     queryKey: ['quotation', id],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       
-      const qRes = await fetch(`/api/quotations/${id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const qRes = await fetch(`/api/quotations/${id}`, { credentials: 'include'
       });
       if (!qRes.ok) throw new Error("Failed to load quotation");
       const quotation = await qRes.json();
 
-      const itemsRes = await fetch(`/api/quotations/${id}/items`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      const itemsRes = await fetch(`/api/quotations/${id}/items`, { credentials: 'include'
       });
       if (!itemsRes.ok) throw new Error("Failed to load quotation items");
       const items = await itemsRes.json();
@@ -43,13 +41,11 @@ export default function QuotationPreview() {
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ quotation: { status: "Pending" } })
       });
       if (!res.ok) throw new Error("Failed to update status");
@@ -65,12 +61,8 @@ export default function QuotationPreview() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      
+      const res = await fetch(`/api/quotations/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete quotation");
     },

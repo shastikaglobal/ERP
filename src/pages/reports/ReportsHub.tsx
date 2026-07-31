@@ -3,7 +3,7 @@ import Card from "@/components/Card";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import {
   BarChart3,
@@ -80,7 +80,7 @@ export default function ReportsHub() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  // Live stats from Supabase
+  // Live stats from API
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["reports-hub-stats", profile?.company_id],
     queryFn: async () => {
@@ -88,29 +88,10 @@ export default function ReportsHub() {
       if (!companyId) return null;
 
       const [batchRes, shipmentRes, damageRes, exportReadyRes] = await Promise.all([
-        supabase
-          .from("inventory_batches")
-          .neq("is_deleted", true)
-          .select("id, quantity_kg, quantity_remaining_kg, status")
-          .eq("company_id", companyId),
-        supabase
-          .from("export_shipments")
-          .neq("is_deleted", true)
-          .select("id, status, total_quantity_kg")
-          .eq("company_id", companyId),
-        supabase
-          .from("inventory_batches")
-          .neq("is_deleted", true)
-          .select("id, quantity_kg")
-          .eq("company_id", companyId)
-          .in("status", ["damaged", "rejected", "quarantine"]),
-        supabase
-          .from("inventory_batches")
-          .neq("is_deleted", true)
-          .select("id, quantity_remaining_kg")
-          .eq("company_id", companyId)
-          .eq("is_export_ready", true)
-          .eq("status", "qc_passed"),
+        fetch('/api/inventory?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        fetch('/api/shipments?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        fetch('/api/inventory?status=damaged,rejected,quarantine&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        fetch('/api/inventory?status=qc_passed&is_export_ready=true&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
       ]);
 
       const batches = batchRes.data || [];

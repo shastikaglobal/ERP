@@ -14,7 +14,8 @@ const INVENTORY_TABLES = [
   'available_stock',
   'products',
   'warehouses',
-  'qc_inspections'
+  'qc_inspections',
+  'export_containers'
 ];
 
 // Helper to validate table name
@@ -49,6 +50,35 @@ router.get('/qc_inspections/with-batch', requireAuth, async (req, res) => {
     res.json(mapped);
   } catch (err) {
     console.error('Error GET qc_inspections/with-batch:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/inventory/export_containers/with-shipments — joined read for Container Loading
+router.get('/export_containers/with-shipments', requireAuth, async (req, res) => {
+  try {
+    let query = `
+      SELECT ec.*,
+        es.shipment_number,
+        es.origin_port,
+        es.destination_port
+      FROM export_containers ec
+      LEFT JOIN export_shipments es ON ec.shipment_id = es.id
+      ORDER BY ec.created_at DESC
+    `;
+    const { rows } = await db.query(query);
+    // Map to Supabase-like nested structure for frontend compatibility
+    const mapped = rows.map(r => ({
+      ...r,
+      export_shipments: { 
+        shipment_number: r.shipment_number, 
+        origin_port: r.origin_port, 
+        destination_port: r.destination_port 
+      }
+    }));
+    res.json(mapped);
+  } catch (err) {
+    console.error('Error GET export_containers/with-shipments:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

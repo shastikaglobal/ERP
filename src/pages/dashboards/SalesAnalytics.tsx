@@ -3,7 +3,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { format, parse, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
@@ -16,11 +16,10 @@ export default function SalesAnalytics() {
     queryKey: ['sales_analytics_leads', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('leads')
-        .select('id, company_name, country, assigned_to, stage, created_at, status')
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false });
+      const res = await fetch('/api/crm/leads', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for leads');
+      const data = await res.json();
+      const error = null;
       if (error) {
         console.error('Error fetching leads:', error);
         return [];
@@ -38,9 +37,9 @@ export default function SalesAnalytics() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export orders from VPS");
         const data = await res.json();
@@ -61,9 +60,9 @@ export default function SalesAnalytics() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const res = await fetch('/api/quotations', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");
         const data = await res.json();

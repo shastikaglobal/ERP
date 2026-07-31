@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -16,11 +16,8 @@ export default function QuotationApprovals() {
 
   const fetchPending = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/quotations', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      
+      const res = await fetch('/api/quotations', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch quotations");
       
@@ -49,13 +46,11 @@ export default function QuotationApprovals() {
   const handleAction = async (id: string, newStatus: "Approved" | "Rejected") => {
     setActionId(id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           quotation: { status: newStatus }
         })

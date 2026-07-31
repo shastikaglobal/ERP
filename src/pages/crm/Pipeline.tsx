@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,10 +38,9 @@ export default function LeadPipeline() {
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      
+      
+      const res = await fetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch pipeline data");
       const data = await res.json();
@@ -58,19 +57,9 @@ export default function LeadPipeline() {
     fetchLeads();
     
     // Add realtime subscription for leads
-    const channel = supabase
-      .channel('pipeline-leads-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'leads' },
-        () => {
-          fetchLeads();
-        }
-      )
-      .subscribe();
+    
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
   }, []);
 
   const updateLeadStage = async (id: string, newStage: string) => {
@@ -79,14 +68,12 @@ export default function LeadPipeline() {
     setLeads(leads.map(lead => lead.id === id ? { ...lead, stage: newStage } : lead));
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PUT',
+      
+      
+      const res = await fetch(`/api/leads/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ stage: newStage })
       });
 

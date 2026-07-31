@@ -1,9 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 
 export type User = { id: string; email: string; user_metadata?: any };
 export type Session = { user: User; access_token?: string };
+
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -58,14 +57,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let rolesData: { roleSlugs: string[]; permissions: string[] } | null = null;
 
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      prof = data;
+      const res = await fetch('/api/vps-fallback', { method: 'POST',
+        headers: { 'Content-Type': 'application/json'  },
+        credentials: 'include',
+        body: JSON.stringify({
+          table: 'profiles',
+          action: 'select',
+          select: 'id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role',
+          filters: [{ column: 'id', type: 'eq', value: userId }],
+          single: true
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (!json.error) {
+          prof = json.data;
+        }
+      }
     } catch (err: any) {
       console.error('[Auth] Profile fetch failed:', err.message || err);
     }
@@ -74,12 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let companyName = null;
       if (prof.company_id) {
         try {
-          const { data: comp } = await supabase
-            .from("companies")
-            .select("name")
-            .eq("id", prof.company_id)
-            .maybeSingle();
-          companyName = comp?.name || null;
+          const compRes = await fetch('/api/vps-fallback', { method: 'POST',
+            headers: { 'Content-Type': 'application/json'  },
+            credentials: 'include',
+            body: JSON.stringify({
+              table: 'companies',
+              action: 'select',
+              select: 'name',
+              filters: [{ column: 'id', type: 'eq', value: prof.company_id }],
+              single: true
+            })
+          });
+          if (compRes.ok) {
+            const compJson = await compRes.json();
+            companyName = compJson.data?.name || null;
+          }
         } catch (compErr) {
           companyName = "Shastika Global Impex";
         }
@@ -117,9 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startSession = async (user: User) => {
     try {
-      const res = await fetch('/api/sessions/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/sessions/start', { method: 'POST',
+        headers: { 'Content-Type': 'application/json'  },
         credentials: 'include',
         body: JSON.stringify({ user_id: user.id, email: user.email })
       });
@@ -133,9 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const endSession = async () => {
     if (!session?.user) return;
     try {
-      await fetch('/api/sessions/end', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch('/api/sessions/end', { method: 'POST',
+        headers: { 'Content-Type': 'application/json'  },
         credentials: 'include',
         body: JSON.stringify({ user_id: session.user.id })
       });
@@ -223,25 +238,25 @@ export function useAuth() {
       activeMinutes: 0,
       idleMinutes: 0,
       signOut: async () => {},
-      refresh: async () => {},
-    } as AuthCtx;
+      refresh: async () => {}
+      } as AuthCtx;
   }
   return ctx;
 }
 
 export function useCan() {
-  const { permissions } = useAuth();
+  const { permissions , session } = useAuth();
   return (code: string) => permissions.has(code);
 }
 
 export function useIsAdminOrManager() {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs , session } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   return slugs.includes("admin") || slugs.includes("manager");
 }
 
 export function useCanManageApprovals() {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs , session } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   return slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
 }

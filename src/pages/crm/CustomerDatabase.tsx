@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,8 +25,8 @@ const COLORS = {
   green: "#3fb950",
   textPrimary: "#e6edf3",
   textSecondary: "#8b949e",
-  textMuted: "#484f58",
-};
+  textMuted: "#484f58"
+      };
 
 const Badge = ({ label, color = COLORS.accent }: any) => (
   <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
@@ -72,7 +72,7 @@ const TabButton = ({ active, label, onClick }: any) => (
 );
 
 function CustomerDatabase() {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs , session } = useAuth();
   const isAdmin = roleSlugs.has("admin");
   const isManager = roleSlugs.has("manager");
   const hasSecurityAccess = isAdmin || isManager;
@@ -94,10 +94,9 @@ function CustomerDatabase() {
   const fetchLeads = async () => {
     setLoadingData(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      
+      
+      const res = await fetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       const data = await res.json();
@@ -118,12 +117,11 @@ function CustomerDatabase() {
     if (!hasSecurityAccess) return;
     const fetchTeam = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         if (!session?.user?.id) return;
         
-        const res = await fetch('/api/employees', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
+        const res = await fetch('/api/employees', { credentials: 'include'
+      });
         if (!res.ok) throw new Error("Failed to fetch team members");
         const profiles = await res.json();
           
@@ -147,28 +145,28 @@ function CustomerDatabase() {
     const fetchDetails = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("No active session");
-        const authHeader = { 'Authorization': `Bearer ${session.access_token}` };
+        
+        
+        const authHeader = {  };
 
         // Inquiries (filter all active leads of same company)
-        const leadsRes = await fetch('/api/leads', { headers: authHeader });
+        const leadsRes = await fetch('/api/leads', { headers: authHeader  });
         const allLeads = leadsRes.ok ? await leadsRes.json() : [];
         const inqData = allLeads.filter((l: any) => l.company_name === selected.company_name && !l.is_deleted);
         setInquiries(inqData);
 
         // Quotations
-        const qRes = await fetch(`/api/leads/${selected.id}/quotations`, { headers: authHeader });
+        const qRes = await fetch(`/api/leads/${selected.id}/quotations`, { headers: authHeader  });
         const qData = qRes.ok ? await qRes.json() : [];
         setQuotations(qData);
 
         // Follow Ups
-        const followRes = await fetch(`/api/leads/${selected.id}/follow-ups`, { headers: authHeader });
+        const followRes = await fetch(`/api/leads/${selected.id}/follow-ups`, { headers: authHeader  });
         const followData = followRes.ok ? await followRes.json() : [];
         setFollowUps(followData);
 
         // Activity Logs
-        const actRes = await fetch(`/api/leads/${selected.id}/activities`, { headers: authHeader });
+        const actRes = await fetch(`/api/leads/${selected.id}/activities`, { headers: authHeader  });
         const actData = actRes.ok ? await actRes.json() : [];
         setActivities(actData);
       } catch (err: any) {
@@ -184,14 +182,12 @@ function CustomerDatabase() {
   const handleReassign = async (newAssignee: string) => {
     if (!selected) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No active session");
-      const res = await fetch(`/api/leads/${selected.id}`, {
-        method: 'PUT',
+      
+      
+      const res = await fetch(`/api/leads/${selected.id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ assigned_to: newAssignee })
       });
       if (!res.ok) throw new Error("Failed to reassign lead");

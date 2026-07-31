@@ -27,7 +27,7 @@ import {
   X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { 
@@ -68,8 +68,8 @@ import {
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger
+      } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
@@ -78,16 +78,16 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TableRow
+      } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DialogTrigger
+      } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -201,9 +201,8 @@ export default function Reports() {
   const fetchRawData = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser?.company_id || ''}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser?.company_id || ''}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch raw data");
       const data = await res.json();
@@ -233,7 +232,7 @@ export default function Reports() {
     
     try {
       // Intentionally defaulting to frontend calculations using rawDbData
-      // to avoid Supabase RPCs after VPS migration.
+      
       setUseBackendRPC(false);
     } catch (err) {
       console.warn("Backend RPC reports not found or failed, falling back to frontend calculations");
@@ -262,14 +261,12 @@ export default function Reports() {
   const handleSaveTargets = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const promises = Object.entries(targetsToUpdate).map(([id, target]) => {
-        return fetch(`/api/employees/${id}`, {
-          method: 'PUT',
+        return fetch(`/api/employees/${id}`, { method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
+            'Content-Type': 'application/json'
+      },
           body: JSON.stringify({ monthly_target: Number(target) })
         });
       });
@@ -380,7 +377,7 @@ export default function Reports() {
         newCustomersAcquired: Number(weeklyReportBackend.new_customers_acquired || 0),
         revenueGenerated: Number(weeklyReportBackend.revenue_generated || 0),
         targetAmount: Number(weeklyReportBackend.target_amount || 0),
-        targetAchievedPercentage: Number(weeklyReportBackend.target_achieved_percentage || 0),
+        targetAchievedPercentage: Number(weeklyReportBackend.target_achieved_percentage || 0)
       };
     }
 
@@ -485,7 +482,7 @@ export default function Reports() {
         newClientsAcquired: Number(monthlyReportBackend.new_clients_acquired || 0),
         repeatCustomersCount: Number(monthlyReportBackend.repeat_customers_count || 0),
         targetAmount: Number(monthlyReportBackend.target_amount || 0),
-        targetAchievedPercentage: Number(monthlyReportBackend.target_achieved_percentage || 0),
+        targetAchievedPercentage: Number(monthlyReportBackend.target_achieved_percentage || 0)
       };
     }
 
@@ -1959,13 +1956,11 @@ export default function Reports() {
                 };
               }
 
-              const { data: { session } } = await supabase.auth.getSession();
-              const res = await fetch('/api/analytics/daily_reports', {
-                method: 'POST',
+              
+              const res = await fetch('/api/analytics/daily_reports', { method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session?.access_token}`
-                },
+                  'Content-Type': 'application/json'
+      },
                 body: JSON.stringify(payload)
               });
               

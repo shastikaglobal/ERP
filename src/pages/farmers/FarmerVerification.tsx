@@ -30,7 +30,7 @@ export const FarmerVerification: React.FC = () => {
         bankStatus: 'Pending',
         locationStatus: 'Pending',
         landStatus: 'Pending',
-        landArea: f.farm_area || 'Not Provided',
+        landArea: f.farm_area || 'Not Provided'
       }));
       setLocalData(mapped);
     }

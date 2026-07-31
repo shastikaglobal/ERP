@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -23,10 +23,10 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_invoiced', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const { data, error } = await supabase
-        .from('export_orders')
-        .select('total_amount')
-        .eq('company_id', profile.company_id);
+      const res = await fetch('/api/orders', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for export_orders');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return (data || []).reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
     },
@@ -38,11 +38,10 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_received', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const { data, error } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('company_id', profile.company_id)
-        .in('status', ['Received', 'Completed', 'paid', 'Paid']);
+      const res = await fetch('/api/payments', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for payments');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return (data || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
     },
@@ -54,11 +53,10 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_pending', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const { data, error } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('company_id', profile.company_id)
-        .in('status', ['Pending', 'Unpaid', 'unpaid']);
+      const res = await fetch('/api/payments', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for payments');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return (data || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
     },
@@ -69,9 +67,11 @@ export default function FinanceTallyDashboard() {
   const { data: journalCount = 0 } = useQuery({
     queryKey: ['exec_journal_count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('journal_entries')
-        .select('*', { count: 'exact', head: true });
+      const res = await fetch('/api/journal_entries', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for journal_entries');
+      const data = await res.json();
+      const count = data.length || 0;
+      const error = null;
       if (error) throw error;
       return count || 0;
     }
@@ -82,12 +82,10 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_recent_payments', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const res = await fetch('/api/payments', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for payments');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return data || [];
     },
@@ -98,12 +96,10 @@ export default function FinanceTallyDashboard() {
   const { data: recentJournals = [] } = useQuery({
     queryKey: ['exec_recent_journals'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('journal_entries')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const res = await fetch('/api/journal_entries', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for journal_entries');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return data || [];
     }

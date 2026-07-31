@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function ContainerTracking() {
-  const { profile } = useAuth();
+  const { profile , session } = useAuth();
   const [containers, setContainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,13 +18,13 @@ export default function ContainerTracking() {
 
     const fetchContainers = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const [containersRes, shipmentsRes] = await Promise.all([
-          fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers }),
-          fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers })
+          fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  }),
+          fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  })
         ]);
 
         if (!containersRes.ok || !shipmentsRes.ok) {
@@ -47,48 +47,14 @@ export default function ContainerTracking() {
               ? shipment?.destination_port 
               : shipment?.status === "In Transit" 
                 ? "At sea" 
-                : shipment?.origin_port || "Unknown Location",
-          };
+                : shipment?.origin_port || "Unknown Location"
+      };
         });
 
         setContainers(formattedData);
       } catch (err: any) {
-        console.error("Containers API load failed, trying Supabase fallback...", err);
-        try {
-          const { data, error } = await supabase
-            .from("export_containers")
-            .select(`
-              *,
-              export_shipments (
-                shipment_number,
-                origin_port,
-                destination_port,
-                status
-              )
-            `)
-            .order('created_at', { ascending: false });
-
-          if (error) throw error;
-
-          const formattedData = (data || []).map(c => ({
-            dbId: c.id,
-            id: c.container_number,
-            shipmentId: c.export_shipments?.shipment_number || "Unknown",
-            type: c.container_type,
-            weight: c.weight_kg,
-            status: c.status || "Pending",
-            location: c.export_shipments?.status === "Delivered" 
-              ? c.export_shipments?.destination_port 
-              : c.export_shipments?.status === "In Transit" 
-                ? "At sea" 
-                : c.export_shipments?.origin_port || "Unknown Location",
-          }));
-
-          setContainers(formattedData);
-        } catch (supErr: any) {
-          console.error("Supabase fallback error:", supErr);
-          toast.error("Failed to load containers: " + (supErr.message || supErr));
-        }
+        console.error("Containers API load failed:", err);
+        toast.error("Failed to load containers: " + (err.message || err));
       } finally {
         setLoading(false);
       }
@@ -99,25 +65,18 @@ export default function ContainerTracking() {
 
   const updateContainer = async (id: string, field: string, value: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`
+        'Content-Type': 'application/json'
       };
       
-      const res = await fetch(`/api/finance/export_containers/${id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/finance/export_containers/${id}`, { method: 'PUT',
         headers,
-        body: JSON.stringify({ [field]: value })
+        body: JSON.stringify({ [field]: value  })
       });
 
       if (!res.ok) {
-        // Fallback to direct supabase update
-        const { error } = await supabase
-          .from("export_containers")
-          .update({ [field]: value })
-          .eq("id", id);
-        if (error) throw error;
+        throw new Error("Failed to update container");
       }
       
       toast.success(`Container ${field} updated`);

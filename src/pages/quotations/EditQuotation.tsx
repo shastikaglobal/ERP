@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -103,8 +103,8 @@ export default function EditQuotation() {
 
       try {
         setLoading(true);
-        const leadsQuery = supabase.from('leads').select('*').order('created_at', { ascending: false });
-        let productsQuery = supabase.from('products').select('*');
+        const leadsQuery = fetch('/api/crm/leads', { credentials: 'include' }).then(r => r.json());
+        let productsQuery = fetch('/api/products', { credentials: 'include' }).then(r => r.json());
 
         if (profile?.company_id) {
           productsQuery = productsQuery.eq('company_id', profile.company_id);
@@ -114,8 +114,8 @@ export default function EditQuotation() {
         const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([
           leadsQuery,
           productsQuery,
-          supabase.from('container_types').select('name').order('name'),
-          supabase.from('packaging_types').select('name').order('name')
+          fetch('/api/settings/container_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+          fetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
         ]);
 
         if (leadsRes.data) setLeadsList(leadsRes.data);
@@ -135,10 +135,9 @@ export default function EditQuotation() {
         if (pkgsRes.data) setPackagingTypesList(pkgsRes.data);
 
         // Load quotation via API
-        const { data: { session } } = await supabase.auth.getSession();
-        const quoteRes = await fetch(`/api/quotations/${id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        
+        const quoteRes = await fetch(`/api/quotations/${id}`, { credentials: 'include'
+      });
         if (!quoteRes.ok) throw new Error("Failed to load quotation");
         const q = await quoteRes.json();
         
@@ -168,9 +167,8 @@ export default function EditQuotation() {
         }
 
         // Load items via API
-        const itemsRes = await fetch(`/api/quotations/${id}/items`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const itemsRes = await fetch(`/api/quotations/${id}/items`, { credentials: 'include'
+      });
         if (itemsRes.ok) {
           const itemsData = await itemsRes.json();
           const loadedItems = itemsData.map((i: any) => ({
@@ -195,7 +193,7 @@ export default function EditQuotation() {
   }, [profile?.company_id, id]);
 
   const loadPackagingTypes = async () => {
-    const { data } = await supabase.from('packaging_types').select('name').order('name');
+    const { data } = await fetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }));
     if (data) setPackagingTypesList(data);
   };
 
@@ -205,7 +203,8 @@ export default function EditQuotation() {
 
     setSavingPkg(true);
     try {
-      const { error } = await supabase.from("packaging_types").insert({ name: newPkgName });
+      const res = await fetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
+      const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       toast.success("New packaging type added successfully");
       setIsPkgModalOpen(false);
@@ -242,35 +241,11 @@ export default function EditQuotation() {
     try {
       // 1. Find or Create Customer
       let customerId = null;
-      const { data: existingCust } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('company_id', profile!.company_id)
-        .eq('name', customerName)
-        .limit(1);
+      const existingCustRes = await fetch(`/api/customers?lead_id=${quotationData.lead_id}`, { credentials: 'include' });
+      const existingCustArr = await existingCustRes.json().catch(() => []);
+      const existingCust = existingCustArr[0];
 
-      if (existingCust && existingCust.length > 0) {
-        customerId = existingCust[0].id;
-        await supabase
-          .from('customers')
-          .update({
-            address: customerAddress || null,
-            phone: customerPhone || null
-          })
-          .eq('id', customerId);
-      } else {
-        const { data: custData, error: custErr } = await supabase
-          .from('customers')
-          .insert({
-            company_id: profile!.company_id,
-            name: customerName,
-            address: customerAddress || null,
-            phone: customerPhone || null
-          })
-          .select('id').single();
-
-        if (!custErr && custData) customerId = custData.id;
-      }
+        if (existingCust) { customerId = existingCust.id; }
 
       // 2. Update Quotation and Items via API
       const quotationPayload = {
@@ -320,13 +295,11 @@ export default function EditQuotation() {
         hsn_code: i.hsn_code
       }));
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ 
           quotation: quotationPayload, 
           itemsToUpdate, 

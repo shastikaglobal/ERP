@@ -70,8 +70,8 @@ export default function FarmerRatingPage() {
       totalEvaluated: data.length,
       averageRating: avgScore,
       excellent: data.filter(d => d.status === 'Excellent').length,
-      needsImprovement: data.filter(d => d.status === 'Poor' || d.status === 'Average').length,
-    };
+      needsImprovement: data.filter(d => d.status === 'Poor' || d.status === 'Average').length
+      };
   }, [data]);
 
   const filteredData = useMemo(() => {

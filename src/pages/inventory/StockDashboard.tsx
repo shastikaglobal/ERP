@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { LowStockSwiper } from "@/components/inventory/LowStockSwiper";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 export default function StockDashboard() {
   const queryClient = useQueryClient();
+  const { session, profile } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,9 +34,9 @@ export default function StockDashboard() {
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data: { session: __session_sel } } = await supabase.auth.getSession();
+
         const __res_sel = await fetch(`/api/inventory/products`, {
-          headers: { 'Authorization': `Bearer ${__session_sel?.access_token}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
         const error = __res_sel.ok ? null : new Error('Select failed');
@@ -47,9 +48,9 @@ export default function StockDashboard() {
   const { data: warehouses, isLoading: isLoadingWarehouses } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session: __session_sel } } = await supabase.auth.getSession();
+
         const __res_sel = await fetch(`/api/warehouse/warehouses`, {
-          headers: { 'Authorization': `Bearer ${__session_sel?.access_token}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
         const error = __res_sel.ok ? null : new Error('Select failed');
@@ -62,27 +63,16 @@ export default function StockDashboard() {
     queryKey: ["inventory_batches"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("inventory_batches")
-          .select(`
-            id, 
-            lot_number, 
-            quantity_kg, 
-            quantity_remaining_kg, 
-            grade, 
-            moisture_pct, 
-            received_date, 
-            expiry_date,
-            quantity_reserved_kg,
-            is_export_ready,
-            status,
-            product:products(name, sku),
-            warehouse:warehouses(name)
-          `)
-          .order("received_date", { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const res = await fetch('/api/inventory/inventory_batches', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (!res.ok) throw new Error('Fetch failed');
+        const data = await res.json();
+        return (data || []).map((batch: any) => ({
+          ...batch,
+          product: batch.products,
+          warehouse: batch.warehouses
+        }));
       } catch (err) {
         console.error("Inventory fetch error:", err);
         throw err;
@@ -99,34 +89,25 @@ export default function StockDashboard() {
 
     setIsSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      // Get company_id from profile
-      const { data: profile } = await (async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(`/api/inventory/profiles`, {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
-          });
-          return { data: res.ok ? await res.json() : null };
-        })().eq('id', userId).single();
-
-      const { error } = await supabase.from("inventory_batches").insert({
-        company_id: profile?.company_id,
-        lot_number: lotNumber,
-        product_id: productId,
-        warehouse_id: warehouseId,
-        quantity_kg: Number(quantity),
-        quantity_remaining_kg: Number(quantity),
-        grade,
-        moisture_pct: Number(moisture),
-        expiry_date: expiryDate || null,
-        is_export_ready: isExportReady,
-        status: 'pending_qc',
-        received_date: new Date().toISOString().split('T')[0]
+      const res = await fetch('/api/inventory/inventory_batches', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify([{
+          company_id: profile?.company_id,
+          lot_number: lotNumber,
+          product_id: productId,
+          warehouse_id: warehouseId,
+          quantity_kg: Number(quantity),
+          quantity_remaining_kg: Number(quantity),
+          grade,
+          moisture_pct: Number(moisture),
+          expiry_date: expiryDate || null,
+          is_export_ready: isExportReady,
+          status: 'pending_qc',
+          received_date: new Date().toISOString().split('T')[0]
+        }])
       });
-
-      if (error) throw error;
+      if (!res.ok) throw new Error('Insert failed');
 
       toast.success("Batch added to inventory");
       setIsDialogOpen(false);

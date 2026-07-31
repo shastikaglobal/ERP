@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Loader2, Monitor, Globe, Clock, User, Shield, ChevronRight } from "lucide-react";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import SectionHeader from "../../components/SectionHeader";
@@ -26,8 +26,8 @@ const COLORS = {
   green: "#3fb950",
   textPrimary: "#e6edf3",
   textSecondary: "#8b949e",
-  textMuted: "#484f58",
-};
+  textMuted: "#484f58"
+      };
 
 const Badge = ({ label, color = COLORS.accent }) => (
   <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
@@ -51,19 +51,10 @@ export default function EmployeeActivity({ hideHeader = false }: { hideHeader?: 
 
   const fetchData = async () => {
     try {
-      const [
-        { data: profilesData },
-        { data: sessionsData },
-        { data: userRolesData }
-        ] = await Promise.all([
-          supabase.from("profiles" as any).select("id, full_name, avatar_url"),
-          supabase.from("active_sessions" as any).select("*").neq("is_deleted", true),
-          supabase.from("user_roles" as any).select("*")
-        ]);
-
-        const profiles = (profilesData || []) as any[];
-        const sessions = (sessionsData || []) as any[];
-        const userRoles = (userRolesData || []) as any[];
+      const res = await fetch("/api/crm/employee-activities", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch employee activities");
+      
+      const { profiles = [], sessions = [], userRoles = [] } = await res.json();
 
       if (!profiles) return;
 
@@ -130,27 +121,10 @@ export default function EmployeeActivity({ hideHeader = false }: { hideHeader?: 
   useEffect(() => {
     fetchData();
 
-    // Subscribe to active_sessions changes in real-time
-    const channel = supabase
-      .channel("active_sessions_realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "active_sessions"
-        },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
-
-    // Fallback polling (every 60s)
+    // Polling (every 60s) since realtime is removed
     const interval = setInterval(fetchData, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, []);

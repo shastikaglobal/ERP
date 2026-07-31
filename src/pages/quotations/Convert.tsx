@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,9 +20,8 @@ export default function ConvertQuotation() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/quotations/approved', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch('/api/quotations/approved', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch approved quotations");
       
@@ -54,15 +53,13 @@ export default function ConvertQuotation() {
       const productSummary = quote.items?.map((i: any) => i.products?.name || 'Product').join(", ").substring(0, 100) || 'Export Goods';
       const mainUnit = quote.items?.[0]?.products?.unit || 'kg';
 
-      const { data: { session } } = await supabase.auth.getSession();
+      
 
       // 1. Create Order via VPS API
-      const orderRes = await fetch('/api/orders', {
-        method: 'POST',
+      const orderRes = await fetch('/api/orders', { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           company_id: profile!.company_id,
           customer_name: quote.customer?.name || 'Unknown',
@@ -89,12 +86,10 @@ export default function ConvertQuotation() {
       const order = await orderRes.json();
 
       // 2. Update Quotation Status
-      const res = await fetch(`/api/quotations/${quote.id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/quotations/${quote.id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ quotation: { status: 'Converted' } })
       });
       if (!res.ok) throw new Error("Failed to update quotation status");

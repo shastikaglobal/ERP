@@ -13,7 +13,7 @@ import {
     FileSpreadsheet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -33,10 +33,9 @@ export default function RevenueAnalytics() {
         if (!profile?.company_id) return;
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const res = await fetch(`/api/analytics/reports_raw?company_id=${profile.company_id}`, {
-                headers: { 'Authorization': `Bearer ${session?.access_token}` }
-            });
+            
+            const res = await fetch(`/api/analytics/reports_raw?company_id=${profile.company_id}`, { credentials: 'include'
+      });
             if (!res.ok) throw new Error("Failed to fetch raw data");
             const rawData = await res.json();
 

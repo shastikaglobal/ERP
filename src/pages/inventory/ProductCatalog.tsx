@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,13 +13,12 @@ export default function ProductCatalog() {
   const nav = useNavigate();
   const queryClient = useQueryClient();
 
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!window.confirm("Delete this product? This will hide it from the app.")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${session?.access_token}` },
@@ -36,13 +34,13 @@ export default function ProductCatalog() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/products", {
         headers: { "Authorization": `Bearer ${session?.access_token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json() as Promise<any[]>;
     },
+    enabled: !!session?.access_token,
   });
   return (
     <div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 
 export type AppNotification = {
@@ -60,18 +60,9 @@ export function useNotifications() {
     // Use a unique channel name to avoid Realtime 'already subscribed' crashes
     // during React StrictMode double mounts or fast refreshes.
     const channelId = `notifications-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const channel = supabase
-      .channel(channelId)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "app_notifications" },
-        () => fetchNotifications()
-      )
-      .subscribe();
+    
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
   }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
