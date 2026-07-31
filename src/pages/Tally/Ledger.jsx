@@ -4,7 +4,6 @@ import { StatCard } from '../../components/shared/StatCard'
 import { Tag } from '../../components/ui/tag'
 import { ledgerEntries, fmt } from '../../data/mockData'
 import { Download } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 
 const ACCOUNTS = ['Sales Account','Cash Account','Bank — HDFC','Raj Exports','Purchase Account','CGST Payable','Salary Expense','Capital Account']
 

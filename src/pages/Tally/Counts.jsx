@@ -7,8 +7,7 @@ import {
   BookOpen, List, Scale, Users, ShoppingCart, FileCheck,
   CheckCircle, Clock, AlertCircle
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-
+import { useAuth } from '../../hooks/useAuth'
 
 
 const VoucherRow = ({ label, value, color }) => (
@@ -24,6 +23,7 @@ const VoucherRow = ({ label, value, color }) => (
 )
 
 export default function Counts() {
+  const { session } = useAuth()
   const [counts, setCounts] = useState({
     journals: { total: 0, posted: 0, draft: 0 },
     ledgers: { total: 0, active: 0 },
@@ -82,8 +82,7 @@ export default function Counts() {
     const loadCounts = async () => {
       try {
         // Fetch all counts excluding soft-deleted records
-        const { data: { session: __s1 } } = await supabase.auth.getSession();
-        const res = await fetch('/api/finance/counts', { headers: { 'Authorization': `Bearer ${__s1?.access_token}` } });
+        const res = await fetch('/api/finance/counts', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
         if (!res.ok) throw new Error("Counts fetch failed");
         const data = await res.json();
 
