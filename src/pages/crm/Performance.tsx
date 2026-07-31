@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { format, startOfDay, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useIsAdminOrManager } from "@/hooks/useAuth";
+
 import {
   Popover,
   PopoverContent,

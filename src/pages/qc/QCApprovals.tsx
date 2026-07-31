@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 
 import { toast } from "sonner";
-import { useAuth, useCan } from "@/hooks/useAuth";
+
 
 export default function QCApprovals() {
   const qc = useQueryClient();

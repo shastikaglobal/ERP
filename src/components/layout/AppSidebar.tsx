@@ -4,7 +4,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth, useCan } from "@/hooks/useAuth";
+
 import { vpsDb } from "@/lib/vpsDb";
 
 import { AIChatPanel } from "./AIChatPanel";

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { useCan, useAuth } from "@/hooks/useAuth";
+
 
 export default function QualityControlWarehouse() {
   const nav = useNavigate();

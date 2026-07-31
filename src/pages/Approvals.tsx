@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { vpsDb } from "@/lib/vpsDb";
 
-import { useAuth, useCanManageApprovals } from "@/hooks/useAuth";
+
 import { PageHeader } from "@/components/shared/PageHeader";
 
 type ProfileRow = {

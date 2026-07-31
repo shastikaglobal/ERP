@@ -30,7 +30,7 @@ const requireAuth = async (req, res, next) => {
       [decoded.sub]
     );
 
-    if (rows.length === 0 || !rows[0].is_active) {
+    if (rows.length === 0 || rows[0].is_active === false) {
       return res.status(401).json({ error: "User account deactivated or not found" });
     }
 

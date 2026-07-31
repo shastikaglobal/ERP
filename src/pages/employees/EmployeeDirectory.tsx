@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { vpsDb } from "@/lib/vpsDb";
 
 import { toast } from "sonner";
-import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
+
 
 type ProfileRow = {
   id: string;

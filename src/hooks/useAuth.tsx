@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export type User = { id: string; email: string; user_metadata?: any };
 export type Session = { user: User; access_token?: string };
-
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -47,18 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<Set<string>>(new Set());
   const [roleSlugs, setRoleSlugs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [onlineUsers] = useState<string[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [activeMinutes, setActiveMinutes] = useState(0);
-  const [idleMinutes, setIdleMinutes] = useState(0);
+  const [activeMinutes] = useState(0);
+  const [idleMinutes] = useState(0);
 
   const loadUserData = async (userId: string) => {
     let prof: any = null;
-    let rolesData: { roleSlugs: string[]; permissions: string[] } | null = null;
 
     try {
-      const res = await fetch('/api/vps-fallback', { method: 'POST',
-        headers: { 'Content-Type': 'application/json'  },
+      const res = await fetch('/api/vps-fallback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           table: 'profiles',
@@ -72,7 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const json = await res.json();
         if (!json.error) {
           prof = json.data;
+        } else {
+          console.warn('[Auth] Profile API error:', json.error);
         }
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.error(`[Auth] Profile fetch HTTP ${res.status}:`, errText);
       }
     } catch (err: any) {
       console.error('[Auth] Profile fetch failed:', err.message || err);
@@ -82,8 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let companyName = null;
       if (prof.company_id) {
         try {
-          const compRes = await fetch('/api/vps-fallback', { method: 'POST',
-            headers: { 'Content-Type': 'application/json'  },
+          const compRes = await fetch('/api/vps-fallback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
               table: 'companies',
@@ -97,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const compJson = await compRes.json();
             companyName = compJson.data?.name || null;
           }
-        } catch (compErr) {
+        } catch {
           companyName = "Shastika Global Impex";
         }
       }
@@ -107,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         company_name: companyName
       });
     } else {
+      // Profile not found — set a minimal placeholder so the app doesn't loop
       setProfile(null);
     }
 
@@ -134,8 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startSession = async (user: User) => {
     try {
-      const res = await fetch('/api/sessions/start', { method: 'POST',
-        headers: { 'Content-Type': 'application/json'  },
+      const res = await fetch('/api/sessions/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ user_id: user.id, email: user.email })
       });
@@ -149,8 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const endSession = async () => {
     if (!session?.user) return;
     try {
-      await fetch('/api/sessions/end', { method: 'POST',
-        headers: { 'Content-Type': 'application/json'  },
+      await fetch('/api/sessions/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ user_id: session.user.id })
       });
@@ -173,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await loadUserData(user.id);
           startSession(user);
         } else if (res.status === 401) {
-          // Attempt refresh
+          // Attempt token refresh
           const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
           if (refreshRes.ok) {
             const retryRes = await fetch('/api/auth/me', { credentials: 'include' });
@@ -186,6 +194,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return;
             }
           }
+          setSession(null);
+        } else {
           setSession(null);
         }
       } catch (err) {
@@ -209,7 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setPermissions(new Set());
     setRoleSlugs(new Set());
-    // Use window.location instead of navigate so the app fully reloads and clears state
     window.location.href = "/auth";
   };
 
@@ -220,12 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-
 export function useAuth() {
   const ctx = useContext(Ctx);
   if (!ctx) {
-    // Fail-safe: avoid throwing during HMR/network blips — return a minimal fallback
-     
     console.warn("useAuth used outside AuthProvider — returning fallback context");
     return {
       session: null,
@@ -233,30 +239,31 @@ export function useAuth() {
       profile: null,
       permissions: new Set<string>(),
       roleSlugs: new Set<string>(),
-      loading: true,
+      loading: false,
       onlineUsers: [],
       activeMinutes: 0,
       idleMinutes: 0,
       signOut: async () => {},
-      refresh: async () => {}
-      } as AuthCtx;
+      refresh: async () => {},
+      updateSessionState: (_user: User) => {}
+    } as AuthCtx;
   }
   return ctx;
 }
 
 export function useCan() {
-  const { permissions , session } = useAuth();
+  const { permissions } = useAuth();
   return (code: string) => permissions.has(code);
 }
 
 export function useIsAdminOrManager() {
-  const { roleSlugs , session } = useAuth();
+  const { roleSlugs } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   return slugs.includes("admin") || slugs.includes("manager");
 }
 
 export function useCanManageApprovals() {
-  const { roleSlugs , session } = useAuth();
+  const { roleSlugs } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   return slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
 }

@@ -12,6 +12,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const streamRef = useRef<MediaStream | null>(null);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   const hasStarted = useRef(false);
+  const profileRetryCount = useRef(0);
 
   // Broadcast this user's screen if requested by an admin
   useScreenBroadcaster(profile?.id, activeStream);
@@ -19,7 +20,16 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (session && !profile && !loading) {
-      interval = setInterval(() => refresh(), 1500);
+      if (profileRetryCount.current >= 10) {
+        console.warn('[ProtectedRoute] Max profile load retries reached. Stopping polling.');
+        return;
+      }
+      interval = setInterval(() => {
+        profileRetryCount.current += 1;
+        refresh();
+      }, 1500);
+    } else {
+      profileRetryCount.current = 0;
     }
     return () => clearInterval(interval);
   }, [session, profile, loading, refresh]);
