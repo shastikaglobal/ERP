@@ -181,17 +181,23 @@ export default function Mailbox() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("zoho-office-integrator", {
-        body: {
+      const res = await fetch("/api/zoho/office-integrator", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({
           path: att.path,
           filename: att.filename,
           displayName: profile?.full_name || profile?.email || "User",
           userId: profile?.id || "user-id",
-        }
+        })
       });
-
-      if (error || !data?.success) {
-        throw new Error(error?.message || data?.error || "Failed to create Zoho editor session");
+      const data = await res.json();
+      
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Failed to create Zoho editor session");
       }
 
       if (data?.document_url) {

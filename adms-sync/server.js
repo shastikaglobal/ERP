@@ -166,6 +166,174 @@ const dispatchRoutes = require('./routes/dispatch');
 const invoicesRoutes = require('./routes/invoices');
 const mailboxRoutes = require('./routes/mailbox');
 const productsRoutes = require('./routes/products');
+const WebSocket = require('ws');
+globalThis.WebSocket = WebSocket;
+
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
+// Polyfill fetch for older Node.js versions
+if (!globalThis.fetch) {
+  globalThis.fetch = require('node-fetch');
+}
+
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
+const db = require('./db');
+
+const path = require('path');
+const fs = require('fs');
+
+let dir = __dirname;
+let envPath;
+while (dir) {
+  const check = path.join(dir, '.env');
+  if (fs.existsSync(check)) {
+    envPath = check;
+    break;
+  }
+  const parent = path.dirname(dir);
+  if (parent === dir) break;
+  dir = parent;
+}
+if (envPath) {
+  require('dotenv').config({ path: envPath });
+} else {
+  require('dotenv').config();
+}
+
+const app = express();
+const PORT = process.env.PORT || 8082;
+
+// Initialize Supabase Client (Removed)
+
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+app.use(express.json());
+app.use(cookieParser());
+
+// Strict CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://localhost:8080', 
+  process.env.FRONTEND_URL 
+].filter(Boolean);
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // Limit each IP to 100 requests per `window` (here, per minute)
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per `window` (here, per 15 minutes)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts, please try again after 15 minutes." }
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+
+// Handle JSON parse errors from body-parser to avoid crashing on malformed payloads
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.warn('⚠️ Invalid JSON payload received:', err.message);
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next(err);
+});
+
+app.use((req, res, next) => {
+  if (req.url.includes('/api/emails') && req.method === 'POST') {
+    require('fs').appendFileSync('requests.log', JSON.stringify({ body: req.body, time: new Date() }) + '\n');
+  }
+  next();
+});
+
+// --- Vehicles & Drivers Top Level APIs ---
+app.get('/api/vehicles', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT id, vehicle_number, vehicle_type FROM vehicles WHERE is_active = true AND is_deleted IS NOT TRUE ORDER BY vehicle_number');
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/vehicles error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to fetch vehicles' });
+  }
+});
+
+app.post('/api/vehicles', async (req, res) => {
+  try {
+    const { vehicle_number, vehicle_type } = req.body;
+    if (!vehicle_number) return res.status(400).json({ error: 'vehicle_number is required' });
+    const insertQuery = `INSERT INTO vehicles (vehicle_number, vehicle_type, is_active) VALUES ($1, $2, true) RETURNING id, vehicle_number, vehicle_type`;
+    const { rows } = await db.query(insertQuery, [vehicle_number, vehicle_type || null]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/vehicles error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to create vehicle' });
+  }
+});
+
+app.get('/api/drivers', async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT id, driver_name, COALESCE(license_number, '') AS license_number FROM drivers WHERE is_active = true AND is_deleted IS NOT TRUE ORDER BY driver_name");
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/drivers error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to fetch drivers' });
+  }
+});
+
+app.post('/api/drivers', async (req, res) => {
+  try {
+    const driver_name = req.body.driver_name || req.body.name || req.body.driverName;
+    const license_number = req.body.license_number || req.body.licenseNumber || null;
+    if (!driver_name) return res.status(400).json({ error: 'driver_name is required' });
+    const insertQuery = `INSERT INTO drivers (driver_name, license_number, is_active) VALUES ($1, $2, true) RETURNING id, driver_name, license_number`;
+    const { rows } = await db.query(insertQuery, [driver_name, license_number]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('POST /api/drivers error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to create driver' });
+  }
+});
+
+// --- Mount API Routes ---
+const attendanceRoutes = require('./routes/attendance');
+const employeesRoutes = require('./routes/employees');
+const crmApi = require('./routes/crm_api');
+const inventoryApi = require('./routes/inventory_api');
+const followUpsRoutes = require('./routes/follow_ups');
+const crmTasksRoutes = require('./routes/crm_tasks');
+const quotationsRoutes = require('./routes/quotations');
+const warehouseRoutes = require('./routes/warehouse');
+const analyticsRoutes = require('./routes/analytics');
+const dispatchRoutes = require('./routes/dispatch');
+const invoicesRoutes = require('./routes/invoices');
+const mailboxRoutes = require('./routes/mailbox');
+const productsRoutes = require('./routes/products');
 const customersRoutes = require('./routes/customers');
 const metaRoutes = require('./routes/meta');
 const settingsRoutes = require('./routes/settings');
@@ -180,12 +348,6 @@ const procurementRoutes = require('./routes/procurement');
 const purchaseOrdersRoutes = require('./routes/purchase_orders');
 const documentsRoutes = require('./routes/documents');
 const sessionsRoutes = require('./routes/sessions');
-const shipmentsRoutes = require('./routes/shipments');
-
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/employees', employeesRoutes);
-app.use('/api/crm', crmApi);
-app.use('/api/inventory', inventoryApi);
 app.use('/api/follow-ups', followUpsRoutes);
 app.use('/api/quotations', quotationsRoutes);
 app.use('/api/warehouse', warehouseRoutes);
@@ -210,6 +372,7 @@ app.use('/api/purchase_orders', purchaseOrdersRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/shipments', shipmentsRoutes);
+app.use('/api/zoho', zohoRoutes);
 
 app.post('/api/auth/signup', async (req, res) => {
   try {

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/integrations/supabase/client';
 
 export interface ZohoTokenResponse {
   access_token: string;

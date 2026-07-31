@@ -3,7 +3,7 @@
 // Supabase client + all face attendance helper functions
 // ============================================================
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/integrations/supabase/client'
 
 // ── Put your Supabase keys here ──────────────────────────────
 // Get from: Supabase Dashboard > Settings > API
