@@ -129,7 +129,7 @@ function fixEmailBodyImages(el: HTMLDivElement | null) {
 }
 
 export default function Mailbox() {
-  const { profile, refresh, roleSlugs } = useAuth();
+  const { profile, refresh, roleSlugs, session } = useAuth();
 
   const canDownloadAttachments = roleSlugs?.has("admin") || roleSlugs?.has("manager") ||
     (profile?.requested_role && ["admin", "manager"].includes(profile.requested_role.toLowerCase()));
@@ -231,13 +231,16 @@ export default function Mailbox() {
     if (!profile?.id) return;
     setSavingSignature(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ email_signature: signatureText })
-        .eq("id", profile.id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/employees/${profile.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({ email_signature: signatureText })
+      });
+      if (!res.ok) throw new Error("Failed to save signature");
+      
       await refresh();
       toast.success("Email signature saved successfully!");
       setIsSettingsOpen(false);
@@ -618,21 +621,29 @@ export default function Mailbox() {
 
       toast.info("Sending email...", { id: `sending-${emailRow.id}`, duration: 10000 });
 
-      supabase.functions.invoke("webhook-send-email", {
-        body: { record: { ...emailRow, status: "pending" } }
-      }).then(({ error: funcError, data: funcData }) => {
-        if (funcError) {
-          console.error("Function error:", funcError);
-          toast.error("Failed to send email: " + funcError.message, { id: `sending-${emailRow.id}` });
-          setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
-        } else if (funcData && !funcData.success) {
-          console.error("Zoho Send Error:", funcData.error);
-          toast.error("Failed to send email: " + (funcData.error || "Unknown error"), { id: `sending-${emailRow.id}` });
+      fetch("/api/emails/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({ record: { ...emailRow, status: "pending" } })
+      })
+      .then(r => r.json())
+      .then((funcData) => {
+        if (!funcData || !funcData.success) {
+          console.error("Zoho Send Error:", funcData?.error);
+          toast.error("Failed to send email: " + (funcData?.error || "Unknown error"), { id: `sending-${emailRow.id}` });
           setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
         } else {
           toast.success(`✓ Sent: ${emailRow.subject || "(No Subject)"}`, { id: `sending-${emailRow.id}`, duration: 4000 });
           setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "sent" } : e));
         }
+      })
+      .catch((funcError) => {
+        console.error("Function error:", funcError);
+        toast.error("Failed to send email: " + funcError.message, { id: `sending-${emailRow.id}` });
+        setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
       });
 
       setTo(""); setCc(""); setBcc(""); setSubject(""); setContent(""); setAttachments([]);

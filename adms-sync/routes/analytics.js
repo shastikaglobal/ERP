@@ -497,15 +497,129 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
 // GET /api/analytics/activity_logs
 router.get('/activity_logs', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT id, action, user_id, user_name, actor_name, created_at 
-       FROM activity_logs 
-       ORDER BY created_at DESC 
-       LIMIT 100`
-    );
+    const { user_id, action } = req.query;
+    let query = `SELECT id, action, user_id, user_name, actor_name, created_at, module, entity FROM activity_logs WHERE 1=1`;
+    const params = [];
+    
+    if (user_id) {
+      params.push(user_id);
+      query += ` AND user_id = $${params.length}`;
+    }
+    
+    if (action) {
+      params.push(`%${action}%`);
+      query += ` AND action ILIKE $${params.length}`;
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT 100`;
+
+    const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error("Error fetching activity_logs:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// POST /api/analytics/activity_logs
+router.post('/activity_logs', requireAuth, async (req, res) => {
+  try {
+    const data = req.body;
+    // ensure user_id and actor_name if not provided
+    if (!data.user_id) data.user_id = req.user.sub;
+    
+    // Check if activity_logs or audit_logs table exists
+    const keys = Object.keys(data);
+    const columns = keys.map(k => `"${k}"`).join(', ');
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+    const values = Object.values(data);
+    
+    // We try to insert into activity_logs since that's what the backend expects
+    await db.query(
+      `INSERT INTO activity_logs (${columns}) VALUES (${placeholders})`,
+      values
+    );
+
+    // Also sync to Supabase in background
+    supabase.from('activity_logs').insert([data]).then(({error}) => {
+      if (error) console.warn('[Analytics] Sync activity_log failed:', error.message);
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error creating activity_log:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET /api/analytics/audit_logs
+router.get('/audit_logs', requireAuth, async (req, res) => {
+  try {
+    const { user_id, action, limit = 100 } = req.query;
+    
+    // Check which table to use
+    let useTable = 'audit_logs';
+    try {
+      await db.query(`SELECT id FROM audit_logs LIMIT 1`);
+    } catch(e) {
+      useTable = 'crm_audit_log';
+    }
+
+    let query = `SELECT * FROM ${useTable} WHERE 1=1`;
+    const params = [];
+    
+    if (user_id) {
+      params.push(user_id);
+      query += ` AND user_id = $${params.length}`;
+    }
+    
+    if (action) {
+      params.push(action);
+      query += ` AND action = $${params.length}`;
+    }
+    
+    query += ` ORDER BY ${useTable === 'audit_logs' ? 'timestamp' : 'created_at'} DESC LIMIT $${params.length + 1}`;
+    params.push(limit);
+
+    const { rows } = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching audit_logs:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// POST /api/analytics/audit_logs
+router.post('/audit_logs', requireAuth, async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.user_id) data.user_id = req.user.sub;
+    
+    let useTable = 'audit_logs';
+    try {
+      await db.query(`SELECT id FROM audit_logs LIMIT 1`);
+    } catch(e) {
+      useTable = 'crm_audit_log';
+    }
+
+    const keys = Object.keys(data);
+    const columns = keys.map(k => `"${k}"`).join(', ');
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+    const values = Object.values(data);
+    
+    await db.query(
+      `INSERT INTO ${useTable} (${columns}) VALUES (${placeholders})`,
+      values
+    );
+
+    // Sync to Supabase in background
+    supabase.from(useTable).insert([data]).then(({error}) => {
+      if (error) console.warn('[Analytics] Sync audit log failed:', error.message);
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error creating audit_log:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

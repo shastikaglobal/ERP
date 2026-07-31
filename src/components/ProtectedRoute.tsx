@@ -1,12 +1,12 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useScreenBroadcaster } from "@/hooks/useScreenBroadcaster";
 import { isMobileOrTablet } from "@/utils/device";
 
 export function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { session, profile, loading, refresh, roleSlugs } = useAuth();
+  const { session, profile, loading, refresh, roleSlugs, signOut } = useAuth();
   const location = useLocation();
   const [screenStatus, setScreenStatus] = useState<"idle" | "requesting" | "sharing" | "denied">("idle");
   const streamRef = useRef<MediaStream | null>(null);
@@ -47,12 +47,19 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
         (window as any).__screenStream = stream; // ← globally store
         setScreenStatus("sharing");
 
-        await (supabase.from("activity_logs") as any).insert({
-          user_id: profile.id,
-          user_name: profile.full_name || profile.email,
-          module: "screen_share",
-          event_type: "screen_share_started",
-          session_id: `ss_${Date.now()}`,
+        await fetch("/api/analytics/activity_logs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token || ""}`
+          },
+          body: JSON.stringify({
+            user_id: profile.id,
+            user_name: profile.full_name || profile.email,
+            module: "screen_share",
+            event_type: "screen_share_started",
+            session_id: `ss_${Date.now()}`,
+          })
         });
 
         stream.getVideoTracks()[0].onended = async () => {
@@ -60,12 +67,19 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
           streamRef.current = null;
           setActiveStream(null);
           (window as any).__screenStream = null;
-          await (supabase.from("activity_logs") as any).insert({
-            user_id: profile.id,
-            user_name: profile.full_name || profile.email,
-            module: "screen_share",
-            event_type: "screen_share_stopped",
-            session_id: `ss_${Date.now()}`,
+          await fetch("/api/analytics/activity_logs", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session?.access_token || ""}`
+            },
+            body: JSON.stringify({
+              user_id: profile.id,
+              user_name: profile.full_name || profile.email,
+              module: "screen_share",
+              event_type: "screen_share_stopped",
+              session_id: `ss_${Date.now()}`,
+            })
           });
         };
 
@@ -100,7 +114,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="mt-4 text-sm text-muted-foreground animate-pulse">Setting up your account...</p>
           <button
-            onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+            onClick={async () => { await signOut(); }}
             className="mt-6 text-xs text-primary hover:underline transition-all cursor-pointer font-medium"
           >
             Sign Out / Switch Account
@@ -163,12 +177,19 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
                 setActiveStream(stream);
                 (window as any).__screenStream = stream; // ← globally store
                 setScreenStatus("sharing");
-                await (supabase.from("activity_logs") as any).insert({
-                  user_id: profile.id,
-                  user_name: profile.full_name || profile.email,
-                  module: "screen_share",
-                  event_type: "screen_share_started",
-                  session_id: `ss_${Date.now()}`,
+                await fetch("/api/analytics/activity_logs", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session?.access_token || ""}`
+                  },
+                  body: JSON.stringify({
+                    user_id: profile.id,
+                    user_name: profile.full_name || profile.email,
+                    module: "screen_share",
+                    event_type: "screen_share_started",
+                    session_id: `ss_${Date.now()}`,
+                  })
                 });
                 stream.getVideoTracks()[0].onended = () => {
                   setScreenStatus("denied");
@@ -185,7 +206,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
             Try Again
           </button>
           <button
-            onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+            onClick={async () => { await signOut(); }}
             className="text-xs text-muted-foreground hover:text-primary transition-all"
           >
             Sign Out

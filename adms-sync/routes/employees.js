@@ -641,4 +641,53 @@ router.post('/:id/reset-password', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/employees/:id/preferences
+router.get('/:id/preferences', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query('SELECT * FROM user_preferences WHERE user_id = $1 LIMIT 1', [id]);
+    if (rows.length > 0) {
+      return res.json(rows[0]);
+    }
+    res.json({});
+  } catch (err) {
+    console.error('GET /api/employees/:id/preferences error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// PUT /api/employees/:id/preferences
+router.put('/:id/preferences', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // Check if exists
+    const { rows } = await db.query('SELECT id FROM user_preferences WHERE user_id = $1', [id]);
+    
+    if (rows.length > 0) {
+      // Update
+      const keys = Object.keys(updates);
+      if (keys.length > 0) {
+        const setClauses = keys.map((key, index) => `"${key}" = $${index + 1}`);
+        const values = keys.map(key => updates[key]);
+        await db.query(`UPDATE user_preferences SET ${setClauses.join(', ')} WHERE user_id = $${keys.length + 1}`, [...values, id]);
+      }
+    } else {
+      // Insert
+      updates.user_id = id;
+      const keys = Object.keys(updates);
+      const cols = keys.map(k => `"${k}"`).join(', ');
+      const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+      const values = keys.map(key => updates[key]);
+      await db.query(`INSERT INTO user_preferences (${cols}) VALUES (${placeholders})`, values);
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /api/employees/:id/preferences error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

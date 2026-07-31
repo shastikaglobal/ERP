@@ -100,44 +100,56 @@ export default function AccountSettings() {
 
     if (activeTab === 'security') {
       const fetchLoginHistory = async () => {
-        const { data } = await supabase
-          .from('activity_logs')
-          .select('*')
-          .eq('actor_id', profile.id)
-          .ilike('action', '%login%')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (data) setLoginHistory(data);
+        try {
+          const res = await fetch(`/api/analytics/activity_logs?user_id=${profile.id}&action=login`, {
+            headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setLoginHistory(data.slice(0, 5));
+          }
+        } catch (err) {
+          console.error("Failed to fetch login history", err);
+        }
       };
       fetchLoginHistory();
     }
 
     if (activeTab === 'activity') {
       const fetchActivities = async () => {
-        const { data } = await supabase
-          .from('activity_logs')
-          .select('*')
-          .eq('actor_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(15);
-        if (data) setActivityLogs(data);
+        try {
+          const res = await fetch(`/api/analytics/activity_logs?user_id=${profile.id}`, {
+            headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setActivityLogs(data.slice(0, 15));
+          }
+        } catch (err) {
+          console.error("Failed to fetch activity logs", err);
+        }
       };
       fetchActivities();
     }
 
     if (activeTab === 'preferences') {
       const fetchPreferences = async () => {
-        const { data } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', profile.id)
-          .maybeSingle();
-        if (data) {
-          setLanguage(data.language || 'English');
-          setTimezone(data.timezone || 'UTC');
-          setDateFormat(data.date_format || 'DD/MM/YYYY');
-          setTheme(data.theme || 'light');
-          setDashboardLayout(data.dashboard_layout || 'default');
+        try {
+          const res = await fetch(`/api/employees/${profile.id}/preferences`, {
+            headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Object.keys(data).length > 0) {
+              setLanguage(data.language || 'English');
+              setTimezone(data.timezone || 'UTC');
+              setDateFormat(data.date_format || 'DD/MM/YYYY');
+              setTheme(data.theme || 'light');
+              setDashboardLayout(data.dashboard_layout || 'default');
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch preferences", err);
         }
       };
       fetchPreferences();
@@ -164,11 +176,10 @@ export default function AccountSettings() {
         .from('chat-attachments')
         .getPublicUrl(filePath);
 
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${user?.access_token || ''}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ avatar_url: publicUrl })
@@ -201,11 +212,10 @@ export default function AccountSettings() {
     };
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${user?.access_token || ''}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(updates)
@@ -236,11 +246,10 @@ export default function AccountSettings() {
     setSaving(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/auth/update-password", {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${user?.access_token || ''}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ newPassword })
@@ -266,11 +275,10 @@ export default function AccountSettings() {
     if (!profile?.id) return;
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${user?.access_token || ''}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ email_signature: signature })
@@ -301,24 +309,16 @@ export default function AccountSettings() {
       dashboard_layout: dashboardLayout,
       updated_at: new Date().toISOString()
     };
-    
-    // Check if exists
-    const { data: existing } = await supabase.from('user_preferences').select('id').eq('user_id', profile.id).maybeSingle();
-    
-    let error;
-    if (existing) {
-      const res = await supabase.from('user_preferences').update(prefData).eq('user_id', profile.id);
-      error = res.error;
-    } else {
-      const res = await supabase.from('user_preferences').insert([prefData]);
-      error = res.error;
-    }
-    
-    setSaving(false);
-
-    if (error) {
-      toast.error("Failed to save preferences");
-    } else {
+    try {
+      const res = await fetch(`/api/employees/${profile.id}/preferences`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${user?.access_token || ''}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(prefData)
+      });
+      if (!res.ok) throw new Error("Failed to save");
       toast.success("Preferences saved successfully!");
       // Apply theme globally
       localStorage.setItem('ui-theme', theme);
@@ -327,6 +327,10 @@ export default function AccountSettings() {
       } else {
         document.body.classList.remove('dark');
       }
+    } catch (err) {
+      toast.error("Failed to save preferences");
+    } finally {
+      setSaving(false);
     }
   };
 

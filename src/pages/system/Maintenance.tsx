@@ -5,13 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Trash2, Loader2, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Maintenance() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [confirmText, setConfirmText] = useState("");
   const [isWiping, setIsWiping] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -28,76 +27,13 @@ export default function Maintenance() {
 
     setIsWiping(true);
     try {
-      // NOTE: HR-related tables (profiles, attendance_logs, face_embeddings, etc.) are intentionally excluded
-      // to prevent accidental permanent deletion. Use targeted archival/cleanup procedures instead.
-      // NOTE: System audit tables (app_notifications, activity_logs, audit_logs, zoho_accounts, etc.) are intentionally excluded
-      // to preserve audit trails and system configuration history. Use targeted archival/cleanup procedures instead.
-      const tablesToHardDelete = [
-        "export_containers",
-        "qc_inspections",
-        "inventory_movements",
-        "purchase_order_items"
-      ];
-
-      const tablesToSoftDelete = [
-        "export_shipments",
-        "export_orders",
-        "quotations",
-        "inventory_batches",
-        "purchase_orders",
-        "leads",
-        "farmers",
-        "suppliers",
-        "customers",
-        "user_roles"
-      ];
-
-      // 1. Hard-delete child transactional tables
-      for (const table of tablesToHardDelete) {
-        let query = supabase.from(table as any).delete();
-        
-        if (profile?.company_id) {
-          if (table !== "purchase_order_items") {
-            query = query.eq("company_id" as any, profile.company_id);
-          } else {
-            query = query.neq("id" as any, "00000000-0000-0000-0000-000000000000");
-          }
-        } else {
-          query = query.neq("id" as any, "00000000-0000-0000-0000-000000000000");
+      const res = await fetch("/api/settings/wipe", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token || ""}`
         }
-
-        const { error } = await query;
-        if (error) {
-          console.error(`Error hard-deleting data from ${table}:`, error);
-        }
-      }
-
-      // 2. Soft-delete parent/primary transactional tables
-      for (const table of tablesToSoftDelete) {
-        let query = supabase.from(table as any).update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: profile?.id
-        } as any);
-
-        if (table === "profiles") {
-          query = query.neq("id", profile?.id);
-        } else if (table === "user_roles") {
-          query = query.neq("user_id", profile?.id);
-        } else {
-          if (profile?.company_id) {
-            query = query.eq("company_id" as any, profile.company_id);
-          } else {
-            query = query.neq("id" as any, "00000000-0000-0000-0000-000000000000");
-          }
-        }
-
-        const { error } = await query;
-        if (error) {
-          console.error(`Error soft-deleting data from ${table}:`, error);
-        }
-      }
-
+      });
+      if (!res.ok) throw new Error("Failed to wipe");
       toast.success("System reset successful. All transactional data marked as deleted.");
       setIsDone(true);
       setConfirmText("");

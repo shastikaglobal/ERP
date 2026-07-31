@@ -12,7 +12,7 @@ import { Loader2, User as UserIcon } from "lucide-react";
 import { worldCurrencies } from "@/lib/currencies";
 
 export default function Settings() {
-  const { profile, roleSlugs } = useAuth();
+  const { profile, session, roleSlugs } = useAuth();
   const isAdmin = Array.from(roleSlugs).map(s => s.toLowerCase()).includes("admin");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,7 +50,6 @@ export default function Settings() {
     if (!profile?.company_id) return;
     const fetchCompany = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch("/api/settings", {
           headers: {
             "Authorization": `Bearer ${session?.access_token}`
@@ -142,7 +141,6 @@ export default function Settings() {
         .getPublicUrl(filePath);
 
       // Save to profile
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
@@ -205,7 +203,6 @@ export default function Settings() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       
       const companyRes = await fetch("/api/settings", {
         method: "PUT",

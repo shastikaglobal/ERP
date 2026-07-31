@@ -56,6 +56,18 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       console.warn("No authenticated user for audit log");
       return;
     }
+    
+    // Get token for fetch
+    let token = "";
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || "");
+          token = data.access_token;
+        } catch (e) {}
+      }
+    }
 
     // Calculate changes count
     const changesCount = entry.newValues 
@@ -117,7 +129,6 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       }
     }
 
-    // Insert audit log into the table available in the current database.
     const auditTable = await getAuditTableName();
     const insertPayload =
       auditTable === AUDIT_LOGS_TABLE
@@ -142,10 +153,20 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
             user_email: user.email ?? undefined,
           };
 
-    const { error } = await supabase.from(auditTable).insert(insertPayload);
-
-    if (error) {
-      console.error("Failed to log audit:", error);
+    try {
+      const res = await fetch("/api/analytics/audit_logs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(insertPayload)
+      });
+      if (!res.ok) {
+        console.error("Failed to log audit via API");
+      }
+    } catch(err) {
+      console.error("Failed to log audit:", err);
     }
   } catch (error) {
     console.error("Audit logging error:", error);
