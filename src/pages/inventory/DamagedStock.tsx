@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -11,38 +11,28 @@ import { toast } from "sonner";
 
 export default function DamagedStock() {
     const queryClient = useQueryClient();
+    const { session } = useAuth();
 
     const { data, isLoading, refetch } = useQuery<any[]>({
         queryKey: ["damaged_inventory"],
         queryFn: async () => {
-            const { data, error } = await (supabase as any)
-                .from("inventory_batches")
-                .select(`
-          id, 
-          lot_number, 
-          quantity_remaining_kg, 
-          grade, 
-          damaged_notes,
-          status,
-          product:products(name, sku),
-          warehouse:warehouses(name)
-        `)
-                .eq("status", "damaged")
-                .order("updated_at", { ascending: false });
-
-            if (error) throw error;
-            return data || [];
+            const res = await fetch('/api/inventory/inventory_batches', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            if (!res.ok) throw new Error('Fetch failed');
+            const data = await res.json();
+            return (data || []).filter((b: any) => b.status === "damaged");
         }
     });
 
     const handleRestore = async (id: string) => {
         try {
-            const { error } = await (supabase as any)
-                .from("inventory_batches")
-                .update({ status: "pending_qc" })
-                .eq("id", id);
-
-            if (error) throw error;
+            const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: "pending_qc" })
+            });
+            if (!res.ok) throw new Error('Update failed');
             toast.success("Batch moved back to QC for re-evaluation");
             queryClient.invalidateQueries({ queryKey: ["damaged_inventory"] });
         } catch (err: any) {
@@ -85,14 +75,14 @@ export default function DamagedStock() {
                                 render: (r: any) => (
                                     <div className="flex flex-col">
                                         <span className="font-mono text-xs font-bold text-red-400">{r.lot_number}</span>
-                                        <span className="font-semibold text-sm">{r.product?.name}</span>
+                                        <span className="font-semibold text-sm">{r.products?.name}</span>
                                     </div>
                                 )
                             },
                             {
                                 key: "wh",
                                 header: "Location",
-                                render: (r: any) => <span className="text-xs text-muted-foreground">{r.warehouse?.name || "—"}</span>
+                                render: (r: any) => <span className="text-xs text-muted-foreground">{r.warehouses?.name || "—"}</span>
                             },
                             {
                                 key: "qty",

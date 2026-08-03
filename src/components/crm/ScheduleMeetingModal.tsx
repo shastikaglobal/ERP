@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { toast } from "sonner";
 
 interface Props {
@@ -54,7 +55,7 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
   useEffect(() => {
     if (open && profile?.company_id) {
       // Fetch leads for dropdown
-      supabase
+      vpsDb
         .from("leads")
         .select("id, company, name")
         .eq("company_id", profile.company_id)
@@ -63,7 +64,7 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
         .then(({ data }) => setLeads(data || []));
 
       // Check zoho connection
-      supabase
+      vpsDb
         .from("zoho_accounts")
         .select("id")
         .eq("user_id", profile.id)
@@ -111,7 +112,7 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
       if (!isEditing && isVideoCall) {
         try {
           const startDateTime = new Date(`${formData.meeting_date}T${formData.meeting_time}`);
-          const { data: zohoRes, error: fnErr } = await supabase.functions.invoke("zoho-meeting", {
+          const { data: zohoRes, error: fnErr } = await vpsDb.functions.invoke("zoho-meeting", {
             body: {
               action: "create",
               meetingData: {
@@ -179,11 +180,11 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
       };
 
       if (isEditing) {
-        const { error } = await supabase.from("meetings").update(payload).eq("id", meetingToEdit.id);
+        const { error } = await vpsDb.from("meetings").update(payload).eq("id", meetingToEdit.id);
         if (error) throw error;
         toast.success("Meeting updated!");
       } else {
-        const { error } = await supabase.from("meetings").insert(payload);
+        const { error } = await vpsDb.from("meetings").insert(payload);
         if (error) throw error;
         toast.success(`Meeting created! Join: ${finalLink}`);
       }

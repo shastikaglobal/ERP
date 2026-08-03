@@ -1,7 +1,8 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section } from "@/components/shared/FormShell";
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { format, subDays, differenceInDays, addDays, parseISO, startOfMonth } from "date-fns";
 import { Loader2, Fingerprint, CheckCircle, Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -332,7 +333,7 @@ export default function Attendance() {
     if (!settingsEmp) return;
     setSavingSettings(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session");
 
       // Save to VPS database (source of truth for attendance)
@@ -353,16 +354,16 @@ export default function Attendance() {
         throw new Error(errorData.error || 'Failed to update settings');
       }
 
-      // Also update Supabase (best effort sync)
+      // Also update VpsDb (best effort sync)
       try {
-        await supabase
+        await vpsDb
           .from('profiles')
           .update({
             monthly_salary: Number(settingsSalary) || 0,
             punch_deadline: settingsDeadline + ":00"
           })
           .eq('id', settingsEmp.id);
-      } catch { /* ignore supabase sync error */ }
+      } catch { /* ignore vpsDb sync error */ }
 
       toast.success("Settings updated successfully!");
       setSettingsEmp(null);
@@ -380,7 +381,7 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const timeIso = new Date(`${todayStr}T${manualTime}`).toISOString();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       
       if (!session) throw new Error("No active session found");
 
@@ -425,7 +426,7 @@ export default function Attendance() {
   const handleMarkOnLeave = async (emp: any) => {
     const todayStr = endDate;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/mark-leave', {
@@ -456,7 +457,7 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const clockInTime = new Date(`${todayStr}T08:00:00`).toISOString();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       
       if (!session) throw new Error("No active session found");
 
@@ -488,7 +489,7 @@ export default function Attendance() {
 
   const handleToggleExcused = async (logId: string, checked: boolean) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/toggle-excused', {
@@ -517,7 +518,7 @@ export default function Attendance() {
 
   const handleDeleteLog = async (logId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/delete-log', {
@@ -622,11 +623,11 @@ export default function Attendance() {
     setLoading(true);
 
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await vpsDb.auth.getUser();
     if (user) setUserId(user.id);
 
     // Fetch approved profiles via local API
-    const { data: { session: empSession } } = await supabase.auth.getSession();
+    const { data: { session: empSession } } = await vpsDb.auth.getSession();
     let profiles = [];
     try {
       const empRes = await fetch('/api/employees', {
@@ -674,8 +675,8 @@ export default function Attendance() {
     const nextMonth = new Date(endOfMonthDate.getFullYear(), endOfMonthDate.getMonth() + 1, 1);
     const lastDayOfMonth = format(subDays(nextMonth, 1), 'yyyy-MM-dd');
 
-    // Fetch from VPS API instead of Supabase
-    const { data: { session } } = await supabase.auth.getSession();
+    // Fetch from VPS API instead of VpsDb
+    const { data: { session } } = await vpsDb.auth.getSession();
     let logs: any[] = [];
     let logsErr = null;
 
@@ -712,8 +713,8 @@ export default function Attendance() {
   useEffect(() => {
     loadData(startDate, endDate);
 
-    // Subscribe to realtime updates via Supabase Broadcast (from VPS server)
-    const channel = supabase
+    // Subscribe to realtime updates via VpsDb Broadcast (from VPS server)
+    const channel = vpsDb
       .channel('global_data_sync')
       .on(
         'broadcast',
@@ -732,7 +733,7 @@ export default function Attendance() {
     }, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      vpsDb.removeChannel(channel);
       clearInterval(pollInterval);
     };
   }, [startDate, endDate]);
@@ -823,7 +824,7 @@ export default function Attendance() {
     setPunching(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/punch', {

@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import { Edit2, Plus } from 'lucide-react';
 
@@ -39,11 +39,8 @@ const ClientSuccess = () => {
 
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/customers?company_id=${profile.company_id}`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      
+      const res = await fetch(`/api/customers?company_id=${profile.company_id}`, { credentials: 'include'
       });
 
       if (!res.ok) {
@@ -112,10 +109,9 @@ const ClientSuccess = () => {
     e.preventDefault();
     if (!selectedClient) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/customers/${selectedClient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      
+      const res = await fetch(`/api/customers/${selectedClient.id}`, { method: 'PUT',
+        headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           name: editForm.name,
           country: editForm.country,
@@ -153,13 +149,11 @@ const ClientSuccess = () => {
 
     setIsSavingFeedback(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/customers/${selectedClient.id}`, {
-        method: 'PATCH',
+      
+      const res = await fetch(`/api/customers/${selectedClient.id}`, { method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ satisfaction_notes: feedbackText })
       });
 

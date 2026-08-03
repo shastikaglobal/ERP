@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Ship, Package, Globe, Printer, Barcode as BarcodeIcon, ShoppingCart } from "lucide-react";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -196,6 +197,8 @@ function LabelContent({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function GenerateBarcode() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
   const qc  = useQueryClient();
 
@@ -220,24 +223,24 @@ export default function GenerateBarcode() {
   const { data: targets = [], isLoading } = useQuery<LogisticsTarget[]>({
     queryKey: ["logistics_targets"],
     queryFn: async () => {
-      const { data: prof } = await supabase.from("profiles").select("company_id").maybeSingle();
+      const { data: prof } = await vpsDb.from("profiles").select("company_id").maybeSingle();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const { data: cos } = await supabase.from("companies").select("id").limit(1);
+        const { data: cos } = await vpsDb.from("companies").select("id").limit(1);
         companyId = cos?.[0]?.id ?? null;
       }
       
-      const { data: { session } } = await supabase.auth.getSession();
+
       const headers = { 'Authorization': `Bearer ${session?.access_token}` };
 
       const [shipResData, batchRes, orderResData, barcodeRes] = await Promise.all([
         fetch(`/api/finance/export_shipments?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        supabase
+        vpsDb
           .from("inventory_batches")
           .select("id, lot_number, quantity_kg, product:products(name, sku)")
           .order("created_at", { ascending: false }).limit(30),
         fetch(`/api/finance/export_orders?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        supabase.from("batch_barcodes").select("shipment_id, batch_id"), // ignore order_id to prevent errors if it doesn't exist
+        vpsDb.from("batch_barcodes").select("shipment_id, batch_id"), // ignore order_id to prevent errors if it doesn't exist
       ]);
 
       const list: LogisticsTarget[] = [];
@@ -341,10 +344,10 @@ export default function GenerateBarcode() {
     mutationFn: async () => {
       if (!selected) throw new Error("Select a shipment or cargo lot");
 
-      const { data: prof } = await supabase.from("profiles").select("company_id").maybeSingle();
+      const { data: prof } = await vpsDb.from("profiles").select("company_id").maybeSingle();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const { data: cos } = await supabase.from("companies").select("id").limit(1);
+        const { data: cos } = await vpsDb.from("companies").select("id").limit(1);
         companyId = cos?.[0]?.id ?? null;
       }
       if (!companyId) throw new Error("No company found. Contact your administrator.");
@@ -358,7 +361,7 @@ export default function GenerateBarcode() {
       if (selected.type === 'shipment') {
         const shipmentNumber = selected.ref;
         // 1. Check if batch exists for this shipment
-        const { data: existingBatch } = await supabase
+        const { data: existingBatch } = await vpsDb
           .from("shipment_batches")
           .select("id")
           .eq("shipment_id", shipmentNumber)
@@ -369,7 +372,7 @@ export default function GenerateBarcode() {
         } else {
           // 2. If batch NOT found -> automatically CREATE a new batch record
           console.log("Attempting to auto-create batch for shipment:", shipmentNumber, "UUID was:", selected.id);
-          const { data: newBatch, error: batchError } = await supabase
+          const { data: newBatch, error: batchError } = await vpsDb
             .from("shipment_batches")
             .insert({
               shipment_id: shipmentNumber,
@@ -408,7 +411,7 @@ export default function GenerateBarcode() {
       });
 
       const codes = rows.map((r) => r.code);
-      const { error: barcodeError } = await supabase.from("batch_barcodes").insert(rows);
+      const { error: barcodeError } = await vpsDb.from("batch_barcodes").insert(rows);
       if (barcodeError) {
         console.error('Full barcode insert error:', JSON.stringify(barcodeError));
         throw new Error(`Barcode insert failed: ${barcodeError.message}`);

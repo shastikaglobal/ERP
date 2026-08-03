@@ -15,8 +15,8 @@ export function useSoftDelete() {
             await softDeleteRecord(tableName, id, {
                 deletedBy: user.id,
                 resourceType: tableName,
-                resourceName: label,
-            });
+                resourceName: label
+      });
 
             toast.success(`${label} removed (soft-deleted)`);
             return true;
@@ -36,8 +36,8 @@ export function useSoftDelete() {
         try {
             await restoreRecordBase(tableName, id, {
                 resourceType: tableName,
-                resourceName: label,
-            });
+                resourceName: label
+      });
 
             toast.success(`${label} restored successfully`);
             return true;

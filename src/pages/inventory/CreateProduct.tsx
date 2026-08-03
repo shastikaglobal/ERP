@@ -8,14 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function CreateProduct() {
   const nav = useNavigate();
   const qc = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
@@ -35,7 +34,6 @@ export default function CreateProduct() {
     }
     setBusy(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/products", {
         method: "POST",
         headers: {

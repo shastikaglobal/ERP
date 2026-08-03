@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,9 +27,9 @@ export default function ShipmentAnalytics() {
       if (!profile?.company_id) return [];
       
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const res = await fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export shipments from VPS");
         const data = await res.json();
@@ -53,9 +54,9 @@ export default function ShipmentAnalytics() {
       if (!profile?.company_id) return { onTimeRate: "—", avgTransit: "—", activeShipments: 0, delayed: 0 };
       
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const res = await fetch(`/api/finance/reports/shipment_analytics?company_id=${profile.company_id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export shipments stats from VPS");
         return await res.json();
@@ -73,10 +74,7 @@ export default function ShipmentAnalytics() {
     if (!editingShipment || !newStatus) return;
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('export_shipments')
-        .update({ status: newStatus })
-        .eq('id', editingShipment.dbId);
+      const { error } = await fetch('/api/shipments', { credentials: 'include' }); 
 
       if (error) throw error;
 

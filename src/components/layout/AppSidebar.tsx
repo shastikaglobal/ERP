@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useAuth, useCan } from "@/hooks/useAuth";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Sprout, LayoutDashboard, ShieldCheck, Settings, Bot } from "lucide-react";
 import { navGroups } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth, useCan } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
+
 import { AIChatPanel } from "./AIChatPanel";
 
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -54,20 +55,20 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     let mounted = true;
     const fetchCounts = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         if (!session) return;
         
         const userId = session?.user?.id;
         let companyFilter = "";
         if (userId) {
-          const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', userId).single();
+          const { data: profile } = await vpsDb.from('profiles').select('company_id').eq('id', userId).single();
           if (profile?.company_id) {
             companyFilter = `?company_id=${profile.company_id}`;
           }
         }
 
         const res = await fetch(`/api/analytics/sidebar_counts${companyFilter}`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
+          credentials: 'include'
         });
         
         if (!res.ok) throw new Error("Failed to fetch sidebar counts");

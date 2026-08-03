@@ -1,16 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
 const db = require('../db');
 
 // Initialize Supabase Client
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn("⚠️ WARNING (routes/mailbox.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase client disabled.");
-}
-const supabase = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'mock';
 
 async function syncZohoAccounts() {
   try {
@@ -136,6 +132,64 @@ router.post('/', requireAuth, async (req, res) => {
   } catch (err) {
     console.error("DB Error (create email log):", err);
     res.status(500).json({ error: err.message || JSON.stringify(err) || "Unknown Error" });
+  }
+});
+
+// POST /api/emails/send - Send an email
+router.post('/send', requireAuth, async (req, res) => {
+  try {
+    const { record } = req.body; // Expects email record
+    
+    // We get account to find credentials
+    let account = null;
+    if (record.account_id) {
+      const { rows } = await db.query('SELECT * FROM zoho_accounts WHERE id = $1 LIMIT 1', [record.account_id]);
+      if (rows.length > 0) account = rows[0];
+    }
+    if (!account) {
+      const { rows } = await db.query('SELECT * FROM zoho_accounts WHERE account_email = $1 LIMIT 1', [record.from_address]);
+      if (rows.length > 0) account = rows[0];
+    }
+    if (!account) return res.status(404).json({ success: false, error: "Account not found for sending" });
+
+    // Try sending with Nodemailer (OAuth2 via Zoho) or fallback
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.zoho.in',
+      port: 465,
+      secure: true,
+      auth: {
+        type: 'OAuth2',
+        user: account.account_email,
+        clientId: process.env.VITE_ZOHO_CLIENT_ID || process.env.ZOHO_CLIENT_ID,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET,
+        refreshToken: account.refresh_token,
+        accessToken: account.access_token
+      }
+    });
+
+    const mailOptions = {
+      from: account.account_email,
+      to: record.to_address,
+      cc: record.cc_address,
+      bcc: record.bcc_address,
+      subject: record.subject,
+      text: record.body_text,
+      html: record.body_html,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    
+    await db.query("UPDATE emails SET status = 'sent' WHERE id = $1", [record.id]);
+    
+    res.json({ success: true, messageId: info.messageId });
+  } catch (err) {
+    console.error("Email send error:", err);
+    
+    if (req.body.record?.id) {
+      await db.query("UPDATE emails SET status = 'failed' WHERE id = $1", [req.body.record.id]);
+    }
+    
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+
 import {
   Mail, Send as SendIcon, Paperclip, Loader2, User, History, X, FileText, Plus,
   Inbox, Star, Clock, File as FileIcon, ChevronDown, RefreshCw, MoreVertical,
@@ -30,7 +30,7 @@ import {
 
 // ─── Logo URL for email signature ────────────────────────────────────────────
 const COMPANY_LOGO_URL =
-  "https://sxebygxpjzntogzpjnga.supabase.co/storage/v1/object/public/chat-attachments/company-logo-1779776670741.png";
+  "https://sxebygxpjzntogzpjnga.vpsDb.co/storage/v1/object/public/chat-attachments/company-logo-1779776670741.png";
 
 const decodeHtml = (html: string) => {
   const txt = document.createElement("textarea");
@@ -129,7 +129,7 @@ function fixEmailBodyImages(el: HTMLDivElement | null) {
 }
 
 export default function Mailbox() {
-  const { profile, refresh, roleSlugs } = useAuth();
+  const { profile, refresh, roleSlugs, session } = useAuth();
 
   const canDownloadAttachments = roleSlugs?.has("admin") || roleSlugs?.has("manager") ||
     (profile?.requested_role && ["admin", "manager"].includes(profile.requested_role.toLowerCase()));
@@ -181,17 +181,23 @@ export default function Mailbox() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("zoho-office-integrator", {
-        body: {
+      const res = await fetch("/api/zoho/office-integrator", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({
           path: att.path,
           filename: att.filename,
           displayName: profile?.full_name || profile?.email || "User",
           userId: profile?.id || "user-id",
-        }
+        })
       });
-
-      if (error || !data?.success) {
-        throw new Error(error?.message || data?.error || "Failed to create Zoho editor session");
+      const data = await res.json();
+      
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Failed to create Zoho editor session");
       }
 
       if (data?.document_url) {
@@ -231,13 +237,16 @@ export default function Mailbox() {
     if (!profile?.id) return;
     setSavingSignature(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ email_signature: signatureText })
-        .eq("id", profile.id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/employees/${profile.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({ email_signature: signatureText })
+      });
+      if (!res.ok) throw new Error("Failed to save signature");
+      
       await refresh();
       toast.success("Email signature saved successfully!");
       setIsSettingsOpen(false);
@@ -270,7 +279,7 @@ export default function Mailbox() {
       setSentEmails(prev => prev.map(e => e.id === email.id ? { ...e, is_read: true } : e));
       setSelectedEmail((prev: any) => prev?.id === email.id ? { ...prev, is_read: true } : prev);
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       fetch(`/api/emails/${email.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -282,7 +291,7 @@ export default function Mailbox() {
     if ((!email.body_html || !email.body_html.includes("<div") || email.body_html.includes("ImageDisplay")) && email.zoho_message_id) {
       setLoadingBody(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await vpsDb.auth.getSession();
         const response = await fetch("/api/emails/get-zoho-body", {
           method: "POST",
           headers: {
@@ -332,7 +341,7 @@ export default function Mailbox() {
     if (!email.zoho_message_id) return;
     setLoadingBody(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const response = await fetch("/api/emails/get-zoho-body", {
         method: "POST",
         headers: {
@@ -399,7 +408,7 @@ export default function Mailbox() {
         roleSlugs?.has("bde") ||
         (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch('/api/emails/accounts', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -433,7 +442,7 @@ export default function Mailbox() {
   }
 
   async function fetchHistory(accountId: string) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await vpsDb.auth.getSession();
     const res = await fetch(`/api/emails?account_id=${accountId}`, {
       headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
@@ -447,7 +456,7 @@ export default function Mailbox() {
     if (isManual) setIsManualSyncing(true);
     setIsSyncing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const response = await fetch('/api/emails/sync', {
         method: 'POST',
         headers: {
@@ -484,7 +493,7 @@ export default function Mailbox() {
 
   // Realtime subscription
   useEffect(() => {
-    // Supabase realtime removed. Relies on polling.
+    // VpsDb realtime removed. Relies on polling.
     setIsConnected(true);
   }, [selectedAccount]);
 
@@ -514,7 +523,7 @@ export default function Mailbox() {
       const uploadedAttachments = [];
       for (const file of attachments) {
         const filePath = `mailbox/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await vpsDb.storage
           .from("email-attachments")
           .upload(filePath, file);
         if (uploadError) throw uploadError;
@@ -553,7 +562,7 @@ export default function Mailbox() {
 
               const fileName = `inline-${Date.now()}-${i}.${fileExt}`;
               const filePath = `mailbox-inline/${fileName}`;
-              const { error: uploadError } = await supabase.storage
+              const { error: uploadError } = await vpsDb.storage
                 .from("email-attachments")
                 .upload(filePath, blob, { contentType });
 
@@ -562,7 +571,7 @@ export default function Mailbox() {
                 continue;
               }
 
-              const { data: { publicUrl } } = supabase.storage
+              const { data: { publicUrl } } = vpsDb.storage
                 .from("email-attachments")
                 .getPublicUrl(filePath);
 
@@ -582,7 +591,7 @@ export default function Mailbox() {
 
       const plainText = finalContent.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       
       const insertRes = await fetch('/api/emails', {
         method: 'POST',
@@ -618,21 +627,29 @@ export default function Mailbox() {
 
       toast.info("Sending email...", { id: `sending-${emailRow.id}`, duration: 10000 });
 
-      supabase.functions.invoke("webhook-send-email", {
-        body: { record: { ...emailRow, status: "pending" } }
-      }).then(({ error: funcError, data: funcData }) => {
-        if (funcError) {
-          console.error("Function error:", funcError);
-          toast.error("Failed to send email: " + funcError.message, { id: `sending-${emailRow.id}` });
-          setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
-        } else if (funcData && !funcData.success) {
-          console.error("Zoho Send Error:", funcData.error);
-          toast.error("Failed to send email: " + (funcData.error || "Unknown error"), { id: `sending-${emailRow.id}` });
+      fetch("/api/emails/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        },
+        body: JSON.stringify({ record: { ...emailRow, status: "pending" } })
+      })
+      .then(r => r.json())
+      .then((funcData) => {
+        if (!funcData || !funcData.success) {
+          console.error("Zoho Send Error:", funcData?.error);
+          toast.error("Failed to send email: " + (funcData?.error || "Unknown error"), { id: `sending-${emailRow.id}` });
           setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
         } else {
           toast.success(`✓ Sent: ${emailRow.subject || "(No Subject)"}`, { id: `sending-${emailRow.id}`, duration: 4000 });
           setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "sent" } : e));
         }
+      })
+      .catch((funcError) => {
+        console.error("Function error:", funcError);
+        toast.error("Failed to send email: " + funcError.message, { id: `sending-${emailRow.id}` });
+        setSentEmails(prev => prev.map(e => e.id === emailRow.id ? { ...e, status: "failed" } : e));
       });
 
       setTo(""); setCc(""); setBcc(""); setSubject(""); setContent(""); setAttachments([]);
@@ -1136,7 +1153,7 @@ export default function Mailbox() {
                               <div className="flex items-center gap-1 border-l border-gray-100 pl-3">
                                 {canDownloadAttachments ? (
                                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-gray-600 hover:bg-gray-100" title="Download"
-                                    onClick={async () => { const { data } = await supabase.storage.from("email-attachments").createSignedUrl(att.path, 60); if (data?.signedUrl) window.open(data.signedUrl, "_blank"); }}>
+                                    onClick={async () => { const { data } = await vpsDb.storage.from("email-attachments").createSignedUrl(att.path, 60); if (data?.signedUrl) window.open(data.signedUrl, "_blank"); }}>
                                     <Download className="h-4 w-4" />
                                   </Button>
                                 ) : (

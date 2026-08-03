@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 
 export type AppNotification = {
@@ -23,7 +23,7 @@ export function useNotifications() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
+    const { data } = await vpsDb
       .from("app_notifications" as any)
       .select("*")
       .order("created_at", { ascending: false })
@@ -37,7 +37,7 @@ export function useNotifications() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    await supabase
+    await vpsDb
       .from("app_notifications" as any)
       .update({ is_read: true })
       .eq("id", id);
@@ -47,7 +47,7 @@ export function useNotifications() {
   const markAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     if (!profile?.company_id) return;
-    await supabase
+    await vpsDb
       .from("app_notifications" as any)
       .update({ is_read: true })
       .eq("company_id", profile.company_id)
@@ -60,18 +60,9 @@ export function useNotifications() {
     // Use a unique channel name to avoid Realtime 'already subscribed' crashes
     // during React StrictMode double mounts or fast refreshes.
     const channelId = `notifications-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const channel = supabase
-      .channel(channelId)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "app_notifications" },
-        () => fetchNotifications()
-      )
-      .subscribe();
+    
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
   }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;

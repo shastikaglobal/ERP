@@ -25,8 +25,8 @@ export default function CreateFarmer() {
     farm_area: "",
     primary_crops: "",
     bank_account: "",
-    notes: "",
-  });
+    notes: ""
+      });
 
   const onChange = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));

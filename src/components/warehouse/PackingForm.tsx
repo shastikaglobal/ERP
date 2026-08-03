@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +29,7 @@ export function PackingForm({
     companyId,
     initialData,
 }: PackingFormProps) {
+    const { session } = useAuth();
     const [manualMode, setManualMode] = useState(!!initialData);
     const [formData, setFormData] = useState(initialData || {
         receiving_id: "",
@@ -60,13 +61,12 @@ export function PackingForm({
         queryKey: ["products-list", companyId],
         enabled: !!companyId,
         queryFn: async () => {
-             let query = supabase.from('products' as any).select('*').eq('is_active', true).order('name');
-             if (companyId) {
-                 query = query.or(`company_id.eq.${companyId},company_id.is.null`);
-             }
-             const { data, error } = await query;
-             if (error) throw error;
-             return data || [];
+             const res = await fetch('/api/products', {
+                 headers: { 'Authorization': `Bearer ${session?.access_token}` }
+             });
+             if (!res.ok) throw new Error('Failed to fetch products');
+             const data = await res.json();
+             return (data || []).filter((p: any) => p.is_active);
         }
     });
 

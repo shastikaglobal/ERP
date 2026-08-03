@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
@@ -51,7 +50,7 @@ const defaultProducts = [
 
 export default function AvailableStock() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
   const [productFilter, setProductFilter] = useState("all");
@@ -86,19 +85,12 @@ export default function AvailableStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
-      let query = supabase.from('products').select('*').eq('is_active', true);
-      
-      // If profile is available and company_id exists, we might filter by it,
-      // but to ensure defaults load, we can get all or fallback.
-      // Usually default products might have null company_id or match the current company.
-      if (profile?.company_id) {
-        query = query.or(`company_id.eq.${profile.company_id},company_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
+      const res = await fetch('/api/products', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      return (data || []).filter((p: any) => p.is_active);
     }
   });
 
@@ -106,7 +98,6 @@ export default function AvailableStock() {
     queryKey: ['warehouses-list', profile?.company_id],
     enabled: !!profile?.company_id,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/inventory/warehouses', {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
@@ -122,7 +113,6 @@ export default function AvailableStock() {
     queryKey: ['available-stock', products.length, warehouses.length],
     enabled: true,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/inventory/available_stock`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
@@ -162,7 +152,6 @@ export default function AvailableStock() {
     queryKey: ['stock-history', selectedStock?.id],
     enabled: !!selectedStock && isHistoryModalOpen,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/inventory/inventory_movements`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
@@ -192,10 +181,14 @@ export default function AvailableStock() {
         
         // Remove duplicates checking logic if upsert is supported with unique constraint,
         // or just insert since most likely it's handled.
-        // We will insert one by one to avoid breaking all if one fails
-        for (const record of records) {
-          await supabase.from('products').insert([record]).catch(() => null);
-        }
+        await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify(records)
+        });
         
         queryClient.invalidateQueries({ queryKey: ['products-list', profile.company_id] });
       } catch (err) {
@@ -278,7 +271,6 @@ export default function AvailableStock() {
         last_updated: new Date().toISOString().slice(0, 10)
       };
 
-      const { data: { session } } = await supabase.auth.getSession();
 
       if (selectedStock?.id) {
         const __res_upd = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
@@ -319,7 +311,7 @@ export default function AvailableStock() {
 
       if (newQty < 0) throw new Error("Quantity cannot be negative.");
 
-      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
         method: 'PUT',
         headers: {

@@ -2,16 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { createClient } = require('@supabase/supabase-js');
-
-// Supabase admin client — profiles, roles, user_roles live here
-const _SB_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!_SB_URL || !_SB_KEY) {
-  console.warn("⚠️ WARNING (employees.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase client disabled.");
-}
-const supabase = (_SB_URL && _SB_KEY) ? createClient(_SB_URL, _SB_KEY) : null;
-
 const VALID_PROFILE_COLUMNS = new Set([
   'id', 'company_id', 'is_active', 'created_at', 'updated_at', 'status',
   'approved_by', 'approved_at', 'monthly_salary', 'punch_deadline',
@@ -642,154 +632,60 @@ router.delete('/:id/bio-data', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/employees/:id/reset-password - Generate password reset link and send to shastikaglobal11@gmail.com
+// POST /api/employees/:id/reset-password - Password reset removed as Supabase is decoupled
 router.post('/:id/reset-password', requireAuth, async (req, res) => {
   try {
+    return res.status(400).json({ error: 'Password reset is disabled while migrating away from Supabase.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/employees/:id/preferences
+router.get('/:id/preferences', requireAuth, async (req, res) => {
+  try {
     const { id } = req.params;
+    const { rows } = await db.query('SELECT * FROM user_preferences WHERE user_id = $1 LIMIT 1', [id]);
+    if (rows.length > 0) {
+      return res.json(rows[0]);
+    }
+    res.json({});
+  } catch (err) {
+    console.error('GET /api/employees/:id/preferences error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// PUT /api/employees/:id/preferences
+router.put('/:id/preferences', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
     
-    // Safety check: Only shastikaglobal11@gmail.com or users with the 'admin' or 'manager' role are authorized
-    let isAuthorized = req.user.email === 'shastikaglobal11@gmail.com';
-    if (!isAuthorized) {
-      const { data: requesterProfile } = await supabase
-        .from('profiles')
-        .select('role, email')
-        .eq('id', req.user.sub || req.user.id)
-        .maybeSingle();
-      
-      isAuthorized = requesterProfile && (
-        requesterProfile.email === 'shastikaglobal11@gmail.com' ||
-        requesterProfile.role === 'admin' ||
-        requesterProfile.role === 'manager'
-      );
-    }
-
-    if (!isAuthorized) {
-      return res.status(403).json({ error: 'Unauthorized: Only administrators are authorized to trigger password resets.' });
-    }
-
-    // 1. Fetch employee profile details
-    const { data: employee, error: empErr } = await supabase
-      .from('profiles')
-      .select('full_name, email, company_id')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (empErr || !employee) {
-      return res.status(404).json({ error: 'Employee profile not found.' });
-    }
-
-    if (!employee.email) {
-      return res.status(400).json({ error: 'Employee does not have an email address.' });
-    }
-
-    // 2. Generate programmatic reset link using Supabase Admin Auth API
-    const redirectTo = `${req.headers.origin || 'http://localhost:8080'}/auth/callback?type=recovery`;
-    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: employee.email,
-      options: {
-        redirectTo: redirectTo
-      }
-    });
-
-    if (linkErr || !linkData?.properties?.action_link) {
-      console.error('[ResetPassword] Generate link failed:', linkErr);
-      return res.status(500).json({ error: linkErr?.message || 'Failed to generate reset link.' });
-    }
-
-    const actionLink = linkData.properties.action_link;
-
-    // 3. Send email to shastikaglobal11@gmail.com with details and recovery link
-    const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #1e293b;">🔑 Password Reset Request</h2>
-        <p>You requested a password reset link for the following employee:</p>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b; width: 150px;">Employee Name</td>
-            <td style="padding: 8px 0; color: #334155;">${employee.full_name || 'N/A'}</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Employee Email</td>
-            <td style="padding: 8px 0; color: #334155;">${employee.email}</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Employee ID</td>
-            <td style="padding: 8px 0; font-family: monospace; color: #334155;">${id}</td>
-          </tr>
-        </table>
-        <p>Click the button below to complete the password reset process on their behalf:</p>
-        <div style="margin: 25px 0;">
-          <a href="${actionLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password Now</a>
-        </div>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-          If the button above does not work, copy and paste this URL into your web browser:<br/>
-          <span style="word-break: break-all; color: #2563eb;">${actionLink}</span>
-        </p>
-      </div>
-    `;
-
-    console.log(`[ResetPassword] Fetching Zoho account to send reset email to shastikaglobal11@gmail.com...`);
-    const { data: zohoAcc, error: zohoAccErr } = await supabase
-      .from('zoho_accounts')
-      .select('id, account_email')
-      .eq('is_deleted', false)
-      .limit(1)
-      .maybeSingle();
-
-    let emailSent = false;
-    let mailErrorMsg = '';
-
-    if (zohoAcc) {
-      console.log(`[ResetPassword] Using Zoho Account: ${zohoAcc.account_email}`);
-      const { data: emailRecord, error: insertErr } = await supabase
-        .from('emails')
-        .insert({
-          company_id: employee.company_id,
-          account_id: zohoAcc.id,
-          to_address: 'shastikaglobal11@gmail.com',
-          from_address: zohoAcc.account_email,
-          subject: `🔑 Password Reset Link: ${employee.full_name || employee.email}`,
-          body_html: htmlContent,
-          body_text: `You requested a password reset link for ${employee.full_name || 'N/A'} (${employee.email}). Reset link: ${actionLink}`,
-          status: 'pending',
-          folder: 'sent',
-          received_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (!insertErr && emailRecord) {
-        const { data: mailResult, error: mailErr } = await supabase.functions.invoke('webhook-send-email', {
-          body: { record: emailRecord }
-        });
-
-        if (!mailErr && mailResult?.success !== false) {
-          emailSent = true;
-        } else {
-          mailErrorMsg = mailErr?.message || mailResult?.error || 'Webhook invocation returned failure.';
-          console.error('[ResetPassword] Zoho Mail send failed:', mailErrorMsg);
-        }
-      } else {
-        mailErrorMsg = insertErr?.message || 'Failed to insert email log record.';
-        console.error('[ResetPassword] Email record insert failed:', mailErrorMsg);
+    // Check if exists
+    const { rows } = await db.query('SELECT id FROM user_preferences WHERE user_id = $1', [id]);
+    
+    if (rows.length > 0) {
+      // Update
+      const keys = Object.keys(updates);
+      if (keys.length > 0) {
+        const setClauses = keys.map((key, index) => `"${key}" = $${index + 1}`);
+        const values = keys.map(key => updates[key]);
+        await db.query(`UPDATE user_preferences SET ${setClauses.join(', ')} WHERE user_id = $${keys.length + 1}`, [...values, id]);
       }
     } else {
-      mailErrorMsg = zohoAccErr?.message || 'No connected Zoho account found in database.';
-      console.error('[ResetPassword] Zoho account query failed/empty:', mailErrorMsg);
+      // Insert
+      updates.user_id = id;
+      const keys = Object.keys(updates);
+      const cols = keys.map(k => `"${k}"`).join(', ');
+      const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+      const values = keys.map(key => updates[key]);
+      await db.query(`INSERT INTO user_preferences (${cols}) VALUES (${placeholders})`, values);
     }
-
-    if (!emailSent) {
-      return res.json({ 
-        success: true, 
-        message: 'Link generated successfully, but failed to send email. You can copy it directly.',
-        link: actionLink 
-      });
-    }
-
-    res.json({ success: true, message: 'Password reset link sent to shastikaglobal11@gmail.com successfully.' });
+    
+    res.json({ success: true });
   } catch (err) {
-    console.error('POST /api/employees/:id/reset-password error:', err.message);
+    console.error('PUT /api/employees/:id/preferences error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

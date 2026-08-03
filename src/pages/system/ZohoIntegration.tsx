@@ -3,7 +3,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { Mail, RefreshCw, CheckCircle2, AlertCircle, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +22,7 @@ export default function ZohoIntegration() {
   async function fetchAccounts() {
     if (!profile?.id) return;
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await vpsDb.auth.getSession();
     const res = await fetch('/api/emails/accounts', {
       headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
@@ -41,7 +42,7 @@ export default function ZohoIntegration() {
     if (!profile) return;
     
     const clientId = import.meta.env.VITE_ZOHO_CLIENT_ID;
-    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zoho-oauth`;
+    const redirectUri = `${import.meta.env.VITE_VPSDB_URL}/functions/v1/zoho-oauth`;
     const state = `${profile.company_id}:${profile.id}:${window.location.origin}`;
     
     const authUrl = `https://accounts.zoho.in/oauth/v2/auth?scope=ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ&client_id=${clientId}&response_type=code&access_type=offline&redirect_uri=${redirectUri}&state=${state}&prompt=consent`;
@@ -52,7 +53,7 @@ export default function ZohoIntegration() {
   const handleSync = async (accountId: string) => {
     setSyncing(accountId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch("/api/emails/sync", {
         method: "POST",
         headers: {
@@ -84,10 +85,9 @@ export default function ZohoIntegration() {
     if (!confirm("Are you sure you want to disconnect this account?")) return;
     
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id || null;
+      const currentUserId = profile?.id || null;
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/emails/accounts/${accountId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
@@ -189,12 +189,12 @@ export default function ZohoIntegration() {
               <h4 className="font-bold">2. Redirect URI</h4>
               <p className="text-muted-foreground">Add the following URL to your Authorized Redirect URIs:</p>
               <code className="block p-2 bg-muted rounded text-xs truncate">
-                {import.meta.env.VITE_SUPABASE_URL}/functions/v1/zoho-oauth
+                {import.meta.env.VITE_VPSDB_URL}/functions/v1/zoho-oauth
               </code>
             </div>
             <div className="space-y-2">
               <h4 className="font-bold">3. Environment Variables</h4>
-              <p className="text-muted-foreground">Add your Client ID and Client Secret to your Supabase project secrets.</p>
+              <p className="text-muted-foreground">Add your Client ID and Client Secret to your VpsDb project secrets.</p>
             </div>
           </CardContent>
         </Card>

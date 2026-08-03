@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { DollarSign, FileText, ClipboardList, TrendingUp, Users, Plus, Award } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -17,10 +17,10 @@ export default function BdeDashboard() {
     queryKey: ['bde_leads', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
+      const res = await fetch('/api/crm/leads', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for leads');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return data || [];
     },
@@ -33,9 +33,9 @@ export default function BdeDashboard() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const res = await fetch('/api/quotations', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");
         const data = await res.json();
@@ -53,10 +53,10 @@ export default function BdeDashboard() {
     queryKey: ['bde_orders', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
-        .from('export_orders')
-        .select('*')
-        .or(`company_id.eq.${profile.company_id},company_id.is.null`);
+      const res = await fetch('/api/orders', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for export_orders');
+      const data = await res.json();
+      const error = null;
       if (error) throw error;
       return data || [];
     },

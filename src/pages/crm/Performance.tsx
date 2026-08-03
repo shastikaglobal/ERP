@@ -12,16 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { format, startOfDay, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useIsAdminOrManager } from "@/hooks/useAuth";
+
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger
+      } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
@@ -71,9 +71,8 @@ export default function Performance() {
     if (!currentUser?.company_id) return;
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch performance data");
       const rawData = await res.json();
@@ -302,13 +301,11 @@ export default function Performance() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/employees/${employeeId}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/employees/${employeeId}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ monthly_target: val })
       });
 

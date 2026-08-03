@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
@@ -13,12 +13,9 @@ export default function DeliveryStatus() {
 
   const fetchShipments = async () => {
     try {
-      const { data, error } = await supabase
-        .from("export_shipments")
-        .select("*")
-        .order("created_at", { ascending: false });
-        
-      if (error) throw error;
+      const res = await fetch('/api/finance/export_shipments', { credentials: 'include' });
+      if (!res.ok) throw new Error("Failed to fetch shipments");
+      const data = await res.json();
       setShipments(data || []);
     } catch (err: any) {
       toast.error("Failed to load shipments");
@@ -33,7 +30,8 @@ export default function DeliveryStatus() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from("export_shipments").update({ status: newStatus }).eq("id", id);
+      const res = await fetch(`/api/shipments/${id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+      const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       
       toast.success(`Shipment updated to ${newStatus}`);

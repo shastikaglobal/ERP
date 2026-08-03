@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,12 +131,12 @@ export default function CreatePOLive() {
     const fetchData = async () => {
       if (!profile?.company_id) return;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers = { 'Authorization': `Bearer ${session?.access_token}` };
+        
+        const headers = {  };
 
         const [supRes, prodRes] = await Promise.all([
-          fetch(`/api/farmers?company_id=${profile.company_id}`, { headers }),
-          fetch(`/api/products`, { headers })
+          fetch(`/api/farmers?company_id=${profile.company_id}`, { headers  }),
+          fetch(`/api/products`, { headers  })
         ]);
 
         if (!supRes.ok) throw new Error("Failed to fetch suppliers");
@@ -206,7 +206,7 @@ export default function CreatePOLive() {
 
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
 
       // 1. Resolve or create Farmer/Supplier on the fly
       let resolvedSupplierId = supplierId;
@@ -215,12 +215,9 @@ export default function CreatePOLive() {
         if (existingSupplier) {
           resolvedSupplierId = existingSupplier.id;
         } else {
-          const createRes = await fetch('/api/farmers', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.access_token}`,
-              'Content-Type': 'application/json'
-            },
+          const createRes = await fetch('/api/farmers', { method: 'POST',
+            headers: {'Content-Type': 'application/json'
+             },
             body: JSON.stringify({
               company_id: profile.company_id,
               full_name: finalSupplierName,
@@ -247,12 +244,9 @@ export default function CreatePOLive() {
           if (existingProduct) {
             resolvedProductId = existingProduct.id;
           } else {
-            const createRes = await fetch('/api/products', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session?.access_token}`,
-                'Content-Type': 'application/json'
-              },
+            const createRes = await fetch('/api/products', { method: 'POST',
+              headers: {'Content-Type': 'application/json'
+               },
               body: JSON.stringify({
                 name: finalProdName,
                 unit: item.unit || 'kg',
@@ -281,12 +275,10 @@ export default function CreatePOLive() {
       const generatedPoNumber = `PO-${year}-${timestamp}`;
 
       // Step 4: Create the PO header and items via POST
-      const res = await fetch('/api/purchase_orders', {
-        method: 'POST',
+      const res = await fetch('/api/purchase_orders', { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           po_number: generatedPoNumber,
           company_id: profile.company_id,

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -6,23 +7,23 @@ import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
-import { useAuth, useCan } from "@/hooks/useAuth";
+
 
 export default function QCApprovals() {
   const qc = useQueryClient();
   const can = useCan();
   const [busy, setBusy] = useState<string | null>(null);
 
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["qc_inspections", "pending", profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         if (!session?.access_token) throw new Error('No auth token');
         const res = await fetch(`/api/inventory/qc_inspections/with-batch?company_id=${encodeURIComponent(profile.company_id)}&result=pending`, {
           headers: { 'Authorization': `Bearer ${session.access_token}`, 'Accept': 'application/json' }
@@ -40,7 +41,7 @@ export default function QCApprovals() {
   const handleDecision = async (id: string, decision: "approved" | "rejected") => {
     setBusy(id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch(`/api/inventory/qc_inspections/${id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },

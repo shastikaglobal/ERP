@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
 
 // Global counter for non-React Query components
 let globalSyncCounter = 0;
@@ -18,31 +18,20 @@ export function useRealtimeSync() {
     };
     subscribers.add(handleUpdate);
 
-    // Only set up Supabase channel once globally (first subscriber does it)
+    // Only set up VpsDb channel once globally (first subscriber does it)
     if (globalSyncCounter === 0 && subscribers.size === 1) {
-      const channel = supabase.channel('global_data_sync');
+      // NOTE: VpsDb Realtime has been disabled due to quota limits and 
+      // the authentication migration. The global sync counter remains for 
+      // future local WebSocket implementations.
       
-      channel.on('broadcast', { event: 'data_changed' }, (payload) => {
-        // Debounce to prevent broadcast storms
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-
-        debounceTimerRef.current = setTimeout(() => {
-          console.log('🔄 Global Realtime Sync Triggered!');
-          // 1. Invalidate React Query caches globally
-          queryClient.invalidateQueries();
-          
-          // 2. Increment global counter for manual fetch pages
-          globalSyncCounter += 1;
-          subscribers.forEach(sub => sub(globalSyncCounter));
-        }, 500); // 500ms debounce
-      }).subscribe();
+      /*
+      
+      */
 
       return () => {
         subscribers.delete(handleUpdate);
         if (subscribers.size === 0) {
-          supabase.removeChannel(channel);
+          // 
         }
       };
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { QuotationDocument } from "@/components/quotations/QuotationDocument";
 import { Loader2 } from "lucide-react";
 
@@ -16,25 +16,23 @@ export default function QuotationReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
 
-        const qRes = await fetch(`/api/quotations/${id}`, {
-          headers: { Authorization: `Bearer ${session?.access_token}` },
-        });
+        const qRes = await fetch(`/api/quotations/${id}`, { headers: { Authorization: `Bearer ${session?.access_token }` }
+      });
         if (!qRes.ok) throw new Error("Failed to load quotation");
         const quotationData = await qRes.json();
 
-        const itemsRes = await fetch(`/api/quotations/${id}/items`, {
-          headers: { Authorization: `Bearer ${session?.access_token}` },
-        });
+        const itemsRes = await fetch(`/api/quotations/${id}/items`, { headers: { Authorization: `Bearer ${session?.access_token }` }
+      });
         if (!itemsRes.ok) throw new Error("Failed to load quotation items");
         const items = await itemsRes.json();
 
         setQuotation({
           ...quotationData,
           customer: quotationData.customers,
-          quotation_items: items,
-        });
+          quotation_items: items
+      });
       } catch (err: any) {
         console.error("Report load error:", err);
         setError(err.message || "Failed to load quotation");

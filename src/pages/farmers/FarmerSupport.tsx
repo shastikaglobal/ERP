@@ -11,7 +11,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FormGrid, FormRow } from "@/components/shared/FormShell";
 import { useFarmerContext, TicketRecord } from '@/context/FarmerContext';
-import { supabase } from "@/integrations/supabase/client";
+
 
 // --- TYPES ---
 export type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
@@ -42,7 +42,8 @@ export default function FarmerSupportPage() {
 
   useEffect(() => {
     async function loadEmployees() {
-      const { data } = await supabase.from('profiles').select('id, full_name');
+      const res = await fetch('/api/employees', { credentials: 'include' });
+      const data = await res.json();
       if (data) {
         setEmployees(data.map(d => ({ id: d.id, name: d.full_name || 'Unknown User' })));
       }
@@ -97,8 +98,8 @@ export default function FarmerSupportPage() {
       total: data.length,
       open: data.filter(d => d.status === 'Open').length,
       inProgress: data.filter(d => d.status === 'In Progress').length,
-      resolved: data.filter(d => d.status === 'Resolved' || d.status === 'Closed').length,
-    };
+      resolved: data.filter(d => d.status === 'Resolved' || d.status === 'Closed').length
+      };
   }, [data]);
 
   const filteredData = useMemo(() => {
@@ -190,8 +191,8 @@ export default function FarmerSupportPage() {
     autoTable(doc, {
       startY: 20,
       head: [['ID', 'Farmer', 'Category', 'Priority', 'Status']],
-      body: filteredData.map(d => [d.id, d.farmer_name, d.issue_category, d.priority, d.status]),
-    });
+      body: filteredData.map(d => [d.id, d.farmer_name, d.issue_category, d.priority, d.status])
+      });
     doc.save("Support_Tickets.pdf");
   };
 

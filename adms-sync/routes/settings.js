@@ -102,4 +102,69 @@ router.put('/settings', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/settings/wipe - Factory reset / clear data
+router.post('/wipe', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    
+    // Find the user's company_id from profiles
+    const { rows: profileRows } = await db.query(
+      'SELECT company_id FROM profiles WHERE id = $1',
+      [userId]
+    );
+    
+    if (profileRows.length === 0) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    
+    const companyId = profileRows[0].company_id;
+    if (!companyId) {
+      return res.status(400).json({ error: "No company associated with this profile" });
+    }
+
+    const tablesToHardDelete = [
+      "export_containers",
+      "qc_inspections",
+      "inventory_movements",
+      "purchase_order_items"
+    ];
+
+    const tablesToSoftDelete = [
+      "export_shipments",
+      "export_orders",
+      "quotations",
+      "inventory_batches",
+      "purchase_orders",
+      "leads",
+      "farmers",
+      "suppliers",
+      "customers",
+      "user_roles"
+    ];
+
+    for (const table of tablesToHardDelete) {
+      if (table !== "purchase_order_items") {
+        await db.query(`DELETE FROM ${table} WHERE company_id = $1`, [companyId]);
+      } else {
+        await db.query(`DELETE FROM ${table} WHERE id != $1`, ["00000000-0000-0000-0000-000000000000"]);
+      }
+    }
+
+    for (const table of tablesToSoftDelete) {
+      if (table === "profiles") {
+        await db.query(`UPDATE ${table} SET is_deleted = true, deleted_at = NOW(), deleted_by = $1 WHERE id != $1 AND company_id = $2`, [userId, companyId]);
+      } else if (table === "user_roles") {
+        await db.query(`UPDATE ${table} SET is_deleted = true, deleted_at = NOW(), deleted_by = $1 WHERE user_id != $1`, [userId]);
+      } else {
+        await db.query(`UPDATE ${table} SET is_deleted = true, deleted_at = NOW(), deleted_by = $1 WHERE company_id = $2`, [userId, companyId]);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DB Error (wipe):", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 module.exports = router;

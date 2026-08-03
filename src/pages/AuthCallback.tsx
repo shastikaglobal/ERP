@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 
 function parseHashParams(hash: string) {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
@@ -44,16 +45,16 @@ export default function AuthCallback() {
         if (isRecovery) {
           console.log("[AuthCallback] Recovery flow detected. Clearing any existing session...");
           // Explicitly sign out of any existing session (like admin) to avoid session cross-talk
-          await supabase.auth.signOut();
+          await vpsDb.auth.signOut();
           
           if (code) {
             console.log("[AuthCallback] Exchanging recovery code for session...");
-            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            const { error: exchangeError } = await vpsDb.auth.exchangeCodeForSession(code);
             if (exchangeError) throw exchangeError;
             if (active) navigate("/auth?mode=reset", { replace: true });
           } else if (hashParams.access_token && hashParams.refresh_token) {
             console.log("[AuthCallback] Setting session from recovery hash tokens...");
-            const { error: setSessionError } = await supabase.auth.setSession({
+            const { error: setSessionError } = await vpsDb.auth.setSession({
               access_token: hashParams.access_token,
               refresh_token: hashParams.refresh_token,
             });
@@ -61,7 +62,7 @@ export default function AuthCallback() {
             if (active) navigate("/auth?mode=reset", { replace: true });
           } else {
             // Check if there is already a session that got set automatically
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             if (session) {
               console.log("[AuthCallback] Active session found after signOut. Proceeding to reset.");
               if (active) navigate("/auth?mode=reset", { replace: true });
@@ -73,17 +74,17 @@ export default function AuthCallback() {
           // Standard login callback flow
           if (code) {
             console.log("[AuthCallback] Exchanging login code for session...");
-            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            const { error: exchangeError } = await vpsDb.auth.exchangeCodeForSession(code);
             if (exchangeError) throw exchangeError;
             if (active) navigate("/dashboard", { replace: true });
           } else {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await vpsDb.auth.getSession();
             if (session) {
               if (active) navigate("/dashboard", { replace: true });
             } else {
               // Wait a tiny bit for auto-sign in if hash is present
               setTimeout(async () => {
-                const { data: { session: retrySession } } = await supabase.auth.getSession();
+                const { data: { session: retrySession } } = await vpsDb.auth.getSession();
                 if (retrySession && active) {
                   navigate("/dashboard", { replace: true });
                 } else if (active) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 export default function CreateOrder() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [saving, setSaving] = useState(false);
   const [productsList, setProductsList] = useState<{id: string, name: string, unit?: string}[]>([]);
   const [leadsList, setLeadsList] = useState<any[]>([]);
@@ -28,7 +28,7 @@ export default function CreateOrder() {
     const loadData = async () => {
       if (!profile?.company_id) return;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -335,7 +335,7 @@ export default function CreateOrder() {
 
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const userId = session?.user?.id;
       if (!userId) throw new Error("Authentication required to create orders");
 

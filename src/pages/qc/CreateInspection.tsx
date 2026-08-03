@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 
 export default function CreateInspection() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
   const qc = useQueryClient();
   const { profile, user } = useAuth();
@@ -30,7 +32,7 @@ export default function CreateInspection() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const res = await fetch('/api/inventory/inventory_batches', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -61,7 +63,7 @@ export default function CreateInspection() {
     if (!batchId) return toast.error("Select a batch");
     setBusy(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch('/api/inventory/qc_inspections', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },

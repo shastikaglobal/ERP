@@ -23,7 +23,7 @@ export function ProformaInvoice({ shipment, onClose }: ProformaInvoiceProps) {
   };
 
   try {
-    // Supabase often returns joined data as an array. We handle both cases here.
+    // VpsDb often returns joined data as an array. We handle both cases here.
     const order = Array.isArray(shipment.export_orders) 
       ? (shipment.export_orders[0] || {}) 
       : (shipment.export_orders || {});

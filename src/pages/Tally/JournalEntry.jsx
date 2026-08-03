@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Badge } from '../../components/ui/badge'
-import { supabase } from '../../lib/supabase'
+
 import { useAuth } from '../../hooks/useAuth'
 import { toast } from 'sonner'
 import { Plus, Trash2, CheckCircle2, AlertTriangle, Loader2, Calendar, ChevronDown, FileText, Hash, Receipt, Edit3, Lock } from 'lucide-react'
@@ -29,7 +29,7 @@ const SearchBar = ({ placeholder, value, onChange, children }) => (
 )
 
 function NewEntryForm({ onSaved }) {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
   const [voucherType, setVoucherType] = useState('Journal Voucher')
   const [date, setDate] = useState(today)
   const [referenceNo, setReferenceNo] = useState('')
@@ -43,9 +43,8 @@ function NewEntryForm({ onSaved }) {
       try {
         if (!profile?.company_id) return;
 
-        const { data: { session: __s1 } } = await supabase.auth.getSession();
         const res = await fetch(`/api/finance/chart_of_accounts?company_id=${profile.company_id}&status=Active`, {
-          headers: { 'Authorization': `Bearer ${__s1?.access_token}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         const coaData = res.ok ? await res.json() : [];
         const coaError = res.ok ? null : new Error("Failed to load chart of accounts");
@@ -111,10 +110,9 @@ function NewEntryForm({ onSaved }) {
     try {
       const voucherNo = `JV-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
       
-      const { data: { session: __s2 } } = await supabase.auth.getSession();
       const resEntry = await fetch('/api/finance/journal_entries', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${__s2?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company_id: profile.company_id,
           voucher_no: voucherNo,
@@ -161,7 +159,7 @@ function NewEntryForm({ onSaved }) {
       if (rowPayload.length > 0) {
         const resRows = await fetch('/api/finance/journal_entry_rows', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${__s2?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(rowPayload)
         });
 
@@ -400,7 +398,7 @@ function NewEntryForm({ onSaved }) {
 }
 
 export default function JournalEntry() {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
   const [search, setSearch] = useState('')
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -414,8 +412,7 @@ export default function JournalEntry() {
 
     setLoading(true)
     try {
-      const { data: { session: __s3 } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { 'Authorization': `Bearer ${__s3?.access_token}` } });
+      const res = await fetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
       let data = res.ok ? await res.json() : [];
       data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       let error = res.ok ? null : new Error("Fetch failed");

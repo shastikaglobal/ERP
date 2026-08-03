@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { fetchBdeProfiles } from "@/lib/bde";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export default function FollowUps() {
 
   const fetchBdeMembers = async () => {
     try {
-      const filtered = await fetchBdeProfiles(supabase);
+      const filtered = await fetchBdeProfiles();
 
       setBdeMembers(filtered);
       if (filtered.length > 0 && !assignedTo) {
@@ -86,9 +86,8 @@ export default function FollowUps() {
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/leads', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       
@@ -102,9 +101,8 @@ export default function FollowUps() {
   const fetchFollowUps = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/follow-ups', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch('/api/follow-ups', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch follow-ups");
       const data = await res.json();
@@ -122,14 +120,9 @@ export default function FollowUps() {
     fetchFollowUps();
     fetchBdeMembers();
 
-    const channel = supabase
-      .channel("follow-ups-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "follow_ups" }, fetchFollowUps)
-      .subscribe();
+    
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
   }, []);
 
   // ─── Reminder checker ────────────────────────────────────────────────────────
@@ -200,9 +193,9 @@ export default function FollowUps() {
             duration: isOverdue ? 60000 : 30000,
             action: {
               label: "Acknowledge",
-              onClick: () => handleAcknowledge(fu.id),
-            },
-          });
+              onClick: () => handleAcknowledge(fu.id)
+      }
+      });
         }
       });
     };
@@ -253,29 +246,25 @@ export default function FollowUps() {
         country: lead.country,
         mobile: lead.mobile,
         email: lead.email,
-        website: lead.website,
+        website: lead.website
       };
 
-      const { data: { session } } = await supabase.auth.getSession();
+      
       
       if (isEditing && selectedFollowUp) {
-        const res = await fetch(`/api/follow-ups/${selectedFollowUp.id}`, {
-          method: 'PUT',
+        const res = await fetch(`/api/follow-ups/${selectedFollowUp.id}`, { method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
+            'Content-Type': 'application/json'
+      },
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error("Failed to update follow-up");
         toast.success("Follow-up updated successfully");
       } else {
-        const res = await fetch(`/api/leads/${selectedLeadId}/follow-ups`, {
-          method: 'POST',
+        const res = await fetch(`/api/leads/${selectedLeadId}/follow-ups`, { method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
+            'Content-Type': 'application/json'
+      },
           body: JSON.stringify({
             company_name: lead.company_name,
             contact_name: lead.contact_name,
@@ -288,8 +277,8 @@ export default function FollowUps() {
             country: lead.country,
             mobile: lead.mobile,
             email: lead.email,
-            website: lead.website,
-          })
+            website: lead.website
+      })
         });
         if (!res.ok) throw new Error("Failed to create follow-up");
         toast.success("Follow-up created successfully");
@@ -341,13 +330,11 @@ export default function FollowUps() {
 
   const handleAcknowledge = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/follow-ups/${id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/follow-ups/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ is_notified: true })
       });
       if (!res.ok) throw new Error("Failed to acknowledge follow-up");
@@ -360,10 +347,8 @@ export default function FollowUps() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/follow-ups/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/follow-ups/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete follow-up");
       toast.success("Follow-up removed from view (soft-deleted)");

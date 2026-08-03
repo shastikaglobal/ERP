@@ -93,8 +93,8 @@ export default function GoodsCollectionPage() {
       total: data.length,
       today: data.filter(d => isToday(d.collection_date)).length,
       pending: data.filter(d => d.status === 'Pending').length,
-      completed: data.filter(d => d.status === 'Received').length,
-    };
+      completed: data.filter(d => d.status === 'Received').length
+      };
   }, [data]);
 
   // Filter & Sort Data
@@ -152,8 +152,8 @@ export default function GoodsCollectionPage() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      collection_date: record.collection_date.substring(0, 16),
-    });
+      collection_date: record.collection_date.substring(0, 16)
+      });
     setFormErrors({});
     setModalOpen(true);
   };
@@ -230,8 +230,8 @@ export default function GoodsCollectionPage() {
         d.collected_quantity,
         new Date(d.collection_date).toLocaleDateString(),
         d.status
-      ]),
-    });
+      ])
+      });
     
     doc.save("Goods_Collections.pdf");
   };

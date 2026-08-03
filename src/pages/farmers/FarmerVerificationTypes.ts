@@ -31,8 +31,8 @@ export const mockVerificationData: FarmerVerificationData[] = [
     addressStatus: 'Pending',
     locationStatus: 'Pending',
     landStatus: 'Pending',
-    landArea: '5 Acres',
-  },
+    landArea: '5 Acres'
+      },
   {
     id: 'VER-002',
     farmerId: 'FMR-1024',
@@ -46,8 +46,8 @@ export const mockVerificationData: FarmerVerificationData[] = [
     mobileStatus: 'Verified',
     addressStatus: 'Verified',
     locationStatus: 'Verified',
-    landStatus: 'Pending',
-  },
+    landStatus: 'Pending'
+      },
   {
     id: 'VER-003',
     farmerId: 'FMR-1025',
@@ -62,8 +62,8 @@ export const mockVerificationData: FarmerVerificationData[] = [
     addressStatus: 'Verified',
     locationStatus: 'Verified',
     landStatus: 'Verified',
-    remarks: 'Farm location and land documents verified physically.',
-  },
+    remarks: 'Farm location and land documents verified physically.'
+      },
   {
     id: 'VER-004',
     farmerId: 'FMR-1026',
@@ -78,6 +78,6 @@ export const mockVerificationData: FarmerVerificationData[] = [
     addressStatus: 'Rejected',
     locationStatus: 'Verified',
     landStatus: 'Pending',
-    remarks: 'Address mismatch with provided proofs.',
-  },
+    remarks: 'Address mismatch with provided proofs.'
+      },
 ];

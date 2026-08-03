@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { format, startOfMonth, endOfMonth, addDays, parseISO } from "date-fns";
 import { Loader2, Download, IndianRupee, Users, TrendingDown, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -183,7 +184,7 @@ export default function SalaryReport() {
   const { data: employees = [], isLoading: loadingEmps } = useQuery({
     queryKey: ['salary-employees'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from('profiles')
         .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline, system_mode, joining_date')
         .eq('status', 'approved')
@@ -203,7 +204,7 @@ export default function SalaryReport() {
       const [year, month] = selectedMonth.split('-').map(Number);
       const start = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
       const end = format(new Date(year, month, 0), 'yyyy-MM-dd');
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from('attendance_logs')
         .select('*')
         .not('is_deleted', 'eq', true)

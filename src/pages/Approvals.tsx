@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -6,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth, useCanManageApprovals } from "@/hooks/useAuth";
+import { vpsDb } from "@/lib/vpsDb";
+
+
 import { PageHeader } from "@/components/shared/PageHeader";
 
 type ProfileRow = {
@@ -72,7 +74,7 @@ export default function Approvals() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No session");
       const res = await fetch('/api/employees/all/profiles', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -109,7 +111,7 @@ export default function Approvals() {
     const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -130,7 +132,7 @@ export default function Approvals() {
     if (reason === null) return;
     setBusyId(r.id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -161,7 +163,7 @@ export default function Approvals() {
     
     setBusyId(r.id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       
       const payload: any = {};
       if (role && role !== r.requested_role) payload.requested_role = role;

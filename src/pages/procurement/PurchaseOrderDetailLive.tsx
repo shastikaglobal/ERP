@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,10 +38,9 @@ export default function PurchaseOrderDetailLive() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(`/api/purchase_orders/${id}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        
+        const res = await fetch(`/api/purchase_orders/${id}`, { credentials: 'include'
+      });
         if (!res.ok) throw new Error("Failed to load order details");
         const po = await res.json();
 

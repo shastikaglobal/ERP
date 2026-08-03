@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-// Using server-side API instead of Supabase client to avoid schema cache issues
+// Using server-side API instead of VpsDb client to avoid schema cache issues
 import { Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

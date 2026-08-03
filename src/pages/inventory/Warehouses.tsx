@@ -3,7 +3,6 @@ import { Warehouse, MapPin, Plus, Loader2, Save, Trash2, Pencil, Phone, ShieldCh
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section } from "@/components/shared/FormShell";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -47,7 +46,7 @@ const defaultForm = {
 
 export default function Warehouses() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,7 +58,6 @@ export default function Warehouses() {
     queryKey: ["warehouses_live", profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/warehouse/with-stock', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -127,7 +125,6 @@ export default function Warehouses() {
         notes: form.notes,
       };
 
-      const { data: { session } } = await supabase.auth.getSession();
       if (editingId) {
         const res = await fetch(`/api/warehouse/warehouses/${editingId}`, {
           method: 'PUT',
@@ -164,7 +161,6 @@ export default function Warehouses() {
   const handleDelete = async (id: string, warehouseName: string) => {
     if (!confirm(`Delete "${warehouseName}"? This will hide the warehouse from the app.`)) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/warehouse/warehouses/${id}`, {
         method: 'PUT',
         headers: {

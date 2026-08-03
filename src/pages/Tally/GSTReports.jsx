@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
 import { Tag } from '../../components/ui/tag'
-import { supabase } from '../../lib/supabase'
+
 import { toast } from 'sonner'
 import { Plus, Loader2, Download, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog'
@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 const fmt = (n) => (n || n === 0) ? Number(n).toLocaleString('en-IN') : '—'
 
 export default function GSTReports() {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
   const company_id = profile?.company_id
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -44,8 +44,7 @@ export default function GSTReports() {
     
     setLoading(true)
     try {
-      const { data: { session: __s1 } } = await supabase.auth.getSession();
-      const res = await fetch('/api/finance/gst_transactions', { headers: { 'Authorization': `Bearer ${__s1?.access_token}` } });
+      const res = await fetch('/api/finance/gst_transactions', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
       const records = res.ok ? await res.json() : [];
       // Optionally sort client-side
       records.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -89,10 +88,9 @@ export default function GSTReports() {
       const iAmt = parseFloat(igst) || 0
       const total = tAmt + cAmt + sAmt + iAmt
 
-      const { data: { session: __s2 } } = await supabase.auth.getSession();
       const res = await fetch('/api/finance/gst_transactions', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${__s2?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify([{
           date,
           party,
@@ -135,10 +133,9 @@ export default function GSTReports() {
     if (!window.confirm('Hide this GST record from the report? The record will remain in the database for audit and recovery.')) return
     setDeletingId(id)
     try {
-      const { data: { session: __s3 } } = await supabase.auth.getSession();
       const res = await fetch(`/api/finance/gst_transactions/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${__s3?.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       const error = res.ok ? null : new Error("Hide failed");
 

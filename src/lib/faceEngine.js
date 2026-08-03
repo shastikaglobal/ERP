@@ -40,7 +40,7 @@ export async function getFaceEmbedding(videoElement) {
   if (!detection) return null
 
   return {
-    embedding: Array.from(detection.descriptor),  // 128-dim float array → for Supabase pgvector
+    embedding: Array.from(detection.descriptor),  // 128-dim float array → for VpsDb pgvector
     box: detection.detection.box,
     score: detection.detection.score,
     landmarks: detection.landmarks

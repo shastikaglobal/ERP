@@ -5,7 +5,6 @@ import { Input } from '../../components/ui/input'
 import { Plus, CheckCircle, XCircle, Trash2, BookOpen, TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../hooks/useAuth'
-import { supabase } from '../../lib/supabase'
 import ConfirmDialog from '../../components/ui/ConfirmDialogLegacy'
 
 const DEFAULT_ACCOUNTS = [
@@ -61,13 +60,14 @@ const StatCard = ({ icon: Icon, label, value, accent }) => (
 )
 
 export default function ChartOfAccounts() {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
+  const token = session?.access_token
   const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('All')
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(null)
-  const [confirm, setConfirm] = useState({ open: false, code: null, loading: false })
+  const [confirm, setConfirm] = useState({ open: false, id: null, loading: false })
   const [editOpen, setEditOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
@@ -80,39 +80,27 @@ export default function ChartOfAccounts() {
   const fetchAccounts = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts')
-        .select('*')
-        .neq('is_deleted', true)
-        .order('code', { ascending: true })
-
-      if (error) {
-        console.error('Failed to load chart of accounts:', error)
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          hint: error.hint,
-          details: error.details
-        })
-
-        // Provide more specific error messages
-        if (error.message?.includes('relation "chart_of_accounts" does not exist')) {
-          toast.error('Chart of Accounts table not found. See FIX_CHART_OF_ACCOUNTS.md')
-        } else if (error.message?.includes('permission denied')) {
-          toast.error('Permission denied. Check RLS policies and your company assignment.')
-        } else {
-          toast.error('Unable to load accounts. Showing defaults until the database is available.')
+      const res = await fetch('/api/finance/chart_of_accounts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      })
+      
+      if (!res.ok) throw new Error('Failed to load accounts')
+      const data = await res.json()
+      
+      const activeData = data.filter(d => !d.is_deleted)
+      
+      if (activeData.length === 0) {
         setAccounts(DEFAULT_ACCOUNTS)
       } else {
-        // Convert balance to formatted string if needed
-        const formattedData = (data || []).map(acc => ({
+        const formattedData = activeData.map(acc => ({
           ...acc,
           balance: typeof acc.balance === 'number' 
             ? `₹${acc.balance.toLocaleString('en-IN')}` 
             : acc.balance
         }))
-        setAccounts(formattedData.length > 0 ? formattedData : DEFAULT_ACCOUNTS)
+        setAccounts(formattedData)
       }
     } catch (err) {
       console.error('Unexpected error loading chart of accounts:', err)
@@ -133,35 +121,35 @@ export default function ChartOfAccounts() {
     }
   }
 
-  const handleDelete = (code) => {
-    setConfirm({ open: true, code, loading: false })
+  const handleDelete = (id) => {
+    setConfirm({ open: true, id, loading: false })
   }
 
   const confirmDelete = async () => {
-    const code = confirm.code
-    if (!code) return
+    const id = confirm.id
+    if (!id) return
     setConfirm(c => ({ ...c, loading: true }))
-    setDeleting(code)
-    const { error } = await supabase
-      .from('chart_of_accounts')
-      .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.id || null
+    setDeleting(id)
+    
+    try {
+      const res = await fetch(`/api/finance/chart_of_accounts/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
-      .eq('code', code)
-
-    setDeleting(null)
-    setConfirm({ open: false, code: null, loading: false })
-
-    if (error) {
+      
+      if (!res.ok) throw new Error('Failed to delete')
+      
+      setAccounts(accounts.filter((a) => a.id !== id))
+      toast.success('Account marked as deleted (soft-deleted)')
+    } catch (error) {
       console.error('Soft delete error:', error)
       toast.error('Unable to delete account. Please try again.')
-      return
+    } finally {
+      setDeleting(null)
+      setConfirm({ open: false, id: null, loading: false })
     }
-
-    setAccounts(accounts.filter((a) => a.code !== code))
-    toast.success('Account marked as deleted (soft-deleted)')
   }
 
   const filtered = accounts.filter((a) => {
@@ -199,14 +187,19 @@ export default function ChartOfAccounts() {
         gst: !!form.gst,
         status: form.status
       }
-      const { data, error } = await supabase.from('chart_of_accounts').update(payload).eq('code', editingAccount.code).select().single()
-      if (error) {
-        console.error('Update account error:', error)
-        toast.error('Unable to save account. ' + (error.message || ''))
-        return
-      }
-      const updated = { ...data, balance: typeof data.balance === 'number' ? `₹${data.balance.toLocaleString('en-IN')}` : data.balance }
-      setAccounts(prev => prev.map(a => (a.code === updated.code ? updated : a)))
+      const res = await fetch(`/api/finance/chart_of_accounts/${editingAccount.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!res.ok) throw new Error('Failed to update account')
+      
+      const updated = { ...editingAccount, ...payload, balance: typeof payload.balance === 'number' ? `₹${payload.balance.toLocaleString('en-IN')}` : payload.balance }
+      setAccounts(prev => prev.map(a => (a.id === updated.id ? updated : a)))
       setEditOpen(false)
       setEditingAccount(null)
       toast.success('Account updated successfully')
@@ -382,7 +375,7 @@ export default function ChartOfAccounts() {
                       <td className="tbl-cell">
                         <div className="flex items-center gap-2">
                           <button onClick={(e) => { e.stopPropagation(); openEdit(a) }} className="text-xs text-amber-400 hover:text-amber-300 font-medium">Edit</button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(a.code); }} disabled={deleting === a.code} className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"><Trash2 size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }} disabled={deleting === a.id} className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"><Trash2 size={12} /></button>
                         </div>
                       </td>
                     </tr>
@@ -458,7 +451,7 @@ export default function ChartOfAccounts() {
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDelete}
-        onCancel={() => setConfirm({ open: false, code: null, loading: false })}
+        onCancel={() => setConfirm({ open: false, id: null, loading: false })}
       />
     </div>
   )

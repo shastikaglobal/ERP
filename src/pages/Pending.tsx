@@ -1,13 +1,13 @@
 import { Sprout, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { vpsDb } from "@/lib/vpsDb";
 import { useNavigate } from "react-router-dom";
 
 export default function Pending() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await vpsDb.auth.signOut();
     navigate("/auth");
   };
 

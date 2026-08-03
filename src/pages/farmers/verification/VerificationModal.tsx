@@ -5,8 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  DialogFooter
+      } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +27,8 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
   onClose,
   farmer,
   mode,
-  onConfirm,
-}) => {
+  onConfirm
+      }) => {
   const [remarks, setRemarks] = React.useState('');
 
   if (!farmer) return null;

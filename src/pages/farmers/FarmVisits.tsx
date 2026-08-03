@@ -44,8 +44,7 @@ export default function FarmVisits() {
     async function loadEmployees() {
       try {
         const token = session?.access_token;
-        const res = await fetch('/api/employees', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        const res = await fetch('/api/employees', { headers: token ? { 'Authorization': `Bearer ${token }` } : {}
         });
         if (res.ok) {
           const data = await res.json();
@@ -115,8 +114,8 @@ export default function FarmVisits() {
         const dDate = new Date(d.visit_date);
         return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
       }).length,
-      cancelled: data.filter(d => d.status === 'Cancelled').length,
-    };
+      cancelled: data.filter(d => d.status === 'Cancelled').length
+      };
   }, [data]);
 
   // Filter & Sort Data
@@ -289,8 +288,8 @@ export default function FarmVisits() {
         d.visited_by,
         d.purpose === 'Other' ? d.custom_purpose : d.purpose,
         d.status
-      ]),
-    });
+      ])
+      });
     
     doc.save("Farm_Visits.pdf");
   };

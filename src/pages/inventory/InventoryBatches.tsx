@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +52,7 @@ interface Warehouse {
 }
 
 export default function InventoryBatches() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -90,26 +89,24 @@ export default function InventoryBatches() {
       try {
         setLoading(true);
         const [batchesRes, productsRes, warehousesRes] = await Promise.all([
-          supabase
-            .from("inventory_batches")
-            .select("*, products(name, grade), warehouses(name)")
-            .eq("company_id", profile.company_id)
-            .neq("is_deleted", true)
-            .order("received_date", { ascending: false }),
           (async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(`/api/inventory/products`, {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
-          });
-          return { data: res.ok ? await res.json() : null };
-        })(),
+            const res = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
+          })(),
           (async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(`/api/warehouse/warehouses`, {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
-          });
-          return { data: res.ok ? await res.json() : null };
-        })(),
+            const res = await fetch(`/api/products`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
+          })(),
+          (async () => {
+            const res = await fetch(`/api/warehouse/warehouses`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
+          })(),
         ]);
 
         if (batchesRes.error) throw batchesRes.error;
@@ -230,26 +227,27 @@ export default function InventoryBatches() {
     try {
       if (editingBatch) {
         // Update
-        const { error } = await supabase
-          .from("inventory_batches")
-          .update({
-            lot_number: formData.lot_number,
-            product_id: formData.product_id,
-            warehouse_id: formData.warehouse_id,
-            quantity_kg: Number(formData.quantity_kg),
-            quantity_remaining_kg: Number(formData.quantity_remaining_kg || formData.quantity_kg),
-            grade: formData.grade,
-            moisture_pct: formData.moisture_pct ? Number(formData.moisture_pct) : null,
-            received_date: formData.received_date,
-            expiry_date: formData.expiry_date || null,
-          })
-          .eq("id", editingBatch.id);
-
-        if (error) throw error;
+        const payload = {
+          lot_number: formData.lot_number,
+          product_id: formData.product_id,
+          warehouse_id: formData.warehouse_id,
+          quantity_kg: Number(formData.quantity_kg),
+          quantity_remaining_kg: Number(formData.quantity_remaining_kg || formData.quantity_kg),
+          grade: formData.grade,
+          moisture_pct: formData.moisture_pct ? Number(formData.moisture_pct) : null,
+          received_date: formData.received_date,
+          expiry_date: formData.expiry_date || null,
+        };
+        const res = await fetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Update failed');
         toast.success("Batch updated successfully");
       } else {
         // Create
-        const { error } = await supabase.from("inventory_batches").insert({
+        const payload = {
           company_id: profile.company_id,
           lot_number: formData.lot_number,
           product_id: formData.product_id,
@@ -261,9 +259,13 @@ export default function InventoryBatches() {
           received_date: formData.received_date,
           expiry_date: formData.expiry_date || null,
           status: "available",
+        };
+        const res = await fetch(`/api/inventory/inventory_batches`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
-
-        if (error) throw error;
+        if (!res.ok) throw new Error('Insert failed');
         toast.success("Batch added successfully");
       }
 
@@ -271,13 +273,13 @@ export default function InventoryBatches() {
       setIsEditDialogOpen(false);
       resetForm();
       // Refetch data
-      const { data } = await supabase
-        .from("inventory_batches")
-        .select("*, products(name, grade), warehouses(name)")
-        .eq("company_id", profile.company_id)
-        .neq("is_deleted", true)
-        .order("received_date", { ascending: false });
-      setBatches(data || []);
+      const refetchRes = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (refetchRes.ok) {
+        const data = await refetchRes.json();
+        setBatches(data || []);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to save batch");
     } finally {
@@ -326,12 +328,17 @@ export default function InventoryBatches() {
   const executeDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("inventory_batches").update({
+      const payload = {
         is_deleted: true,
         deleted_at: new Date().toISOString(),
         deleted_by: profile?.id || null,
-      }).eq("id", deleteId);
-      if (error) throw error;
+      };
+      const res = await fetch(`/api/inventory/inventory_batches/${deleteId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Delete failed');
       toast.success("Batch hidden successfully");
       setBatches(batches.filter((b) => b.id !== deleteId));
       setConfirmOpen(false);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Loader2, Coins, Edit } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -30,7 +30,7 @@ const CURRENCY_NAMES: Record<string, string> = {
 };
 
 export default function Ledger() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   
   const [rates, setRates] = useState<Record<string, number>>(() => {
     try {
@@ -51,7 +51,7 @@ export default function Ledger() {
     queryKey: ["currency_ledger_live", profile?.company_id, rates],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("payments")
         .select("amount, currency")
         .neq("is_deleted", true)

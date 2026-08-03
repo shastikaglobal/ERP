@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -80,20 +80,21 @@ export default function ActivityLogs() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { session } = useAuth();
+  
   const fetchLogs = async () => {
     try {
-      const { data: logsData, error: logsError } = await supabase
-        .from("activity_logs" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
+      const res = await fetch("/api/analytics/activity_logs", {
+        headers: { "Authorization": `Bearer ${session?.access_token || ""}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch activity logs");
+      
+      const rawLogs = await res.json();
 
-      if (logsError) throw logsError;
-
-      const rawLogs = (logsData || []) as ActivityLog[];
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, requested_role");
+      const profilesRes = await fetch("/api/employees", {
+        headers: { "Authorization": `Bearer ${session?.access_token || ""}` }
+      });
+      const profiles = profilesRes.ok ? await profilesRes.json() : [];
 
       const profileMap: Record<string, { role: string; team: string }> = {};
       (profiles || []).forEach((p: any) => {
@@ -104,7 +105,7 @@ export default function ActivityLogs() {
         };
       });
 
-      const enriched: ActivityLog[] = rawLogs.map((log) => {
+      const enriched: ActivityLog[] = rawLogs.map((log: any) => {
         const profile = log.actor_id ? profileMap[log.actor_id] : null;
         return {
           ...log,
@@ -115,6 +116,7 @@ export default function ActivityLogs() {
 
       setLogs(enriched);
     } catch (err: any) {
+      console.error(err);
       toast.error(err.message || "Failed to load activity logs");
     } finally {
       setLoading(false);
@@ -124,13 +126,9 @@ export default function ActivityLogs() {
   useEffect(() => {
     fetchLogs();
 
-    const channelId = `activity-logs-${Date.now()}`;
-    const channel = supabase
-      .channel(channelId)
-      .on("postgres_changes", { event: "*", schema: "public", table: "activity_logs" }, () => fetchLogs())
-      .subscribe();
+    const intervalId = setInterval(fetchLogs, 5000); // polling
 
-    return () => { supabase.removeChannel(channel); };
+    return () => clearInterval(intervalId);
   }, []);
 
   return (

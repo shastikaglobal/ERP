@@ -4,14 +4,14 @@ import Card from "@/components/Card";
 import { ClipboardList, Plus, Search, CheckCircle2, Circle, Clock, User, Tag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddTaskDialog } from "@/components/crm/AddTaskDialog";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { softDeleteRecord } from "@/lib/softDelete";
 
 export default function Tasks() {
-  const { profile, roleSlugs } = useAuth();
+  const { profile, roleSlugs , session } = useAuth();
   const slugs = Array.from(roleSlugs).map((s: string) => s.toLowerCase());
   const isAdminOrManager = slugs.includes("admin") || slugs.includes("manager");
 
@@ -23,18 +23,18 @@ export default function Tasks() {
     if (profile?.company_id) {
       fetchTasks();
 
-      // Supabase realtime removed. We rely on initial fetch and manual/optimistic updates.
+      
     }
   }, [profile?.company_id]);
 
   const fetchTasks = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: HeadersInit = {};
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
-      const res = await fetch(`/api/crm-tasks?company_id=${profile?.company_id || ''}`, { headers });
+      const res = await fetch(`/api/crm-tasks?company_id=${profile?.company_id || ''}`, { headers  });
       if (!res.ok) throw new Error("Failed to fetch tasks");
       const data = await res.json();
       setTasks(data);
@@ -50,13 +50,11 @@ export default function Tasks() {
       // Optimistic update
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/crm-tasks/${id}`, {
-        method: 'PUT',
+      
+      const res = await fetch(`/api/crm-tasks/${id}`, { method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ status: newStatus })
       });
         
@@ -70,10 +68,8 @@ export default function Tasks() {
   const deleteTask = async (id: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/crm-tasks/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/crm-tasks/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to archive task");
       setTasks(prev => prev.filter((task) => task.id !== id));

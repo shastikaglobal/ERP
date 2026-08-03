@@ -96,8 +96,8 @@ export default function ContractFarming() {
         const endDate = new Date(d.end_date);
         return endDate >= now && endDate <= thirtyDaysFromNow;
       }).length,
-      completed: data.filter(d => d.status === 'Completed').length,
-    };
+      completed: data.filter(d => d.status === 'Completed').length
+      };
   }, [data]);
 
   // Filter & Sort Data
@@ -255,8 +255,8 @@ export default function ContractFarming() {
         d.agreed_price,
         new Date(d.end_date).toLocaleDateString(),
         d.status
-      ]),
-    });
+      ])
+      });
     
     doc.save("Contract_Farming.pdf");
   };

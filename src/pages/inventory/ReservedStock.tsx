@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,7 +38,7 @@ const statusBadgeMap: Record<string, string> = {
 
 export default function ReservedStock() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -54,7 +53,6 @@ export default function ReservedStock() {
     queryKey: ["reserved-stock"],
     queryFn: async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch('/api/inventory/reserved_stock', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -76,8 +74,11 @@ export default function ReservedStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('is_active', true).order('name');
-      if (error) throw error;
+      const res = await fetch('/api/products', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
       // Deduplicate products by name only
       const seen = new Map<string, any>();
       for (const product of (data || [])) {
@@ -93,7 +94,6 @@ export default function ReservedStock() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/inventory/warehouses', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -105,13 +105,12 @@ export default function ReservedStock() {
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { data: { session: __session_mut } } = await supabase.auth.getSession();
       if (payload.id) {
         // UPDATE via VPS API
         const __res_upd = await fetch(`/api/inventory/reserved_stock/${payload.id}`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${__session_mut?.access_token}`,
+            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -132,12 +131,11 @@ export default function ReservedStock() {
           throw new Error(errData.error || 'Update failed');
         }
       } else {
-        const { data: { session: __session_ins } } = await supabase.auth.getSession();
         const company_id = profile?.company_id;
         const __res_ins = await fetch(`/api/inventory/reserved_stock`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${__session_ins?.access_token}`,
+            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify([{
@@ -173,7 +171,6 @@ export default function ReservedStock() {
 
   const actionMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data: { session } } = await supabase.auth.getSession();
       
       if (status === "delete") {
         const res = await fetch(`/api/inventory/reserved_stock/${id}`, {

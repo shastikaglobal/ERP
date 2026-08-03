@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Loader2, History } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -12,7 +11,7 @@ import { RefreshCw, Download } from "lucide-react";
 
 
 export default function StockMovements() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ inbound: 0, outbound: 0 });
@@ -22,13 +21,12 @@ export default function StockMovements() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("inventory_movements")
-        .select("*")
-        .eq("company_id", profile.company_id)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
+      const res = await fetch(`/api/inventory/inventory_movements?company_id=${profile.company_id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch stock movements');
+      const data = await res.json();
+      
       setMovements(data || []);
       
       const inQty = data?.filter(m => m.direction === 'in').reduce((acc, m) => acc + Number(m.qty), 0) || 0;

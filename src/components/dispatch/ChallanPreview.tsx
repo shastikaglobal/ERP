@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { vpsDb } from "@/lib/vpsDb";
+
 
 type Props = {
   shipmentId: string;
@@ -18,7 +19,7 @@ const ChallanPreview: React.FC<Props> = ({ shipmentId }) => {
   useEffect(() => {
     if (!shipmentId) return;
     const fetch = async () => {
-      const { data } = await supabase
+      const { data } = await vpsDb
         .from('challans')
         .select('*')
         .eq('shipment_id', shipmentId)

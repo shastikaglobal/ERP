@@ -1,2 +1,0 @@
--- THE DATA SHOULDN'T BE DELETED
--- (This script has been intentionally disabled to protect real BDE leads)

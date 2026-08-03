@@ -57,8 +57,8 @@ export default function FarmerPayoutsPage() {
     return {
       totalAmount: data.reduce((acc, curr) => acc + curr.amount, 0),
       pendingAmount: data.filter(d => d.status === 'Pending').reduce((acc, curr) => acc + curr.amount, 0),
-      pendingCount: data.filter(d => d.status === 'Pending').length,
-    };
+      pendingCount: data.filter(d => d.status === 'Pending').length
+      };
   }, [data]);
 
   const filteredData = useMemo(() => {

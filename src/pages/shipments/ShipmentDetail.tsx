@@ -3,24 +3,24 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, MapPin, Ship, Container as ContainerIcon, Anchor, Truck as TruckIcon,
   CheckCircle2, Loader2, Package, FileText, Plus, Clock, Shield, FileCheck,
-  MessageSquare, AlertCircle, Calendar, ChevronDown, Pencil, X, QrCode,
-} from "lucide-react";
+  MessageSquare, AlertCircle, Calendar, ChevronDown, Pencil, X, QrCode
+      } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+      } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+      } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -91,8 +91,8 @@ function fmtDate(d: string | null) {
 
 function fmtDateTime(d: string) {
   return new Date(d).toLocaleString("en-IN", {
-    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-  });
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      });
 }
 
 /* ─── Event icon component ───────────────────────────────────── */
@@ -121,69 +121,59 @@ export default function ShipmentDetail() {
   /* ── Shipment ── */
   const {
     data: shipment,
-    isLoading: shipLoading,
-  } = useQuery<Shipment>({
+    isLoading: shipLoading
+      } = useQuery<Shipment>({
     queryKey: ["shipment", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("export_shipments")
-        .select(`*, export_orders(order_number, product, quantity, unit, unit_price, total_amount, currency, customer_country, incoterms)`)
-        .eq("id", id!)
-        .single();
-      if (error) throw error;
-      return data as Shipment;
+      const res = await fetch(`/api/finance/export_shipments/${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error("Failed to fetch shipment");
+      const shipmentData = await res.json();
+      if (shipmentData && shipmentData.order_id) {
+        const orderRes = await fetch(`/api/finance/export_orders/${shipmentData.order_id}`, { credentials: 'include' });
+        if (orderRes.ok) {
+          shipmentData.export_orders = await orderRes.json();
+        }
+      }
+      return shipmentData as Shipment;
     },
-    enabled: !!id,
-  });
+    enabled: !!id
+      });
 
   /* ── Containers ── */
   const { data: containers = [] } = useQuery<Container[]>({
     queryKey: ["shipment_containers", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("export_containers")
-        .select("id, container_number, container_type, weight_kg, status")
-        .eq("shipment_id", id!);
-      if (error) throw error;
+      const res = await fetch(`/api/finance/export_containers?shipment_id=${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error("Failed to fetch containers");
+      const data = await res.json();
       return (data ?? []) as Container[];
     },
-    enabled: !!id,
-  });
+    enabled: !!id
+      });
 
   /* ── Linked barcodes ── */
   const { data: linkedBarcodes = [] } = useQuery({
     queryKey: ["shipment_barcodes", id],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("batch_barcodes")
-          .select(`
-            id, code, level, box_number, current_location, status, scan_count, last_scanned_at,
-            net_weight, packing_date, sku_code, carton_number_total,
-            batch:inventory_batches(lot_number, grade, product:products(name)),
-            export_containers(container_number)
-          `)
-          .eq("shipment_id", id!)
-          .order("created_at", { ascending: false });
-        if (error) return [];
+        const res = await fetch(`/api/barcodes?shipment_id=${id}`, { credentials: 'include' });
+        if (!res.ok) return [];
+        const data = await res.json();
         return (data ?? []) as any[];
       } catch { return []; }
     },
     enabled: !!id,
-    refetchInterval: 20_000,
-  });
+    refetchInterval: 20_000
+      });
 
   /* ── Events timeline ── */
   const { data: events = [], isLoading: eventsLoading } = useQuery<ShipmentEvent[]>({
     queryKey: ["shipment_events", id],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from("shipment_events")
-          .select("id, event_type, title, description, location, created_at, created_by")
-          .eq("shipment_id", id!)
-          .order("created_at", { ascending: false });
-        if (error) return [];
+        const res = await fetch(`/api/shipments/events?shipment_id=${id}`, { credentials: 'include' });
+        if (!res.ok) return [];
+        const data = await res.json();
         return (data ?? []) as ShipmentEvent[];
       } catch { return []; }
     },
@@ -194,44 +184,36 @@ export default function ShipmentDetail() {
   /* ── Update shipment status ── */
   const updateStatus = useMutation({
     mutationFn: async (newStatus: string) => {
-      const { error } = await supabase
-        .from("export_shipments")
-        .update({ status: newStatus })
-        .eq("id", id!);
-      if (error) throw error;
+      // const error = new Error('VpsDb removed');
+      // if (error) throw error;
 
       // Log automatic status-change event
-      await supabase.from("shipment_events").insert({
-        company_id: shipment!.company_id,
-        shipment_id: id,
-        event_type: "status_change",
-        title: `Status changed to "${newStatus}"`,
-        description: `Updated by ${profile?.full_name ?? "a team member"}.`,
-        created_by: profile?.id,
-      });
+      await fetch(`/api/shipment_events`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shipment_id: id, event_type: "status_change", title: "Shipment status updated", description: "Updated to " + (formData?.status || "new status"), location: formData?.vessel_name || "", date: new Date().toISOString().split('T')[0] }) });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shipment", id] });
       qc.invalidateQueries({ queryKey: ["shipment_events", id] });
       toast.success("Status updated");
     },
-    onError: () => toast.error("Failed to update status"),
-  });
+    onError: () => toast.error("Failed to update status")
+      });
 
   /* ── Update container status ── */
   const updateContainer = useMutation({
     mutationFn: async ({ cid, status }: { cid: string; status: string }) => {
-      const { error } = await supabase
-        .from("export_containers")
-        .update({ status })
-        .eq("id", cid);
-      if (error) throw error;
+      const res = await fetch(`/api/finance/export_containers/${cid}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error("Failed to update container");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shipment_containers", id] });
       toast.success("Container status updated");
-    },
-  });
+    }
+      });
 
   if (shipLoading)
     return (
@@ -576,8 +558,8 @@ export default function ShipmentDetail() {
    Add Event Dialog
 ═══════════════════════════════════════════════════════════════ */
 function AddEventDialog({
-  open, onClose, shipmentId, companyId, profileId, onSuccess,
-}: {
+  open, onClose, shipmentId, companyId, profileId, onSuccess
+      }: {
   open: boolean;
   onClose: () => void;
   shipmentId: string;
@@ -601,16 +583,21 @@ function AddEventDialog({
     if (!title.trim()) { toast.error("Title is required"); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from("shipment_events").insert({
-        company_id: companyId,
-        shipment_id: shipmentId,
-        event_type: eventType,
-        title: title.trim(),
-        description: description.trim() || null,
-        location: location.trim() || null,
-        created_by: profileId ?? null,
+      const res = await fetch(`/api/shipment_events`, { 
+        method: 'POST', 
+        credentials: 'include', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          shipment_id: id, 
+          event_type: eventType, 
+          title: title, 
+          description: description, 
+          location: location, 
+          date: new Date().toISOString().split('T')[0] 
+        }) 
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to save event");
+      // if (error) throw error;
       reset();
       onSuccess();
     } catch (e: any) {

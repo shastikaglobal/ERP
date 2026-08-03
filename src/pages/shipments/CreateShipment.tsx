@@ -8,13 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function CreateShipment() {
   const nav = useNavigate();
-  const { profile } = useAuth();
+  const { profile , session } = useAuth();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -49,15 +49,15 @@ export default function CreateShipment() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const [ordersRes, carriersRes, portsRes, containersRes] = await Promise.all([
-        fetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers }),
-        fetch('/api/finance/shipping_carriers', { headers }),
-        fetch('/api/finance/shipping_ports', { headers }),
-        fetch('/api/finance/container_types', { headers })
+        fetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers  }),
+        fetch('/api/finance/shipping_carriers', { headers  }),
+        fetch('/api/finance/shipping_ports', { headers  }),
+        fetch('/api/finance/container_types', { headers  })
       ]);
 
       if (ordersRes.ok) {
@@ -103,18 +103,17 @@ export default function CreateShipment() {
     
     setSavingPort(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch('/api/finance/shipping_ports', {
-        method: 'POST',
+      const res = await fetch('/api/finance/shipping_ports', { method: 'POST',
         headers,
         body: JSON.stringify({
           name: newPortName,
           country: newPortCountry,
           code: newPortCode.toUpperCase()
-        })
+         })
       });
       if (!res.ok) throw new Error(await res.text() || "Failed to add port");
 
@@ -137,17 +136,16 @@ export default function CreateShipment() {
     
     setSavingContainer(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch('/api/finance/container_types', {
-        method: 'POST',
+      const res = await fetch('/api/finance/container_types', { method: 'POST',
         headers,
         body: JSON.stringify({
           name: newContainerName,
           description: newContainerDesc
-        })
+         })
       });
       if (!res.ok) throw new Error(await res.text() || "Failed to add container type");
 
@@ -170,7 +168,7 @@ export default function CreateShipment() {
 
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -179,10 +177,9 @@ export default function CreateShipment() {
       const existingCarrier = carriersList.find(c => c.name.toLowerCase() === trimmedCarrier.toLowerCase());
       if (!existingCarrier) {
         const newCode = trimmedCarrier.substring(0, 3).toUpperCase();
-        await fetch('/api/finance/shipping_carriers', {
-          method: 'POST',
+        await fetch('/api/finance/shipping_carriers', { method: 'POST',
           headers,
-          body: JSON.stringify({ name: trimmedCarrier, code: newCode })
+          body: JSON.stringify({ name: trimmedCarrier, code: newCode  })
         });
       }
 
@@ -192,14 +189,13 @@ export default function CreateShipment() {
       if (!existingOrigin) {
         const rand = Math.floor(Math.random() * 9000 + 1000);
         const newCode = `PRT-${rand}`;
-        await fetch('/api/finance/shipping_ports', {
-          method: 'POST',
+        await fetch('/api/finance/shipping_ports', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedOrigin,
             country: 'Unknown',
             code: newCode
-          })
+           })
         });
       }
 
@@ -209,14 +205,13 @@ export default function CreateShipment() {
       if (!existingDest && trimmedDest.toLowerCase() !== trimmedOrigin.toLowerCase()) {
         const rand = Math.floor(Math.random() * 9000 + 1000);
         const newCode = `PRT-${rand}`;
-        await fetch('/api/finance/shipping_ports', {
-          method: 'POST',
+        await fetch('/api/finance/shipping_ports', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedDest,
             country: 'Unknown',
             code: newCode
-          })
+           })
         });
       }
 
@@ -224,13 +219,12 @@ export default function CreateShipment() {
       const trimmedType = containerType.trim();
       const existingType = containerTypesList.find(c => c.name.toLowerCase() === trimmedType.toLowerCase());
       if (!existingType) {
-        await fetch('/api/finance/container_types', {
-          method: 'POST',
+        await fetch('/api/finance/container_types', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedType,
             description: 'Automatically created container type'
-          })
+           })
         });
       }
 
@@ -243,8 +237,7 @@ export default function CreateShipment() {
       const weightPerContainer = totalWeight / count;
 
       // Insert shipment
-      const shipRes = await fetch('/api/finance/export_shipments', {
-        method: 'POST',
+      const shipRes = await fetch('/api/finance/export_shipments', { method: 'POST',
         headers,
         body: JSON.stringify({
           company_id: profile!.company_id,
@@ -260,7 +253,7 @@ export default function CreateShipment() {
           unit_net_weight: selectedOrder?.unit_net_weight,
           status: 'Pending',
           created_by: profile!.id
-        })
+         })
       });
 
       if (!shipRes.ok) throw new Error(await shipRes.text() || "Failed to create shipment");
@@ -276,23 +269,15 @@ export default function CreateShipment() {
         status: 'Pending'
       }));
 
-      const contRes = await fetch('/api/finance/export_containers', {
-        method: 'POST',
+      const contRes = await fetch('/api/finance/export_containers', { method: 'POST',
         headers,
         body: JSON.stringify(containersToInsert)
-      });
+       });
       if (!contRes.ok) throw new Error(await contRes.text() || "Failed to create containers");
 
       // Auto-generate a tracking entry (cargo/barcode) for this shipment
-      const { error: barcodeError } = await supabase.from('batch_barcodes').insert({
-        company_id: profile!.company_id,
-        shipment_id: shipment.id,
-        order_id: orderId || null,
-        code: `SHP-${shipmentNumber}-${Date.now().toString().slice(-4)}`,
-        level: 'shipment',
-        current_location: trimmedOrigin || 'Origin Port',
-        status: 'active'
-      });
+      const bRes = await fetch('/api/barcodes', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_number: b.batch_number, barcode_data: b.batch_number, created_by: profile?.id }) });
+      const barcodeError = bRes.ok ? null : new Error('Failed');
       
       if (barcodeError) {
         console.error("Failed to create barcode tracking:", barcodeError);

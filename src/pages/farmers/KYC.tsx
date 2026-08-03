@@ -104,8 +104,8 @@ export default function KYC() {
       total: data.length,
       pending: data.filter(d => d.status === 'Pending').length,
       completed: data.filter(d => d.status === 'Completed').length,
-      rejected: data.filter(d => d.status === 'Rejected').length,
-    };
+      rejected: data.filter(d => d.status === 'Rejected').length
+      };
   }, [data]);
 
   // Filter & Sort Data
@@ -287,8 +287,8 @@ export default function KYC() {
         d.pan_no, 
         maskBankAccount(d.bank_account), 
         d.status
-      ]),
-    });
+      ])
+      });
     
     doc.save("Farmer_KYC.pdf");
   };

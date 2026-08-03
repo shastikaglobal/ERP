@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { getInventoryAgingData } from "@/lib/report-services";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Calendar } from "lucide-react";
@@ -16,9 +16,9 @@ export default function InventoryAgingReport() {
   const { data: warehouses } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();

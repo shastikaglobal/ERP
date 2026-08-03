@@ -19,8 +19,8 @@ const COLORS = {
   green: "#3fb950",
   textPrimary: "#e6edf3",
   textSecondary: "#8b949e",
-  textMuted: "#484f58",
-};
+  textMuted: "#484f58"
+      };
 
 const initialLeads = [
   { id: "L001", company: "Future Wave Food Trading", country: "UAE", contact: "Ahmad Al-Rashid", email: "ahmad@futurewave.ae", phone: "+971 50 123 4567", product: "Turmeric Powder", status: "Negotiation", value: 85000, assignee: "Swathi", date: "2026-05-01", followUp: "2026-06-02" },

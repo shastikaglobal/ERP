@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useAuth } from "@/hooks/useAuth";
 import { X, Check, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,7 +114,7 @@ export function FollowUpReminders() {
     const currentHHMM = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("follow_ups")
         .select("id, company_name, contact_name, follow_up_date, assigned_to, reminder_time")
         .eq("follow_up_date", today)
@@ -144,7 +145,7 @@ export function FollowUpReminders() {
 
   const markAsDone = async (id: string, company_name: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await vpsDb
         .from("follow_ups")
         .update({ is_notified: true })
         .eq("id", id);

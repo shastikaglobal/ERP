@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
@@ -18,7 +19,7 @@ export function LowStockSwiper() {
   const { data: lowStockItems, isLoading } = useQuery({
     queryKey: ['low_stock_alerts'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from('view_product_stock_levels' as any)
         .select('*')
         .or('stock_status.eq.low,stock_status.eq.warning')

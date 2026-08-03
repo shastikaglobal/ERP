@@ -5,7 +5,6 @@ import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
 import { Plus, AlertTriangle, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import ConfirmDialog from '../../components/ui/ConfirmDialogLegacy'
 
@@ -42,7 +41,8 @@ const SearchBar = ({ placeholder, value, onChange, children }) => (
 
 export default function Parties() {
   const nav = useNavigate()
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
+  const token = session?.access_token
   const [parties, setParties] = useState([])
   const [search, setSearch] = useState('')
   const [typeFilter, setType] = useState('All')
@@ -69,35 +69,22 @@ export default function Parties() {
   const fetchParties = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('parties')
-        .select('*')
-        .neq('is_deleted', true)
-        .order('name', { ascending: true })
-
-      if (error) {
-        console.error('Failed to load parties:', error)
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          hint: error.hint,
-          details: error.details
-        })
-        
-        // Provide more specific error messages
-        if (error.message?.includes('relation "parties" does not exist')) {
-          toast.error('Parties table not found. Please run the migration. See FIX_PARTIES_ERROR.md')
-        } else if (error.message?.includes('permission denied')) {
-          toast.error('Permission denied. Check RLS policies and your company assignment.')
-        } else if (error.message?.includes('new row violates row-level security policy')) {
-          toast.error('RLS policy issue. Check your company assignment in profiles.')
-        } else {
-          toast.error('Unable to load parties. Check your database connection.')
+      const res = await fetch('/api/finance/parties', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        setParties([])
-      } else {
+      })
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch parties')
+      }
+      
+      const data = await res.json()
+      
+      // Filter out deleted parties if backend doesn't do it automatically
+      const activeData = data.filter(p => !p.is_deleted)
         // Deduplicate client-side by GSTIN to avoid duplicate rows in UI
-        const src = data || []
+        const src = activeData || []
         const unique = []
         const seen = new Set()
         for (const item of src) {
@@ -107,8 +94,8 @@ export default function Parties() {
             unique.push(item)
           }
         }
+        unique.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         setParties(unique)
-      }
     } catch (err) {
       console.error('Unexpected error loading parties:', err)
       toast.error('Unexpected error: ' + (err?.message || 'Unknown error'))
@@ -127,21 +114,25 @@ export default function Parties() {
     if (!id) return
     setConfirm(c => ({ ...c, loading: true }))
     setDeleting(id)
-    const { error } = await supabase
-      .from('parties')
-      .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile?.id || null
+    try {
+      const res = await fetch(`/api/finance/parties/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
-      .eq('id', id)
+      
+      setDeleting(null)
+      setConfirm({ open: false, id: null, loading: false })
 
-    setDeleting(null)
-    setConfirm({ open: false, id: null, loading: false })
-
-    if (error) {
+      if (!res.ok) {
+        throw new Error('Soft delete failed')
+      }
+    } catch (error) {
       console.error('Soft delete error:', error)
       toast.error('Unable to remove party. Please try again.')
+      setDeleting(null)
+      setConfirm({ open: false, id: null, loading: false })
       return
     }
 
@@ -180,12 +171,21 @@ export default function Parties() {
         outstanding: Number(form.outstanding) || 0,
         status: form.status
       }
-      const { data, error } = await supabase.from('parties').update(payload).eq('id', editingParty.id).select().single()
-      if (error) {
-        console.error('Update party error:', error)
-        toast.error('Unable to save party. ' + (error.message || ''))
-        return
+      const res = await fetch(`/api/finance/parties/${editingParty.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to update party')
       }
+      
+      const data = { ...editingParty, ...payload }
       setParties((prev) => prev.map((p) => (p.id === data.id ? data : p)))
       setEditOpen(false)
       setEditingParty(null)

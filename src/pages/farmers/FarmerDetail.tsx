@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Section } from "@/components/shared/FormShell";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useFarmerContext } from "@/context/FarmerContext";
 import { useIsAdminOrManager } from "@/hooks/useAuth";
 
@@ -34,17 +34,11 @@ export default function FarmerDetail() {
     queryKey: ["farmer-pos", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("purchase_orders")
-        .select("id, po_number, order_date, total, status")
-        .eq("farmer_id", id!)
-        .neq("is_deleted", true)
-        .order("order_date", { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data;
-    },
-  });
+      const res = await fetch(`/api/finance/purchase_orders?farmer_id=${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error("Failed to fetch purchase orders");
+      return res.json();
+    }
+      });
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin" /></div>;

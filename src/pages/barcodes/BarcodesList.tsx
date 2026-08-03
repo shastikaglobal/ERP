@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, QrCode, Plus, ScanLine, Printer, Ship, Package, Globe } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -6,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
 export default function BarcodesList() {
+  const { session } = useAuth();
+
   const nav = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
 
@@ -18,7 +21,7 @@ export default function BarcodesList() {
     queryKey: ["batch_barcodes"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await vpsDb
           .from("batch_barcodes")
           .select(`
             id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, 

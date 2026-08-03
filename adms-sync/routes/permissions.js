@@ -2,15 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { createClient } = require('@supabase/supabase-js');
 
 // profiles and user_permissions live in Supabase, with fallbacks to local VPS DB
-const _SB_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!_SB_URL || !_SB_KEY) {
-  console.warn("⚠️ WARNING (permissions.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase client disabled.");
-}
-const supabase = (_SB_URL && _SB_KEY) ? createClient(_SB_URL, _SB_KEY) : null;
 
 // GET /api/user-permissions?user_id=xxx  OR  GET /api/user-permissions (admin matrix)
 router.get('/', requireAuth, async (req, res) => {

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { getDispatchReportData } from "@/lib/report-services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

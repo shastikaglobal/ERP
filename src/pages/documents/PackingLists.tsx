@@ -4,7 +4,7 @@ import { FileBox, Package, Loader2, Trash2, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ export default function PackingLists() {
   const navigate = useNavigate();
   const [packingLists, setPackingLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
 
   useEffect(() => {
     const fetchPLs = async () => {
@@ -23,7 +23,7 @@ export default function PackingLists() {
       
       setLoading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await vpsDb.auth.getSession();
         const token = sessionData.session?.access_token;
 
         const res = await fetch("http://127.0.0.1:8082/api/warehouse/packing_protocols", {
@@ -53,7 +53,7 @@ export default function PackingLists() {
     if (!confirm("Are you sure you want to delete this packing list?")) return;
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await vpsDb.auth.getSession();
       const token = sessionData.session?.access_token;
 
       const res = await fetch(`http://127.0.0.1:8082/api/warehouse/packing_protocols/${id}`, {

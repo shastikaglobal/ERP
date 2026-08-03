@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { inferTeamFromActorName } from "@/lib/teamMapping";
 
 const AUDIT_LOGS_TABLE = "audit_logs";
@@ -9,7 +10,7 @@ let resolvedAuditTable: string | null = null;
 async function getAuditTableName() {
   if (resolvedAuditTable) return resolvedAuditTable;
 
-  const { error } = await supabase
+  const { error } = await vpsDb
     .from(AUDIT_LOGS_TABLE)
     .select("id")
     .limit(1);
@@ -51,10 +52,22 @@ export interface AuditLogEntry {
 export async function logAudit(entry: AuditLogEntry): Promise<void> {
   try {
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await vpsDb.auth.getUser();
     if (!user) {
       console.warn("No authenticated user for audit log");
       return;
+    }
+    
+    // Get token for fetch
+    let token = "";
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || "");
+          token = data.access_token;
+        } catch (e) {}
+      }
     }
 
     // Calculate changes count
@@ -80,7 +93,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
     if (!teamToInsert) {
       try {
         // Try to read department and full name from profiles (some deployments may have this column)
-        const { data: profileData, error: profErr } = await supabase
+        const { data: profileData, error: profErr } = await vpsDb
           .from("profiles")
           .select("department, full_name")
           .eq("id", user.id)
@@ -104,7 +117,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
     if (!teamToInsert) {
       try {
         // Fallback: infer from role slugs (e.g. 'bde' or 'sales' -> 'BDE')
-        const { data: userRoles } = await supabase
+        const { data: userRoles } = await vpsDb
           .from("user_roles")
           .select("roles(slug)")
           .eq("user_id", user.id);
@@ -117,7 +130,6 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       }
     }
 
-    // Insert audit log into the table available in the current database.
     const auditTable = await getAuditTableName();
     const insertPayload =
       auditTable === AUDIT_LOGS_TABLE
@@ -142,10 +154,20 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
             user_email: user.email ?? undefined,
           };
 
-    const { error } = await supabase.from(auditTable).insert(insertPayload);
-
-    if (error) {
-      console.error("Failed to log audit:", error);
+    try {
+      const res = await fetch("/api/analytics/audit_logs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(insertPayload)
+      });
+      if (!res.ok) {
+        console.error("Failed to log audit via API");
+      }
+    } catch(err) {
+      console.error("Failed to log audit:", err);
     }
   } catch (error) {
     console.error("Audit logging error:", error);
@@ -177,7 +199,7 @@ export async function getAuditLogs(filters?: {
 
   const orderColumn = auditTable === AUDIT_LOGS_TABLE ? "timestamp" : "created_at";
 
-  let query = supabase
+  let query = vpsDb
     .from(auditTable)
     .select(selectFields)
     .order(orderColumn, { ascending: false });
@@ -237,7 +259,7 @@ export async function getAuditSummary(days: number = 7) {
   const auditTable = await getAuditTableName();
 
   if (auditTable === AUDIT_LOGS_TABLE) {
-    const { data, error } = await supabase
+    const { data, error } = await vpsDb
       .from(auditTable)
       .select("action, status, resource_type")
       .gte("timestamp", startDate.toISOString());
@@ -264,7 +286,7 @@ export async function getAuditSummary(days: number = 7) {
     return summary;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await vpsDb
     .from(auditTable)
     .select("action")
     .gte("created_at", startDate.toISOString());
@@ -299,7 +321,7 @@ export async function cleanupOldAuditLogs(daysToKeep: number = 90): Promise<numb
   const auditTable = await getAuditTableName();
   const dateColumn = auditTable === AUDIT_LOGS_TABLE ? "timestamp" : "created_at";
 
-  const { data, error } = await supabase
+  const { data, error } = await vpsDb
     .from(auditTable)
     .update({
       is_deleted: true,

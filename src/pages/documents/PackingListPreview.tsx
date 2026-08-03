@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Loader2, Download, ArrowLeft, Printer } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PackingListPreview() {
+  const { session } = useAuth();
+
   const { id } = useParams();
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
@@ -15,7 +18,7 @@ export default function PackingListPreview() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: order, error } = await supabase
+        const { data: order, error } = await vpsDb
           .from("export_orders")
           .select("*, export_shipments(*)")
           .eq("id", id)

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { fetchBdeProfiles } from "@/lib/bde";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,13 +23,13 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+  CommandItem
+      } from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger
+      } from "@/components/ui/popover";
 import { Clock } from "lucide-react";
 
 const EXPORT_COUNTRIES = [
@@ -134,7 +134,7 @@ export default function LeadActivities() {
 
   const fetchBdeMembers = async () => {
     try {
-      const filtered = await fetchBdeProfiles(supabase);
+      const filtered = await fetchBdeProfiles();
       setBdeMembers(filtered);
     } catch (err) {
       console.error("Failed to fetch BDE members:", err);
@@ -144,25 +144,20 @@ export default function LeadActivities() {
   const fetchData = async () => {
     try {
       const [activitiesRes, leadsRes] = await Promise.all([
-        supabase
-          .from("activities" as any)
-          .select(`id, lead_id, type, title, due_date, completed, leads(company_name)`)
-          .neq('is_deleted', true)
-          .order("due_date", { ascending: true }),
-        supabase
-          .from("leads" as any)
-          .select("id, company_name, country")
-          .neq('is_deleted', true)
-          .order("company_name", { ascending: true })
+        fetch("/api/crm/activities", { credentials: "include" }),
+        fetch("/api/crm/leads", { credentials: "include" })
       ]);
 
-      if (activitiesRes.error) throw activitiesRes.error;
-      if (leadsRes.error) throw leadsRes.error;
+      if (!activitiesRes.ok) throw new Error("Failed to fetch activities");
+      if (!leadsRes.ok) throw new Error("Failed to fetch leads");
+
+      const activitiesData = await activitiesRes.json();
+      const leadsData = await leadsRes.json();
 
       await fetchBdeMembers();
 
-      setActivities(activitiesRes.data as unknown as Activity[]);
-      setLeads(leadsRes.data as unknown as Lead[]);
+      setActivities(activitiesData);
+      setLeads(leadsData);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch data");
     } finally {
@@ -175,23 +170,14 @@ export default function LeadActivities() {
     if (isAdminOrManager || isBDE) fetchDailyReports();
   }, [isAdminOrManager, isBDE, currentUser?.id, syncCounter]);
 
-  useEffect(() => {
-    const bdeChannel = supabase
-      .channel("bde-roles-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, fetchBdeMembers)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(bdeChannel);
-    };
-  }, []);
-
   const handleDeleteReport = async () => {
     if (!reportToDelete) return;
     try {
-      // Soft-delete the report instead of permanent removal
-      const { error } = await supabase.from('bde_daily_reports' as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', reportToDelete);
-      if (error) throw error;
+      const res = await fetch(`/api/crm/reports/${reportToDelete}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to delete report");
 
       // Remove from local state view
       setDailyReports(prev => prev.filter(r => (r as any).id !== reportToDelete));
@@ -211,43 +197,14 @@ export default function LeadActivities() {
     if (!currentUser?.id) return;
     setLoadingReports(true);
     try {
-      let query = supabase
-        .from('bde_daily_reports' as any)
-        .select('*')
-        .neq('is_deleted', true);
-      
+      let url = "/api/crm/reports";
       if (!isAdminOrManager && isBDE) {
-        query = query.eq('bde_id', currentUser.id);
+        url += `?bde_id=${currentUser.id}`;
       }
-
-      const { data, error } = await query.order('report_date', { ascending: false });
-      if (error) throw error;
-
-      // Fetch profile names for BDE IDs
-      if (data && data.length > 0) {
-        const bdeIds = Array.from(new Set((data as any[]).map((r: any) => r.bde_id).filter(Boolean)));
-        if (bdeIds.length > 0) {
-          const { data: profiles, error: profileError } = await supabase
-            .from('profiles' as any)
-            .select('id, full_name')
-            .in('id', bdeIds);
-          
-          if (!profileError && profiles) {
-            const profileMap = Object.fromEntries(profiles.map((p: any) => [p.id, p]));
-            const enriched = (data as any[]).map(r => ({
-              ...r,
-              profiles: profileMap[r.bde_id] || null
-            }));
-            setDailyReports(enriched);
-          } else {
-            setDailyReports(data || []);
-          }
-        } else {
-          setDailyReports(data || []);
-        }
-      } else {
-        setDailyReports(data || []);
-      }
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch reports");
+      const data = await res.json();
+      setDailyReports(data);
     } catch (err: any) {
       console.error("Failed to fetch reports:", err);
     } finally {
@@ -264,34 +221,19 @@ export default function LeadActivities() {
 
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      if (!userId) {
-        throw new Error("You must be logged in to create an activity");
-      }
-
-      const finalLeadId = leadId && leadId !== "none" ? leadId : null;
-
-      let finalDueDate = null;
-      if (dateStr) {
-        let hourInt = parseInt(hourStr, 10);
-        if (ampmStr === "PM" && hourInt < 12) hourInt += 12;
-        if (ampmStr === "AM" && hourInt === 12) hourInt = 0;
-        
-        const timeString = `${hourInt.toString().padStart(2, '0')}:${minuteStr}:00`;
-        finalDueDate = new Date(`${dateStr}T${timeString}`).toISOString();
-      }
-
-      const { error } = await supabase.from("activities" as any).insert({
-        title,
-        type,
-        lead_id: finalLeadId,
-        due_date: finalDueDate,
-        created_by: userId,
+      const res = await fetch("/api/crm/activities", { method: "POST",
+        headers: { "Content-Type": "application/json"  },
+        credentials: "include",
+        body: JSON.stringify({
+          title,
+          type,
+          lead_id: finalLeadId,
+          due_date: finalDueDate,
+          created_by: currentUser?.id
+      })
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to create activity");
       
       toast.success("Activity created successfully");
       setIsDialogOpen(false);
@@ -312,12 +254,13 @@ export default function LeadActivities() {
 
   const toggleComplete = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from("activities" as any)
-        .update({ completed: !currentStatus })
-        .eq("id", id);
+      const res = await fetch(`/api/crm/activities/${id}`, { method: "PUT",
+        headers: { "Content-Type": "application/json"  },
+        credentials: "include",
+        body: JSON.stringify({ completed: !currentStatus })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to update status");
       setActivities(activities.map(a => a.id === id ? { ...a, completed: !currentStatus } : a));
       toast.success("Status updated");
     } catch (error: any) {
@@ -334,8 +277,11 @@ export default function LeadActivities() {
     if (!deleteId) return;
     try {
       // Soft-delete activity instead of permanent removal
-      const { error } = await supabase.from("activities" as any).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", deleteId);
-      if (error) throw error;
+      const res = await fetch(`/api/crm/activities/${deleteId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to delete activity");
       toast.success("Activity removed from view (soft-deleted)");
       fetchData();
     } catch (error: any) {
@@ -481,8 +427,12 @@ export default function LeadActivities() {
                     return;
                   }
 
-                  const { error } = await supabase.from('bde_daily_reports' as any).insert(payload as any);
-                  if (error) throw error;
+                  const res = await fetch("/api/crm/reports", { method: "POST",
+                    headers: { "Content-Type": "application/json"  },
+                    credentials: "include",
+                    body: JSON.stringify(payload)
+                  });
+                  if (!res.ok) throw new Error("Failed to submit report");
                   toast.success("Daily report submitted successfully");
                   setIsReportModalOpen(false);
                   setReportForm({

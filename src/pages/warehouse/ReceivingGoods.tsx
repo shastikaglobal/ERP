@@ -24,7 +24,6 @@ import {
     AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 const STAGES = [
@@ -56,20 +55,16 @@ const COMPANY_PRODUCT_NAMES = [
 
 export default function ReceivingGoods() {
     const queryClient = useQueryClient();
-    const { profile } = useAuth();
+  const { profile, session } = useAuth();
     const [activeTab, setActiveTab] = useState<"entry" | "list">("entry");
 
     const { data: suppliers = [], isLoading: suppliersLoading, error: suppliersError } = useQuery({
         queryKey: ["warehouse-suppliers"],
         enabled: true,
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('farmers')
-                .select('id, full_name, email, phone')
-                .neq('is_deleted', true)
-                .eq('is_active', true)
-                .order('full_name', { ascending: true });
-            if (error) throw error;
+            const res = await fetch('/api/farmers', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+            if (!res.ok) throw new Error('Failed to fetch farmers');
+            const data = await res.json();
             return data || [];
         }
     });
@@ -78,13 +73,9 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-products"],
         enabled: true,
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('products')
-                .select('id, name, grade:default_grade, unit')
-                .neq('is_deleted', true)
-                .eq('is_active', true)
-                .order('name', { ascending: true });
-            if (error) throw error;
+            const res = await fetch('/api/products', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+            if (!res.ok) throw new Error('Failed to fetch products');
+            const data = await res.json();
             return data || [];
         }
     });
@@ -94,7 +85,7 @@ export default function ReceivingGoods() {
         enabled: true,
         queryFn: async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+
                 const res = await fetch('/api/warehouse/warehouses', {
                     headers: { 'Authorization': `Bearer ${session?.access_token}` }
                 });
@@ -112,7 +103,7 @@ export default function ReceivingGoods() {
     const { data: dbBatches = [] } = useQuery({
         queryKey: ["warehouse-received-batches", profile?.company_id],
         queryFn: async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+
             const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
             const res = await fetch('/api/inventory/inventory_batches', { headers });
             if (!res.ok) throw new Error('Failed to fetch batches');
@@ -158,7 +149,7 @@ export default function ReceivingGoods() {
         if (!editingBatch) return;
         setIsSavingEdit(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+
             const res = await fetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
                 method: 'PUT',
                 headers: {
@@ -352,18 +343,7 @@ export default function ReceivingGoods() {
                 let company_id = profile?.company_id;
 
                 if (!company_id) {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    const userId = session?.user?.id;
 
-                    if (userId) {
-                        const { data: profileData, error: profileError } = await supabase
-                            .from('profiles')
-                            .select('company_id')
-                            .eq('id', userId)
-                            .single();
-                        if (profileError) throw profileError;
-                        company_id = profileData?.company_id;
-                    }
                 }
 
                 if (!company_id) {
@@ -388,11 +368,11 @@ export default function ReceivingGoods() {
                     if (existingSupplier) {
                         resolvedFarmerId = existingSupplier.id;
                     } else {
-                        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
                         const createRes = await fetch('/api/farmers', {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${currentSession?.access_token}`,
+                                'Authorization': `Bearer ${session?.access_token}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -422,11 +402,11 @@ export default function ReceivingGoods() {
                     if (existingProduct) {
                         resolvedProductId = existingProduct.id;
                     } else {
-                        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
                         const createRes = await fetch('/api/inventory/products', {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${currentSession?.access_token}`,
+                                'Authorization': `Bearer ${session?.access_token}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -455,11 +435,11 @@ export default function ReceivingGoods() {
                         setIsSubmitting(false);
                         return;
                     }
-                    const { data: { session: currentSession } } = await supabase.auth.getSession();
+
                     const createRes = await fetch('/api/inventory/products', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${currentSession?.access_token}`,
+                            'Authorization': `Bearer ${session?.access_token}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
@@ -482,11 +462,11 @@ export default function ReceivingGoods() {
                     queryClient.invalidateQueries({ queryKey: ["warehouse-products"] });
                 }
 
-                const { data: { session: currentSession } } = await supabase.auth.getSession();
+
                 const res = await fetch('/api/inventory/inventory_batches', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${currentSession?.access_token}`,
+                        'Authorization': `Bearer ${session?.access_token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -513,33 +493,32 @@ export default function ReceivingGoods() {
                 // Update warehouse stock summary if the table exists
                 try {
                     const productName = formData.productName || selectedProduct?.name || '';
-                    const { data: existingStock, error: stockError } = await supabase
-                        .from('warehouse_stock')
-                        .select('id, quantity, unit')
-                        .eq('warehouse_id', formData.warehouseId)
-                        .eq('product_name', productName)
-                        .maybeSingle();
-
-                    if (stockError) {
-                        throw stockError;
-                    }
+                    const fetchRes = await fetch(`/api/inventory/warehouse_stock`);
+                    const allStock = fetchRes.ok ? await fetchRes.json() : [];
+                    const existingStock = allStock.find((s: any) => s.warehouse_id === formData.warehouseId && s.product_name === productName);
 
                     if (existingStock) {
                         const updatedQty = Number(existingStock.quantity || 0) + quantityValue;
-                        await supabase.from('warehouse_stock').update({
-                            quantity: updatedQty,
-                            unit: selectedProduct?.unit || 'kg',
-                            last_updated: new Date().toISOString(),
-                            notes: `Updated from receiving ${formData.batchNumber}`
-                        }).eq('id', existingStock.id);
+                        await fetch(`/api/inventory/warehouse_stock/${existingStock.id}`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                quantity: updatedQty,
+                                unit: selectedProduct?.unit || 'kg',
+                                notes: `Updated from receiving ${formData.batchNumber}`
+                            })
+                        });
                     } else {
-                        await supabase.from('warehouse_stock').insert({
-                            warehouse_id: formData.warehouseId,
-                            product_name: productName,
-                            quantity: quantityValue,
-                            unit: selectedProduct?.unit || 'kg',
-                            last_updated: new Date().toISOString(),
-                            notes: `Stock added from receiving ${formData.batchNumber}`
+                        await fetch(`/api/inventory/warehouse_stock`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                warehouse_id: formData.warehouseId,
+                                product_name: productName,
+                                quantity: quantityValue,
+                                unit: selectedProduct?.unit || 'kg',
+                                notes: `Stock added from receiving ${formData.batchNumber}`
+                            })
                         });
                     }
                 } catch (stockErr) {

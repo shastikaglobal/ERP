@@ -1,4 +1,5 @@
 import { Plus, Mail, Phone, Loader2, Search, Copy, CheckCircle2, MapPin, Calendar, Briefcase, Monitor } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/shared/FormShell";
@@ -6,9 +7,10 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { toast } from "sonner";
-import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
+
 
 type ProfileRow = {
   id: string;
@@ -50,7 +52,7 @@ export default function EmployeeDirectory() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session");
 
       const response = await fetch('/api/employees', {
@@ -63,12 +65,12 @@ export default function EmployeeDirectory() {
       const empls = await response.json();
       setEmployees(empls || []);
       
-      // If admin, also fetch today's sessions (still using Supabase realtime for now until session module is migrated)
+      // If admin, also fetch today's sessions (still using VpsDb realtime for now until session module is migrated)
       if (isAdmin) {
         const todayStartsAt = new Date();
         todayStartsAt.setHours(0, 0, 0, 0);
         
-        const { data: sessData } = await (supabase
+        const { data: sessData } = await (vpsDb
           .from("user_sessions" as any) as any)
           .select("*")
           .or(`login_time.gte.${todayStartsAt.toISOString()},logout_time.is.null`)
@@ -86,7 +88,7 @@ export default function EmployeeDirectory() {
   useEffect(() => {
     fetchEmployees();
 
-    const profileChannel = supabase
+    const profileChannel = vpsDb
       .channel('public:profiles')
       .on(
         'postgres_changes',
@@ -99,7 +101,7 @@ export default function EmployeeDirectory() {
       )
       .subscribe();
 
-    const sessionChannel = supabase
+    const sessionChannel = vpsDb
       .channel('public:user_sessions')
       .on(
         'postgres_changes',
@@ -117,8 +119,8 @@ export default function EmployeeDirectory() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(profileChannel);
-      supabase.removeChannel(sessionChannel);
+      vpsDb.removeChannel(profileChannel);
+      vpsDb.removeChannel(sessionChannel);
     };
   }, [isAdmin]);
 
@@ -227,7 +229,7 @@ export default function EmployeeDirectory() {
       return;
     }
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session");
 
       const response = await fetch(`/api/employees/${id}/reset-password`, {
@@ -260,7 +262,7 @@ export default function EmployeeDirectory() {
     }
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await vpsDb.auth.getSession();
       if (!session) throw new Error("No active session");
 
       const response = await fetch(`/api/employees/${userId}`, {
@@ -555,7 +557,7 @@ export default function EmployeeDirectory() {
                             const val = event.target.value.trim();
                             if (val !== (e.biometric_id || "")) {
                               try {
-                                const { data: { session } } = await supabase.auth.getSession();
+                                const { data: { session } } = await vpsDb.auth.getSession();
                                 if (!session) throw new Error("No active session");
                                 
                                 const response = await fetch(`/api/employees/${e.id}`, {

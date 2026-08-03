@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { logAudit } from "@/lib/auditLog";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ interface MetaData {
 export default function CreateQuotation() {
   const nav = useNavigate();
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile , session } = useAuth();
   const leadFromState = location.state?.lead;
   const [saving, setSaving] = useState(false);
   const [leadsList, setLeadsList] = useState<Lead[]>([]);
@@ -270,34 +270,21 @@ export default function CreateQuotation() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const leadsReq = fetch('/api/leads', { headers });
-        const productsReq = fetch('/api/products', { headers });
-        const containersReq = fetch('/api/meta/container_types', { headers });
-        const pkgsReq = fetch('/api/meta/packaging_types', { headers });
+        const leadsReq = fetch('/api/leads', { headers  });
+        const productsReq = fetch('/api/products', { headers  });
+        const containersReq = fetch('/api/meta/container_types', { headers  });
+        const pkgsReq = fetch('/api/meta/packaging_types', { headers  });
 
         const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([leadsReq, productsReq, containersReq, pkgsReq]);
 
         if (leadsRes.ok) {
           setLeadsList(await leadsRes.json());
         } else {
-          // If backend returned 401 (no token), fall back to client-side Supabase fetch
-          const status = leadsRes.status;
-          console.warn('Leads fetch status:', status);
-          if (status === 401) {
-            try {
-              const supRes = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-              if (supRes.data) setLeadsList(supRes.data as any[]);
-              if (supRes.error) console.error('Supabase leads error:', supRes.error);
-            } catch (e) {
-              console.error('Fallback supabase fetch failed:', e);
-            }
-          } else {
-            console.error('Failed to load leads', await leadsRes.text());
-          }
+          // Fallback disabled.
         }
 
         if (productsRes.ok) {
@@ -329,7 +316,8 @@ export default function CreateQuotation() {
   }, [profile?.company_id]);
 
   const loadPackagingTypes = async () => {
-    const { data } = await supabase.from('packaging_types').select('name').order('name');
+    const res = await fetch('/api/settings/packaging_types', { credentials: 'include' });
+    const data = await res.json().catch(() => null);
     if (data) setPackagingTypesList(data);
   };
 
@@ -339,7 +327,8 @@ export default function CreateQuotation() {
     
     setSavingPkg(true);
     try {
-      const { error } = await supabase.from("packaging_types").insert({ name: newPkgName });
+      const res = await fetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
+      const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       toast.success("New packaging type added successfully");
       setIsPkgModalOpen(false);
@@ -374,14 +363,13 @@ export default function CreateQuotation() {
       // 1. Find or Create Customer via backend so data is stored in VPS Postgres
       let customerId = null;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const custRes = await fetch('/api/customers/find-or-create', {
-          method: 'POST',
+        const custRes = await fetch('/api/customers/find-or-create', { method: 'POST',
           headers,
-          body: JSON.stringify({ company_id: profile!.company_id, name: customerName, address: customerAddress || null, phone: customerPhone || null })
+          body: JSON.stringify({ company_id: profile!.company_id, name: customerName, address: customerAddress || null, phone: customerPhone || null  })
         });
         if (!custRes.ok) throw new Error('Failed to find or create customer');
         const custData = await custRes.json();
@@ -432,13 +420,11 @@ export default function CreateQuotation() {
         hsn_code: i.hsn_code
       }));
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/quotations', {
-        method: 'POST',
+      
+      const res = await fetch('/api/quotations', { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({ quotation: quotationPayload, items: itemsPayload })
       });
 
@@ -447,7 +433,7 @@ export default function CreateQuotation() {
       const finalQuoteNumber = quoteData.quotation_number;
 
       if (selectedLeadId) {
-        await supabase.from("leads").update({ stage: "negotiation" }).eq("id", selectedLeadId);
+        await fetch(`/api/crm/leads/${selectedLeadId}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: "negotiation" }) });
       }
 
       toast.success("Quotation created successfully!");
@@ -459,8 +445,8 @@ export default function CreateQuotation() {
           resourceId: quoteData.id,
           resourceName: finalQuoteNumber,
           newValues: quoteData,
-          status: "success",
-        });
+          status: "success"
+      });
       } catch (e) {
         console.debug("Audit log failed:", e);
       }
@@ -476,11 +462,11 @@ export default function CreateQuotation() {
           newValues: {
             customerName,
             items,
-            totalAmount,
-          },
+            totalAmount
+      },
           status: "failed",
-          errorMessage: error.message,
-        });
+          errorMessage: error.message
+      });
       } catch (e) {
         console.debug("Audit log failed:", e);
       }

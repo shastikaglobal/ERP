@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,12 +28,12 @@ export default function SupplierDetail() {
     const fetchData = async () => {
       if (!id) return;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: any = { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' };
+        
+        const headers: any = { 'Content-Type': 'application/json' };
 
         const [supRes, poRes] = await Promise.all([
-          fetch(`/api/farmers/${id}`, { headers }),
-          fetch(`/api/purchase_orders?farmer_id=${id}`, { headers })
+          fetch(`/api/farmers/${id}`, { headers  }),
+          fetch(`/api/purchase_orders?farmer_id=${id}`, { headers  })
         ]);
 
         if (!supRes.ok) throw new Error(await supRes.text() || "Failed to load supplier");
@@ -60,13 +60,10 @@ export default function SupplierDetail() {
   const handleSaveEdit = async () => {
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/farmers/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
+      
+      const res = await fetch(`/api/farmers/${id}`, { method: 'PUT',
+        headers: {'Content-Type': 'application/json'
+         },
         body: JSON.stringify({
           full_name: editForm.name,
           email: editForm.email,

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useAuth, useCan } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from "@/hooks/useAuth";
+
+
 import VehicleEntryForm from '@/components/dispatch/VehicleEntryForm';
 import DriverSelect from '@/components/dispatch/DriverSelect';
 import SchedulerCalendar from '@/components/dispatch/SchedulerCalendar';
@@ -26,24 +27,16 @@ const Dispatch = () => {
 
   // Real‑time subscription
   useEffect(() => {
-    const channel = supabase.channel('public:shipment_status_logs');
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shipment_status_logs' }, payload => {
-        setStatusLogs(prev => [...prev, payload.new]);
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
+    
   }, []);
 
   useEffect(() => {
     const checkShipments = async () => {
       try {
         if (!session?.access_token) return;
-        const res = await fetch('/api/dispatch/shipment_dispatches/count', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
+        const res = await fetch('/api/dispatch/shipment_dispatches/count', { credentials: 'include'
+      });
         if (res.ok) {
           const { count } = await res.json();
           setHasShipments(count > 0);
@@ -77,12 +70,10 @@ const Dispatch = () => {
     setIsCreating(true);
     try {
       if (!session?.access_token) throw new Error("Authentication session missing");
-      const res = await fetch('/api/dispatch/shipment_dispatches', {
-        method: 'POST',
+      const res = await fetch('/api/dispatch/shipment_dispatches', { method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` 
-        },
+          'Content-Type': 'application/json'
+      },
         body: JSON.stringify({
           vehicle_id: vehicleId,
           driver_id: driverId,

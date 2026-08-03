@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, Container as ContainerIcon, CheckCircle2 } from "lucide-react";
 import {
@@ -14,37 +15,24 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { supabase } from "@/integrations/supabase/client";
-import { useCan } from "@/hooks/useAuth";
+
 import { toast } from "sonner";
 
 export default function ContainerLoading() {
   const nav = useNavigate();
   const can = useCan();
+  const { session } = useAuth();
   const queryClient = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["wh_export_containers_loading"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("export_containers")
-        .select(`
-          id,
-          container_number,
-          container_type,
-          weight_kg,
-          status,
-          created_at,
-          export_shipments (
-            shipment_number,
-            origin_port,
-            destination_port
-          )
-        `)
-        .order("created_at", { ascending: false });
-        
-      if (error) throw error;
+      const res = await fetch('/api/inventory/export_containers/with-shipments', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch containers');
+      const data = await res.json();
       
       // Transform data for the table
       return (data || []).map((container: any) => ({
@@ -76,12 +64,12 @@ export default function ContainerLoading() {
     setDialogOpen(false);
     setUpdatingId(id);
     try {
-      const { error } = await supabase
-        .from("export_containers")
-        .update({ status: "Loaded" })
-        .eq("id", id);
-
-      if (error) throw error;
+      const res = await fetch(`/api/inventory/export_containers/${id}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "Loaded" })
+      });
+      if (!res.ok) throw new Error('Update failed');
 
       toast.success(`Container ${containerNumber} marked as loaded`);
       queryClient.invalidateQueries({ queryKey: ["wh_export_containers_loading"] });

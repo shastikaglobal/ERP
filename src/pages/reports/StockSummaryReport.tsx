@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { getStockSummaryData } from "@/lib/report-services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,9 @@ export default function StockSummaryReport() {
   const { data: warehouses } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -47,9 +47,10 @@ export default function StockSummaryReport() {
 
   const handleExport = async () => {
     try {
-      const { data, error } = await supabase
-        .from('warehouse_inventory')
-        .select('*');
+      const res = await fetch('/api/warehouse_inventory', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for warehouse_inventory');
+      const data = await res.json();
+      const error = null;
       
       if (error) throw error;
       

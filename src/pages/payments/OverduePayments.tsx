@@ -1,22 +1,25 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { AlertCircle, Loader2, Send } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { format, isBefore } from "date-fns";
 
 export default function OverduePayments() {
+  const { session } = useAuth();
+
   const [remindingId, setRemindingId] = useState<string | null>(null);
 
   const { data: overdue, isLoading } = useQuery({
     queryKey: ["overdue_payments_live"],
     queryFn: async () => {
       const now = new Date().toISOString();
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from("sales_orders")
         .select("*, customer:customers(name)")
         .neq("is_deleted", true)

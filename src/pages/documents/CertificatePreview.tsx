@@ -1,12 +1,15 @@
 import { useEffect, useState, useRef } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Loader2, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 export default function CertificatePreview() {
+  const { session } = useAuth();
+
   const { id } = useParams();
   const [shipment, setShipment] = useState<any>(null);
   const [company, setCompany] = useState<any>(null);
@@ -21,7 +24,7 @@ export default function CertificatePreview() {
         console.log("Loading certificate for ID:", id);
         
         // 1. Try finding as a Shipment
-        const { data: shipmentData, error: shipErr } = await supabase
+        const { data: shipmentData, error: shipErr } = await vpsDb
           .from("export_shipments")
           .select("*, export_orders(*), export_containers(*)")
           .eq("id", id)
@@ -41,7 +44,7 @@ export default function CertificatePreview() {
 
         // 2. If not found, try finding as an Order
         console.log("Shipment not found, trying as order...");
-        const { data: orderOnly, error: orderErr } = await supabase
+        const { data: orderOnly, error: orderErr } = await vpsDb
           .from("export_orders")
           .select("*, export_shipments(*)")
           .eq("id", id)
@@ -67,7 +70,7 @@ export default function CertificatePreview() {
 
         // 3. Try finding as Standalone Certificate from VPS DB
         console.log("Order not found, trying as standalone certificate...");
-        const { data: { session } } = await supabase.auth.getSession();
+
         const res = await fetch('/api/documents/certificates', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -122,7 +125,7 @@ export default function CertificatePreview() {
 
     const fetchExtraDetails = async (orderData: any) => {
       if (orderData?.company_id) {
-        const { data: compData } = await supabase
+        const { data: compData } = await vpsDb
           .from("companies")
           .select("*")
           .eq("id", orderData.company_id)
@@ -131,7 +134,7 @@ export default function CertificatePreview() {
       }
       
       if (orderData?.created_by) {
-        const { data: userData } = await supabase
+        const { data: userData } = await vpsDb
           .from("profiles")
           .select("full_name")
           .eq("id", orderData.created_by)

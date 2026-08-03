@@ -7,7 +7,6 @@ if (!globalThis.fetch) {
 }
 
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
@@ -45,11 +44,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  realtime: {
-    transport: WebSocket
-  }
-});
 
 app.use(express.json());
 app.use(cors());

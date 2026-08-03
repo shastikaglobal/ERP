@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useMemo, useEffect, useState } from 'react';
-import { useAuth, useIsAdminOrManager } from '@/hooks/useAuth';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useAuth } from "@/hooks/useAuth";
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 
@@ -73,15 +74,14 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const queryClient = useQueryClient();
   const companyId = profile?.company_id;
   const token = session?.access_token;
+  const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 
   // -- FETCHERS --
   const { data: dbFarmers = [], isLoading: isFarmersLoading } = useQuery({
     queryKey: ['farmers_workflow_data', companyId],
     enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers?company_id=${companyId}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
+      const res = await fetch(`/api/farmers?company_id=${companyId}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch farmers from VPS');
       const data = await res.json();
       return data.map((f: any): FarmerState => ({
@@ -103,32 +103,11 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   });
 
-  const { data: dbContracts = [] } = useQuery({
-    queryKey: ['contract_farming', companyId],
-    enabled: !!companyId,
-    queryFn: async () => {
-      // TODO: Fetch from VPS API once built
-      return [];
-    }
-  });
-
-  const { data: dbVisits = [] } = useQuery({
-    queryKey: ['farm_visits', companyId],
-    enabled: !!companyId,
-    queryFn: async () => {
-      // TODO: Fetch from VPS API once built
-      return [];
-    }
-  });
-
-  // For the remaining modules, we provide empty arrays for now while migrating them one by one.
   const { data: dbKycRecords = [] } = useQuery({
     queryKey: ['farmer_kyc', companyId],
     enabled: !!companyId && dbFarmers.length > 0,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/kyc?company_id=${companyId}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
+      const res = await fetch(`/api/farmers/kyc?company_id=${companyId}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch KYC records from VPS');
       const data = await res.json();
       
@@ -148,19 +127,93 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return Object.values(grouped) as KYCRecord[];
     }
   });
-  const [commitments, setCommitments] = useState<CommitmentRecord[]>([]);
-  const [collections, setCollections] = useState<CollectionRecord[]>([]);
-  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
-  const [ratings, setRatings] = useState<RatingRecord[]>([]);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [tickets, setTickets] = useState<TicketRecord[]>([]);
+
+  const { data: dbVisits = [] } = useQuery({
+    queryKey: ['farm_visits', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/visits?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch farm visits');
+      return await res.json();
+    }
+  });
+
+  const { data: dbContracts = [] } = useQuery({
+    queryKey: ['contract_farming', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/contracts?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch contracts');
+      return await res.json();
+    }
+  });
+
+  const { data: commitments = [] } = useQuery({
+    queryKey: ['commitments', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/commitments?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch commitments');
+      return await res.json();
+    }
+  });
+
+  const { data: collections = [] } = useQuery({
+    queryKey: ['collections', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/collections?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch collections');
+      return await res.json();
+    }
+  });
+
+  const { data: payouts = [] } = useQuery({
+    queryKey: ['payouts', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/payouts?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch payouts');
+      return await res.json();
+    }
+  });
+
+  const { data: ratings = [] } = useQuery({
+    queryKey: ['farmer_ratings', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/ratings?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch ratings');
+      return await res.json();
+    }
+  });
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ['farmer_documents', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/documents?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch documents');
+      return await res.json();
+    }
+  });
+
+  const { data: tickets = [] } = useQuery({
+    queryKey: ['farmer_support', companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/farmers/tickets?company_id=${companyId}`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch tickets');
+      return await res.json();
+    }
+  });
 
   // -- MUTATIONS --
   const addFarmerMut = useMutation({
     mutationFn: async (f: FarmerState) => {
       const res = await fetch('/api/farmers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        headers,
         body: JSON.stringify({
           company_id: companyId,
           full_name: f.full_name,
@@ -193,7 +246,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       const res = await fetch(`/api/farmers/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        headers,
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Failed to update farmer on VPS');
@@ -203,10 +256,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteFarmerMut = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/farmers/${id}`, {
-        method: 'DELETE',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
+      const res = await fetch(`/api/farmers/${id}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Failed to delete farmer on VPS');
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] })
@@ -216,13 +266,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     mutationFn: async (r: KYCRecord) => {
       const res = await fetch('/api/farmers/kyc', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
-          farmer_id: r.farmer_id,
-          aadhaar: r.aadhaar,
-          pan: r.pan,
-          status: r.status
-        })
+        headers,
+        body: JSON.stringify({ farmer_id: r.farmer_id, aadhaar: r.aadhaar, pan: r.pan, status: r.status })
       });
       if (!res.ok) throw new Error('Failed to add KYC on VPS');
     },
@@ -231,14 +276,75 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateKycMut = useMutation({
     mutationFn: async (r: any) => {
-      const res = await fetch(`/api/farmers/kyc/${r.farmer_id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-        body: JSON.stringify(r)
-      });
+      const res = await fetch(`/api/farmers/kyc/${r.farmer_id}`, { method: 'PUT', headers, body: JSON.stringify(r) });
       if (!res.ok) throw new Error('Failed to update KYC on VPS');
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmer_kyc'] })
+  });
+
+  // SUB-MODULE MUTATIONS
+  const addVisitMut = useMutation({
+    mutationFn: async (r: FarmVisitRecord) => {
+      const res = await fetch('/api/farmers/visits', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add visit');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farm_visits'] })
+  });
+
+  const addContractMut = useMutation({
+    mutationFn: async (r: ContractRecord) => {
+      const res = await fetch('/api/farmers/contracts', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add contract');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contract_farming'] })
+  });
+
+  const addCommitmentMut = useMutation({
+    mutationFn: async (r: CommitmentRecord) => {
+      const res = await fetch('/api/farmers/commitments', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add commitment');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['commitments'] })
+  });
+
+  const addCollectionMut = useMutation({
+    mutationFn: async (r: CollectionRecord) => {
+      const res = await fetch('/api/farmers/collections', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add collection');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['collections'] })
+  });
+
+  const addPayoutMut = useMutation({
+    mutationFn: async (r: PayoutRecord) => {
+      const res = await fetch('/api/farmers/payouts', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add payout');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payouts'] })
+  });
+
+  const addRatingMut = useMutation({
+    mutationFn: async (r: RatingRecord) => {
+      const res = await fetch('/api/farmers/ratings', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add rating');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmer_ratings'] })
+  });
+
+  const addDocumentMut = useMutation({
+    mutationFn: async (r: DocumentRecord) => {
+      const res = await fetch('/api/farmers/documents', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add document');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmer_documents'] })
+  });
+
+  const addTicketMut = useMutation({
+    mutationFn: async (r: TicketRecord) => {
+      const res = await fetch('/api/farmers/tickets', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
+      if (!res.ok) throw new Error('Failed to add ticket');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmer_support'] })
   });
 
   // -- SYNCHRONOUS/ASYNC WRAPPERS --
@@ -249,14 +355,14 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addKyc = async (r: KYCRecord) => { await addKycMut.mutateAsync(r); };
   const updateKyc = async (r: any) => { await updateKycMut.mutateAsync(r); };
-  const addVisit = (r: FarmVisitRecord) => { /* TODO */ };
-  const addContract = (r: ContractRecord) => { /* TODO */ };
-  const addCommitment = (r: CommitmentRecord) => { /* TODO */ };
-  const addCollection = (r: CollectionRecord) => { /* TODO */ };
-  const addPayout = (r: PayoutRecord) => { /* TODO */ };
-  const addRating = (r: RatingRecord) => { /* TODO */ };
-  const addDocument = (r: DocumentRecord) => { /* TODO */ };
-  const addTicket = (r: TicketRecord) => { /* TODO */ };
+  const addVisit = (r: FarmVisitRecord) => { addVisitMut.mutate(r); };
+  const addContract = (r: ContractRecord) => { addContractMut.mutate(r); };
+  const addCommitment = (r: CommitmentRecord) => { addCommitmentMut.mutate(r); };
+  const addCollection = (r: CollectionRecord) => { addCollectionMut.mutate(r); };
+  const addPayout = (r: PayoutRecord) => { addPayoutMut.mutate(r); };
+  const addRating = (r: RatingRecord) => { addRatingMut.mutate(r); };
+  const addDocument = (r: DocumentRecord) => { addDocumentMut.mutate(r); };
+  const addTicket = (r: TicketRecord) => { addTicketMut.mutate(r); };
 
   // Filter based on ownership for standard employees
   const filteredFarmers = useMemo(() => {

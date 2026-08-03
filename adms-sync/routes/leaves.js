@@ -101,7 +101,7 @@ router.get('/calendar', requireAuth, async (req, res) => {
 });
 
 // POST /api/leaves - Apply for leave
-router.POST('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const { leave_type, from_date, to_date, reason, number_of_days, attachment_url } = req.body;

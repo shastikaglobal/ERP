@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Send, MessageCircle, X, Paperclip, Loader2, CheckCheck, Smile } from "lucide-react";
 import { toast } from "sonner";
 import EmojiPicker, { Theme } from 'emoji-picker-react';
@@ -173,17 +173,17 @@ export function TeamChatPanel() {
     let isMounted = true;
 
     // Get current user and team members
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    vpsDb.auth.getUser().then(({ data: { user } }) => {
       if (isMounted) setCurrentUser(user);
     });
 
     const fetchTeam = async () => {
-      const { data } = await supabase.from('profiles').select('full_name, id, avatar_url');
+      const { data } = await vpsDb.from('profiles').select('full_name, id, avatar_url');
       if (isMounted && data) setTeamMembers(data);
     };
     fetchTeam();
 
-    const profileChannel = supabase
+    const profileChannel = vpsDb
       .channel('public:profiles_chat')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         if (isMounted) {
@@ -193,7 +193,7 @@ export function TeamChatPanel() {
       .subscribe();
     
     const fetchMessages = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await vpsDb
         .from('team_chat')
         .select('*')
         .order('created_at', { ascending: false });
@@ -206,7 +206,7 @@ export function TeamChatPanel() {
 
     const fetchUserProfile = async () => {
       if (!currentUser?.id) return;
-      const { data, error } = await supabase.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
+      const { data, error } = await vpsDb.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
       if (!error && isMounted && data) {
         if (data.role) setCurrentUserRole(data.role);
         if (data.full_name) {
@@ -224,7 +224,7 @@ export function TeamChatPanel() {
     fetchUserProfile();
 
     const resolvePresenceName = async () => {
-      const { data: profile } = await supabase
+      const { data: profile } = await vpsDb
         .from('profiles')
         .select('full_name')
         .eq('id', currentUser.id)
@@ -251,7 +251,7 @@ export function TeamChatPanel() {
 
     let presenceChannel: any;
     if (currentUser?.id) {
-      presenceChannel = supabase.channel('online-users', {
+      presenceChannel = vpsDb.channel('online-users', {
         config: { presence: { key: currentUser.id } }
       });
 
@@ -278,16 +278,16 @@ export function TeamChatPanel() {
     return () => {
       isMounted = false;
       if (presenceChannel) {
-        supabase.removeChannel(presenceChannel);
+        vpsDb.removeChannel(presenceChannel);
       }
       if (profileChannel) {
-        supabase.removeChannel(profileChannel);
+        vpsDb.removeChannel(profileChannel);
       }
     };
   }, [currentUser?.id]);
 
   useEffect(() => {
-    const channel = supabase
+    const channel = vpsDb
       .channel('team-chat-' + Math.random())
       .on(
         'postgres_changes',
@@ -328,7 +328,7 @@ export function TeamChatPanel() {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      vpsDb.removeChannel(channel);
     };
   }, [isOpen, currentUser?.id]);
 
@@ -337,7 +337,7 @@ export function TeamChatPanel() {
     
     const messageText = inputText.trim();
 
-    const { error } = await supabase.from('team_chat').insert({
+    const { error } = await vpsDb.from('team_chat').insert({
       sender_name: currentUser?.email || 'Unknown',
       sender_id: currentUser?.id,
       message: messageText
@@ -364,7 +364,7 @@ export function TeamChatPanel() {
     setIsUploading(true);
     try {
       const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await vpsDb.storage
         .from('chat-attachments')
         .upload(fileName, file);
 
@@ -375,7 +375,7 @@ export function TeamChatPanel() {
       }
 
       const sender_name = currentUser?.email || 'Unknown';
-      const { error: dbError } = await supabase.from('team_chat').insert({
+      const { error: dbError } = await vpsDb.from('team_chat').insert({
         sender_name,
         sender_id: currentUser?.id,
         message: file.name,
@@ -451,7 +451,7 @@ export function TeamChatPanel() {
       toast.error('Message cannot be empty');
       return;
     }
-    const { error } = await supabase.from('team_chat').update({ message: newText, edited: true }).eq('id', messageId);
+    const { error } = await vpsDb.from('team_chat').update({ message: newText, edited: true }).eq('id', messageId);
     if (error) {
       console.error('Edit error:', error);
       toast.error('Failed to save changes');
@@ -502,7 +502,7 @@ export function TeamChatPanel() {
     if (!filePath) return undefined;
     if (filePath.startsWith('http')) return filePath;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await vpsDb.storage
       .from('chat-attachments')
       .createSignedUrl(filePath, 3600);
 
@@ -545,7 +545,7 @@ export function TeamChatPanel() {
       if (pathsToFetch.length === 0) return;
 
       try {
-        const { data, error } = await supabase.storage
+        const { data, error } = await vpsDb.storage
           .from('chat-attachments')
           .createSignedUrls(pathsToFetch, 3600);
 

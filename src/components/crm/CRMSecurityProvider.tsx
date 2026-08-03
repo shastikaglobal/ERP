@@ -4,7 +4,8 @@ import { useCRMPermissions } from "@/hooks/useCRMPermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { logCRMAction } from "@/services/crmAudit";
 import { ShieldAlert } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { isMobileOrTablet } from "@/utils/device";
 import "@/pages/crm/crm-security.css";
 
@@ -64,7 +65,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
         if (!profile?.company_id) return;
 
         const fetchSettings = async () => {
-            const { data } = await supabase
+            const { data } = await vpsDb
                 .from("security_settings")
                 .select("screenshot_protection")
                 .eq("company_id", profile.company_id)
@@ -77,7 +78,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
 
         fetchSettings();
 
-        const channel = supabase
+        const channel = vpsDb
             .channel('security-settings-updates')
             .on(
                 'postgres_changes',
@@ -91,7 +92,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            vpsDb.removeChannel(channel);
         };
     }, [profile?.company_id]);
 
@@ -113,7 +114,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
                 document.body.classList.add('lockdown-active');
                 
                 // Log to DB via standard audit log instead of just console
-                supabase.from("audit_logs").insert({
+                vpsDb.from("audit_logs").insert({
                     user_id: profile?.id,
                     action: "Security Lockdown Triggered (Screenshot/Blur Detected)",
                     resource_type: "security",

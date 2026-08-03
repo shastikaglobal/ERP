@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+
 import { getBatchTrackingData } from "@/lib/report-services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,9 +34,10 @@ export default function BatchTrackingReport() {
 
   const handleExport = async () => {
     try {
-      const { data, error } = await supabase
-        .from('inventory_batches')
-        .select('*');
+      const res = await fetch('/api/inventory_batches', { credentials: 'include' });
+      if (!res.ok) throw new Error('Fetch failed for inventory_batches');
+      const data = await res.json();
+      const error = null;
       
       if (error) throw error;
       

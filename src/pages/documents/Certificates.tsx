@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Award, Loader2, Trash2, FileText, Package } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 
 export default function Certificates() {
+  const { session } = useAuth();
+
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,10 +20,10 @@ export default function Certificates() {
     const fetchCerts = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         
-        // 1. Fetch from Supabase (automated export orders)
-        const { data: supabaseData, error } = await supabase
+        // 1. Fetch from VpsDb (automated export orders)
+        const { data: vpsDbData, error } = await vpsDb
           .from("export_orders")
           .select("*, export_shipments(*)")
           .neq("is_deleted", true)
@@ -52,7 +55,7 @@ export default function Certificates() {
         }
 
         // 3. Combine and sort
-        const combined = [...(supabaseData || []), ...standaloneCerts].sort((a, b) => {
+        const combined = [...(vpsDbData || []), ...standaloneCerts].sort((a, b) => {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
@@ -74,14 +77,14 @@ export default function Certificates() {
       const isStandalone = shipments.find(s => s.id === id)?.isStandalone;
       
       if (isStandalone) {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const res = await fetch(`/api/documents/certificates/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         if (!res.ok) throw new Error("Failed to delete from database");
       } else {
-        const { error } = await supabase
+        const { error } = await vpsDb
           .from("export_orders")
           .update({
             is_deleted: true,

@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, Eye, EyeOff, UserSquare2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -43,7 +44,7 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
     try {
       if (session?.user?.id) {
         // Update profile with the employee ID
-        const { error: profileError } = await supabase
+        const { error: profileError } = await vpsDb
           .from('profiles')
           .update({ employee_id: employeeId })
           .eq('id', session.user.id);
@@ -52,7 +53,7 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
       }
 
       // Update the user's password
-      const { error: authError } = await supabase.auth.updateUser({
+      const { error: authError } = await vpsDb.auth.updateUser({
         password: password,
       });
 

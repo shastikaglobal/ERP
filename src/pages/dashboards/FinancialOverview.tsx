@@ -3,16 +3,16 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
 import { Wallet } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery } from "@tanstack/react-query";
 
 export default function FinancialOverview() {
   const { data: exportOrders = [] } = useQuery({
     queryKey: ['financial_export_orders'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const res = await fetch('/api/finance/export_orders', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        credentials: 'include'
       });
       if (!res.ok) return [];
       return await res.json();
@@ -22,9 +22,9 @@ export default function FinancialOverview() {
   const { data: purchaseOrders = [] } = useQuery({
     queryKey: ['financial_purchase_orders'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      
       const res = await fetch('/api/finance/purchase_orders', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        credentials: 'include'
       });
       if (!res.ok) return [];
       return await res.json();

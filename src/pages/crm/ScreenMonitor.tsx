@@ -3,7 +3,8 @@ import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
 import { Monitor, CheckCircle, Clock, ShieldAlert, Eye, RefreshCw, User, MousePointer, Keyboard, Activity, X, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
 
 interface BdeStatus {
   id: string;
@@ -32,20 +33,20 @@ const RTC_CONFIG: RTCConfiguration = {
     {
       urls: "turn:openrelay.metered.ca:80",
       username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+      credential: "openrelayproject"
+      },
     {
       urls: "turn:openrelay.metered.ca:443",
       username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+      credential: "openrelayproject"
+      },
     {
       urls: "turn:openrelay.metered.ca:443?transport=tcp",
       username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-  ],
-};
+      credential: "openrelayproject"
+      },
+  ]
+      };
 
 // ── WebRTC Live Viewer Modal ──────────────────────────────────────────────────
 function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClose: () => void }) {
@@ -69,12 +70,7 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
 
     pc.onicecandidate = async (e) => {
       if (e.candidate) {
-        await (supabase.from("screen_signals") as any).insert({
-          from_user_id: adminId.current,
-          to_user_id: targetUser.id,
-          signal_type: "candidate",
-          payload: JSON.stringify(e.candidate),
-        });
+        await fetch('/api/analytics/screen_signals', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_user_id: adminId.current, to_user_id: targetUser.id, signal_type: "candidate", payload: JSON.stringify(e.candidate) }) });
       }
     };
 
@@ -85,54 +81,12 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
     };
 
     const requestWatch = async () => {
-      await (supabase.from("screen_signals") as any).insert({
-        from_user_id: adminId.current,
-        to_user_id: targetUser.id,
-        signal_type: "watch_request",
-        payload: JSON.stringify({ adminId: adminId.current }),
-      });
+      await fetch('/api/analytics/screen_signals', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_user_id: adminId.current, to_user_id: targetUser.id, signal_type: "watch_request", payload: JSON.stringify({ adminId: adminId.current }) }) });
     };
 
     requestWatch();
 
-    const channel = supabase
-      .channel(`viewer_${adminId.current}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "screen_signals",
-        filter: `to_user_id=eq.${adminId.current}`,
-      }, async (payload: any) => {
-        const sig = payload.new;
-        if (sig.to_user_id !== adminId.current) return;
-
-        try {
-          if (sig.signal_type === "offer") {
-            // Only set remote description if in valid state
-            if (pc.signalingState === "stable" || pc.signalingState === "have-local-offer") {
-              await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sig.payload)));
-            }
-            // Only create and set answer if we have a remote offer
-            if (pc.signalingState === "have-remote-offer") {
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              await (supabase.from("screen_signals") as any).insert({
-                from_user_id: adminId.current,
-                to_user_id: targetUser.id,
-                signal_type: "answer",
-                payload: JSON.stringify(answer),
-              });
-            }
-          } else if (sig.signal_type === "candidate") {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sig.payload)));
-            } catch { }
-          }
-        } catch (err) {
-          console.error("[LiveViewerModal] WebRTC signaling error:", err);
-        }
-      })
-      .subscribe();
+    
 
     const timeout = setTimeout(() => {
       setStatus((prev) => prev === "connecting" ? "failed" : prev);
@@ -140,7 +94,7 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
 
     return () => {
       pc.close();
-      supabase.removeChannel(channel);
+      
       clearTimeout(timeout);
     };
   }, [targetUser.id]);
@@ -237,72 +191,10 @@ function useScreenBroadcaster(userId: string | undefined, stream: MediaStream | 
     if (!userId || !stream) return;
 
     const channelName = `broadcaster_${userId}_${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "screen_signals",
-        filter: `to_user_id=eq.${userId}`,
-      }, async (payload: any) => {
-        const sig = payload.new;
-        if (sig.to_user_id !== userId) return;
-
-        try {
-          if (sig.signal_type === "watch_request") {
-            const adminId = sig.from_user_id;
-
-            const pc = new RTCPeerConnection(RTC_CONFIG);
-            pcsRef.current.set(adminId, pc);
-
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-            pc.onicecandidate = async (e) => {
-              if (e.candidate) {
-                await (supabase.from("screen_signals") as any).insert({
-                  from_user_id: userId,
-                  to_user_id: adminId,
-                  signal_type: "candidate",
-                  payload: JSON.stringify(e.candidate),
-                });
-              }
-            };
-
-            // Create and set offer only in stable state
-            if (pc.signalingState === "stable") {
-              const offer = await pc.createOffer();
-              await pc.setLocalDescription(offer);
-
-              await (supabase.from("screen_signals") as any).insert({
-                from_user_id: userId,
-                to_user_id: adminId,
-                signal_type: "offer",
-                payload: JSON.stringify(offer),
-              });
-            }
-
-          } else if (sig.signal_type === "answer") {
-            const pc = pcsRef.current.get(sig.from_user_id);
-            if (pc && pc.signalingState === "have-local-offer") {
-              await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sig.payload)));
-            }
-
-          } else if (sig.signal_type === "candidate") {
-            const pc = pcsRef.current.get(sig.from_user_id);
-            if (pc) {
-              try {
-                await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sig.payload)));
-              } catch { }
-            }
-          }
-        } catch (err) {
-          console.error("[useScreenBroadcaster] WebRTC signaling error:", err);
-        }
-      })
-      .subscribe();
+    
 
     return () => {
-      supabase.removeChannel(channel);
+      
       pcsRef.current.forEach(pc => pc.close());
       pcsRef.current.clear();
     };
@@ -311,6 +203,10 @@ function useScreenBroadcaster(userId: string | undefined, stream: MediaStream | 
 
 // ── Main ScreenMonitor Page ───────────────────────────────────────────────────
 export default function ScreenMonitor() {
+  const { session } = useAuth();
+  useEffect(() => {
+    if (session?.user?.id) setMyUserId(session.user.id);
+  }, [session]);
   const [bdes, setBdes] = useState<BdeStatus[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState({ activeCount: 0, idleCount: 0, totalEventsToday: 0 });
@@ -320,9 +216,7 @@ export default function ScreenMonitor() {
   const [myUserId, setMyUserId] = useState<string | undefined>();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setMyUserId(session.user.id);
-    });
+    // Session user ID is now handled via useAuth Hook
 
     const checkStream = () => {
       const s = (window as any).__screenStream;
@@ -337,15 +231,15 @@ export default function ScreenMonitor() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const { data: profilesData } = await supabase.from("profiles").select("id, full_name, requested_role");
+      const pRes = await fetch('/api/employees', { credentials: 'include' });
+      const profilesData = await pRes.json().catch(() => []);
       const allProfiles = profilesData || [];
 
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      const { data: logsData } = await (supabase.from("activity_logs") as any)
-        .select("*")
-        .order("created_at", { ascending: false });
+      const lRes = await fetch('/api/analytics/activity_logs', { credentials: 'include' });
+      const logsData = await lRes.json().catch(() => []);
 
       const allLogs = (logsData || []) as ActivityLog[];
       setActivityLogs(allLogs.slice(0, 15));
@@ -378,15 +272,15 @@ export default function ScreenMonitor() {
           status,
           lastActive: mostRecentLog ? mostRecentLog.created_at : "",
           lastMouse: lastMouseLog ? lastMouseLog.created_at : "",
-          lastKeys: lastKeysLog ? lastKeysLog.created_at : "",
-        };
+          lastKeys: lastKeysLog ? lastKeysLog.created_at : ""
+      };
       });
 
       setBdes(mappedBdes);
       setStats({
         activeCount: mappedBdes.filter((b) => b.status === "Online").length,
         idleCount: mappedBdes.filter((b) => b.status === "Idle").length,
-        totalEventsToday: todayLogs.length,
+        totalEventsToday: todayLogs.length
       });
     } catch (error) {
       console.error("Error fetching screen monitor data:", error);
@@ -398,29 +292,17 @@ export default function ScreenMonitor() {
   useEffect(() => {
     fetchInitialData();
 
-    const logsSubscription = supabase
-      .channel("activity-screen-monitor")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, (payload) => {
-        const newLog = payload.new as ActivityLog;
-        setActivityLogs((prev) => [newLog, ...prev].slice(0, 15));
-        setStats((prev) => ({ ...prev, totalEventsToday: prev.totalEventsToday + 1 }));
-        setBdes((prevBdes) => prevBdes.map((bde) => {
-          const matchById = bde.id === newLog.user_id;
-          const matchByName = bde.name?.toLowerCase() === newLog.user_name?.toLowerCase();
-          if (matchById || matchByName) {
-            return {
-              ...bde,
-              activeModule: newLog.module,
-              lastActive: newLog.created_at,
-              lastMouse: newLog.event_type === "mouse_move" ? newLog.created_at : bde.lastMouse,
-              lastKeys: newLog.event_type === "keypress" ? newLog.created_at : bde.lastKeys,
-              status: newLog.event_type === "idle" ? "Idle" : "Online",
-            };
-          }
-          return bde;
-        }));
-      })
-      .subscribe();
+    // Real-time via polling
+    const logsSubscription = setInterval(async () => {
+      const res = await fetch('/api/analytics/activity_logs', { credentials: 'include' });
+      if (res.ok) {
+        const newLogs = await res.json();
+        // Just re-fetch initial data to sync everything instead of complex delta logic
+        if (newLogs && newLogs.length > 0) {
+           fetchInitialData();
+        }
+      }
+    }, 10000);
 
     const statusInterval = setInterval(() => {
       setBdes((prevBdes) => prevBdes.map((bde) => {
@@ -432,7 +314,7 @@ export default function ScreenMonitor() {
     }, 10000);
 
     return () => {
-      supabase.removeChannel(logsSubscription);
+      clearInterval(logsSubscription);
       clearInterval(statusInterval);
     };
   }, []);
@@ -441,8 +323,8 @@ export default function ScreenMonitor() {
     setStats((prev) => ({
       ...prev,
       activeCount: bdes.filter((b) => b.status === "Online").length,
-      idleCount: bdes.filter((b) => b.status === "Idle").length,
-    }));
+      idleCount: bdes.filter((b) => b.status === "Idle").length
+      }));
   }, [bdes]);
 
   const formatTime = (isoString: string) => {

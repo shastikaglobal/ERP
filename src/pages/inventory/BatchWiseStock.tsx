@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,7 +43,7 @@ const statusColorMap: Record<string, string> = {
 
 export default function BatchWiseStock() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,7 +55,6 @@ export default function BatchWiseStock() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ['warehouses-list', profile?.company_id],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
       const res = await fetch('/api/warehouse/warehouses', { headers });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -68,7 +66,6 @@ export default function BatchWiseStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
       const res = await fetch('/api/products', { headers });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -80,7 +77,6 @@ export default function BatchWiseStock() {
   const { data: rawBatches = [], isLoading: isBatchesLoading } = useQuery({
     queryKey: ["inventory-batches", profile?.company_id],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
       const res = await fetch('/api/inventory/inventory_batches', { headers });
       if (!res.ok) throw new Error('Failed to fetch batches');
@@ -119,21 +115,12 @@ export default function BatchWiseStock() {
 
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const headers = session?.access_token ? {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json'
       } : { 'Content-Type': 'application/json' };
 
       let company_id = profile?.company_id;
-      if (!company_id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('id', session?.user?.id)
-          .single();
-        company_id = profileData?.company_id;
-      }
 
       const body = {
         company_id,
@@ -183,7 +170,6 @@ export default function BatchWiseStock() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
       const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
         method: 'DELETE',

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +26,8 @@ const STATUS_COLORS: Record<string, string> = {
   sent: "bg-blue-500 hover:bg-blue-600 text-white",
   confirmed: "bg-green-500 hover:bg-green-600 text-white",
   received: "bg-purple-500 hover:bg-purple-600 text-white",
-  cancelled: "bg-red-500 hover:bg-red-600 text-white",
-};
+  cancelled: "bg-red-500 hover:bg-red-600 text-white"
+      };
 
 export default function PurchaseOrdersListLive() {
   const navigate = useNavigate();
@@ -38,10 +38,9 @@ export default function PurchaseOrdersListLive() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(`/api/purchase_orders`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        
+        const res = await fetch(`/api/purchase_orders`, { credentials: 'include'
+      });
         if (!res.ok) throw new Error("Failed to fetch purchase orders");
         const poData = await res.json();
         setOrders(poData as PurchaseOrder[]);
@@ -60,10 +59,8 @@ export default function PurchaseOrdersListLive() {
     e.stopPropagation();
     if (!window.confirm("Delete this purchase order? This will hide the order from the app, but keep it in the database.")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/purchase_orders/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      
+      const res = await fetch(`/api/purchase_orders/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete purchase order");
 

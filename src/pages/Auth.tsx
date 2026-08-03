@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate, Navigate, useLocation } from "react-route
 import { Sprout, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { vpsDb } from "@/lib/vpsDb";
+
 import { useAuth } from "@/hooks/useAuth";
 import { ResetPasswordModal } from "@/components/ResetPasswordModal";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, updateSessionState } = useAuth();
   const [busyEmail, setBusyEmail] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,23 +45,13 @@ export default function Auth() {
             resolvedEmail = resData?.email || "";
           }
         } catch (localLookupErr) {
-          console.warn("Local ID lookup failed, trying Supabase direct client...", localLookupErr);
+          console.warn("Local ID lookup failed", localLookupErr);
         }
 
         if (!resolvedEmail) {
-          // Fallback to direct client-side supabase query
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('email')
-            .or(`employee_id.eq.${loginEmail},biometric_id.eq.${loginEmail}`)
-            .maybeSingle();
-
-          if (error || !data || !data.email) {
-            toast.error("Employee ID not found. Please check your ID or contact Admin.");
-            setBusyEmail(false);
-            return;
-          }
-          resolvedEmail = data.email;
+          toast.error("Employee ID not found. Please check your ID or contact Admin.");
+          setBusyEmail(false);
+          return;
         }
         
         // Use the found email to log in
@@ -69,14 +60,24 @@ export default function Auth() {
 
       console.log(`Attempting login for email: ${loginEmail}`);
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password })
+      });
       
-      if (error) {
-        toast.error(error.message || "Invalid login credentials");
+      const data = await res.json();
+      
+      if (!res.ok) {
+        toast.error(data.error || "Invalid login credentials");
         setBusyEmail(false);
-      } else if (!data?.session) {
-        toast.error("Please confirm your email address before logging in.");
-        setBusyEmail(false);
+      } else if (data.session?.user) {
+        // Use updateSessionState from useAuth hook
+        if (typeof updateSessionState === 'function') {
+           updateSessionState(data.session.user);
+        }
+        toast.success("Logged in successfully!");
+        navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
       console.error("Login exception:", err);
@@ -99,7 +100,7 @@ export default function Auth() {
 
     try {
       const input = signUpId.trim();
-      const payload = {};
+      const payload: any = {};
       if (input.includes('@')) {
         payload.email = input;
       } else {
@@ -122,18 +123,21 @@ export default function Auth() {
       toast.success("Account registered! Logging you in...");
 
       // Automatically sign in the user
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: result.email,
-        password
+      const signInRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: result.email, password })
       });
+      const signInData = await signInRes.json();
 
-      if (signInError) throw signInError;
+      if (!signInRes.ok) throw new Error(signInData.error || "Failed to log in automatically");
 
       toast.success("Logged in successfully!");
       setIsSignUp(false);
       setPassword("");
       setConfirmPassword("");
       setSignUpId("");
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       console.error("Sign up exception:", err);
       toast.error(err?.message || "An unexpected error occurred during sign up.");
@@ -154,12 +158,18 @@ export default function Auth() {
     }
     setBusyReset(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      const token = searchParams.get('token');
+      const res = await fetch('/api/auth/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword })
       });
-      if (error) throw error;
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update password");
+      
       toast.success("Password updated successfully!");
-      navigate("/dashboard", { replace: true });
+      navigate("/auth", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Failed to update password");
     } finally {
@@ -296,10 +306,12 @@ export default function Auth() {
                 </p>
               </div>
 
-              <form onSubmit={handleEmailLogin} className="space-y-4">
+              <form onSubmit={handleEmailLogin} className="space-y-4" autoComplete="off">
                 <div className="space-y-2">
                   <Input
                     type="text"
+                    name="username_field_9321"
+                    autoComplete="new-username"
                     placeholder="User ID / Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -308,6 +320,8 @@ export default function Auth() {
                   />
                   <Input
                     type="password"
+                    name="password_field_9321"
+                    autoComplete="new-password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

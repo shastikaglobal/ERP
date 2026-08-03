@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronUp, Plus, ExternalLink, FileText, Copy,
   Home, Radio, BarChart2, Link2, CheckCircle2, AlertCircle
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ScheduleMeetingModal } from "@/components/crm/ScheduleMeetingModal";
@@ -27,8 +27,8 @@ const C = {
   green: "#3fb950",
   text: "#e6edf3",
   sub: "#8b949e",
-  muted: "#484f58",
-};
+  muted: "#484f58"
+      };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const dateStr = (d: Date) =>
@@ -38,15 +38,15 @@ const Pill = ({ label, color = C.accent }: { label: string; color?: string }) =>
   <span style={{
     background: color + "22", color, border: `1px solid ${color}44`,
     borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600,
-    letterSpacing: "0.05em", whiteSpace: "nowrap",
-  }}>{label}</span>
+    letterSpacing: "0.05em", whiteSpace: "nowrap"
+      }}>{label}</span>
 );
 
 const MutedCard = ({ children, style = {} }: any) => (
   <div style={{
     background: C.card, border: `1px solid ${C.border}`,
-    borderRadius: 12, padding: "16px 20px", ...style,
-  }}>{children}</div>
+    borderRadius: 12, padding: "16px 20px", ...style
+      }}>{children}</div>
 );
 
 const typeColor = (t: string) => {
@@ -103,13 +103,9 @@ function Communication() {
   // ── Fetch Zoho account & personal room ──────────────────────────────────
   useEffect(() => {
     if (!profile?.id) return;
-    supabase
-      .from("zoho_accounts")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .then(async ({ data }) => {
+    fetch(`/api/crm/zoho-accounts?user_id=${profile.id}`, { credentials: "include" })
+      .then(res => res.json())
+      .then(async (data) => {
         if (data && data.length > 0) {
           setZohoConnected(true);
           setZohoAccount(data[0]);
@@ -117,25 +113,26 @@ function Communication() {
           // Fetch personal room from Zoho API
           setPersonalRoomLoading(true);
           try {
-            const { data: roomData } = await supabase.functions.invoke("zoho-meeting", {
-              body: { action: "personal_room" },
-            });
+            const rRes = await fetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
+            const roomData = await rRes.json().catch(() => null);
             if (roomData?.success && roomData.join_url) {
               setPersonalRoom(roomData.join_url);
               setPersonalRoomInput(roomData.join_url);
               setPersonalRoomStartUrl(roomData.start_url || roomData.join_url);
               // Also save to profiles for future use
-              await supabase.from("profiles").update({ zoho_meeting_link: roomData.join_url }).eq("id", profile.id);
+              await fetch(`/api/employees/${profile.id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ zoho_meeting_link: roomData.join_url }) });
             } else {
               // Fall back to locally saved link
-              const { data: prof } = await supabase.from("profiles").select("zoho_meeting_link").eq("id", profile.id).single();
+              const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+              const prof = await pRes.json().catch(() => null);
               if (prof?.zoho_meeting_link) {
                 setPersonalRoom(prof.zoho_meeting_link);
                 setPersonalRoomInput(prof.zoho_meeting_link);
               }
             }
           } catch {
-            const { data: prof } = await supabase.from("profiles").select("zoho_meeting_link").eq("id", profile.id).single();
+            const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+              const prof = await pRes.json().catch(() => null);
             if (prof?.zoho_meeting_link) {
               setPersonalRoom(prof.zoho_meeting_link);
               setPersonalRoomInput(prof.zoho_meeting_link);
@@ -145,7 +142,8 @@ function Communication() {
           }
         } else {
           // No Zoho account — fall back to profile link
-          const { data: prof } = await supabase.from("profiles").select("zoho_meeting_link").eq("id", profile.id).single();
+          const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+              const prof = await pRes.json().catch(() => null);
           if (prof?.zoho_meeting_link) {
             setPersonalRoom(prof.zoho_meeting_link);
             setPersonalRoomInput(prof.zoho_meeting_link);
@@ -158,23 +156,18 @@ function Communication() {
   const fetchMeetings = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoadingMeetings(true);
-    const { data } = await supabase
-      .from("meetings")
-      .select("*")
-      .eq("company_id", profile.company_id)
-      .order("meeting_date", { ascending: true })
-      .order("meeting_time", { ascending: true });
-    setMeetings(data || []);
+    const res = await fetch(`/api/crm/meetings?company_id=${profile.company_id}`, { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      setMeetings(data || []);
+    }
     setLoadingMeetings(false);
   }, [profile?.company_id]);
 
   useEffect(() => {
     fetchMeetings();
-    const ch = supabase
-      .channel("meetings_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "meetings" }, fetchMeetings)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const interval = setInterval(fetchMeetings, 60000);
+    return () => clearInterval(interval);
   }, [fetchMeetings]);
 
   // ── Reminders ─────────────────────────────────────────────────────────────
@@ -243,13 +236,27 @@ function Communication() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("meetings").update({ status }).eq("id", id);
+    await fetch(`/api/crm/meetings/${id}`, { method: "PUT",
+      headers: { "Content-Type": "application/json"  },
+      credentials: "include",
+      body: JSON.stringify({ status })
+    });
     toast.success(`Marked as ${status}`);
+    fetchMeetings();
   };
 
   const savePersonalRoom = async () => {
     if (!personalRoomInput || !profile?.id) return;
-    await supabase.from("profiles").update({ zoho_meeting_link: personalRoomInput }).eq("id", profile.id);
+    await fetch("/api/vps-fallback", { method: "POST",
+      headers: { "Content-Type": "application/json"  },
+      credentials: "include",
+      body: JSON.stringify({
+        table: "profiles",
+        action: "update",
+        filters: [{ column: "id", type: "eq", value: profile.id }],
+        data: { zoho_meeting_link: personalRoomInput }
+      })
+    });
     setPersonalRoom(personalRoomInput);
     toast.success("Personal room saved!");
   };
@@ -266,18 +273,8 @@ function Communication() {
 
       if (zohoConnected) {
         // Create real Zoho meeting via edge function
-        const { data: zohoRes } = await supabase.functions.invoke("zoho-meeting", {
-          body: {
-            action: "create",
-            meetingData: {
-              title: topic,
-              description: "",
-              startTime: new Date().toISOString(),
-              duration: 60,
-              lobby_enabled: false,
-            },
-          },
-        });
+        const rRes2 = await fetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
+        const zohoRes = await rRes2.json().catch(() => null);
         if (zohoRes?.success && zohoRes.join_url) {
           joinUrl = zohoRes.join_url;
           startUrl = zohoRes.start_url || zohoRes.join_url;
@@ -296,20 +293,25 @@ function Communication() {
       window.open(startUrl || joinUrl, "_blank");
 
       // Save to meetings table
-      await supabase.from("meetings").insert({
-        company_id: profile.company_id,
-        host_id: profile.id,
-        host_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : profile.email,
-        title: topic,
-        meeting_date: todayStr,
-        meeting_time: new Date().toTimeString().slice(0, 5),
-        meeting_type: "Video Call",
-        status: "Upcoming",
-        meeting_link: joinUrl,
-        start_url: startUrl,
-        meeting_key: meetingKey,
-        zoho_session_id: zohoSessionId,
+      await fetch("/api/crm/meetings", { method: "POST",
+        headers: { "Content-Type": "application/json"  },
+        credentials: "include",
+        body: JSON.stringify({
+          company_id: profile.company_id,
+          host_id: profile.id,
+          host_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : profile.email,
+          title: topic,
+          meeting_date: todayStr,
+          meeting_time: new Date().toTimeString().slice(0, 5),
+          meeting_type: "Video Call",
+          status: "Upcoming",
+          meeting_link: joinUrl,
+          start_url: startUrl,
+          meeting_key: meetingKey,
+          zoho_session_id: zohoSessionId
+      })
       });
+      fetchMeetings();
       toast.success("Meeting started!");
     } catch (e: any) {
       toast.error("Failed to start meeting: " + e.message);
@@ -329,7 +331,7 @@ function Communication() {
         borderRadius: 12, padding: 16,
         display: "flex", gap: 16, alignItems: "center",
         opacity: isPast ? 0.75 : 1,
-        transition: "all 0.2s",
+        transition: "all 0.2s"
       }}
         onMouseOver={e => { if (!isPast) e.currentTarget.style.borderColor = C.sub; }}
         onMouseOut={e => { if (!isPast) e.currentTarget.style.borderColor = C.border; }}
@@ -396,8 +398,8 @@ function Communication() {
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 background: C.green, color: "#fff", border: "none",
-                borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-              }}>
+                borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer"
+      }}>
               <Video size={13} /> Start
             </button>
           )}
@@ -410,8 +412,8 @@ function Communication() {
             style={{
               display: "flex", alignItems: "center", gap: 6,
               background: C.teal, color: "#fff", border: "none",
-              borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-            }}>
+              borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer"
+      }}>
             <ExternalLink size={13} /> {isPast ? "View" : "Join"}
           </button>
           {!isPast && (
@@ -445,8 +447,8 @@ function Communication() {
       background: zohoConnected ? C.green + "11" : C.gold + "11",
       border: `1px solid ${zohoConnected ? C.green : C.gold}33`,
       borderRadius: 10, padding: "10px 16px",
-      display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
-    }}>
+      display: "flex", alignItems: "center", gap: 10, marginBottom: 16
+      }}>
       {zohoConnected
         ? <><CheckCircle2 size={16} color={C.green} /><span style={{ fontSize: 12, color: C.text }}>Zoho connected: <strong>{zohoAccount?.account_email}</strong> — meetings will auto-create when you schedule.</span></>
         : <><AlertCircle size={16} color={C.gold} /><span style={{ fontSize: 12, color: C.text }}>Zoho not connected. <a href="/system/integrations/zoho" style={{ color: C.blue, textDecoration: "underline" }}>Connect in System → Integrations</a> to enable auto-scheduling.</span></>
@@ -630,8 +632,8 @@ function Communication() {
               fontSize: 12, position: "relative",
               background: isToday ? C.blueDim : "transparent",
               color: isToday ? C.blue : (dot ? C.text : C.sub),
-              fontWeight: isToday || dot ? 600 : 400,
-            }}
+              fontWeight: isToday || dot ? 600 : 400
+      }}
               onMouseOver={e => { if (!isToday) e.currentTarget.style.background = C.surface; }}
               onMouseOut={e => { if (!isToday) e.currentTarget.style.background = "transparent"; }}
             >
@@ -684,8 +686,8 @@ function Communication() {
             background: mainTab === id ? C.card : "transparent",
             color: mainTab === id ? C.text : C.sub,
             border: mainTab === id ? `1px solid ${C.border}` : "1px solid transparent",
-            borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-          }}>{label}</button>
+            borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+      }}>{label}</button>
         ))}
       </div>
 
@@ -729,8 +731,8 @@ function Communication() {
                 background: meetTab === id ? C.card : "transparent",
                 color: meetTab === id ? C.text : C.sub,
                 border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                cursor: "pointer", textAlign: "left", transition: "all 0.2s",
-              }}>
+                cursor: "pointer", textAlign: "left", transition: "all 0.2s"
+      }}>
                 <Icon size={15} color={meetTab === id ? C.teal : C.muted} />
                 {label}
               </button>

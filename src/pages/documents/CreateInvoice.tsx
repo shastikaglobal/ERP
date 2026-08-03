@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [saving, setSaving] = useState(false);
   const [productsList, setProductsList] = useState<{id: string, name: string, unit?: string}[]>([]);
   const [leadsList, setLeadsList] = useState<any[]>([]);
@@ -26,7 +26,7 @@ export default function CreateInvoice() {
     const loadData = async () => {
       if (!profile?.company_id) return;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
@@ -45,13 +45,13 @@ export default function CreateInvoice() {
         if (leadsRes.ok) {
           leadsData = await leadsRes.json();
         } else {
-          console.warn("Failed to load leads from sync API, trying Supabase fallback...");
-          const { data, error } = await supabase
+          console.warn("Failed to load leads from sync API, trying VpsDb fallback...");
+          const { data, error } = await vpsDb
             .from('leads')
             .select('*')
             .order('created_at', { ascending: false });
           if (error) {
-            console.error("Supabase leads fallback error:", error);
+            console.error("VpsDb leads fallback error:", error);
           } else {
             leadsData = data || [];
           }
@@ -63,13 +63,13 @@ export default function CreateInvoice() {
         if (productsRes.ok) {
           productsData = await productsRes.json();
         } else {
-          console.warn("Failed to load products from sync API, trying Supabase fallback...");
-          const { data, error } = await supabase
+          console.warn("Failed to load products from sync API, trying VpsDb fallback...");
+          const { data, error } = await vpsDb
             .from('products')
             .select('*')
             .eq('company_id', profile.company_id);
           if (error) {
-            console.error("Supabase products fallback error:", error);
+            console.error("VpsDb products fallback error:", error);
           } else {
             productsData = data || [];
           }
@@ -342,7 +342,7 @@ export default function CreateInvoice() {
 
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+
       const userId = session?.user?.id;
       if (!userId) throw new Error("Authentication required to create orders");
 

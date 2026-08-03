@@ -4,7 +4,7 @@ import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
 import { trialBalance as mockTrialBalance } from '../../data/mockData'
 import { Download, CheckCircle } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../hooks/useAuth'
 
 const groupColor = {
   Assets: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
@@ -27,21 +27,26 @@ const groupHeaderBg = {
 const fmt = (n) => n ? n.toLocaleString('en-IN') : '—'
 
 export default function TrialBalance() {
+  const { session } = useAuth()
+  const token = session?.access_token
   const [trialBalance, setTrialBalance] = useState(mockTrialBalance)
 
   useEffect(() => {
     const loadTrialBalance = async () => {
       try {
-        // Fetch trial balance data excluding soft-deleted records
-        const { data, error } = await supabase
-          .from('trial_balance')
-          .select('*')
-          .neq('is_deleted', true)
-          .order('group')
-
-        if (error) throw error
-        if (data && data.length > 0) {
-          setTrialBalance(data)
+        const res = await fetch('/api/finance/trial_balance', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!res.ok) throw new Error('Failed to load trial balance')
+        
+        const data = await res.json()
+        const activeData = data.filter(d => !d.is_deleted)
+        
+        if (activeData && activeData.length > 0) {
+          setTrialBalance(activeData)
         }
       } catch (err) {
         console.error('Failed to load trial balance:', err)

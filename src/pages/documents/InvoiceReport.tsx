@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { ProformaInvoice } from "@/components/documents/ProformaInvoice";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function InvoiceReport() {
+  const { session } = useAuth();
+
   const { id } = useParams();
   const nav = useNavigate();
   const [shipment, setShipment] = useState<any>(null);
@@ -14,7 +17,7 @@ export default function InvoiceReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let { data, error } = await supabase
+        let { data, error } = await vpsDb
           .from("export_shipments")
           .select("*, export_orders(*)")
           .eq("id", id)
@@ -22,7 +25,7 @@ export default function InvoiceReport() {
 
         if (error || !data) {
           // If not found in shipments, try export_orders directly
-          const { data: orderOnly, error: orderErr } = await supabase
+          const { data: orderOnly, error: orderErr } = await vpsDb
             .from("export_orders")
             .select("*, export_shipments(*)")
             .eq("id", id)
@@ -30,7 +33,7 @@ export default function InvoiceReport() {
             
           if (orderErr || !orderOnly) {
             // Try fetching from Node API
-            const { data: { session } } = await supabase.auth.getSession();
+
             const res = await fetch(`/api/invoices/${id}`, {
               headers: { 'Authorization': `Bearer ${session?.access_token}` }
             });

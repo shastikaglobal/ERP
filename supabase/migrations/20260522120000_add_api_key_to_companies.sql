@@ -1,1 +1,0 @@
-ALTER TABLE companies ADD COLUMN IF NOT EXISTS api_key TEXT;
