@@ -5,10 +5,12 @@ const db = require('../db');
 const { createClient } = require('@supabase/supabase-js');
 
 // profiles live in Supabase, not VPS DB
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const _SB_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!_SB_URL || !_SB_KEY) {
+  console.warn("⚠️ WARNING (analytics.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase client disabled.");
+}
+const supabase = (_SB_URL && _SB_KEY) ? createClient(_SB_URL, _SB_KEY) : null;
 
 // GET /api/analytics/sidebar_counts
 // Returns counts for the CRM Sidebar (client acquisition, successful conversions, customers)

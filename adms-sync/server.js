@@ -28,8 +28,7 @@ while (dir) {
     envPath = check;
     break;
   }
-  const parent = path.dirname(dir);
-  if (parent === dir) break;
+  const parent = path.dirname(dir);  if (parent === dir) break;
   dir = parent;
 }
 if (envPath) {
@@ -44,21 +43,18 @@ const PORT = process.env.PORT || 8082;
 // Initialize Supabase Client
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables.");
-  process.exit(1);
+  console.warn("⚠️ WARNING: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Supabase-dependent features (email webhook, logout sync, realtime sync) will be disabled.");
 }
-
 const nodeFetch = require('node-fetch');
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+const supabase = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   realtime: {
     transport: WebSocket
   },
   global: {
     fetch: nodeFetch
   }
-});
+}) : null;
 
 app.use(express.json());
 app.use(cors());
@@ -562,7 +558,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
         .select()
         .single();
 
-      if (!insertErr && emailRecord) {
+      if (!insertErr && emailRecord && supabase) {
         const { data: mailResult, error: mailErr } = await supabase.functions.invoke('webhook-send-email', {
           body: { record: emailRecord }
         });
@@ -935,11 +931,13 @@ app.post('/force-logout', express.json(), async (req, res) => {
 
   // 3. Log them out of the actual application (bypassing auth tokens)
   let loggedOutApp = false;
-  const { error: authErr } = await supabase.auth.admin.signOut(userId, 'global');
-  if (!authErr) {
-    loggedOutApp = true;
-  } else {
-    console.error("Auth sign out error:", authErr);
+  if (supabase) {
+    const { error: authErr } = await supabase.auth.admin.signOut(userId, 'global');
+    if (!authErr) {
+      loggedOutApp = true;
+    } else {
+      console.error("Auth sign out error:", authErr);
+    }
   }
 
   res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
@@ -1270,7 +1268,7 @@ async function startPgListener() {
       console.log(`🔔 Received PG notify on "data_changed": ${msg.payload}`);
       
       // Broadcast to Supabase Realtime channel 'global_data_sync'
-      supabase.channel('global_data_sync').send({
+      if (supabase) supabase.channel('global_data_sync').send({
         type: 'broadcast',
         event: 'data_changed',
         payload: { table: msg.payload }

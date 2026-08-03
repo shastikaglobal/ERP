@@ -5,10 +5,12 @@ const { requireAuth } = require('../middleware/auth');
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase admin client — profiles, roles, user_roles live here
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const _SB_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!_SB_URL || !_SB_KEY) {
+  console.warn("⚠️ WARNING (employees.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase client disabled.");
+}
+const supabase = (_SB_URL && _SB_KEY) ? createClient(_SB_URL, _SB_KEY) : null;
 
 const VALID_PROFILE_COLUMNS = new Set([
   'id', 'company_id', 'is_active', 'created_at', 'updated_at', 'status',

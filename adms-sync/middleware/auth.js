@@ -31,11 +31,14 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const nodeFetch = require('node-fetch');
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("⚠️ WARNING (auth.js): SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set. Supabase JWT fallback disabled.");
+}
+const supabase = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   global: {
     fetch: nodeFetch
   }
-});
+}) : null;
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 // Uses jwt.decode() to read the Supabase JWT locally WITHOUT a network call.
@@ -71,6 +74,10 @@ const requireAuth = async (req, res, next) => {
   // ── Strategy 2: Fallback to Supabase API if decode failed ────────────────
   if (!user) {
     console.log(`[requireAuth] Falling back to Supabase API for ${req.method} ${req.url}`);
+    if (!supabase) {
+      console.error(`[requireAuth] Supabase fallback unavailable (not configured) for ${req.method} ${req.url}`);
+      return res.status(401).json({ error: "Invalid or expired token (fallback unavailable)" });
+    }
     try {
       const { data, error } = await supabase.auth.getUser(token);
       if (error || !data?.user) {
