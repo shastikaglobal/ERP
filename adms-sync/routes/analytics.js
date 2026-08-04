@@ -305,17 +305,16 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
       }
     };
 
-    // Profiles — from Supabase (not in VPS DB)
+    // Profiles — from local VPS DB
     let profilesData = [];
     try {
-      const { data: supaProfiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, requested_role, monthly_target, company_id')
-        .eq('is_deleted', false);
-      if (!profErr) profilesData = supaProfiles || [];
+      const { rows } = await db.query(
+        "SELECT id, full_name, avatar_url, requested_role, monthly_target, company_id FROM profiles WHERE is_deleted = false"
+      );
+      profilesData = rows || [];
       if (company_id) profilesData = profilesData.filter(p => p.company_id === company_id);
     } catch (e) {
-      console.warn('Could not fetch profiles from Supabase:', e.message);
+      console.warn('Could not fetch profiles locally:', e.message);
     }
     
     const [
@@ -373,23 +372,12 @@ router.post('/daily_reports', requireAuth, async (req, res) => {
 // Returns real employee productivity stats from VPS DB
 router.get('/employee_productivity', requireAuth, async (req, res) => {
   try {
-    // 1. Active employees count — from Supabase (profiles not in VPS DB)
-    const { data: empData, error: empErr } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .eq('is_active', true)
-      .eq('is_deleted', false);
-    const activeEmployees = empErr ? 0 : (empData?.length ?? 0);
-
-    // Also get count properly
-    const { count: activeCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .eq('is_active', true)
-      .eq('is_deleted', false);
-    const empCount = activeCount || 0;
+    // 1. Active employees count — from VPS DB
+    const empDataRes = await db.query(
+      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted = false"
+    );
+    const empCount = parseInt(empDataRes.rows[0].count, 10);
+    const activeEmployees = empCount;
 
     // 2. Avg Attendance this week (Mon-today)
     const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -432,20 +420,17 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     );
     const avgResponseHours = parseFloat(responseRes.rows[0].avg_hours || 0);
 
-    // Last week comparison for employees — from Supabase
+    // Last week comparison for employees — from local DB
     const lastWeekStart = new Date(weekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
     const lastWeekEnd = new Date(weekStart);
     lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
 
-    const { count: prevEmpCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .eq('is_active', true)
-      .eq('is_deleted', false)
-      .lte('created_at', lastWeekEnd.toISOString());
-    const prevActiveEmployees = prevEmpCount || 0;
+    const prevEmpDataRes = await db.query(
+      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted = false AND created_at <= $1",
+      [lastWeekEnd.toISOString()]
+    );
+    const prevActiveEmployees = parseInt(prevEmpDataRes.rows[0].count, 10) || 0;
 
     const prevAttRes = await db.query(
       `SELECT COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR is_deleted = false)) as present_count
@@ -535,10 +520,7 @@ router.post('/activity_logs', requireAuth, async (req, res) => {
       values
     );
 
-    // Also sync to Supabase in background
-    supabase.from('activity_logs').insert([data]).then(({error}) => {
-      if (error) console.warn('[Analytics] Sync activity_log failed:', error.message);
-    });
+    // Background sync removed
 
     res.json({ success: true });
   } catch (err) {
@@ -607,10 +589,7 @@ router.post('/audit_logs', requireAuth, async (req, res) => {
       values
     );
 
-    // Sync to Supabase in background
-    supabase.from(useTable).insert([data]).then(({error}) => {
-      if (error) console.warn('[Analytics] Sync audit log failed:', error.message);
-    });
+    // Background sync removed
 
     res.json({ success: true });
   } catch (err) {

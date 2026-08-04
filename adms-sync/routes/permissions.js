@@ -19,15 +19,9 @@ router.get('/', requireAuth, async (req, res) => {
         );
         return res.json(rows);
       } catch (dbErr) {
-        console.warn('[API /user-permissions] Local query failed, trying Supabase:', dbErr.message);
+        console.error('[API /user-permissions] Local query failed:', dbErr.message);
+        throw dbErr;
       }
-
-      const { data, error } = await supabase
-        .from('user_permissions')
-        .select('section, has_access')
-        .eq('user_id', user_id);
-      if (error) throw error;
-      return res.json(data || []);
     }
 
     // All users + their permissions (for admin matrix view)
@@ -44,21 +38,8 @@ router.get('/', requireAuth, async (req, res) => {
       profiles = localProfiles;
       perms = localPerms;
     } catch (dbErr) {
-      console.warn('[API /user-permissions] Local profiles/perms query failed, trying Supabase:', dbErr.message);
-
-      const { data: sbProfiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, requested_role')
-        .eq('is_deleted', false)
-        .order('full_name');
-      if (profErr) throw profErr;
-      profiles = sbProfiles || [];
-
-      const { data: sbPerms, error: permsErr } = await supabase
-        .from('user_permissions')
-        .select('user_id, section, has_access');
-      if (permsErr) throw permsErr;
-      perms = sbPerms || [];
+      console.error('[API /user-permissions] Local profiles/perms query failed:', dbErr.message);
+      throw dbErr;
     }
 
     const mapped = (profiles || []).map(p => {
@@ -87,15 +68,9 @@ router.get('/:user_id', requireAuth, async (req, res) => {
       );
       return res.json(rows);
     } catch (dbErr) {
-      console.warn('[API /user-permissions/:user_id] Local query failed, trying Supabase:', dbErr.message);
+      console.error('[API /user-permissions/:user_id] Local query failed:', dbErr.message);
+      throw dbErr;
     }
-
-    const { data, error } = await supabase
-      .from('user_permissions')
-      .select('section, has_access')
-      .eq('user_id', user_id);
-    if (error) throw error;
-    return res.json(data || []);
   } catch (err) {
     console.error('GET /api/user-permissions/:user_id error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -121,16 +96,9 @@ router.post('/', requireAuth, async (req, res) => {
         [user_id, section, has_access, granted_by]
       );
     } catch (dbErr) {
-      console.warn('[API /user-permissions POST] Local upsert failed, trying Supabase:', dbErr.message);
+      console.error('[API /user-permissions POST] Local upsert failed:', dbErr.message);
+      throw dbErr;
     }
-
-    const { error } = await supabase
-      .from('user_permissions')
-      .upsert(
-        { user_id, section, has_access, granted_by },
-        { onConflict: 'user_id,section' }
-      );
-    if (error) throw error;
 
     console.log(`[API /user-permissions] Saved: user=${user_id} section="${section}" access=${has_access}`);
     return res.json({ success: true, message: 'Permission updated' });

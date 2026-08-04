@@ -7,7 +7,7 @@ if (!globalThis.fetch) {
 }
 
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
+// Supabase removed
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
@@ -35,20 +35,7 @@ if (envPath) {
 const app = express();
 const PORT = process.env.PORT || 8082;
 
-// Initialize Supabase Client
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables.");
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  realtime: {
-    transport: WebSocket
-  }
-});
+// Supabase init removed
 
 // Use raw text body parser to handle the tab-separated values sent by ZKTeco devices
 app.use(express.text({ type: '*/*', limit: '10mb' }));
@@ -62,6 +49,7 @@ const crmRoutes = require('./routes/crm');
 const farmersRoutes = require('./routes/farmers');
 const invoicesRoutes = require('./routes/invoices');
 const mailboxRoutes = require('./routes/mailbox');
+const zohoRoutes = require('./routes/zoho');
 const productsRoutes = require('./routes/products');
 const settingsRoutes = require('./routes/settings');
 
@@ -71,18 +59,17 @@ app.use('/api/leads', crmRoutes);
 app.use('/api/farmers', farmersRoutes);
 app.use('/api', invoicesRoutes);
 app.use('/api/emails', mailboxRoutes);
+app.use('/api/zoho', zohoRoutes);
 app.use('/api', productsRoutes);
 app.use('/api', settingsRoutes);
 
 
 console.log("🚀 Starting ADMS Sync Server...");
-console.log(`🔗 Supabase Target URL: ${SUPABASE_URL}`);
-
 /**
  * 1. GET /iclock/cdata - Handshake & Device Initialization
  * Device queries server configurations and registers itself.
  */
-app.get('/iclock/cdata', (req, res) => {
+app.get(['/iclock/cdata', '/iclock/cdata.aspx'], (req, res) => {
   const sn = req.query.SN || 'UNKNOWN';
   console.log(`\n📡 [GET /iclock/cdata] Handshake received from device SN: ${sn}`);
   console.log("Params:", req.query);
@@ -109,7 +96,7 @@ app.get('/iclock/cdata', (req, res) => {
  * 2. POST /iclock/cdata - Receive Punch Logs (ATTLOG) & Operation Logs (OPERLOG)
  * The device pushes new attendance records here.
  */
-app.post('/iclock/cdata', async (req, res) => {
+app.post(['/iclock/cdata', '/iclock/cdata.aspx'], async (req, res) => {
   const sn = req.query.SN || 'UNKNOWN';
   const table = req.query.table || 'UNKNOWN';
   console.log(`\n📥 [POST /iclock/cdata] Data upload from SN: ${sn}, Table: ${table}`);
@@ -126,13 +113,13 @@ app.post('/iclock/cdata', async (req, res) => {
       const lines = rawData.split(/\r?\n/);
       console.log(`📦 Parsing ${lines.length} lines of attendance logs...`);
 
-      // Fetch active profiles from Supabase to map biometric IDs to employee IDs
-      const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, company_id, biometric_id');
-
-      if (profErr) {
-        console.error("❌ Failed to load profiles from Supabase:", profErr.message);
+      // Fetch active profiles from PostgreSQL to map biometric IDs to employee IDs
+      let profiles = [];
+      try {
+        const { rows } = await db.query('SELECT id, company_id, biometric_id FROM profiles');
+        profiles = rows;
+      } catch (profErr) {
+        console.error("❌ Failed to load profiles from PostgreSQL:", profErr.message);
         // Respond OK anyway so device doesn't get stuck, but log the error
         return res.status(200).send('OK');
       }
@@ -160,7 +147,7 @@ app.post('/iclock/cdata', async (req, res) => {
         );
 
         if (!emp) {
-          console.warn(`⚠️ Skipped punch: Biometric ID [${biometricId}] is not mapped to any profile in Supabase.`);
+          console.warn(`⚠️ Skipped punch: Biometric ID [${biometricId}] is not mapped to any profile in the local DB.`);
           continue;
         }
 
@@ -196,7 +183,7 @@ app.post('/iclock/cdata', async (req, res) => {
           // Create new record with clock_in = punchTime
           try {
             await db.query(
-              'INSERT INTO attendance_logs (employee_id, date, status, check_in, check_out) VALUES ($1, $2, $3, $4, $5)',
+              'INSERT INTO attendance_logs (employee_id, date, status, clock_in, clock_out) VALUES ($1, $2, $3, $4, $5)',
               [emp.id, dateStr, 'present', punchTimeIso, null]
             );
             console.log(`✅ Logged Check-In for employee [${emp.id}] on ${dateStr} at ${punchTimeIso}`);
@@ -205,9 +192,9 @@ app.post('/iclock/cdata', async (req, res) => {
             console.error(`❌ Failed to insert attendance:`, insertErr.message);
           }
         } else {
-          // Record exists. Update check_in or check_out.
-          let updatedClockIn = existing.check_in;
-          let updatedClockOut = existing.check_out;
+          // Record exists. Update clock_in or clock_out.
+          let updatedClockIn = existing.clock_in;
+          let updatedClockOut = existing.clock_out;
 
           const currentPunchTimeMs = punchTimeUTC.getTime();
 
@@ -237,7 +224,7 @@ app.post('/iclock/cdata', async (req, res) => {
 
           try {
             await db.query(
-              'UPDATE attendance_logs SET check_in = $1, check_out = $2, status = $3 WHERE id = $4',
+              'UPDATE attendance_logs SET clock_in = $1, clock_out = $2, status = $3 WHERE id = $4',
               [updatedClockIn, updatedClockOut, 'present', existing.id]
             );
             console.log(`🔄 Updated attendance for employee [${emp.id}] on ${dateStr}: In=${updatedClockIn?.substring(11,19)}, Out=${updatedClockOut?.substring(11,19)}`);
@@ -322,21 +309,24 @@ app.post('/force-logout', express.json(), async (req, res) => {
   let updatedSession = false;
   let updatedAttendance = false;
 
-  // 1. Update user_sessions
-  if (sessionId) {
-    const { error: sessErr } = await supabase
-      .from('user_sessions')
-      .update({ logout_time: nowIso })
-      .eq('id', sessionId);
-    if (!sessErr) updatedSession = true;
-  } else {
-    // find open session
-    const { error: sessErr } = await supabase
-      .from('user_sessions')
-      .update({ logout_time: nowIso })
-      .eq('user_id', userId)
-      .is('logout_time', null);
-    if (!sessErr) updatedSession = true;
+  // 1. Update user_sessions locally
+  try {
+    if (sessionId) {
+      const { rowCount } = await db.query(
+        'UPDATE user_sessions SET logout_time = $1 WHERE id = $2',
+        [nowIso, sessionId]
+      );
+      if (rowCount > 0) updatedSession = true;
+    } else {
+      // find open session
+      const { rowCount } = await db.query(
+        'UPDATE user_sessions SET logout_time = $1 WHERE user_id = $2 AND logout_time IS NULL',
+        [nowIso, userId]
+      );
+      if (rowCount > 0) updatedSession = true;
+    }
+  } catch (sessErr) {
+    console.error("Session update error:", sessErr);
   }
 
   // 2. Update attendance_logs
@@ -351,19 +341,42 @@ app.post('/force-logout', express.json(), async (req, res) => {
     console.error("Attendance update error:", attErr);
   }
 
-  // 3. Log them out of the actual application (bypassing auth tokens)
-  let loggedOutApp = false;
-  const { error: authErr } = await supabase.auth.admin.signOut(userId, 'global');
-  if (!authErr) {
-    loggedOutApp = true;
-  } else {
-    console.error("Auth sign out error:", authErr);
-  }
+  // 3. Log them out of the actual application (No Supabase, so just true)
+  let loggedOutApp = true;
 
   res.json({ success: true, updatedSession, updatedAttendance, loggedOutApp });
 });
 
 // Start Server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🟢 ADMS Sync Server is listening on http://0.0.0.0:${PORT}`);
+});
+
+// WebRTC Signaling Server
+const wss = new WebSocket.Server({ server });
+const clients = new Map();
+
+wss.on('connection', (ws) => {
+  let userId = null;
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (data.type === 'register') {
+        userId = data.userId;
+        clients.set(userId, ws);
+      } else if (data.targetId) {
+        const targetWs = clients.get(data.targetId);
+        if (targetWs && targetWs.readyState === WebSocket.OPEN) {
+          targetWs.send(JSON.stringify({ ...data, fromId: userId }));
+        }
+      }
+    } catch (e) {
+      console.error('Signaling error:', e);
+    }
+  });
+
+  ws.on('close', () => {
+    if (userId) clients.delete(userId);
+  });
 });

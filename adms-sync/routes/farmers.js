@@ -391,7 +391,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/farmers/:id/convert - Convert a farmer record into a customer (Syncs VPS and Supabase)
+// POST /api/farmers/:id/convert - Convert a farmer record into a customer
 router.post('/:id/convert', requireAuth, async (req, res) => {
   const farmerId = req.params.id;
   const { company_id, name, email, country, phone, notes } = req.body;
@@ -405,48 +405,6 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
       `SELECT id, company_id, full_name, email, phone, country, notes, is_deleted FROM farmers WHERE id = $1`,
       [farmerId]
     );
-
-    // If not found locally, try fetching from Supabase and sync it to the local VPS DB
-    if (farmerRows.length === 0 || farmerRows[0].is_deleted) {
-      if (supabase) {
-        console.log(`[Sync] Farmer ${farmerId} not found locally or is_deleted. Fetching from Supabase...`);
-        const { data: sbFarmer, error: sbError } = await supabase
-          .from('farmers')
-          .select('*')
-          .eq('id', farmerId)
-          .maybeSingle();
-
-        if (sbError) {
-          console.error('[Sync] Error fetching farmer from Supabase:', sbError.message);
-        } else if (sbFarmer) {
-          console.log(`[Sync] Found farmer in Supabase. Syncing to local VPS DB: ${sbFarmer.full_name}`);
-          const insertFarmerQuery = `
-            INSERT INTO farmers (id, company_id, code, full_name, email, phone, village, district, state, country, primary_crops, bank_account, notes, is_active, is_deleted, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, false, NOW())
-            ON CONFLICT (id) DO UPDATE 
-            SET is_deleted = false, full_name = EXCLUDED.full_name, email = EXCLUDED.email
-            RETURNING *
-          `;
-          const { rows: syncedRows } = await db.query(insertFarmerQuery, [
-            sbFarmer.id,
-            sbFarmer.company_id,
-            sbFarmer.code || null,
-            sbFarmer.full_name,
-            sbFarmer.email || null,
-            sbFarmer.phone || null,
-            sbFarmer.village || null,
-            sbFarmer.district || null,
-            sbFarmer.state || null,
-            sbFarmer.country || null,
-            sbFarmer.primary_crops || null,
-            sbFarmer.bank_account || null,
-            sbFarmer.notes || null,
-            sbFarmer.is_active ?? true
-          ]);
-          farmerRows = syncedRows;
-        }
-      }
-    }
 
     if (farmerRows.length === 0 || farmerRows[0].is_deleted) {
       return res.status(404).json({ error: 'Farmer not found' });
@@ -479,72 +437,26 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
         }
       }
 
-      // Check if a customer with the same email exists in Supabase
-      let existingSbCust = null;
-      if (customerEmail && supabase) {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('company_id', company_id)
-          .eq('email', customerEmail)
-          .maybeSingle();
-        if (error) {
-          console.error('[Sync] Error checking duplicate customer in Supabase:', error.message);
-        } else {
-          existingSbCust = data;
-        }
-      }
+      const hasOtherFarmer = existingVpsCust && existingVpsCust.farmer_id;
 
-      const hasOtherFarmer = (existingVpsCust && existingVpsCust.farmer_id) || (existingSbCust && existingSbCust.farmer_id);
-
-      if ((existingVpsCust || existingSbCust) && !hasOtherFarmer) {
+      if (existingVpsCust && !hasOtherFarmer) {
         console.log(`[Sync] Customer with email ${customerEmail} already exists and is not linked to another farmer. Connecting farmer ${farmerId} to this customer...`);
         
         // Use existing ID
-        const targetId = existingVpsCust?.id || existingSbCust?.id;
+        const targetId = existingVpsCust.id;
 
-        // If it exists in Supabase but not in VPS DB, insert it into VPS first
-        if (!existingVpsCust && existingSbCust) {
-          const { rows } = await db.query(
-            `INSERT INTO customers (id, company_id, name, email, country, phone, notes, farmer_id) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [
-              targetId,
-              company_id,
-              name || existingSbCust.name || farmer.full_name,
-              customerEmail,
-              country || existingSbCust.country || farmer.country || null,
-              phone || existingSbCust.phone || farmer.phone || null,
-              notes || existingSbCust.notes || farmer.notes || null,
-              farmerId
-            ]
-          );
-          existingVpsCust = rows[0];
-        } else {
-          // Update local VPS customer to set farmer_id
-          const { rows } = await db.query(
-            `UPDATE customers SET farmer_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-            [farmerId, targetId]
-          );
-          existingVpsCust = rows[0];
-        }
+        // Update local VPS customer to set farmer_id
+        const { rows } = await db.query(
+          `UPDATE customers SET farmer_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+          [farmerId, targetId]
+        );
+        existingVpsCust = rows[0];
 
         customerRecord = existingVpsCust;
-
-        // Update Supabase customer to set farmer_id
-        if (supabase) {
-          const { error: sbUpdateErr } = await supabase
-            .from('customers')
-            .update({ farmer_id: farmerId })
-            .eq('id', targetId);
-          if (sbUpdateErr) {
-            console.error('[Sync] Failed to update customer farmer_id in Supabase:', sbUpdateErr.message);
-          }
-        }
       } else {
         // Create new customer record
         // If a customer with this email already exists in the company, set email to null to avoid unique key violation
-        const insertEmail = (existingVpsCust || existingSbCust) ? null : customerEmail;
+        const insertEmail = existingVpsCust ? null : customerEmail;
 
         // Insert into local VPS database
         const { rows: insertedRows } = await db.query(
@@ -562,27 +474,6 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
         );
 
         customerRecord = insertedRows[0];
-
-        // Sync insert to Supabase
-        if (supabase) {
-          console.log(`[Sync] Inserting converted customer into Supabase: ${customerRecord.name}`);
-          const { error: insertSbErr } = await supabase
-            .from('customers')
-            .insert([{
-              id: customerRecord.id,
-              company_id: customerRecord.company_id,
-              name: customerRecord.name,
-              email: customerRecord.email,
-              country: customerRecord.country,
-              phone: customerRecord.phone,
-              notes: customerRecord.notes,
-              farmer_id: farmerId,
-            }]);
-
-          if (insertSbErr) {
-            console.error('[Sync] Failed to insert customer to Supabase:', insertSbErr.message);
-          }
-        }
       }
     }
 
@@ -617,16 +508,6 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
           `UPDATE leads SET stage = 'Client Successfully Acquired', updated_at = NOW() WHERE id = $1`,
           [existingLead.id]
         );
-        // Update stage in Supabase
-        if (supabase) {
-          const { error: leadSbErr } = await supabase
-            .from('leads')
-            .update({ stage: 'Client Successfully Acquired' })
-            .eq('id', existingLead.id);
-          if (leadSbErr) {
-            console.error('[Sync] Failed to update lead stage in Supabase:', leadSbErr.message);
-          }
-        }
       } else {
         console.log(`[Sync] No existing lead found. Creating a corresponding lead record for CRM Customer Database...`);
         
@@ -647,26 +528,6 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
             customerRecord.phone || null,
           ]
         );
-
-        // Sync insert to Supabase
-        if (supabase) {
-          const { error: sbLeadErr } = await supabase
-            .from('leads')
-            .insert([{
-              id: leadId,
-              company_id: company_id,
-              company_name: customerRecord.name,
-              contact_name: customerRecord.name,
-              country: customerRecord.country || null,
-              email: customerRecord.email || null,
-              mobile: customerRecord.phone || null,
-              phone: customerRecord.phone || null,
-              stage: 'Client Successfully Acquired'
-            }]);
-          if (sbLeadErr) {
-            console.error('[Sync] Failed to insert corresponding lead to Supabase:', sbLeadErr.message);
-          }
-        }
       }
     }
 

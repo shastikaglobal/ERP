@@ -3,10 +3,9 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 const db = require('../db');
-
-// Initialize Supabase Client
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'mock';
+const fs = require('fs');
+const path = require('path');
+// (Supabase Client has been removed as part of VPS Migration)
 
 // GET /api/emails/accounts - Fetch zoho accounts
 router.get('/accounts', requireAuth, async (req, res) => {
@@ -174,15 +173,7 @@ router.delete('/accounts/:id', requireAuth, async (req, res) => {
       [id]
     );
 
-    // Propagate deletion to Supabase so sync doesn't restore it
-    const { error } = await supabase
-      .from('zoho_accounts')
-      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      console.warn('[Delete] Failed to update Supabase:', error.message);
-    }
+    // (Supabase sync logic removed)
     
     res.json({ success: true });
   } catch (err) {
@@ -232,12 +223,9 @@ router.post('/sync', requireAuth, async (req, res) => {
           "UPDATE zoho_accounts SET access_token = $1, expiry_time = $2 WHERE id = $3",
           [accessToken, newExpiry, accountId]
         );
-        // Background sync to Supabase (if possible)
-        supabase.from('zoho_accounts').update({ access_token: accessToken, expiry_time: newExpiry }).eq('id', accountId).then(({ error }) => {
-          if (error) console.warn('[Sync] Background zoho_accounts update failed:', error.message);
-        });
       } else {
         console.warn(`[Sync] Token refresh failed for ${account.account_email}:`, refreshData.error_description || refreshData.error);
+        return res.status(401).json({ success: false, error: 'Authorization expired or revoked. Please delete and re-add this account.' });
       }
     }
 
@@ -313,10 +301,7 @@ router.post('/sync', requireAuth, async (req, res) => {
         ]);
         syncCount++;
 
-        // Async backup in Supabase
-        supabase.from('emails').upsert(emailPayload, { onConflict: 'zoho_message_id' }).then(({ error }) => {
-          if (error) console.warn('[Sync] Background email upsert failed:', error.message);
-        });
+        // (Supabase sync logic removed)
       } catch (insertErr) {
         console.error('[Sync] Local email insert error:', insertErr.message);
       }
@@ -376,13 +361,7 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
           "UPDATE zoho_accounts SET access_token = $1, expiry_time = $2 WHERE id = $3",
           [accessToken, newExpiry, accountId]
         );
-        // Background sync
-        supabase.from("zoho_accounts").update({
-          access_token: accessToken,
-          expiry_time: newExpiry,
-        }).eq("id", accountId).then(({ error }) => {
-          if (error) console.warn('[Sync] Background zoho_accounts token update failed:', error.message);
-        });
+        // (Supabase sync logic removed)
       }
     }
 
@@ -493,7 +472,9 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
           const contentType = att.contentType || att.content_type || att.mimeType || att.type || "application/octet-stream";
 
           const safeName = (filenameRaw || "attachment").replace(/[^a-zA-Z0-9.\-_]/g, "_");
-          const storagePath = `mailbox/zoho-${messageId}-${attachmentId}-${safeName}`;
+          const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          const storageName = `zoho-${messageId}-${uniquePrefix}-${safeName}`;
+          const relativeStoragePath = `mailbox/${storageName}`;
 
           const downloadUrl = `https://mail.${apiDomain}/api/accounts/${verifiedZohoId}/folders/${foundFolder.folderId}/messages/${messageId}/attachments/${attachmentId}`;
           const downloadResponse = await fetch(downloadUrl, {
@@ -542,20 +523,22 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
               }
             }
 
-            // Upload to Supabase Storage in the background
-            supabase.storage
-              .from("email-attachments")
-              .upload(storagePath, fileBuffer, {
-                contentType: contentType || "application/octet-stream",
-                upsert: true
-              }).then(({ error: uploadError }) => {
-                if (uploadError) console.error(`[Backend] Failed to upload ${filenameRaw} to Supabase:`, uploadError);
-                else console.log(`[Backend] Successfully uploaded ${filenameRaw} to Supabase!`);
-              });
+            // Local file storage
+            try {
+              const uploadDir = path.join(__dirname, '..', 'uploads', 'mailbox');
+              if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+              }
+              const absolutePath = path.join(uploadDir, storageName);
+              fs.writeFileSync(absolutePath, fileBuffer);
+              console.log(`[Backend] Saved attachment locally at ${absolutePath}`);
+            } catch (fsErr) {
+              console.error("[Backend] Failed to save attachment to local disk", fsErr);
+            }
 
             dbAttachments.push({
               filename: filenameRaw,
-              path: storagePath,
+              path: relativeStoragePath,
               contentType: contentType,
               isInline: isInline
             });
@@ -573,10 +556,7 @@ router.post('/get-zoho-body', requireAuth, async (req, res) => {
       [updatePayload.body_html, JSON.stringify(updatePayload.attachments), emailId]
     );
 
-    // Background update Supabase
-    supabase.from("emails").update(updatePayload).eq("id", emailId).then(({ error }) => {
-      if (error) console.warn('[Sync] Background email update failed:', error.message);
-    });
+    // (Supabase sync logic removed)
 
     res.json({
       success: true,

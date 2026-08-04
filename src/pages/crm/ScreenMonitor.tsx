@@ -70,7 +70,9 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
 
     pc.onicecandidate = async (e) => {
       if (e.candidate) {
-        await fetch('/api/analytics/screen_signals', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_user_id: adminId.current, to_user_id: targetUser.id, signal_type: "candidate", payload: JSON.stringify(e.candidate) }) });
+        if ((pc as any)._ws && (pc as any)._ws.readyState === WebSocket.OPEN) {
+          (pc as any)._ws.send(JSON.stringify({ type: 'candidate', targetId: targetUser.id, candidate: e.candidate }));
+        }
       }
     };
 
@@ -81,7 +83,26 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
     };
 
     const requestWatch = async () => {
-      await fetch('/api/analytics/screen_signals', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_user_id: adminId.current, to_user_id: targetUser.id, signal_type: "watch_request", payload: JSON.stringify({ adminId: adminId.current }) }) });
+      const wsUrl = import.meta.env.VITE_VPS_API_URL?.replace('http', 'ws') || `ws://${window.location.hostname}:8082`;
+      const ws = new WebSocket(wsUrl);
+      (pc as any)._ws = ws;
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'register', userId: adminId.current }));
+        ws.send(JSON.stringify({ type: 'watch_request', targetId: targetUser.id }));
+      };
+
+      ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ type: 'answer', targetId: targetUser.id, answer }));
+        } else if (data.type === 'candidate' && data.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      };
     };
 
     requestWatch();
@@ -94,6 +115,7 @@ function LiveViewerModal({ targetUser, onClose }: { targetUser: BdeStatus; onClo
 
     return () => {
       pc.close();
+      if ((pc as any)._ws) (pc as any)._ws.close();
       
       clearTimeout(timeout);
     };
@@ -190,11 +212,48 @@ function useScreenBroadcaster(userId: string | undefined, stream: MediaStream | 
   useEffect(() => {
     if (!userId || !stream) return;
 
-    const channelName = `broadcaster_${userId}_${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+    const wsUrl = import.meta.env.VITE_VPS_API_URL?.replace('http', 'ws') || `ws://${window.location.hostname}:8082`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'register', userId }));
+    };
+
+    ws.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+      const fromId = data.fromId;
+      if (!fromId) return;
+
+      if (data.type === 'watch_request') {
+        const pc = new RTCPeerConnection(RTC_CONFIG);
+        pcsRef.current.set(fromId, pc);
+
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        pc.onicecandidate = (e) => {
+          if (e.candidate && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'candidate', targetId: fromId, candidate: e.candidate }));
+          }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'offer', targetId: fromId, offer }));
+        }
+      } else if (data.type === 'answer' && data.answer) {
+        const pc = pcsRef.current.get(fromId);
+        if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      } else if (data.type === 'candidate' && data.candidate) {
+        const pc = pcsRef.current.get(fromId);
+        if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    };
     
 
     return () => {
       
+      ws.close();
       pcsRef.current.forEach(pc => pc.close());
       pcsRef.current.clear();
     };

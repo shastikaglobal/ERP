@@ -30,64 +30,7 @@ async function syncProfileToLocalDb(id, updates) {
     const { rowCount } = await db.query(queryText, [...values, id]);
     
     if (rowCount === 0) {
-      console.log(`[Sync] Profile ${id} not found locally during update. Fetching from Supabase to sync...`);
-      const { data: sbProfile, error: sbError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (!sbError && sbProfile) {
-        await db.query(
-          `INSERT INTO profiles (
-            id, company_id, full_name, email, avatar_url, phone, employee_id, role, department, 
-            zoho_meeting_link, requested_role, system_mode, city, status, rejection_reason, 
-            email_signature, biometric_id, is_active, is_deleted, created_at, updated_at,
-            approved_by, approved_at, monthly_salary, punch_deadline, monthly_target
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
-            $22, $23, $24, $25, $26
-          ) ON CONFLICT (id) DO UPDATE SET
-            company_id = EXCLUDED.company_id,
-            full_name = EXCLUDED.full_name,
-            email = EXCLUDED.email,
-            phone = EXCLUDED.phone,
-            role = EXCLUDED.role,
-            department = EXCLUDED.department,
-            is_active = EXCLUDED.is_active,
-            is_deleted = EXCLUDED.is_deleted,
-            updated_at = NOW()`,
-          [
-            sbProfile.id,
-            sbProfile.company_id || null,
-            sbProfile.full_name || null,
-            sbProfile.email || null,
-            sbProfile.avatar_url || null,
-            sbProfile.phone || null,
-            sbProfile.employee_id || null,
-            sbProfile.role || null,
-            sbProfile.department || null,
-            sbProfile.zoho_meeting_link || null,
-            sbProfile.requested_role || null,
-            sbProfile.system_mode || null,
-            sbProfile.city || null,
-            sbProfile.status || 'pending',
-            sbProfile.rejection_reason || null,
-            sbProfile.email_signature || null,
-            sbProfile.biometric_id || null,
-            sbProfile.is_active ?? true,
-            sbProfile.is_deleted ?? false,
-            sbProfile.created_at || new Date().toISOString(),
-            sbProfile.updated_at || new Date().toISOString(),
-            sbProfile.approved_by || null,
-            sbProfile.approved_at || null,
-            sbProfile.monthly_salary || null,
-            sbProfile.punch_deadline || null,
-            sbProfile.monthly_target || null
-          ]
-        );
-        console.log(`[Sync] Successfully created profile for ${id} in local VPS DB`);
-      }
+      console.log(`[Sync] Profile ${id} not found locally during update.`);
     } else {
       console.log(`[Sync] Successfully synced updates to local VPS DB for profile ${id}`);
     }
@@ -111,17 +54,9 @@ router.get('/', requireAuth, async (req, res) => {
       `);
       return res.json(rows);
     } catch (dbErr) {
-      console.warn('[API /employees] Local query failed, trying Supabase:', dbErr.message);
+      console.error('[API /employees] Local query failed:', dbErr.message);
+      throw dbErr;
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, phone, requested_role, status, is_active, avatar_url, biometric_id, dob, joining_date, system_mode, city, monthly_salary, punch_deadline, department')
-      .eq('status', 'approved')
-      .eq('is_deleted', false)
-      .order('full_name');
-    if (error) throw error;
-    res.json(data || []);
   } catch (err) {
     console.error('GET /api/employees error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -141,16 +76,9 @@ router.get('/all/profiles', requireAuth, async (req, res) => {
       `);
       return res.json(rows);
     } catch (dbErr) {
-      console.warn('[API /employees/all/profiles] Local query failed, trying Supabase:', dbErr.message);
+      console.error('[API /employees/all/profiles] Local query failed:', dbErr.message);
+      throw dbErr;
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, phone, role, requested_role, status, rejection_reason, created_at, department, is_active, biometric_id, monthly_salary, joining_date')
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json(data || []);
   } catch (err) {
     console.error('GET /api/employees/all/profiles error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -171,21 +99,6 @@ router.get('/lookup-id/:id', async (req, res) => {
     if (rows.length > 0) {
       console.log(`[Lookup ID] Found locally: ${rows[0].email} (${rows[0].full_name})`);
       return res.json({ email: rows[0].email, full_name: rows[0].full_name, role: rows[0].role });
-    }
-
-    console.log(`[Lookup ID] Not found locally, checking Supabase...`);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('email, full_name, role')
-      .or(`employee_id.eq.${id},biometric_id.eq.${id}`)
-      .maybeSingle();
-
-    if (error) {
-      console.error(`[Lookup ID] Supabase fallback error:`, error.message);
-    }
-
-    if (data && data.email) {
-      return res.json({ email: data.email, full_name: data.full_name, role: data.role });
     }
 
     return res.status(404).json({ error: 'Employee ID not found' });
@@ -253,15 +166,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       return res.json(rows[0]);
     }
 
-    // Fallback: check Supabase
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Not found' });
-    res.json(data);
+    return res.status(404).json({ error: 'Not found' });
   } catch (err) {
     console.error('GET /api/employees/:id error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -294,45 +199,34 @@ router.post('/register', async (req, res) => {
     
     // Check if biometric_id/employee_id is already registered
     if (empId) {
-      const { data: existingId, error: checkError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .or(`employee_id.eq.${empId},biometric_id.eq.${empId}`)
-        .maybeSingle();
-        
-      if (checkError) throw checkError;
-      if (existingId) {
+      const { rows: existingId } = await db.query(
+        'SELECT id, full_name FROM profiles WHERE employee_id = $1 OR biometric_id = $1 LIMIT 1',
+        [empId]
+      );
+      if (existingId.length > 0) {
         return res.status(400).json({ error: `Employee ID "${empId}" is already registered.` });
       }
     } else {
-      const { data: existingEmail, error: checkError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('email', signUpEmail)
-        .maybeSingle();
-        
-      if (checkError) throw checkError;
-      if (existingEmail) {
+      const { rows: existingEmail } = await db.query(
+        'SELECT id, full_name FROM profiles WHERE email = $1 LIMIT 1',
+        [signUpEmail]
+      );
+      if (existingEmail.length > 0) {
         return res.status(400).json({ error: `Email "${signUpEmail}" is already registered.` });
       }
     }
     
-    console.log(`[Signup API] Creating auth user for email ${signUpEmail}...`);
+    console.log(`[Signup API] Creating local auth user for email ${signUpEmail}...`);
     
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: signUpEmail,
-      password: password,
-      email_confirm: true,
-      user_metadata: empId ? {
-        employee_id: empId,
-        biometric_id: empId
-      } : {}
-    });
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
     
-    if (error) {
-      console.error('[Signup API] Supabase error:', error.message);
-      return res.status(400).json({ error: error.message });
-    }
+    // Insert into local profiles
+    await db.query(`
+      INSERT INTO profiles (email, password_hash, employee_id, biometric_id, status, role, is_active, created_at)
+      VALUES ($1, $2, $3, $4, 'pending', 'user', true, NOW())
+    `, [signUpEmail, passwordHash, empId, empId]);
     
     res.json({ success: true, email: signUpEmail });
   } catch (err) {
@@ -360,16 +254,6 @@ router.post('/', requireAuth, async (req, res) => {
       throw localErr;
     }
 
-    // Try Supabase
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .insert({ id, full_name, email, requested_role, status: 'approved' });
-      if (error) throw error;
-    } catch (supaErr) {
-      console.warn('[Sync] Supabase profile insert failed/ignored:', supaErr.message);
-    }
-
     res.json({ success: true });
   } catch (err) {
     console.error('POST /api/employees error:', err.message);
@@ -392,15 +276,6 @@ router.put('/:id', requireAuth, async (req, res) => {
       console.error(`[Sync] Local DB profile update failed:`, dbErr.message);
       throw dbErr;
     }
-
-    // 2. Try to update Supabase in the background (non-blocking)
-    supabase.from('profiles').update(updates).eq('id', id)
-      .then(({ error }) => {
-        if (error) console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, error.message);
-      })
-      .catch(supabaseErr => {
-        console.warn(`[Sync] Supabase profile update exception:`, supabaseErr.message);
-      });
 
     res.json({ success: true });
   } catch (err) {
@@ -428,17 +303,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
     } catch (localErr) {
       console.error('[Sync] Local profile soft-delete failed:', localErr.message);
       throw localErr;
-    }
-
-    // 2. Try Supabase
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: false, is_deleted: true, deleted_at, deleted_by })
-        .eq('id', id);
-      if (error) throw error;
-    } catch (supaErr) {
-      console.warn('[Sync] Supabase profile soft-delete failed/ignored:', supaErr.message);
     }
 
     res.json({ success: true });
@@ -482,15 +346,6 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
         console.error(`[Sync] Local DB profile update failed:`, dbErr.message);
         throw dbErr;
       }
-
-      // Try Supabase update in background (non-blocking)
-      supabase.from('profiles').update(profileUpdate).eq('id', id)
-        .then(({ error: profileErr }) => {
-          if (profileErr) console.warn(`[Sync] Supabase profile update failed/ignored (restricted quota):`, profileErr.message);
-        })
-        .catch(supaErr => {
-          console.warn(`[Sync] Supabase profile update exception:`, supaErr.message);
-        });
     }
 
     // 2. Assign role locally first
@@ -523,23 +378,6 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
           console.error(`[Sync] Local user_roles insertion failed:`, localUrErr.message);
           throw localUrErr;
         }
-
-        // Try Supabase role sync in background (non-blocking)
-        supabase.from('roles').select('id').eq('slug', requested_role).maybeSingle()
-          .then(async ({ data: roleRow, error: roleErr }) => {
-            if (!roleErr && roleRow?.id) {
-              // Remove ALL existing roles for this user in Supabase
-              await supabase.from('user_roles').delete().eq('user_id', id);
-              // Insert single new role in Supabase
-              await supabase
-                .from('user_roles')
-                .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() });
-              console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in Supabase`);
-            }
-          })
-          .catch(supaRoleErr => {
-            console.warn(`[Sync] Supabase role sync exception:`, supaRoleErr.message);
-          });
       } else {
         console.warn(`[ROLE SYNC] Role slug '${requested_role}' not found in local roles table`);
       }
@@ -632,11 +470,46 @@ router.delete('/:id/bio-data', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/employees/:id/reset-password - Password reset removed as Supabase is decoupled
+// POST /api/employees/:id/reset-password - Local DB password reset implementation
 router.post('/:id/reset-password', requireAuth, async (req, res) => {
   try {
-    return res.status(400).json({ error: 'Password reset is disabled while migrating away from Supabase.' });
+    const { id } = req.params;
+    
+    // Check if user exists
+    const { rows: users } = await db.query('SELECT email FROM profiles WHERE id = $1 LIMIT 1', [id]);
+    if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    const email = users[0].email;
+    if (!email) return res.status(400).json({ error: 'User does not have an email' });
+    
+    // Generate secure token (30 min expiration)
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    
+    // Ensure table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        user_id UUID,
+        reset_token_hash VARCHAR(255),
+        expires_at TIMESTAMP,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `).catch(() => {});
+    
+    await db.query(
+      'INSERT INTO password_resets (user_id, reset_token_hash, expires_at) VALUES ($1, $2, $3)',
+      [id, tokenHash, expiresAt]
+    );
+    
+    const resetLink = `${req.headers.origin || 'http://localhost:8080'}/auth?mode=reset&token=${resetToken}`;
+    
+    return res.json({ success: true, link: resetLink, message: 'Password reset link generated successfully' });
   } catch (err) {
+    console.error('POST /api/employees/:id/reset-password error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

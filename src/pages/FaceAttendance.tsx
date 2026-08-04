@@ -13,6 +13,7 @@ import {
   findBestMatch,
   areModelsLoaded,
 } from '../services/faceEngine';
+import { useAuth } from '@/hooks/useAuth';
 
 // Use IST date (device timezone) to match biometric device
 function getTodayIST() {
@@ -20,9 +21,8 @@ function getTodayIST() {
 }
 
 // Fetch today's attendance for an employee from VPS database
-async function fetchTodayFromVPS(employeeId: string) {
+async function fetchTodayFromVPS(employeeId: string, session: any) {
   try {
-    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     if (!session) return null;
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
@@ -35,9 +35,7 @@ async function fetchTodayFromVPS(employeeId: string) {
 }
 
 // Sync a check-in to VPS and VpsDb
-async function syncCheckIn(employeeId: string, confidence: number) {
-const { session_data } = {} as any; // [VPS Migration] fixed assignment
-  const session = session_data.data.session;
+async function syncCheckIn(employeeId: string, confidence: number, session: any) {
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
   const today = getTodayIST();
@@ -61,9 +59,7 @@ const { session_data } = {} as any; // [VPS Migration] fixed assignment
 }
 
 // Sync a check-out to VPS and VpsDb
-async function syncCheckOut(employeeId: string) {
-const { session_data } = {} as any; // [VPS Migration] fixed assignment
-  const session = session_data.data.session;
+async function syncCheckOut(employeeId: string, session: any) {
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
   const today = getTodayIST();
@@ -85,9 +81,8 @@ const { session_data } = {} as any; // [VPS Migration] fixed assignment
 }
 
 // Fetch today summary from VPS
-async function fetchTodaySummaryFromVPS() {
+async function fetchTodaySummaryFromVPS(session: any) {
   try {
-    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     if (!session) return [];
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
@@ -169,6 +164,7 @@ function TimeRow({ label, value, accent }) {
 }
 
 export default function FaceAttendance() {
+  const { session } = useAuth();
   const [storedEmbeddings, setStoredEmbeddings] = useState([]);
   const [todaySummary, setTodaySummary] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -221,7 +217,7 @@ export default function FaceAttendance() {
       // Load face embeddings from VpsDb, today's summary from VPS, and employees from VpsDb
       const [embeddings, summary, employeesList] = await Promise.all([
         getAllFaceEmbeddings(),
-        fetchTodaySummaryFromVPS(),
+        fetchTodaySummaryFromVPS(session),
         getAllEmployees(),
       ]);
 
@@ -311,7 +307,7 @@ export default function FaceAttendance() {
       setScanMessage(`Matched ${matchResult.employee?.full_name} (${matchResult.confidence}%) — recording attendance…`);
 
       // Read today's record from VPS (source of truth) using IST date
-      const existing = await fetchTodayFromVPS(matchResult.employeeId);
+      const existing = await fetchTodayFromVPS(matchResult.employeeId, session);
       // VPS uses clock_in / clock_out column names
       const hasCheckIn = !!(existing?.clock_in);
       const hasCheckOut = !!(existing?.clock_out);
@@ -322,7 +318,7 @@ export default function FaceAttendance() {
 
       if (isCheckout && hasCheckIn && !hasCheckOut) {
         // Explicit checkout mode — record checkout
-        const outTime = await syncCheckOut(matchResult.employeeId);
+        const outTime = await syncCheckOut(matchResult.employeeId, session);
         checkOutTime = outTime;
         action = 'check-out';
       } else if (hasCheckIn && hasCheckOut) {
@@ -331,7 +327,7 @@ export default function FaceAttendance() {
       } else if (hasCheckIn && !hasCheckOut) {
         // Has check-in but no check-out — only mark checkout if mode=checkout
         if (isCheckout) {
-          const outTime = await syncCheckOut(matchResult.employeeId);
+          const outTime = await syncCheckOut(matchResult.employeeId, session);
           checkOutTime = outTime;
           action = 'check-out';
         } else {
@@ -343,7 +339,7 @@ export default function FaceAttendance() {
         if (isCheckout) {
           throw new Error('Cannot Punch Out because you have not Punched In today.');
         } else {
-          const newRecord = await syncCheckIn(matchResult.employeeId, matchResult.confidence);
+          const newRecord = await syncCheckIn(matchResult.employeeId, matchResult.confidence, session);
           checkInTime = newRecord.check_in;
           action = 'check-in';
         }
@@ -368,7 +364,7 @@ export default function FaceAttendance() {
       }
 
       // Fetch summary and enrich with employee names
-      const summary = await fetchTodaySummaryFromVPS();
+      const summary = await fetchTodaySummaryFromVPS(session);
       const employeesList = await getAllEmployees();
       const wfhEmployees = employeesList ? employeesList.filter(e => e.system_mode === 'wfh') : [];
       const wfhEmpIds = new Set(wfhEmployees.map(e => e.id));
