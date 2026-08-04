@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, FileType, CheckCircle, Loader2 } from "lucide-react";
 import Papa from "papaparse";
 import { toast } from "sonner";
-import { vpsDb } from "@/lib/vpsDb";
-
+import { useAuth } from "@/hooks/useAuth";
 import { format, parse } from "date-fns";
 
 type EsslUploaderProps = {
@@ -16,6 +15,7 @@ type EsslUploaderProps = {
 };
 
 export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps) {
+  const { session } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -96,7 +96,7 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
         const clockOutIso = rawOut ? new Date(`${punchDateStr}T${rawOut}`).toISOString() : null;
 
         // Upsert logic (check if exists)
-        const { data: { session } } = await vpsDb.auth.getSession();
+        // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const res = await fetch(`/api/hr/attendance_logs?employee_id=${emp.id}&date=${punchDateStr}`, {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });

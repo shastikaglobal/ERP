@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -7,14 +8,11 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  Mail, ShieldCheck, Server, AlertCircle, CheckCircle2, 
-  HelpCircle, ExternalLink, Info, Loader2, User, Key, 
-  AtSign, Zap, Activity as ActivityIcon, Inbox, Send, Download, RefreshCw,
-  Search, User2, Clock, MessageSquare, ChevronRight, Filter
+  Mail, ShieldCheck, AlertCircle, CheckCircle2, 
+  Loader2, 
+  AtSign, Inbox, Send, RefreshCw,
+  Search, User2, Clock, ChevronRight, Filter
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
@@ -71,15 +69,16 @@ export default function EmailIntegration() {
   const [apiKey, setApiKey] = useState("");
 
   const fetchData = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id) {
+      setLoading(false);
+      return;
+    }
 
-    // 1. Fetch Company Config — handle missing api_key column gracefully
+    // 1. Fetch Company Config
     try {
-      const res = await fetch(`/api/companies/${profile.company_id}`, { credentials: 'include' });
+      const res = await fetch(`/api/settings`, { credentials: 'include' });
       const comp = await res.json().catch(() => null);
-      const error = res.ok ? null : new Error('Failed');
-      if (error) throw error;
-      if (comp) {
+      if (res.ok && comp) {
         setSmtpHost(comp.smtp_host || "smtppro.zoho.in");
         setSmtpPort(comp.smtp_port || "465");
         setSmtpUser(comp.smtp_user || "");
@@ -90,49 +89,30 @@ export default function EmailIntegration() {
         setApiKey(comp.api_key || "");
       }
     } catch (err: any) {
-      console.warn("Failed to select companies.* — falling back to select known columns:", err?.message);
-      // Fallback: select only known columns (avoid referencing missing api_key)
-      const res2 = await fetch(`/api/companies/${profile.company_id}`, { credentials: 'include' });
-      const comp2 = await res2.json().catch(() => null);
-      const err2 = res2.ok ? null : new Error('Failed');
-      if (err2) {
-        console.error("Failed to fetch company config:", err2.message || err2);
-        // leave defaults in place
-      } else if (comp2) {
-        setSmtpHost(comp2.smtp_host || "smtppro.zoho.in");
-        setSmtpPort(comp2.smtp_port || "465");
-        setSmtpUser(comp2.smtp_user || "");
-        setFromEmail(comp2.from_email || "");
-        setImapHost(comp2.imap_host || "imappro.zoho.in");
-        setImapPort(String(comp2.imap_port || "993"));
-        setImapUser(comp2.imap_user || "");
-        // api_key column missing — keep apiKey state empty
-        setApiKey("");
-      }
+      console.warn("Failed to fetch company config:", err?.message);
     }
 
     // 2. Fetch Recent Email Activities
-    const emRes = await fetch('/api/emails', { credentials: 'include' });
+    try {
+      const emRes = await fetch('/api/emails', { credentials: 'include' });
       const emailData = await emRes.json().catch(() => []);
+      if (Array.isArray(emailData)) setEmails(emailData as unknown as EmailActivity[]);
+    } catch (err: any) {
+      console.warn("Failed to fetch emails:", err?.message);
+    }
     
-    if (emailData) setEmails(emailData as unknown as EmailActivity[]);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
 
-    // 1. Live Subscriptions for instant UI updates
-    
-
-    // 2. Auto-Sync with Server every 2 minutes
     const syncInterval = setInterval(() => {
       console.log("Auto-syncing with mail server...");
-      handleSyncAll(true); // Silent sync
+      handleSyncAll(true);
     }, 120000);
 
     return () => {
-      
       clearInterval(syncInterval);
     };
   }, [profile?.company_id]);
@@ -143,8 +123,7 @@ export default function EmailIntegration() {
     try {
       const res = await fetch('/api/emails/sync', { method: 'POST', credentials: 'include' });
       const data = await res.json().catch(() => null);
-      const error = res.ok ? null : new Error('Failed');
-      if (error) throw error;
+      if (!res.ok) throw new Error('Sync failed');
       if (!silent) {
         if (data?.count > 0) {
           toast.success(`Synced ${data.count} new emails!`);
@@ -160,7 +139,6 @@ export default function EmailIntegration() {
     }
   };
 
-
   const handleSave = async () => {
     if (!profile?.company_id) return;
     setSaving(true);
@@ -172,26 +150,20 @@ export default function EmailIntegration() {
     if (smtpPass) updateData.smtp_pass = smtpPass;
     if (imapPass) updateData.imap_pass = imapPass;
 
-    const res = await fetch(`/api/companies/${profile.company_id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
-    const error = res.ok ? null : new Error('Failed');
+    const res = await fetch(`/api/settings`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
     setSaving(false);
-    if (error) {
-      // Detect common schema/cache error when api_key column is missing
-      const msg = error.message || String(error);
-      if (msg.toLowerCase().includes("api_key") || msg.toLowerCase().includes("column \"api_key\"")) {
-        toast.error("Save failed: 'api_key' column missing in database. Run the migration file vpsDb/migrations/20260522120000_add_api_key_to_companies.sql on your DB.");
-      } else {
-        toast.error("Error: " + msg);
-      }
+    if (!res.ok) {
+      toast.error("Failed to save configuration.");
     } else {
       toast.success("Configuration saved.");
     }
   };
 
-  const filteredEmails = emails.filter(e => 
-    e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    e.leads?.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.leads?.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // Safe filter — optional chaining prevents crashes when leads is null/undefined
+  const filteredEmails = emails.filter(e =>
+    (e.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (e.leads?.company_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (e.leads?.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   if (loading) return <div className="flex justify-center py-24"><Loader2 className="animate-spin" /></div>;
@@ -255,10 +227,10 @@ export default function EmailIntegration() {
                 </Card>
               ) : (
                 filteredEmails.map(email => (
-                  <Card key={email.id} className="hover:border-primary/40 transition-all cursor-pointer group shadow-sm" onClick={() => nav(`/crm/leads/${email.lead_id}`)}>
+                  <Card key={email.id} className={`transition-all shadow-sm ${email.lead_id ? 'hover:border-primary/40 cursor-pointer group' : 'border-border/50'}`} onClick={() => email.lead_id ? nav(`/crm/leads/${email.lead_id}`) : toast.info("This email is not yet linked to a CRM lead.")}>
                     <CardContent className="p-4 flex items-start gap-4">
-                      <div className={`mt-1 p-2 rounded-lg ${email.title.includes('Sent') ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {email.title.includes('Sent') ? <Send className="h-4 w-4" /> : <Inbox className="h-4 w-4" />}
+                      <div className={`mt-1 p-2 rounded-lg ${(email.title || '').includes('Sent') ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {(email.title || '').includes('Sent') ? <Send className="h-4 w-4" /> : <Inbox className="h-4 w-4" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
@@ -275,7 +247,7 @@ export default function EmailIntegration() {
                         </p>
                         <div 
                           className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-80"
-                          dangerouslySetInnerHTML={{ __html: email.content.substring(0, 200) }}
+                          dangerouslySetInnerHTML={{ __html: (email.content || '').substring(0, 200) }}
                         />
                         <div className="mt-3 flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                            <span className="flex items-center gap-1"><User2 className="h-3 w-3" /> {email.leads?.contact_name}</span>

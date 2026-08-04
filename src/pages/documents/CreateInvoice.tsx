@@ -46,10 +46,13 @@ export default function CreateInvoice() {
           leadsData = await leadsRes.json();
         } else {
           console.warn("Failed to load leads from sync API, trying VpsDb fallback...");
-          const { data, error } = await vpsDb
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
+          const res = await fetch("/api/vps-fallback", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              table: "leads", action: "select", select: "*", order: { column: "created_at", options: { ascending: false } }
+            })
+          });
+          const { data, error } = await res.json();
           if (error) {
             console.error("VpsDb leads fallback error:", error);
           } else {
@@ -64,10 +67,13 @@ export default function CreateInvoice() {
           productsData = await productsRes.json();
         } else {
           console.warn("Failed to load products from sync API, trying VpsDb fallback...");
-          const { data, error } = await vpsDb
-            .from('products')
-            .select('*')
-            .eq('company_id', profile.company_id);
+          const res = await fetch("/api/vps-fallback", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              table: "products", action: "select", select: "*", filters: [{ column: "company_id", type: "eq", value: profile.company_id }]
+            })
+          });
+          const { data, error } = await res.json();
           if (error) {
             console.error("VpsDb products fallback error:", error);
           } else {

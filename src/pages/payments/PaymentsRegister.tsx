@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -33,13 +34,13 @@ export default function PaymentsRegister() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
 
-      const { data: { session: __session_1 } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const pRes = await fetch(`/api/finance/payments?company_id=${profile.company_id}`, {
         headers: { 'Authorization': `Bearer ${__session_1?.access_token}` }
       });
       const pData = pRes.ok ? await pRes.json() : [];
 
-      const { data: { session: __session_2 } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const eRes = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
         headers: { 'Authorization': `Bearer ${__session_2?.access_token}` }
       });
@@ -76,7 +77,7 @@ export default function PaymentsRegister() {
     queryKey: ["unpaid_export_orders", profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data: { session: __session_3 } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
         headers: { 'Authorization': `Bearer ${__session_3?.access_token}` }
       });
@@ -96,7 +97,7 @@ export default function PaymentsRegister() {
     try {
       const payNum = `PAY-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
 
-      const { data: { session: __session_4 } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/finance/payments', {
         method: 'POST',
         headers: {

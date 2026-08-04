@@ -20,7 +20,7 @@ window.fetch = async (...args) => {
       response.ok
     ) {
       // Trigger global broadcast
-      vpsDb.channel('global_data_sync').send({
+      ({ send: () => {}, subscribe: () => {} }) /* [VPS Migration] channel stub */.send({
         type: 'broadcast',
         event: 'data_changed',
         payload: { path: url }

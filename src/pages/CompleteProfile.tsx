@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { vpsDb } from "@/lib/vpsDb";
 
 import { useAuth } from "@/hooks/useAuth";
 
@@ -82,35 +81,33 @@ export default function CompleteProfile() {
     setBusy(true);
 
     try {
-      // Check if biometric_id/employee_id is already registered to someone else
-      const { data: existingId, error: checkError } = await vpsDb
-        .from("profiles")
-        .select("id, full_name")
-        .or(`employee_id.eq.${employeeId.trim()},biometric_id.eq.${employeeId.trim()}`)
-        .neq("id", session.user.id)
-        .maybeSingle();
+      // Check if biometric_id is already taken by another user
+      const checkRes = await fetch(
+        `/api/employees/check-employee-id?employee_id=${encodeURIComponent(employeeId.trim())}&exclude_id=${session.user.id}`,
+        { credentials: 'include' }
+      );
+      const checkData = await checkRes.json();
 
-      if (checkError) throw checkError;
-
-      if (existingId) {
-        toast.error(`Employee ID/eSSL ID "${employeeId.trim()}" is already assigned to ${existingId.full_name || 'another user'}.`);
+      if (checkData.exists) {
+        toast.error(`Employee ID/eSSL ID "${employeeId.trim()}" is already assigned to ${checkData.full_name || 'another user'}.`);
         setBusy(false);
         return;
       }
 
-      const { error } = await vpsDb
-        .from("profiles")
-        .update({ 
-          full_name: fullName, 
-          phone, 
-          requested_role: role, 
+      const res = await fetch(`/api/employees/${session.user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          full_name: fullName,
+          phone,
+          requested_role: role,
           employee_id: employeeId.trim(),
           biometric_id: employeeId.trim(),
-          status: "pending" 
+          status: 'pending'
         })
-        .eq("id", session.user.id);
-
-      if (error) throw error;
+      });
+      if (!res.ok) throw new Error('Failed to update profile');
 
       await refresh();
       nav("/waiting-approval", { replace: true });

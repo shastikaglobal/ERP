@@ -84,7 +84,10 @@ export default function LeadDetail() {
 
   useEffect(() => {
     async function fetchLeadDetails() {
-      if (!id) return;
+      if (!id || id === 'null' || id === 'undefined') {
+        nav('/crm/leads');
+        return;
+      }
       try {
         
         

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCan } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, ClipboardCheck, Edit } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

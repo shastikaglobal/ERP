@@ -236,6 +236,17 @@ export default function Auth() {
                 >
                   {busyReset ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
                 </Button>
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/auth", { replace: true });
+                    }}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
               </form>
             </>
           ) : isSignUp ? (

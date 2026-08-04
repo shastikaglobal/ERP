@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { Pool } from 'pg'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@legacyDb/legacyDb-js'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 let db = null
@@ -15,16 +15,16 @@ dotenv.config()
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-let supabase = null
+let legacyDb = null
 if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  legacyDb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 } else {
-  console.warn('Supabase service role configuration missing. Auth and permissions mirror may be limited.')
+  console.warn('legacyDb service role configuration missing. Auth and permissions mirror may be limited.')
 }
 
 const requireAuth = async (req, res, next) => {
-  if (!supabase) {
-    return res.status(500).json({ error: 'Supabase auth not configured' })
+  if (!legacyDb) {
+    return res.status(500).json({ error: 'legacyDb auth not configured' })
   }
 
   const authHeader = req.headers.authorization
@@ -34,7 +34,7 @@ const requireAuth = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1]
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token)
+    const { data: { user }, error } = await legacyDb.auth.getUser(token)
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid or expired token' })
     }
@@ -136,21 +136,21 @@ if (DB_URL) {
   }
 })()
 
-// Vehicles API - uses direct Postgres queries to avoid Supabase schema cache issues
+// Vehicles API - uses direct Postgres queries to avoid legacyDb schema cache issues
 app.get('/api/vehicles', async (req, res) => {
   try {
     const executor = pool || (db && db.query ? db : null)
-    const executorName = executor ? (executor === pool ? 'pool' : 'adms-sync/db') : (supabase ? 'supabase' : 'none')
+    const executorName = executor ? (executor === pool ? 'pool' : 'adms-sync/db') : (legacyDb ? 'legacyDb' : 'none')
     console.log(`GET /api/vehicles executor: ${executorName}`)
     if (executor) {
       const { rows } = await executor.query('SELECT id, vehicle_number, vehicle_type FROM vehicles WHERE is_active = true ORDER BY vehicle_number')
       return res.json(rows)
     }
 
-    if (supabase) {
-      const { data, error } = await supabase.from('vehicles').select('id, vehicle_number, vehicle_type').eq('is_active', true).order('vehicle_number', { ascending: true })
+    if (legacyDb) {
+      const { data, error } = await legacyDb.from('vehicles').select('id, vehicle_number, vehicle_type').eq('is_active', true).order('vehicle_number', { ascending: true })
       if (error) {
-        console.error('GET /api/vehicles supabase error:', error.message || error)
+        console.error('GET /api/vehicles legacyDb error:', error.message || error)
         return res.status(500).json({ error: 'Failed to fetch vehicles' })
       }
       return res.json(data || [])
@@ -169,7 +169,7 @@ app.post('/api/vehicles', async (req, res) => {
     if (!vehicle_number) return res.status(400).json({ error: 'vehicle_number is required' })
 
     const executor = pool || (db && db.query ? db : null)
-    const executorName = executor ? (executor === pool ? 'pool' : 'adms-sync/db') : (supabase ? 'supabase' : 'none')
+    const executorName = executor ? (executor === pool ? 'pool' : 'adms-sync/db') : (legacyDb ? 'legacyDb' : 'none')
     console.log(`POST /api/vehicles executor: ${executorName}`)
     if (executor) {
       const insertQuery = `INSERT INTO vehicles (vehicle_number, vehicle_type, is_active) VALUES ($1, $2, true) RETURNING id, vehicle_number, vehicle_type`
@@ -178,14 +178,14 @@ app.post('/api/vehicles', async (req, res) => {
       return res.json(rows[0])
     }
 
-    if (supabase) {
-      const { data, error } = await supabase.from('vehicles').insert([{
+    if (legacyDb) {
+      const { data, error } = await legacyDb.from('vehicles').insert([{
         vehicle_number,
         vehicle_type: vehicle_type || null,
         is_active: true
       }]).select('id, vehicle_number, vehicle_type').single()
       if (error) {
-        console.error('POST /api/vehicles supabase error:', error.message || error)
+        console.error('POST /api/vehicles legacyDb error:', error.message || error)
         return res.status(500).json({ error: 'Failed to create vehicle' })
       }
       return res.json(data)
@@ -269,11 +269,11 @@ app.post('/api/drivers', async (req, res) => {
   }
 })
 
-// GET /api/employees — returns approved employees from Supabase profiles
+// GET /api/employees — returns approved employees from legacyDb profiles
 app.get('/api/employees', requireAuth, async (req, res) => {
   try {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
-    const { data, error } = await supabase
+    if (!legacyDb) return res.status(500).json({ error: 'legacyDb not configured' })
+    const { data, error } = await legacyDb
       .from('profiles')
       .select('id, full_name, email, requested_role, department, is_active, status')
       .eq('status', 'approved')
@@ -290,8 +290,8 @@ app.get('/api/employees', requireAuth, async (req, res) => {
 // GET /api/employees/all/profiles — returns ALL profiles (for approvals page)
 app.get('/api/employees/all/profiles', requireAuth, async (req, res) => {
   try {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
-    const { data, error } = await supabase
+    if (!legacyDb) return res.status(500).json({ error: 'legacyDb not configured' })
+    const { data, error } = await legacyDb
       .from('profiles')
       .select('id, full_name, email, phone, requested_role, status, rejection_reason, created_at, department, is_active')
       .eq('is_deleted', false)
@@ -310,7 +310,7 @@ app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   const { status, requested_role, rejection_reason } = req.body
   try {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    if (!legacyDb) return res.status(500).json({ error: 'legacyDb not configured' })
 
     // Build profile update payload
     const profileUpdate = {}
@@ -327,7 +327,7 @@ app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
       profileUpdate.approved_at = null
     }
 
-    const { error: profileErr } = await supabase
+    const { error: profileErr } = await legacyDb
       .from('profiles')
       .update(profileUpdate)
       .eq('id', id)
@@ -336,7 +336,7 @@ app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
     // Assign role in user_roles (one role per person — delete old, insert new)
     if (requested_role && (status === 'approved' || !status)) {
       // Look up role_id for this slug
-      const { data: roleRow, error: roleErr } = await supabase
+      const { data: roleRow, error: roleErr } = await legacyDb
         .from('roles')
         .select('id')
         .eq('slug', requested_role)
@@ -345,9 +345,9 @@ app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
 
       if (roleRow?.id) {
         // Remove ALL existing roles for this user (enforce one role per person)
-        await supabase.from('user_roles').delete().eq('user_id', id)
+        await legacyDb.from('user_roles').delete().eq('user_id', id)
         // Insert new role
-        const { error: insertErr } = await supabase
+        const { error: insertErr } = await legacyDb
           .from('user_roles')
           .insert({ user_id: id, role_id: roleRow.id, assigned_at: new Date().toISOString() })
         if (insertErr) throw insertErr
@@ -363,19 +363,19 @@ app.put('/api/employees/all/profiles/:id', requireAuth, async (req, res) => {
   }
 })
 
-// GET /api/user-permissions — profiles + their permissions (all from Supabase)
+// GET /api/user-permissions — profiles + their permissions (all from legacyDb)
 app.get('/api/user-permissions', requireAuth, async (req, res) => {
   try {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    if (!legacyDb) return res.status(500).json({ error: 'legacyDb not configured' })
 
-    const { data: profiles, error: profErr } = await supabase
+    const { data: profiles, error: profErr } = await legacyDb
       .from('profiles')
       .select('id, full_name, email, requested_role')
       .eq('is_deleted', false)
       .order('full_name')
     if (profErr) throw profErr
 
-    const { data: perms, error: permsErr } = await supabase
+    const { data: perms, error: permsErr } = await legacyDb
       .from('user_permissions')
       .select('user_id, section, has_access')
     if (permsErr) throw permsErr
@@ -394,17 +394,17 @@ app.get('/api/user-permissions', requireAuth, async (req, res) => {
   }
 })
 
-// POST /api/user-permissions — upsert a single permission in Supabase
+// POST /api/user-permissions — upsert a single permission in legacyDb
 app.post('/api/user-permissions', requireAuth, async (req, res) => {
   try {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    if (!legacyDb) return res.status(500).json({ error: 'legacyDb not configured' })
 
     const { user_id, section, has_access } = req.body
     if (!user_id || !section || typeof has_access !== 'boolean') {
       return res.status(400).json({ error: 'Missing or invalid body parameters' })
     }
 
-    const { error } = await supabase
+    const { error } = await legacyDb
       .from('user_permissions')
       .upsert(
         { user_id, section, has_access, granted_by: req.user?.sub || null },

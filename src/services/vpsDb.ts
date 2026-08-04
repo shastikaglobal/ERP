@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 export { vpsDb } from '../lib/vpsDb';
 
 export const saveFaceEmbedding = async () => {};

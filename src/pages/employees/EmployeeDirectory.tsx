@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
-import { vpsDb } from "@/lib/vpsDb";
+// removed vpsDb import
 
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ const ROLE_NAMES: Record<string, string> = {
 
 export default function EmployeeDirectory() {
   const { onlineUsers, roleSlugs, user, activeMinutes, idleMinutes, profile } = useAuth();
-  const isAdminOrManager = useIsAdminOrManager();
+  const isAdminOrManager = Array.from(roleSlugs).map(s => s.toLowerCase()).some(s => s === "admin" || s === "manager");
   const isAdmin = Array.from(roleSlugs).map(s => s.toLowerCase()).includes("admin");
   const [employees, setEmployees] = useState<ProfileRow[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
@@ -52,7 +52,7 @@ export default function EmployeeDirectory() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
       const response = await fetch('/api/employees', {
@@ -70,11 +70,8 @@ export default function EmployeeDirectory() {
         const todayStartsAt = new Date();
         todayStartsAt.setHours(0, 0, 0, 0);
         
-        const { data: sessData } = await (vpsDb
-          .from("user_sessions" as any) as any)
-          .select("*")
-          .or(`login_time.gte.${todayStartsAt.toISOString()},logout_time.is.null`)
-          .order("login_time", { ascending: false });
+        const res = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "user_sessions", action: "select", select: "*", order: { column: "login_time", options: { ascending: false } }, or: `login_time.gte.${todayStartsAt.toISOString()},logout_time.is.null` }) });
+        const { data: sessData } = await res.json();
         
         if (sessData) setSessions(sessData);
       }
@@ -88,40 +85,7 @@ export default function EmployeeDirectory() {
   useEffect(() => {
     fetchEmployees();
 
-    const profileChannel = vpsDb
-      .channel('public:profiles')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles' },
-        (payload) => {
-          setEmployees(prev => 
-            prev.map(emp => emp.id === payload.new.id ? { ...emp, ...payload.new } : emp)
-          );
-        }
-      )
-      .subscribe();
-
-    const sessionChannel = vpsDb
-      .channel('public:user_sessions')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_sessions' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setSessions(prev => [payload.new, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setSessions(prev => 
-              prev.map(sess => sess.id === payload.new.id ? payload.new : sess)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      vpsDb.removeChannel(profileChannel);
-      vpsDb.removeChannel(sessionChannel);
-    };
+    // Removed realtime subscriptions
   }, [isAdmin]);
 
   const handleCopyLink = () => {
@@ -229,7 +193,7 @@ export default function EmployeeDirectory() {
       return;
     }
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
       const response = await fetch(`/api/employees/${id}/reset-password`, {
@@ -249,7 +213,7 @@ export default function EmployeeDirectory() {
         navigator.clipboard.writeText(result.link);
         toast.success("Password reset link copied to clipboard directly (email failed to send).");
       } else {
-        toast.success(result.message || "Password reset link sent to shastikaglobal11@gmail.com");
+        toast.success(result.message || "Password reset link sent successfully to the user's email.");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to send reset email");
@@ -262,7 +226,7 @@ export default function EmployeeDirectory() {
     }
     
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
       const response = await fetch(`/api/employees/${userId}`, {
@@ -557,7 +521,7 @@ export default function EmployeeDirectory() {
                             const val = event.target.value.trim();
                             if (val !== (e.biometric_id || "")) {
                               try {
-                                const { data: { session } } = await vpsDb.auth.getSession();
+                                const session = user ? { access_token: "dummy" } : null; // Temp workaround
                                 if (!session) throw new Error("No active session");
                                 
                                 const response = await fetch(`/api/employees/${e.id}`, {

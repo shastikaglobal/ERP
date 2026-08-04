@@ -1,6 +1,4 @@
 
-import { createClient } from '@/integrations/vpsDb/client';
-
 export async function fetchBdeProfiles() {
   try {
     const res = await fetch('/api/crm/bde-profiles', {

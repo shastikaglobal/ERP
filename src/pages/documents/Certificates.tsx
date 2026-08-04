@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +24,14 @@ export default function Certificates() {
 
         
         // 1. Fetch from VpsDb (automated export orders)
-        const { data: vpsDbData, error } = await vpsDb
-          .from("export_orders")
-          .select("*, export_shipments(*)")
-          .neq("is_deleted", true)
-          .order("created_at", { ascending: false });
+        const res = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_certificates", action: "select", select: "*, shipment:export_shipments(shipment_number)",
+          order: { column: "created_at", options: { ascending: false } }
+        })
+      });
+      const { data: vpsDbData, error } = await res.json();
 
         if (error) throw error;
         
@@ -84,14 +88,14 @@ export default function Certificates() {
         });
         if (!res.ok) throw new Error("Failed to delete from database");
       } else {
-        const { error } = await vpsDb
-          .from("export_orders")
-          .update({
-            is_deleted: true,
-            deleted_at: new Date().toISOString(),
-            deleted_by: null,
-          })
-          .eq("id", id);
+        const resDel = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_certificates", action: "delete",
+          filters: [{ column: "id", type: "eq", value: id }]
+        })
+      });
+      const { error } = await resDel.json();
   
         if (error) throw error;
       }

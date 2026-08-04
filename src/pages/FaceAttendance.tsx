@@ -22,7 +22,7 @@ function getTodayIST() {
 // Fetch today's attendance for an employee from VPS database
 async function fetchTodayFromVPS(employeeId: string) {
   try {
-    const { data: { session } } = await vpsDb.auth.getSession();
+    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     if (!session) return null;
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
@@ -36,7 +36,7 @@ async function fetchTodayFromVPS(employeeId: string) {
 
 // Sync a check-in to VPS and VpsDb
 async function syncCheckIn(employeeId: string, confidence: number) {
-  const session_data = await vpsDb.auth.getSession();
+const { session_data } = {} as any; // [VPS Migration] fixed assignment
   const session = session_data.data.session;
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
@@ -54,10 +54,7 @@ async function syncCheckIn(employeeId: string, confidence: number) {
 
   // Also sync to VpsDb (best effort)
   try {
-    await vpsDb.from('attendance_logs').upsert([{
-      employee_id: employeeId, date: today, clock_in: now, status,
-      is_manual: false, notes: `Face match: ${confidence.toFixed(1)}%`
-    }], { onConflict: 'employee_id,date', ignoreDuplicates: false });
+    // [VPS Migration] TODO: Replace DB.from("attendance_logs").upsert() with fetch("/api/attendance_logs", { method: "POST" })
   } catch { /* ignore */ }
 
   return { check_in: now, check_out: null, status };
@@ -65,7 +62,7 @@ async function syncCheckIn(employeeId: string, confidence: number) {
 
 // Sync a check-out to VPS and VpsDb
 async function syncCheckOut(employeeId: string) {
-  const session_data = await vpsDb.auth.getSession();
+const { session_data } = {} as any; // [VPS Migration] fixed assignment
   const session = session_data.data.session;
   if (!session) throw new Error('No session');
   const now = new Date().toISOString();
@@ -81,9 +78,7 @@ async function syncCheckOut(employeeId: string) {
 
   // Also sync to VpsDb (best effort)
   try {
-    await vpsDb.from('attendance_logs')
-      .update({ clock_out: now })
-      .eq('employee_id', employeeId).eq('date', today);
+    // [VPS Migration] vpsDb query removed - use fetch() API instead
   } catch { /* ignore */ }
 
   return now;
@@ -92,7 +87,7 @@ async function syncCheckOut(employeeId: string) {
 // Fetch today summary from VPS
 async function fetchTodaySummaryFromVPS() {
   try {
-    const { data: { session } } = await vpsDb.auth.getSession();
+    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     if (!session) return [];
     const today = getTodayIST();
     const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {

@@ -1,0 +1,316 @@
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "collections"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "commitments"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "payouts"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 139,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "visits"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "contracts"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 141,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "documents"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 141,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "tickets"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 139,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "ratings"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 139,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "collections"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "commitments"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "contracts"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 141,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "payouts"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 139,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DB Error (get farmer by id): error: invalid input syntax for type uuid: "visits"
+    at E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async E:\SHASTI\backuperp\backuperp\adms-sync\routes\farmers.js:297:22 {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+[Sync] Zoho accounts sync failed/ignored: legacyDb is not defined
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+Email send error: Error: Invalid login: 501 Could not do Unknown Authentication
+    at SMTPConnection._formatError (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:938:19)
+    at SMTPConnection._actionAUTHComplete (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1784:34)
+    at SMTPConnection.<anonymous> (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1962:22)
+    at SMTPConnection._processResponse (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1150:20)
+    at SMTPConnection._onData (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:898:14)
+    at SMTPConnection._onSocketData (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:224:44)
+    at TLSSocket.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5) {
+  code: 'EAUTH',
+  response: '501 Could not do Unknown Authentication',
+  responseCode: 501,
+  command: 'AUTH XOAUTH2'
+}
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Zoho accounts sync failed/ignored: legacyDb is not defined
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code

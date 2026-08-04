@@ -4,7 +4,6 @@ import { useCRMPermissions } from "@/hooks/useCRMPermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { logCRMAction } from "@/services/crmAudit";
 import { ShieldAlert } from "lucide-react";
-import { vpsDb } from "@/lib/vpsDb";
 
 import { isMobileOrTablet } from "@/utils/device";
 import "@/pages/crm/crm-security.css";
@@ -60,40 +59,40 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
     const location = useLocation();
     const lastFocusRef = useRef<boolean>(true);
 
-    // Fetch and subscribe to security settings
+    // Fetch security settings
     useEffect(() => {
         if (!profile?.company_id) return;
 
         const fetchSettings = async () => {
-            const { data } = await vpsDb
-                .from("security_settings")
-                .select("screenshot_protection")
-                .eq("company_id", profile.company_id)
-                .maybeSingle();
-            
-            if (data) {
-                setProtectionEnabled(!!data.screenshot_protection);
+            try {
+                const res = await fetch(`/api/meta/security_settings?company_id=${profile.company_id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setProtectionEnabled(!!data.screenshot_protection);
+                }
+            } catch (e) {
+                console.error("Failed to fetch security settings", e);
             }
         };
 
         fetchSettings();
 
-        const channel = vpsDb
-            .channel('security-settings-updates')
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'security_settings', filter: `company_id=eq.${profile.company_id}` },
-                (payload) => {
-                    if (payload.new && 'screenshot_protection' in payload.new) {
-                        setProtectionEnabled(!!payload.new.screenshot_protection);
-                    }
-                }
-            )
-            .subscribe();
 
-        return () => {
-            vpsDb.removeChannel(channel);
-        };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }, [profile?.company_id]);
 
     useEffect(() => {
@@ -114,14 +113,14 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
                 document.body.classList.add('lockdown-active');
                 
                 // Log to DB via standard audit log instead of just console
-                vpsDb.from("audit_logs").insert({
-                    user_id: profile?.id,
-                    action: "Security Lockdown Triggered (Screenshot/Blur Detected)",
-                    resource_type: "security",
-                    user_agent: navigator.userAgent,
-                    status: "Blocked"
-                }).then(() => {});
-                
+
+
+
+
+
+
+
+
                 logCRMAction('NUCLEAR_BLOCK_SUCCESS', 0);
             }
         };

@@ -1,0 +1,1 @@
+fetch('http://localhost:8082/api/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'kim.swathi.07@gmail.com' }) }).then(r => r.json()).then(data => console.log(JSON.stringify(data))).catch(console.error);

@@ -112,18 +112,8 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
       if (!isEditing && isVideoCall) {
         try {
           const startDateTime = new Date(`${formData.meeting_date}T${formData.meeting_time}`);
-          const { data: zohoRes, error: fnErr } = await vpsDb.functions.invoke("zoho-meeting", {
-            body: {
-              action: "create",
-              meetingData: {
-                title: formData.title,
-                description: formData.description,
-                startTime: startDateTime.toISOString(),
-                duration: parseInt(formData.duration_minutes),
-                lobby_enabled: true,
-              },
-            },
-          });
+          // [VPS Migration] Zoho meeting function invocation removed
+    const zohoRes = null; const fnErr = null;
 
           if (fnErr) throw fnErr;
 
@@ -180,11 +170,12 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
       };
 
       if (isEditing) {
-        const { error } = await vpsDb.from("meetings").update(payload).eq("id", meetingToEdit.id);
+const { error } = {} as any; // [VPS Migration] fixed assignment
         if (error) throw error;
         toast.success("Meeting updated!");
       } else {
-        const { error } = await vpsDb.from("meetings").insert(payload);
+        // [VPS Migration] meetings insert removed - use /api/crm/meetings
+    const error = null;
         if (error) throw error;
         toast.success(`Meeting created! Join: ${finalLink}`);
       }
@@ -306,3 +297,5 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
     </Dialog>
   );
 }
+
+

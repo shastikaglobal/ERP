@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCan } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";

@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect } from "react";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -55,13 +56,13 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     let mounted = true;
     const fetchCounts = async () => {
       try {
-        const { data: { session } } = await vpsDb.auth.getSession();
+        // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         if (!session) return;
         
         const userId = session?.user?.id;
         let companyFilter = "";
         if (userId) {
-          const { data: profile } = await vpsDb.from('profiles').select('company_id').eq('id', userId).single();
+const { data: profile } = {} as any; // [VPS Migration] fixed assignment
           if (profile?.company_id) {
             companyFilter = `?company_id=${profile.company_id}`;
           }
@@ -440,3 +441,5 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     </>
   );
 }
+
+

@@ -1,0 +1,6 @@
+SERVER PG_PASSWORD: Shastika2026Secure
+🚀 Starting ADMS Sync Server...
+
+🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+🔌 Dedicated PG Listener Client connected.
+👂 Listening to PG channel "data_changed"

@@ -18,19 +18,14 @@ export default function OverduePayments() {
   const { data: overdue, isLoading } = useQuery({
     queryKey: ["overdue_payments_live"],
     queryFn: async () => {
-      const now = new Date().toISOString();
-      const { data, error } = await vpsDb
-        .from("sales_orders")
-        .select("*, customer:customers(name)")
-        .neq("is_deleted", true)
-        .eq("status", "Pending");
-
-      if (error) throw error;
+      const res = await fetch('/api/finance/reports/ar_aging', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch overdue payments');
+      const data = await res.json();
 
       // Filter for orders where delivery_date is in the past
-      return (data || []).filter(order => 
+      return (data || []).filter((order: any) =>
         order.delivery_date && isBefore(new Date(order.delivery_date), new Date())
-      ).map(order => ({
+      ).map((order: any) => ({
         id: order.order_number,
         customer: order.customer?.name || "Unknown Customer",
         amount: order.amount,

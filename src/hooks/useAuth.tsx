@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export type User = { id: string; email: string; user_metadata?: any };
@@ -174,6 +175,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Log out on page refresh
+        const navEntries = performance.getEntriesByType("navigation");
+        const isReload = (navEntries.length > 0 && (navEntries[0] as any).type === "reload") || 
+                         (performance.navigation && performance.navigation.type === 1);
+
+        if (isReload) {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
           const { user } = await res.json();

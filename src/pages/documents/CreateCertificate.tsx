@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import React, { useState, useRef, useEffect } from "react";
 import { Loader2, Download, Printer, ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,11 +40,7 @@ export default function CreateCertificate() {
   useEffect(() => {
     const fetchCompany = async () => {
       if (profile?.company_id) {
-        const { data: compData } = await vpsDb
-          .from("companies")
-          .select("*")
-          .eq("id", profile.company_id)
-          .maybeSingle();
+        const resComp = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: profile.company_id }], single: true }) }); const { data: compData } = await resComp.json();
         setCompany(compData);
       }
     };

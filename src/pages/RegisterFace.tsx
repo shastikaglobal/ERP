@@ -96,7 +96,7 @@ export default function RegisterFace() {
   async function fetchEmployees() {
     setLoadingEmployees(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/employees', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -159,7 +159,7 @@ export default function RegisterFace() {
   /**
    * Called for each sample capture.
    * FaceScanner.onScanComplete fires with the embedding.
-   * We accumulate REQUIRED_SAMPLES then save all to VpsDb.
+   * We accumulate REQUIRED_SAMPLES then save all to API.
    */
   const handleSampleCaptured = useCallback(async (embedding) => {
     if (!isMounted.current) return;

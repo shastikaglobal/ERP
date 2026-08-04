@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 /**
  * INTEGRATION GUIDE FOR AUDIT LOGS
  * 

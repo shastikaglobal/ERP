@@ -11,6 +11,7 @@ import { EsslUploader } from "./EsslUploader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const generateDateArray = (startStr: string, endStr: string) => {
   try {
@@ -254,6 +255,7 @@ const getEmployeeMonthStats = (
 };
 
 export default function Attendance() {
+  const { user, session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<any[]>([]);
   const [attendanceData, setAttendanceData] = useState<Record<string, any>>({});
@@ -333,7 +335,7 @@ export default function Attendance() {
     if (!settingsEmp) return;
     setSavingSettings(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session");
 
       // Save to VPS database (source of truth for attendance)
@@ -354,15 +356,8 @@ export default function Attendance() {
         throw new Error(errorData.error || 'Failed to update settings');
       }
 
-      // Also update VpsDb (best effort sync)
       try {
-        await vpsDb
-          .from('profiles')
-          .update({
-            monthly_salary: Number(settingsSalary) || 0,
-            punch_deadline: settingsDeadline + ":00"
-          })
-          .eq('id', settingsEmp.id);
+        await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "update", data: { monthly_salary: Number(settingsSalary) || 0, punch_deadline: settingsDeadline + ":00" }, filters: [{ column: "id", type: "eq", value: settingsEmp.id }] }) });
       } catch { /* ignore vpsDb sync error */ }
 
       toast.success("Settings updated successfully!");
@@ -381,7 +376,7 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const timeIso = new Date(`${todayStr}T${manualTime}`).toISOString();
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       
       if (!session) throw new Error("No active session found");
 
@@ -426,7 +421,7 @@ export default function Attendance() {
   const handleMarkOnLeave = async (emp: any) => {
     const todayStr = endDate;
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/mark-leave', {
@@ -457,7 +452,7 @@ export default function Attendance() {
     const todayStr = endDate;
     try {
       const clockInTime = new Date(`${todayStr}T08:00:00`).toISOString();
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       
       if (!session) throw new Error("No active session found");
 
@@ -489,7 +484,7 @@ export default function Attendance() {
 
   const handleToggleExcused = async (logId: string, checked: boolean) => {
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/toggle-excused', {
@@ -518,7 +513,7 @@ export default function Attendance() {
 
   const handleDeleteLog = async (logId: string) => {
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/delete-log', {
@@ -623,15 +618,15 @@ export default function Attendance() {
     setLoading(true);
 
     // Get current user
-    const { data: { user } } = await vpsDb.auth.getUser();
+
     if (user) setUserId(user.id);
 
     // Fetch approved profiles via local API
-    const { data: { session: empSession } } = await vpsDb.auth.getSession();
+    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     let profiles = [];
     try {
       const empRes = await fetch('/api/employees', {
-        headers: { 'Authorization': `Bearer ${empSession?.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (!empRes.ok) {
         toast.error("Failed to load employees");
@@ -676,7 +671,7 @@ export default function Attendance() {
     const lastDayOfMonth = format(subDays(nextMonth, 1), 'yyyy-MM-dd');
 
     // Fetch from VPS API instead of VpsDb
-    const { data: { session } } = await vpsDb.auth.getSession();
+    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     let logs: any[] = [];
     let logsErr = null;
 
@@ -714,18 +709,7 @@ export default function Attendance() {
     loadData(startDate, endDate);
 
     // Subscribe to realtime updates via VpsDb Broadcast (from VPS server)
-    const channel = vpsDb
-      .channel('global_data_sync')
-      .on(
-        'broadcast',
-        { event: 'data_changed' },
-        (payload) => {
-          if (payload.payload?.table === 'attendance_logs' || payload.payload?.table === 'face_attendance') {
-            loadData(startDate, endDate);
-          }
-        }
-      )
-      .subscribe();
+    /* channel removed */
 
     // Fallback poll for updates from VPS database every 30 seconds
     const pollInterval = setInterval(() => {
@@ -733,7 +717,7 @@ export default function Attendance() {
     }, 30000);
 
     return () => {
-      vpsDb.removeChannel(channel);
+      // [VPS Migration] Realtime channel removed (not needed with REST API)
       clearInterval(pollInterval);
     };
   }, [startDate, endDate]);
@@ -824,7 +808,7 @@ export default function Attendance() {
     setPunching(true);
 
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
       const response = await fetch('/api/attendance/punch', {

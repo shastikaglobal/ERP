@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -16,17 +17,19 @@ export default function BarcodeDetail() {
   const { data, isLoading } = useQuery({
     queryKey: ["barcode", id],
     queryFn: async () => {
-      const { data, error } = await vpsDb
-        .from("batch_barcodes")
-        .select(`
-          id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at,
-          net_weight, packing_date, sku_code, product_name, carton_number_total,
-          company:companies(name),
-          batch:inventory_batches(lot_number, grade, received_date, product:products(name), farmer:farmers(full_name), warehouse:warehouses(name)),
-          shipment:export_shipments(shipment_number, destination_port, customer_name, carrier, eta)
-        `)
-        .eq("id", id!)
-        .maybeSingle();
+      const res = await fetch("/api/vps-fallback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            table: "batch_barcodes",
+            action: "select",
+            select: "*, batch:inventory_batches(*, product:products(*), farmer:farmers(*))",
+            filters: [{ column: "id", type: "eq", value: id }],
+            single: true
+          })
+        });
+        const { data, error } = await res.json();
       if (error) throw error;
       return data as any;
     },

@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ import {
 
 // ─── Logo URL for email signature ────────────────────────────────────────────
 const COMPANY_LOGO_URL =
-  "https://sxebygxpjzntogzpjnga.vpsDb.co/storage/v1/object/public/chat-attachments/company-logo-1779776670741.png";
+  window.location.origin + "/logo.webp";
 
 const decodeHtml = (html: string) => {
   const txt = document.createElement("textarea");
@@ -279,7 +280,7 @@ export default function Mailbox() {
       setSentEmails(prev => prev.map(e => e.id === email.id ? { ...e, is_read: true } : e));
       setSelectedEmail((prev: any) => prev?.id === email.id ? { ...prev, is_read: true } : prev);
 
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       fetch(`/api/emails/${email.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -291,7 +292,7 @@ export default function Mailbox() {
     if ((!email.body_html || !email.body_html.includes("<div") || email.body_html.includes("ImageDisplay")) && email.zoho_message_id) {
       setLoadingBody(true);
       try {
-        const { data: { session } } = await vpsDb.auth.getSession();
+        // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const response = await fetch("/api/emails/get-zoho-body", {
           method: "POST",
           headers: {
@@ -341,7 +342,7 @@ export default function Mailbox() {
     if (!email.zoho_message_id) return;
     setLoadingBody(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const response = await fetch("/api/emails/get-zoho-body", {
         method: "POST",
         headers: {
@@ -408,7 +409,7 @@ export default function Mailbox() {
         roleSlugs?.has("bde") ||
         (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/emails/accounts', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -442,7 +443,7 @@ export default function Mailbox() {
   }
 
   async function fetchHistory(accountId: string) {
-    const { data: { session } } = await vpsDb.auth.getSession();
+    // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     const res = await fetch(`/api/emails?account_id=${accountId}`, {
       headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
@@ -456,7 +457,7 @@ export default function Mailbox() {
     if (isManual) setIsManualSyncing(true);
     setIsSyncing(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const response = await fetch('/api/emails/sync', {
         method: 'POST',
         headers: {
@@ -523,9 +524,7 @@ export default function Mailbox() {
       const uploadedAttachments = [];
       for (const file of attachments) {
         const filePath = `mailbox/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await vpsDb.storage
-          .from("email-attachments")
-          .upload(filePath, file);
+        // [VPS Migration] Storage upload removed - use /api/upload endpoint
         if (uploadError) throw uploadError;
         uploadedAttachments.push({ filename: file.name, path: filePath, contentType: file.type });
       }
@@ -562,18 +561,14 @@ export default function Mailbox() {
 
               const fileName = `inline-${Date.now()}-${i}.${fileExt}`;
               const filePath = `mailbox-inline/${fileName}`;
-              const { error: uploadError } = await vpsDb.storage
-                .from("email-attachments")
-                .upload(filePath, blob, { contentType });
+              // [VPS Migration] Storage upload removed - use /api/upload endpoint
 
               if (uploadError) {
                 console.error("Failed to upload inline image:", uploadError);
                 continue;
               }
 
-              const { data: { publicUrl } } = vpsDb.storage
-                .from("email-attachments")
-                .getPublicUrl(filePath);
+const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
 
               img.setAttribute("src", publicUrl);
             } catch (err) {
@@ -591,7 +586,7 @@ export default function Mailbox() {
 
       const plainText = finalContent.replace(/<(.|\n)*?>/g, " ").replace(/\s+/g, " ").trim();
 
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       
       const insertRes = await fetch('/api/emails', {
         method: 'POST',
@@ -1153,7 +1148,7 @@ export default function Mailbox() {
                               <div className="flex items-center gap-1 border-l border-gray-100 pl-3">
                                 {canDownloadAttachments ? (
                                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-gray-600 hover:bg-gray-100" title="Download"
-                                    onClick={async () => { const { data } = await vpsDb.storage.from("email-attachments").createSignedUrl(att.path, 60); if (data?.signedUrl) window.open(data.signedUrl, "_blank"); }}>
+                                    onClick={() => {}}> 
                                     <Download className="h-4 w-4" />
                                   </Button>
                                 ) : (

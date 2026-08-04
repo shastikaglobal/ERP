@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
-
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 export type AppNotification = {
@@ -16,54 +15,23 @@ export type AppNotification = {
 export function useNotifications() {
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
-    if (!profile?.company_id) {
-      setLoading(false);
-      return;
-    }
-    const { data } = await vpsDb
-      .from("app_notifications" as any)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    setNotifications((data as unknown as AppNotification[]) ?? []);
+    // Disabled during Supabase decoupling
+    setNotifications([]);
     setLoading(false);
-  }, [profile?.company_id]);
+  }, []);
 
-  // Mark one notification as read
   const markRead = useCallback(async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    await vpsDb
-      .from("app_notifications" as any)
-      .update({ is_read: true })
-      .eq("id", id);
   }, []);
 
-  // Mark ALL as read
   const markAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    if (!profile?.company_id) return;
-    await vpsDb
-      .from("app_notifications" as any)
-      .update({ is_read: true })
-      .eq("company_id", profile.company_id)
-      .eq("is_read", false);
-  }, [profile?.company_id]);
-
-  useEffect(() => {
-    fetchNotifications();
-
-    // Use a unique channel name to avoid Realtime 'already subscribed' crashes
-    // during React StrictMode double mounts or fast refreshes.
-    const channelId = `notifications-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    
-
-    
-  }, [fetchNotifications]);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 

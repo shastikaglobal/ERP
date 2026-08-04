@@ -1,0 +1,471 @@
+{
+  "working": [
+    {
+      "route": "/dashboards/executive",
+      "file": "dashboards/Executive.tsx"
+    },
+    {
+      "route": "/dashboards/finance-tally",
+      "file": "dashboards/FinanceTally.tsx"
+    },
+    {
+      "route": "/dashboards/bde",
+      "file": "dashboards/BdeDashboard.tsx"
+    },
+    {
+      "route": "/dashboards/sales",
+      "file": "dashboards/SalesAnalytics.tsx"
+    },
+    {
+      "route": "/dashboards/shipments",
+      "file": "dashboards/ShipmentAnalytics.tsx"
+    },
+    {
+      "route": "/dashboards/financial",
+      "file": "dashboards/FinancialOverview.tsx"
+    },
+    {
+      "route": "/dashboards/employees",
+      "file": "dashboards/EmployeeProductivity.tsx"
+    },
+    {
+      "route": "/farmers/",
+      "file": "farmers/FarmersList.tsx"
+    },
+    {
+      "route": "/farmers/create",
+      "file": "farmers/CreateFarmer.tsx"
+    },
+    {
+      "route": "/farmers/verification",
+      "file": "farmers/FarmerVerification.tsx"
+    },
+    {
+      "route": "/farmers/kyc",
+      "file": "farmers/KYC.tsx"
+    },
+    {
+      "route": "/farmers/farm-visits",
+      "file": "farmers/FarmVisits.tsx"
+    },
+    {
+      "route": "/farmers/contracts",
+      "file": "farmers/ContractFarming.tsx"
+    },
+    {
+      "route": "/farmers/commitments",
+      "file": "farmers/SupplyCommitments.tsx"
+    },
+    {
+      "route": "/farmers/collections",
+      "file": "farmers/GoodsCollection.tsx"
+    },
+    {
+      "route": "/farmers/payouts",
+      "file": "farmers/FarmerPayouts.tsx"
+    },
+    {
+      "route": "/farmers/rating",
+      "file": "farmers/FarmerRating.tsx"
+    },
+    {
+      "route": "/farmers/support",
+      "file": "farmers/FarmerSupport.tsx"
+    },
+    {
+      "route": "/procurement/orders",
+      "file": "procurement/PurchaseOrdersListLive.tsx"
+    },
+    {
+      "route": "/procurement/orders/create",
+      "file": "procurement/CreatePOLive.tsx"
+    },
+    {
+      "route": "/procurement/suppliers",
+      "file": "procurement/SuppliersList.tsx"
+    },
+    {
+      "route": "/procurement/dashboard",
+      "file": "procurement/ProcurementDashboard.tsx"
+    },
+    {
+      "route": "/qc/inspections",
+      "file": "qc/InspectionsList.tsx"
+    },
+    {
+      "route": "/qc/inspections/create",
+      "file": "qc/CreateInspection.tsx"
+    },
+    {
+      "route": "/qc/approvals",
+      "file": "qc/QCApprovals.tsx"
+    },
+    {
+      "route": "/warehouse/container-loading",
+      "file": "inventory/ContainerLoading.tsx"
+    },
+    {
+      "route": "/warehouse/dashboard",
+      "file": "warehouse/WarehouseDashboard.tsx"
+    },
+    {
+      "route": "/warehouse/racks",
+      "file": "warehouse/WarehouseRacks.tsx"
+    },
+    {
+      "route": "/warehouse/zones",
+      "file": "warehouse/WarehouseZones.tsx"
+    },
+    {
+      "route": "/warehouse/receiving",
+      "file": "warehouse/ReceivingGoods.tsx"
+    },
+    {
+      "route": "/warehouse/packing",
+      "file": "warehouse/PackingManagement.tsx"
+    },
+    {
+      "route": "/barcodes",
+      "file": "barcodes/BarcodesList.tsx"
+    },
+    {
+      "route": "/barcodes/generate",
+      "file": "barcodes/GenerateBarcode.tsx"
+    },
+    {
+      "route": "/barcodes/scan",
+      "file": "barcodes/ScanBarcode.tsx"
+    },
+    {
+      "route": "/inventory/products",
+      "file": "inventory/ProductCatalog.tsx"
+    },
+    {
+      "route": "/inventory/products/create",
+      "file": "inventory/CreateProduct.tsx"
+    },
+    {
+      "route": "/inventory/stock",
+      "file": "inventory/InventoryBatches.tsx"
+    },
+    {
+      "route": "/inventory/movements",
+      "file": "inventory/StockMovements.tsx"
+    },
+    {
+      "route": "/inventory/warehouses",
+      "file": "inventory/Warehouses.tsx"
+    },
+    {
+      "route": "/inventory/alerts",
+      "file": "inventory/LowStockAlerts.tsx"
+    },
+    {
+      "route": "/inventory/damaged",
+      "file": "inventory/DamagedStock.tsx"
+    },
+    {
+      "route": "/inventory/available-stock",
+      "file": "inventory/AvailableStock.tsx"
+    },
+    {
+      "route": "/inventory/reserved-stock",
+      "file": "inventory/ReservedStock.tsx"
+    },
+    {
+      "route": "/inventory/export-ready",
+      "file": "inventory/ExportReady.tsx"
+    },
+    {
+      "route": "/inventory/batch-wise",
+      "file": "inventory/BatchWiseStock.tsx"
+    },
+    {
+      "route": "/inventory/damaged-stock-management",
+      "file": "inventory/DamagedStockManagement.tsx"
+    },
+    {
+      "route": "/inventory/expiry-monitoring",
+      "file": "inventory/ExpiryMonitoring.tsx"
+    },
+    {
+      "route": "/inventory/multi-warehouse",
+      "file": "inventory/MultiWarehouse.tsx"
+    },
+    {
+      "route": "/reports",
+      "file": "reports/ReportsHub.tsx"
+    },
+    {
+      "route": "/reports/stock-summary",
+      "file": "reports/StockSummaryReport.tsx"
+    },
+    {
+      "route": "/reports/batch-tracking",
+      "file": "reports/BatchTrackingReport.tsx"
+    },
+    {
+      "route": "/reports/dispatch",
+      "file": "reports/DispatchReport.tsx"
+    },
+    {
+      "route": "/reports/container-loading",
+      "file": "reports/ContainerLoadingReport.tsx"
+    },
+    {
+      "route": "/reports/damage-wastage",
+      "file": "reports/DamageWastageReport.tsx"
+    },
+    {
+      "route": "/reports/inventory-aging",
+      "file": "reports/InventoryAgingReport.tsx"
+    },
+    {
+      "route": "/reports/export-ready",
+      "file": "reports/ExportReadyStockReport.tsx"
+    },
+    {
+      "route": "/quotations",
+      "file": "quotations/QuotationsList.tsx"
+    },
+    {
+      "route": "/quotations/create",
+      "file": "quotations/CreateQuotation.tsx"
+    },
+    {
+      "route": "/quotations/approvals",
+      "file": "quotations/Approvals.tsx"
+    },
+    {
+      "route": "/quotations/convert",
+      "file": "quotations/Convert.tsx"
+    },
+    {
+      "route": "/crm/dashboard",
+      "file": "crm/Dashboard.tsx"
+    },
+    {
+      "route": "/crm/activities",
+      "file": "crm/Activities.tsx"
+    },
+    {
+      "route": "/crm/leads",
+      "file": "crm/LeadsList.tsx"
+    },
+    {
+      "route": "/crm/follow-ups",
+      "file": "crm/FollowUps.tsx"
+    },
+    {
+      "route": "/crm/pipeline",
+      "file": "crm/Pipeline.tsx"
+    },
+    {
+      "route": "/crm/email",
+      "file": "crm/EmailIntegration.tsx"
+    },
+    {
+      "route": "/crm/tasks",
+      "file": "crm/Tasks.tsx"
+    },
+    {
+      "route": "/crm/security",
+      "file": "crm/Security.tsx"
+    },
+    {
+      "route": "/crm/client-acquisition",
+      "file": "crm/ClientAcquisition.tsx"
+    },
+    {
+      "route": "/crm/advanced-security",
+      "file": "crm/AdvancedSecurity.tsx"
+    },
+    {
+      "route": "/crm/reports",
+      "file": "crm/Reports.tsx"
+    },
+    {
+      "route": "/crm/performance",
+      "file": "crm/Performance.tsx"
+    },
+    {
+      "route": "/crm/revenue",
+      "file": "crm/RevenueAnalytics.tsx"
+    },
+    {
+      "route": "/crm/communication",
+      "file": "crm/Communication.tsx"
+    },
+    {
+      "route": "/crm/customer-database",
+      "file": "crm/CustomerDatabase.tsx"
+    },
+    {
+      "route": "/crm/employee-activity",
+      "file": "crm/EmployeeActivity.tsx"
+    },
+    {
+      "route": "/crm/convert",
+      "file": "crm/Convert.tsx"
+    },
+    {
+      "route": "/crm/customers",
+      "file": "crm/CustomersList.tsx"
+    },
+    {
+      "route": "/orders",
+      "file": "orders/OrdersList.tsx"
+    },
+    {
+      "route": "/orders/create",
+      "file": "orders/CreateOrder.tsx"
+    },
+    {
+      "route": "/orders/status",
+      "file": "orders/OrderStatus.tsx"
+    },
+    {
+      "route": "/orders/fulfillment",
+      "file": "orders/Fulfillment.tsx"
+    },
+    {
+      "route": "/shipments",
+      "file": "shipments/ShipmentsList.tsx"
+    },
+    {
+      "route": "/shipments/create",
+      "file": "shipments/CreateShipment.tsx"
+    },
+    {
+      "route": "/shipments/containers",
+      "file": "shipments/ContainerTracking.tsx"
+    },
+    {
+      "route": "/shipments/delivery",
+      "file": "shipments/DeliveryStatus.tsx"
+    },
+    {
+      "route": "/shipments/dispatch",
+      "file": "shipments/Dispatch.tsx"
+    },
+    {
+      "route": "/documents/invoices",
+      "file": "documents/Invoices.tsx"
+    },
+    {
+      "route": "/documents/invoices/create",
+      "file": "documents/CreateInvoice.tsx"
+    },
+    {
+      "route": "/documents/packing-lists",
+      "file": "documents/PackingLists.tsx"
+    },
+    {
+      "route": "/documents/commercial-invoices",
+      "file": "documents/CommercialInvoices.tsx"
+    },
+    {
+      "route": "/documents/certificates",
+      "file": "documents/Certificates.tsx"
+    },
+    {
+      "route": "/certificates/create",
+      "file": "documents/CreateCertificate.tsx"
+    },
+    {
+      "route": "/documents/viewer",
+      "file": "documents/DocumentViewer.tsx"
+    },
+    {
+      "route": "/payments",
+      "file": "payments/PaymentsRegister.tsx"
+    },
+    {
+      "route": "/payments/overdue",
+      "file": "payments/OverduePayments.tsx"
+    },
+    {
+      "route": "/payments/ledger",
+      "file": "payments/Ledger.tsx"
+    },
+    {
+      "route": "/payments/reports",
+      "file": "payments/FinancialReports.tsx"
+    },
+    {
+      "route": "/employees",
+      "file": "employees/EmployeeDirectory.tsx"
+    },
+    {
+      "route": "/employees/roles",
+      "file": "employees/RolesPermissions.tsx"
+    },
+    {
+      "route": "/employees/attendance",
+      "file": "employees/Attendance.tsx"
+    },
+    {
+      "route": "/employees/salary",
+      "file": "employees/SalaryReport.tsx"
+    },
+    {
+      "route": "/employees/leaves",
+      "file": "employees/LeaveManagement.tsx"
+    },
+    {
+      "route": "/employees/face-attendance",
+      "file": "FaceAttendance.tsx"
+    },
+    {
+      "route": "/employees/register-face",
+      "file": "RegisterFace.tsx"
+    },
+    {
+      "route": "/system/notifications",
+      "file": "system/Notifications.tsx"
+    },
+    {
+      "route": "/system/logs",
+      "file": "system/ActivityLogs.tsx"
+    },
+    {
+      "route": "/system/audit-logs",
+      "file": "system/AuditLogs.tsx"
+    },
+    {
+      "route": "/system/subscriptions",
+      "file": "system/Subscriptions.tsx"
+    },
+    {
+      "route": "/system/settings",
+      "file": "system/Settings.tsx"
+    },
+    {
+      "route": "/system/account",
+      "file": "system/AccountSettings.tsx"
+    },
+    {
+      "route": "/system/maintenance",
+      "file": "system/Maintenance.tsx"
+    },
+    {
+      "route": "/system/integrations/zoho",
+      "file": "system/ZohoIntegration.tsx"
+    },
+    {
+      "route": "/system/mailbox",
+      "file": "system/Mailbox.tsx"
+    }
+  ],
+  "broken": [],
+  "missingFile": [
+    {
+      "route": "/journal",
+      "file": "Tally/JournalEntry.tsx"
+    },
+    {
+      "route": "/tally",
+      "file": "Tally/index.tsx"
+    }
+  ]
+}

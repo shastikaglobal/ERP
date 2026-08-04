@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileBox, Package, Loader2, Trash2, Download } from "lucide-react";
@@ -19,12 +20,15 @@ export default function PackingLists() {
 
   useEffect(() => {
     const fetchPLs = async () => {
-      if (!profile?.company_id) return;
+      if (!profile?.company_id) {
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
       try {
-        const { data: sessionData } = await vpsDb.auth.getSession();
-        const token = sessionData.session?.access_token;
+        // [VPS Migration] Session from useAuth
+    const token = session?.access_token;
 
         const res = await fetch("http://127.0.0.1:8082/api/warehouse/packing_protocols", {
           headers: { Authorization: `Bearer ${token}` }
@@ -53,8 +57,8 @@ export default function PackingLists() {
     if (!confirm("Are you sure you want to delete this packing list?")) return;
 
     try {
-      const { data: sessionData } = await vpsDb.auth.getSession();
-      const token = sessionData.session?.access_token;
+      // [VPS Migration] Session from useAuth
+    const token = session?.access_token;
 
       const res = await fetch(`http://127.0.0.1:8082/api/warehouse/packing_protocols/${id}`, {
         method: "DELETE",

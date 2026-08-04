@@ -7,7 +7,7 @@ export default function Pending() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await vpsDb.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); // [VPS Migration]
     navigate("/auth");
   };
 

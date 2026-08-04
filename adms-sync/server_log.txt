@@ -1,0 +1,66 @@
+SERVER PG_PASSWORD: Shastika2026Secure
+🚀 Starting ADMS Sync Server...
+
+🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+🔌 Dedicated PG Listener Client connected.
+👂 Listening to PG channel "data_changed"
+--- PASSWORD RESET EMAIL DEBUG ---
+Attempting to send via RESEND...
+Attempting to send via Fallback SMTP (Zoho)...
+SMTP Success: {
+  accepted: [ 'kim.swathi.07@gmail.com' ],
+  rejected: [],
+  ehlo: [
+    'SIZE 35882577',
+    '8BITMIME',
+    'AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH',
+    'ENHANCEDSTATUSCODES',
+    'PIPELINING',
+    'CHUNKING',
+    'SMTPUTF8'
+  ],
+  envelopeTime: 899,
+  messageTime: 878,
+  messageSize: 1289,
+  response: '250 2.0.0 OK  1785730937 5a478bee46e88-3153dd4e5c7sm36800879eec.5 - gsmtp',
+  envelope: {
+    from: 'shastikaglobal11@gmail.com',
+    to: [ 'kim.swathi.07@gmail.com' ]
+  },
+  messageId: '<902fdab0-b523-c5d1-7814-3920dae5d0d7@gmail.com>'
+}
+--- PASSWORD RESET EMAIL DEBUG ---
+Attempting to send via RESEND...
+Attempting to send via Fallback SMTP (Zoho)...
+SMTP Success: {
+  accepted: [ 'kim.swathi.07@gmail.com' ],
+  rejected: [],
+  ehlo: [
+    'SIZE 35882577',
+    '8BITMIME',
+    'AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH',
+    'ENHANCEDSTATUSCODES',
+    'PIPELINING',
+    'CHUNKING',
+    'SMTPUTF8'
+  ],
+  envelopeTime: 924,
+  messageTime: 884,
+  messageSize: 1289,
+  response: '250 2.0.0 OK  1785731037 5a478bee46e88-3153e06fc98sm32991042eec.21 - gsmtp',
+  envelope: {
+    from: 'shastikaglobal11@gmail.com',
+    to: [ 'kim.swathi.07@gmail.com' ]
+  },
+  messageId: '<3bc6088b-6cc4-3065-b7c1-2863b6b7e397@gmail.com>'
+}
+[Lookup ID] Checking local database for ID: 2001
+[Lookup ID] Found locally: swathitae35@gmail.com (Swathi)
+[VPS Auth] Attempting login for email: swathitae35@gmail.com
+[Lookup ID] Checking local database for ID: 1006
+[Lookup ID] Found locally: sreenethra681@gmail.com (Nethra Sree)
+[VPS Auth] Attempting login for email: sreenethra681@gmail.com
+[VPS Auth] Valid credentials for Nethra Sree. Issuing tokens...
+[VPS Fallback Query] Running: SELECT "id", "company_id", "full_name", "email", "avatar_url", "status", "requested_role", "rejection_reason", "phone", "dob", "joining_date", "system_mode", "city", "biometric_id", "department", "employee_id", "role" FROM "profiles" WHERE "id" = $1 with params: [ 'f3c638cf-b8b4-41ea-92a7-bf3acbeb819d' ]
+[VPS Fallback Query] Running: SELECT "name" FROM "companies" WHERE "id" = $1 with params: [ '00000000-0000-0000-0000-00000000ae01' ]
+[VPS Fallback Query] Running: SELECT * FROM "user_sessions" ORDER BY "login_time" DESC with params: []

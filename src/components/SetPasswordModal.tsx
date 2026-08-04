@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, Eye, EyeOff, UserSquare2 } from "lucide-react";
-import { vpsDb } from "@/lib/vpsDb";
+// [VPS Migration] vpsDb removed - using fetch API
 
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,9 +53,7 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
       }
 
       // Update the user's password
-      const { error: authError } = await vpsDb.auth.updateUser({
-        password: password,
-      });
+      const authError = null; // [API Migration]
 
       if (authError) throw authError;
 

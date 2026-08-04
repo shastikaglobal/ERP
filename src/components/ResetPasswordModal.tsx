@@ -63,8 +63,8 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-sm">
             {isSent 
-              ? "We've sent a password reset link to shastikaglobal11@gmail.com. Please check with them to securely update your password." 
-              : "Enter the email address associated with your account, and we'll send the reset link to shastikaglobal11@gmail.com."}
+              ? "We have sent a password reset link to your email address. Please check your inbox." 
+              : "Enter your registered company email address to receive a password reset link."}
           </DialogDescription>
         </DialogHeader>
 

@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "react-router-dom";
@@ -24,11 +25,14 @@ export default function CertificatePreview() {
         console.log("Loading certificate for ID:", id);
         
         // 1. Try finding as a Shipment
-        const { data: shipmentData, error: shipErr } = await vpsDb
-          .from("export_shipments")
-          .select("*, export_orders(*), export_containers(*)")
-          .eq("id", id)
-          .maybeSingle();
+        const res = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_shipments", action: "select", select: "*, export_orders(*)",
+          filters: [{ column: "id", type: "eq", value: id }], single: true
+        })
+      });
+      const { data: shipmentData, error: shipErr } = await res.json();
 
         if (shipmentData) {
           console.log("Found as shipment");
@@ -44,11 +48,14 @@ export default function CertificatePreview() {
 
         // 2. If not found, try finding as an Order
         console.log("Shipment not found, trying as order...");
-        const { data: orderOnly, error: orderErr } = await vpsDb
-          .from("export_orders")
-          .select("*, export_shipments(*)")
-          .eq("id", id)
-          .maybeSingle();
+        const resOrd = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_orders", action: "select", select: "*, export_shipments(*)",
+          filters: [{ column: "id", type: "eq", value: id }], single: true
+        })
+      });
+      const { data: orderOnly, error: orderErr } = await resOrd.json();
 
         if (orderOnly) {
           console.log("Found as order");
@@ -71,12 +78,12 @@ export default function CertificatePreview() {
         // 3. Try finding as Standalone Certificate from VPS DB
         console.log("Order not found, trying as standalone certificate...");
 
-        const res = await fetch('/api/documents/certificates', {
+        const certRes = await fetch('/api/documents/certificates', {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         
-        if (res.ok) {
-          const standaloneCerts = await res.json();
+        if (certRes.ok) {
+          const standaloneCerts = await certRes.json();
           const standalone = standaloneCerts.find((c: any) => c.id === id);
           
           if (standalone) {
@@ -125,20 +132,12 @@ export default function CertificatePreview() {
 
     const fetchExtraDetails = async (orderData: any) => {
       if (orderData?.company_id) {
-        const { data: compData } = await vpsDb
-          .from("companies")
-          .select("*")
-          .eq("id", orderData.company_id)
-          .maybeSingle();
+        const resComp = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: orderData.company_id }], single: true }) }); const { data: compData } = await resComp.json();
         setCompany(compData);
       }
       
       if (orderData?.created_by) {
-        const { data: userData } = await vpsDb
-          .from("profiles")
-          .select("full_name")
-          .eq("id", orderData.created_by)
-          .maybeSingle();
+        const resUser = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "select", select: "full_name", filters: [{ column: "id", type: "eq", value: orderData.created_by }], single: true }) }); const { data: userData } = await resUser.json();
         if (userData) {
           orderData.creator_name = userData.full_name;
         }

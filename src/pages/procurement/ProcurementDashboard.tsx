@@ -27,18 +27,19 @@ export default function ProcurementDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (!profile?.company_id) return;
+        if (!profile?.company_id) {
+          setLoading(false);
+          return;
+        }
 
-        
-        const res = await fetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, { credentials: 'include'
-      });
+        const res = await fetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, { credentials: 'include' });
         if (!res.ok) throw new Error("Failed to load analytics");
         const data = await res.json();
 
         setStats({
           totalSuppliers: data.totalSuppliers || 0,
           totalPOValueMonth: data.totalPOValueMonth || 0
-      });
+        });
         setTopSuppliers(data.topSuppliers || []);
         setStatusData(data.statusData || []);
 
@@ -49,10 +50,10 @@ export default function ProcurementDashboard() {
       }
     };
 
-    if (profile?.company_id) {
+    if (profile) {
       fetchData();
     }
-  }, [profile?.company_id]);
+  }, [profile]);
 
 
   const COLORS = ['#3b82f6', '#22c55e', '#a855f7', '#64748b', '#ef4444'];

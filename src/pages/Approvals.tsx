@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCanManageApprovals } from "@/hooks/useAuth";
 import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -60,7 +60,7 @@ const DEPARTMENT_OPTIONS = [
 ];
 
 export default function Approvals() {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs, session } = useAuth();
   const canManageApprovals = useCanManageApprovals();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
   const canAction = slugs.includes("admin") || slugs.includes("manager") || slugs.includes("secretary");
@@ -74,7 +74,7 @@ export default function Approvals() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No session");
       const res = await fetch('/api/employees/all/profiles', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -111,7 +111,7 @@ export default function Approvals() {
     const role = pendingRoleSel[r.id] || r.requested_role || "bde";
     setBusyId(r.id);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -132,7 +132,7 @@ export default function Approvals() {
     if (reason === null) return;
     setBusyId(r.id);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
@@ -163,7 +163,7 @@ export default function Approvals() {
     
     setBusyId(r.id);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       
       const payload: any = {};
       if (role && role !== r.requested_role) payload.requested_role = role;

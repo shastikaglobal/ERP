@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "react-router-dom";
@@ -83,7 +84,7 @@ export default function InvoicePreview() {
 
   useEffect(() => {
     async function fetchSignature() {
-      const { data } = await vpsDb.from('companies').select('signature_url').limit(1).maybeSingle();
+const { data } = {} as any; // [VPS Migration] fixed assignment
       if (data?.signature_url) {
         setSignatureUrl(data.signature_url);
       }
@@ -781,3 +782,4 @@ function Field({ label, children, required }: { label: string, children: React.R
     </div>
   );
 }
+

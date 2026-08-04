@@ -117,6 +117,10 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
+  if (session.user?.user_metadata?.force_password_reset) {
+    return <Navigate to="/force-reset" replace />;
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

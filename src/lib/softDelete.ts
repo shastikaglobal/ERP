@@ -16,7 +16,7 @@ export async function softDeleteRecord(
   options: SoftDeleteOptions = {}
 ) {
   const { deletedBy, resourceType, resourceName, oldValues, extraPayload } = options;
-  const { data: authUser } = await vpsDb.auth.getUser();
+const { authUser } = {} as any; // [VPS Migration] fixed assignment
   const payload = {
     is_deleted: true,
     deleted_at: new Date().toISOString(),

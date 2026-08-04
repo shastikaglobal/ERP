@@ -38,7 +38,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
 
   const fetchBdes = async () => {
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees?company_id=${profile?.company_id || ''}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -53,7 +53,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
 
   const fetchLeads = async () => {
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/leads`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -72,7 +72,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
     
     setLoading(true);
     try {
-      const { data: { session } } = await vpsDb.auth.getSession();
+      // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/crm-tasks', {
         method: 'POST',
         headers: {

@@ -223,10 +223,22 @@ export default function GenerateBarcode() {
   const { data: targets = [], isLoading } = useQuery<LogisticsTarget[]>({
     queryKey: ["logistics_targets"],
     queryFn: async () => {
-      const { data: prof } = await vpsDb.from("profiles").select("company_id").maybeSingle();
+      const profRes = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "profiles", action: "select", select: "company_id", single: true
+        })
+      });
+      const { data: prof } = await profRes.json();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const { data: cos } = await vpsDb.from("companies").select("id").limit(1);
+        const cosRes = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "companies", action: "select", select: "id", limit: 1
+        })
+      });
+      const { data: cos } = await cosRes.json();
         companyId = cos?.[0]?.id ?? null;
       }
       
@@ -235,12 +247,19 @@ export default function GenerateBarcode() {
 
       const [shipResData, batchRes, orderResData, barcodeRes] = await Promise.all([
         fetch(`/api/finance/export_shipments?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        vpsDb
-          .from("inventory_batches")
-          .select("id, lot_number, quantity_kg, product:products(name, sku)")
-          .order("created_at", { ascending: false }).limit(30),
+        fetch("/api/vps-fallback", {
+          method: "POST", headers,
+          body: JSON.stringify({
+            table: "inventory_batches", action: "select",
+            select: "id, lot_number, quantity_kg, product:products(name, sku)",
+            order: { column: "created_at", options: { ascending: false } }, limit: 30
+          })
+        }).then(r => r.json()),
         fetch(`/api/finance/export_orders?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        vpsDb.from("batch_barcodes").select("shipment_id, batch_id"), // ignore order_id to prevent errors if it doesn't exist
+        fetch("/api/vps-fallback", {
+          method: "POST", headers,
+          body: JSON.stringify({ table: "batch_barcodes", action: "select", select: "shipment_id, batch_id" })
+        }).then(r => r.json()), // ignore order_id to prevent errors if it doesn't exist
       ]);
 
       const list: LogisticsTarget[] = [];
@@ -344,10 +363,22 @@ export default function GenerateBarcode() {
     mutationFn: async () => {
       if (!selected) throw new Error("Select a shipment or cargo lot");
 
-      const { data: prof } = await vpsDb.from("profiles").select("company_id").maybeSingle();
+      const profRes = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "profiles", action: "select", select: "company_id", single: true
+        })
+      });
+      const { data: prof } = await profRes.json();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const { data: cos } = await vpsDb.from("companies").select("id").limit(1);
+        const cosRes = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "companies", action: "select", select: "id", limit: 1
+        })
+      });
+      const { data: cos } = await cosRes.json();
         companyId = cos?.[0]?.id ?? null;
       }
       if (!companyId) throw new Error("No company found. Contact your administrator.");
@@ -361,27 +392,29 @@ export default function GenerateBarcode() {
       if (selected.type === 'shipment') {
         const shipmentNumber = selected.ref;
         // 1. Check if batch exists for this shipment
-        const { data: existingBatch } = await vpsDb
-          .from("shipment_batches")
-          .select("id")
-          .eq("shipment_id", shipmentNumber)
-          .maybeSingle();
+        const resEB = await fetch("/api/vps-fallback", {
+          method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+          body: JSON.stringify({
+            table: "shipment_batches", action: "select", select: "id",
+            filters: [{ column: "shipment_id", type: "eq", value: shipmentNumber }], single: true
+          })
+        });
+        const { data: existingBatch } = await resEB.json();
         
         if (existingBatch) {
           currentBatchId = existingBatch.id;
         } else {
           // 2. If batch NOT found -> automatically CREATE a new batch record
           console.log("Attempting to auto-create batch for shipment:", shipmentNumber, "UUID was:", selected.id);
-          const { data: newBatch, error: batchError } = await vpsDb
-            .from("shipment_batches")
-            .insert({
-              shipment_id: shipmentNumber,
-              shipment_uuid: selected.id,
-              status: 'active',
-              carton_number_total: totalCartons
+          const resNB = await fetch("/api/vps-fallback", {
+            method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+            body: JSON.stringify({
+              table: "shipment_batches", action: "insert",
+              data: [{ shipment_id: shipmentNumber, shipment_uuid: selected.id, status: 'active', carton_number_total: totalCartons }]
             })
-            .select("id")
-            .single();
+          });
+          const { data: newBatchList, error: batchError } = await resNB.json();
+          const newBatch = Array.isArray(newBatchList) ? newBatchList[0] : newBatchList;
             
           if (batchError) {
             console.error("Exact batch error:", batchError);
@@ -411,7 +444,11 @@ export default function GenerateBarcode() {
       });
 
       const codes = rows.map((r) => r.code);
-      const { error: barcodeError } = await vpsDb.from("batch_barcodes").insert(rows);
+      const resBC = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ table: "batch_barcodes", action: "insert", data: rows })
+      });
+      const { error: barcodeError } = await resBC.json();
       if (barcodeError) {
         console.error('Full barcode insert error:', JSON.stringify(barcodeError));
         throw new Error(`Barcode insert failed: ${barcodeError.message}`);

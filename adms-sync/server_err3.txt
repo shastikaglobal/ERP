@@ -1,0 +1,5 @@
+[requireAuth] JWT verification failed for GET /: jwt malformed
+[requireAuth] JWT verification failed for POST /4722ecc8-ec1f-4afb-acf8-444d3bdba677/reset-password: invalid input syntax for type uuid: "test-admin-id"
+Resend failed in employee directory reset: Message failed: 550 You can only send testing emails to your own email address (shastikaglobal11@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+Resend failed in employee directory reset: Message failed: 550 You can only send testing emails to your own email address (shastikaglobal11@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+Resend failed in employee directory reset: Message failed: 550 You can only send testing emails to your own email address (shastikaglobal11@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.

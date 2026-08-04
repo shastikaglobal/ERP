@@ -1,0 +1,42 @@
+SERVER PG_PASSWORD: Shastika2026Secure
+🚀 Starting ADMS Sync Server...
+
+🟢 ADMS Sync Server is listening on http://0.0.0.0:8082
+🔌 Dedicated PG Listener Client connected.
+👂 Listening to PG channel "data_changed"
+--- PASSWORD RESET EMAIL DEBUG ---
+Attempting to send via RESEND...
+Resend Success: {
+  accepted: [ 'shastikaglobal11@gmail.com' ],
+  rejected: [],
+  ehlo: [
+    'PIPELINING',
+    '8BITMIME',
+    'SMTPUTF8',
+    'AUTH PLAIN LOGIN',
+    'SIZE 41943040'
+  ],
+  envelopeTime: 858,
+  messageTime: 712,
+  messageSize: 1080,
+  response: '250 32da3b4b-29c6-4557-b9d3-d62268d3c90c',
+  envelope: {
+    from: 'onboarding@resend.dev',
+    to: [ 'shastikaglobal11@gmail.com' ]
+  },
+  messageId: '<2e5e019d-e920-962b-a24c-a3b408b086fb@resend.dev>'
+}
+[DEBUG] requireAuth: No token provided for GET /api/auth/me
+[DEBUG] requireAuth: No token provided for GET /api/auth/me
+🔔 Received PG notify on "data_changed": profiles
+[Lookup ID] Checking local database for ID: 1007
+[Lookup ID] Found locally: kim.swathi.07@gmail.com (Swathi Swathi)
+[VPS Auth] Attempting login for email: kim.swathi.07@gmail.com
+[VPS Auth] Valid credentials for Swathi Swathi. Issuing tokens...
+[VPS Fallback Query] Running: SELECT "id", "company_id", "full_name", "email", "avatar_url", "status", "requested_role", "rejection_reason", "phone", "dob", "joining_date", "system_mode", "city", "biometric_id", "department", "employee_id", "role" FROM "profiles" WHERE "id" = $1 with params: [ '4722ecc8-ec1f-4afb-acf8-444d3bdba677' ]
+[VPS Fallback Query] Running: SELECT "name" FROM "companies" WHERE "id" = $1 with params: [ '00000000-0000-0000-0000-00000000ae01' ]
+[GET /api/farmers] User ID: 4722ecc8-ec1f-4afb-acf8-444d3bdba677, Role: admin. Retrieved 3 records.
+[DEBUG] PUT /api/leads/8554dcda-9567-4c80-8844-83d0d24bed9c body: { stage: 'Proposal' }
+🔔 Received PG notify on "data_changed": leads
+[DEBUG] GET /api/leads/converted - company_id=00000000-0000-0000-0000-00000000ae01 user=4722ecc8-ec1f-4afb-acf8-444d3bdba677 headers={}
+[DEBUG] GET /api/leads/converted - company_id=00000000-0000-0000-0000-00000000ae01 user=4722ecc8-ec1f-4afb-acf8-444d3bdba677 headers={}

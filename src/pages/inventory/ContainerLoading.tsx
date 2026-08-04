@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useCan } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, Container as ContainerIcon, CheckCircle2 } from "lucide-react";
 import {

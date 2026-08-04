@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
 
 import { format, startOfDay, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";

@@ -56,12 +56,17 @@ export default function ScanBarcode() {
   const { data: activeShipments = [], isLoading: shipsLoading } = useQuery<ActiveShipment[]>({
     queryKey: ["active_shipments_scan"],
     queryFn: async () => {
-      const { data, error } = await vpsDb
-        .from("export_shipments")
-        .select("id, shipment_number, destination_port, status")
-        .neq("status", "Delivered")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const res = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_shipments", action: "select",
+          select: "id, shipment_number, destination_port, status",
+          filters: [{ column: "status", type: "neq", value: "Delivered" }],
+          order: { column: "created_at", options: { ascending: false } },
+          limit: 50
+        })
+      });
+      const { data, error } = await res.json();
       if (error) throw error;
       return (data ?? []) as ActiveShipment[];
     },
@@ -72,10 +77,15 @@ export default function ScanBarcode() {
     queryKey: ["scan_containers", shipmentId],
     enabled: shipmentId !== "none",
     queryFn: async () => {
-      const { data, error } = await vpsDb
-        .from("export_containers")
-        .select("id, container_number, container_type")
-        .eq("shipment_id", shipmentId);
+      const res = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "export_containers", action: "select",
+          select: "id, container_number, container_type",
+          filters: [{ column: "shipment_id", type: "eq", value: shipmentId }]
+        })
+      });
+      const { data, error } = await res.json();
       if (error) throw error;
       return (data ?? []) as ShipmentContainer[];
     },
@@ -91,11 +101,14 @@ export default function ScanBarcode() {
     setScanError(null);
     setResult(null);
     try {
-      const { data, error } = await vpsDb
-        .from('batch_barcodes')
-        .select('*')
-        .eq('code', raw)
-        .single();
+      const res = await fetch("/api/vps-fallback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          table: "batch_barcodes", action: "select", select: "*",
+          filters: [{ column: "code", type: "eq", value: raw }], single: true
+        })
+      });
+      const { data, error } = await res.json();
         
       if (error || !data) {
         setScanError("Barcode not found in system");
@@ -109,7 +122,13 @@ export default function ScanBarcode() {
          const updates: any = {};
          if (updateLoc !== "none") updates.current_location = updateLoc;
          if (shipmentId !== "none") updates.shipment_id = shipmentId;
-         await vpsDb.from('batch_barcodes').update(updates).eq('id', data.id);
+         await fetch("/api/vps-fallback", {
+           method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+           body: JSON.stringify({
+             table: "batch_barcodes", action: "update", data: updates,
+             filters: [{ column: "id", type: "eq", value: data.id }]
+           })
+         });
       }
     } catch (e: any) {
       setScanError("Barcode not found in system");

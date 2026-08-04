@@ -912,7 +912,7 @@ export default function LeadsList() {
                 <TableRow
                   key={lead.id}
                   className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => nav(`/crm/leads/${lead.id}`)}
+                  onClick={() => lead.id ? nav(`/crm/leads/${lead.id}`) : toast.error("Lead ID is missing")}
                 >
                   <TableCell className="text-sm font-mono text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell className="text-sm">{lead.date || "-"}</TableCell>
@@ -1095,3 +1095,4 @@ export default function LeadsList() {
     </div>
   );
 }
+

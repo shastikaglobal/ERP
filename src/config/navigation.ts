@@ -242,6 +242,7 @@ export const navGroups: NavGroup[] = [
       { title: "Attendance", url: "/employees/attendance", icon: CalendarCheck, permission: "hr.view" },
       { title: "Leave Management", url: "/employees/leaves", icon: Calendar, permission: "hr.view" },
       { title: "Salary Report", url: "/employees/salary", icon: Coins, permission: "hr.view" },
+      { title: "Payslips", url: "/hr-employees/payslips", icon: FileText, permission: "hr.view" },
       { title: "Face Attendance", url: "/employees/face-attendance", icon: ScanLine },
       { title: "Register Face", url: "/employees/register-face", icon: UserCheck, permission: "hr.view" },
     ],

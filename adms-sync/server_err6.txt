@@ -1,0 +1,31 @@
+[Sync] Zoho accounts sync failed/ignored: legacyDb is not defined
+[Sync] Token refresh failed for manager@shastikaglobalimpex.co.in: invalid_code
+[Sync] Zoho accounts sync failed/ignored: legacyDb is not defined
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+Email send error: Error: Invalid login: 535 Authentication Failed
+    at SMTPConnection._formatError (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:938:19)
+    at SMTPConnection._actionAUTHComplete (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1784:34)
+    at SMTPConnection.<anonymous> (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1738:18)
+    at SMTPConnection._processResponse (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:1150:20)
+    at SMTPConnection._onData (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:898:14)
+    at SMTPConnection._onSocketData (E:\SHASTI\backuperp\backuperp\adms-sync\node_modules\nodemailer\lib\smtp-connection\index.js:224:44)
+    at TLSSocket.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5) {
+  code: 'EAUTH',
+  response: '535 Authentication Failed',
+  responseCode: 535,
+  command: 'AUTH LOGIN'
+}
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code
+[Sync] Token refresh failed for shastikabde2@shastikaglobalimpex.co.in: invalid_code

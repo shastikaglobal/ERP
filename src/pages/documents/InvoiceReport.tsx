@@ -1,3 +1,4 @@
+import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
@@ -17,19 +18,35 @@ export default function InvoiceReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let { data, error } = await vpsDb
-          .from("export_shipments")
-          .select("*, export_orders(*)")
-          .eq("id", id)
-          .maybeSingle();
+        const res = await fetch("/api/vps-fallback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            table: "export_shipments",
+            action: "select",
+            select: "*, export_orders(*)",
+            filters: [{ column: "id", type: "eq", value: id }],
+            single: true
+          })
+        });
+        let { data, error } = await res.json();
 
         if (error || !data) {
           // If not found in shipments, try export_orders directly
-          const { data: orderOnly, error: orderErr } = await vpsDb
-            .from("export_orders")
-            .select("*, export_shipments(*)")
-            .eq("id", id)
-            .maybeSingle();
+          const res2 = await fetch("/api/vps-fallback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              table: "export_orders",
+              action: "select",
+              select: "*, export_shipments(*)",
+              filters: [{ column: "id", type: "eq", value: id }],
+              single: true
+            })
+          });
+          const { data: orderOnly, error: orderErr } = await res2.json();
             
           if (orderErr || !orderOnly) {
             // Try fetching from Node API

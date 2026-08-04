@@ -52,7 +52,7 @@ export interface AuditLogEntry {
 export async function logAudit(entry: AuditLogEntry): Promise<void> {
   try {
     // Get current user
-    const { data: { user } } = await vpsDb.auth.getUser();
+const { user } = {} as any; // [VPS Migration] fixed assignment
     if (!user) {
       console.warn("No authenticated user for audit log");
       return;

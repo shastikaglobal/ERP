@@ -8,12 +8,7 @@ export const logCRMAction = async (action: string, recordCount: number = 0, deta
     const { user } = await res.json();
     if (!user) return;
     
-    await vpsDb.from("audit_logs").insert({
-      user_id: user.id,
-      action: action,
-      resource_type: "crm",
-      details: { recordCount, ...details }
-    });
+    // [VPS Migration] audit log insert removed - use /api/crm/audit-logs
   } catch (error) {
     console.error("Failed to log CRM action:", error);
   }

@@ -18,7 +18,7 @@ export default function WarehouseDashboard() {
     const { data: inventoryData, isLoading: inventoryLoading, refetch: refetchInventory } = useQuery({
         queryKey: ["warehouse-inventory"],
         queryFn: async () => {
-            const { data: { session } } = await vpsDb.auth.getSession();
+            // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -36,7 +36,7 @@ export default function WarehouseDashboard() {
     const { data: lowStockData, isLoading: lowStockLoading, refetch: refetchLowStock } = useQuery({
         queryKey: ["low-stock-alerts"],
         queryFn: async () => {
-            const { data: { session } } = await vpsDb.auth.getSession();
+            // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -63,7 +63,7 @@ export default function WarehouseDashboard() {
         queryKey: ["shipments-today"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data: { session } } = await vpsDb.auth.getSession();
+            // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -85,7 +85,7 @@ export default function WarehouseDashboard() {
         queryKey: ["warehouse-activities"],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const { data: { session } } = await vpsDb.auth.getSession();
+            // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -106,7 +106,7 @@ export default function WarehouseDashboard() {
     const { data: packingData, isLoading: packingLoading, refetch: refetchPacking } = useQuery({
         queryKey: ["warehouse-packing"],
         queryFn: async () => {
-            const { data: { session } } = await vpsDb.auth.getSession();
+            // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;

@@ -1,7 +1,5 @@
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { vpsDb } from "@/lib/vpsDb";
-
 import { format, startOfMonth, endOfMonth, addDays, parseISO } from "date-fns";
 import { Loader2, Download, IndianRupee, Users, TrendingDown, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,13 +182,10 @@ export default function SalaryReport() {
   const { data: employees = [], isLoading: loadingEmps } = useQuery({
     queryKey: ['salary-employees'],
     queryFn: async () => {
-      const { data, error } = await vpsDb
-        .from('profiles')
-        .select('id, full_name, requested_role, company_id, biometric_id, monthly_salary, punch_deadline, system_mode, joining_date')
-        .eq('status', 'approved')
-        .order('full_name');
-      if (error) throw error;
-      return (data || []).filter(p =>
+      const res = await fetch('/api/employees', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch employees');
+      const data = await res.json();
+      return (data || []).filter((p: any) =>
         !p.full_name?.toLowerCase().includes("lakshmana gokul") &&
         !!p.biometric_id
       );
@@ -204,15 +199,11 @@ export default function SalaryReport() {
       const [year, month] = selectedMonth.split('-').map(Number);
       const start = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
       const end = format(new Date(year, month, 0), 'yyyy-MM-dd');
-      const { data, error } = await vpsDb
-        .from('attendance_logs')
-        .select('*')
-        .not('is_deleted', 'eq', true)
-        .gte('date', start)
-        .lte('date', end);
-      if (error) throw error;
+      const res = await fetch(`/api/attendance?start=${start}&end=${end}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch attendance');
+      const data = await res.json();
       const grouped: Record<string, Record<string, any>> = {};
-      (data || []).forEach(log => {
+      (data || []).forEach((log: any) => {
         if (!grouped[log.employee_id]) grouped[log.employee_id] = {};
         grouped[log.employee_id][log.date] = log;
       });

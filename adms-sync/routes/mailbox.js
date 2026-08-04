@@ -8,54 +8,9 @@ const db = require('../db');
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://mock.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'mock';
 
-async function syncZohoAccounts() {
-  try {
-    const { data: accounts, error } = await supabase
-      .from('zoho_accounts')
-      .select('*');
-      
-    if (error) throw error;
-    
-    if (accounts && accounts.length > 0) {
-      for (const acc of accounts) {
-        await db.query(`
-          INSERT INTO zoho_accounts (
-            id, company_id, user_id, account_email, access_token, refresh_token, 
-            expiry_time, created_at, updated_at, zoho_account_id, is_deleted, 
-            deleted_at, deleted_by
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-          ) ON CONFLICT (id) DO UPDATE SET
-            company_id = EXCLUDED.company_id,
-            user_id = EXCLUDED.user_id,
-            account_email = EXCLUDED.account_email,
-            access_token = EXCLUDED.access_token,
-            refresh_token = EXCLUDED.refresh_token,
-            expiry_time = EXCLUDED.expiry_time,
-            updated_at = EXCLUDED.updated_at,
-            zoho_account_id = EXCLUDED.zoho_account_id,
-            is_deleted = EXCLUDED.is_deleted,
-            deleted_at = EXCLUDED.deleted_at,
-            deleted_by = EXCLUDED.deleted_by
-        `, [
-          acc.id, acc.company_id, acc.user_id, acc.account_email, acc.access_token,
-          acc.refresh_token, acc.expiry_time, acc.created_at, acc.updated_at,
-          acc.zoho_account_id, acc.is_deleted ?? false, acc.deleted_at || null,
-          acc.deleted_by || null
-        ]);
-      }
-    }
-  } catch (err) {
-    console.warn('[Sync] Zoho accounts sync failed/ignored:', err.message);
-  }
-}
-
 // GET /api/emails/accounts - Fetch zoho accounts
 router.get('/accounts', requireAuth, async (req, res) => {
   try {
-    // Run sync in the background
-    syncZohoAccounts();
-    
     const { rows } = await db.query("SELECT * FROM zoho_accounts WHERE is_deleted IS NOT TRUE");
     res.json(rows || []);
   } catch (err) {

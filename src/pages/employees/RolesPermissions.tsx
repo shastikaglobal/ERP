@@ -47,20 +47,20 @@ export default function RolesPermissions() {
   const [dynamicAccessMap, setDynamicAccessMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (session?.access_token) {
+    if (session?.user) {
       loadData();
     }
-  }, [session?.access_token]);
+  }, [session?.user]);
 
   // Polling for updates instead of VpsDb realtime
   useEffect(() => {
-    if (!session?.access_token) return;
+    if (!session?.user) return;
     const interval = setInterval(() => {
       loadData(true);
     }, 10000); // 10s polling
 
     return () => clearInterval(interval);
-  }, [session?.access_token]);
+  }, [session?.user]);
 
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);

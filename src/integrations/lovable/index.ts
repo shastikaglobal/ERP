@@ -28,7 +28,7 @@ export const lovable = {
       }
 
       try {
-        await vpsDb.auth.setSession(result.tokens);
+        // [API Migration] setSession removed
       } catch (e) {
         return { error: e instanceof Error ? e : new Error(String(e)) };
       }

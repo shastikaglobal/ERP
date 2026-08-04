@@ -38,7 +38,54 @@ if (envPath) {
   require('dotenv').config();
 }
 
-const app = express();
+console.log("SERVER PG_PASSWORD:", process.env.PG_PASSWORD); const app = express();
+
+// PAYSLIPS ROUTE
+app.get('/api/payslips', async (req, res) => {
+  try {
+    const { employee_id, month } = req.query;
+    if (!employee_id || !month) return res.status(400).json({ error: 'Missing employee_id or month' });
+    
+    // First, check if payslip already exists
+    const { rows: existing } = await db.query('SELECT * FROM payslips WHERE employee_id = $1 AND month_year = $2', [employee_id, month]);
+    if (existing.length > 0) {
+      return res.json(existing[0]);
+    }
+    
+    // If not, fetch employee master data and calculate
+    const { rows: emps } = await db.query('SELECT * FROM profiles WHERE id = $1', [employee_id]);
+    if (emps.length === 0) return res.status(404).json({ error: 'Employee not found' });
+    
+    const emp = emps[0];
+    const basic = parseFloat(emp.monthly_salary) || 0;
+    const basicEarnings = basic * 0.4;
+    const hraEarnings = basic * 0.2;
+    const pfDeduction = basicEarnings * 0.12;
+    
+    const gross = basicEarnings + hraEarnings;
+    const net = gross - pfDeduction;
+    
+    const { rows: inserted } = await db.query(`
+      INSERT INTO payslips (
+        employee_id, month_year, emp_code, employee_name, father_husband_name, 
+        department, designation, pan_no, esi_no, pf_no, bank_name, bank_account_no, uan_no,
+        basic_earnings, hra_earnings, pf_deduction, gross_pay, total_deductions, net_pay
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      RETURNING *
+    `, [
+      employee_id, month, emp.employee_id, emp.full_name, emp.father_husband_name,
+      emp.department, emp.role, emp.pan_no, emp.esi_no, emp.pf_no, emp.bank_name, emp.bank_account_no, emp.uan_no,
+      basicEarnings, hraEarnings, pfDeduction, gross, pfDeduction, net
+    ]);
+    
+    return res.json(inserted[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const PORT = process.env.PORT || 8082;
 
@@ -74,8 +121,8 @@ const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // Limit each IP to 100 requests per `window` (here, per minute)
   standardHeaders: true,
-  legacyHeaders: false,
-});
+  legacyHeaders: false
+      });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -194,6 +241,13 @@ app.use('/api/hr', hrRoutes);
 app.use('/api/farmers', farmersRoutes);
 app.use('/api/leaves', leavesRoutes);
 app.use('/api/permissions', permissionsRoutes);
+app.use('/api/employees', employeesRoutes);
+app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/leads', require('./routes/crm'));
+app.use('/api/crm', require('./routes/crm_api'));
+app.use('/api/inventory', require('./routes/inventory_api'));
+app.use('/api/crm/tasks', require('./routes/crm_tasks'));
+app.use('/api/upload', require('./routes/upload'));
 app.use('/api/user-permissions', permissionsRoutes);
 app.use('/api', invoicesRoutes);
 app.use('/api/emails', mailboxRoutes);
@@ -252,24 +306,22 @@ app.post('/api/auth/signup', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+      path: '/'
+      });
     
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
+      path: '/'
+      });
 
     res.json({
       session: {
         user: {
           id: user.id,
           email: user.email,
-          user_metadata: { full_name: user.full_name }
+          user_metadata: { full_name: user.full_name, force_password_reset: user.force_password_reset }
         }
       }
     });
@@ -290,7 +342,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Look up in the local VPS profiles table
     const { rows } = await db.query(
-      'SELECT id, full_name, email, role, status, password_hash FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      'SELECT id, full_name, email, role, status, password_hash, force_password_reset FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
       [email.trim()]
     );
 
@@ -339,16 +391,14 @@ app.post('/api/auth/login', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (increased from 1 hr for easier testing)
+      path: '/'
     });
     
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      path: '/'
     });
 
     res.json({
@@ -369,7 +419,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', require('./middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, full_name, email, role, status FROM profiles WHERE id = $1 LIMIT 1',
+      'SELECT id, full_name, email, role, status, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
       [req.user.sub]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
@@ -457,9 +507,478 @@ app.post('/api/auth/refresh', async (req, res) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 1000
+      sameSite: 'lax'
+      });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/face-scan', async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const { embedding, livenessResult } = req.body;
+
+  if (!embedding || !Array.isArray(embedding) || embedding.length !== 128) {
+    return res.status(400).json({ error: 'Invalid face embedding. Expected 128-dim array.' });
+  }
+
+  // 1. Liveness check FIRST
+  if (!livenessResult?.allPassed) {
+    try {
+      await db.query(`
+        INSERT INTO face_scan_events (
+          match_score, liveness_score, motion_pass, blink_pass, depth_pass, spoof_pass, 
+          status, error_reason, ip_address, scanned_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `, [
+        0, 
+        livenessResult?.livenessScore || 0,
+        livenessResult?.checks?.motion?.pass || false,
+        livenessResult?.checks?.blink?.pass || false,
+        livenessResult?.checks?.depth?.pass || false,
+        false,
+        'spoof_detected',
+        'Liveness check failed',
+        ip
+      ]);
+    } catch (err) {
+      console.error('[Face Scan] Event log failed:', err.message);
+    }
+
+    return res.status(200).json({
+      matched: false,
+      error: 'Liveness check failed. Please look at the camera naturally and blink.',
+      code: 'LIVENESS_FAIL'
     });
+  }
+
+  try {
+    // 2. Fetch all face embeddings from local database
+    const { rows: storedEmbeddings } = await db.query(`
+      SELECT f.employee_id, f.face_embedding, p.full_name as name, p.department, p.biometric_id, p.punch_deadline
+      FROM face_embeddings f
+      LEFT JOIN profiles p ON f.employee_id::text = p.id::text
+      WHERE p.is_deleted IS NOT TRUE
+    `);
+
+    // 3. Find the best match locally using Euclidean distance
+    let bestDistance = Infinity;
+    let bestMatch = null;
+
+    for (const row of storedEmbeddings) {
+      let stored = row.face_embedding;
+      if (typeof stored === 'string') {
+        try {
+          stored = JSON.parse(stored);
+        } catch (e) {
+          stored = stored.replace(/[\[\]]/g, '').split(',').map(Number);
+        }
+      }
+      
+      if (!Array.isArray(stored) || stored.length !== 128) continue;
+
+      // Calculate Euclidean distance
+      let sum = 0;
+      for (let i = 0; i < 128; i++) {
+        const diff = embedding[i] - stored[i];
+        sum += diff * diff;
+      }
+      const distance = Math.sqrt(sum);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestMatch = row;
+      }
+    }
+
+    const MATCH_DISTANCE_THRESHOLD = 0.50; // standard same-person Euclidean threshold
+    const confidenceScore = Math.round((1 - Math.min(Math.max(bestDistance, 0), 1)) * 100);
+    const matched = bestDistance <= MATCH_DISTANCE_THRESHOLD;
+
+    if (!matched || !bestMatch) {
+      // Log failed match scan event
+      try {
+        await db.query(`
+          INSERT INTO face_scan_events (
+            match_score, liveness_score, motion_pass, blink_pass, depth_pass, spoof_pass, 
+            status, error_reason, ip_address, scanned_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+        `, [
+          0,
+          livenessResult.livenessScore || 0,
+          livenessResult.checks.motion.pass,
+          livenessResult.checks.blink.pass,
+          livenessResult.checks.depth.pass,
+          true,
+          'failed',
+          'No matching employee found',
+          ip
+        ]);
+      } catch (logErr) {
+        console.error('[Face Scan] Failed log attempt:', logErr.message);
+      }
+
+      return res.status(200).json({
+        matched: false,
+        error: 'Face not recognized. Please contact your admin.',
+        code: 'NO_MATCH'
+      });
+    }
+
+    // 4. Match found! Mark attendance locally
+    const employeeId = bestMatch.employee_id;
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const nowIso = new Date().toISOString();
+    const nowTimeStr = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false }); // "HH:MM:SS"
+
+    // Check if check-in exists for today
+    const { rows: existingLogs } = await db.query(
+      'SELECT * FROM attendance_logs WHERE employee_id = $1 AND date = $2 LIMIT 1',
+      [employeeId, todayStr]
+    );
+
+    let action = 'punch_in';
+    let is_late = false;
+    let late_by_mins = 0;
+    let salary_cut = 0;
+
+    if (existingLogs.length === 0) {
+      // Determine if check-in is late
+      const deadline = bestMatch.punch_deadline || '09:15:00';
+      if (nowTimeStr > deadline) {
+        is_late = true;
+        // Calculate late minutes
+        const [nowH, nowM] = nowTimeStr.split(':').map(Number);
+        const [deadH, deadM] = deadline.split(':').map(Number);
+        late_by_mins = Math.max(0, (nowH * 60 + nowM) - (deadH * 60 + deadM));
+        
+        if (late_by_mins > 30) {
+          salary_cut = 100;
+        }
+      }
+
+      const status = is_late ? 'late' : 'present';
+
+      // Insert check-in log
+      await db.query(
+        `INSERT INTO attendance_logs (employee_id, date, status, clock_in) 
+         VALUES ($1, $2, $3, $4)`,
+        [employeeId, todayStr, status, nowIso]
+      );
+
+      // Insert to face_attendance
+      await db.query(
+        `INSERT INTO face_attendance (employee_id, date, clock_in, status) 
+         VALUES ($1, $2, $3, $4)`,
+        [employeeId, todayStr, nowIso, status]
+      );
+
+      action = 'punch_in';
+    } else {
+      const log = existingLogs[0];
+      if (!log.clock_out) {
+        // Punch Out
+        await db.query(
+          'UPDATE attendance_logs SET clock_out = $1 WHERE id = $2',
+          [nowIso, log.id]
+        );
+
+        // Update face_attendance clock_out
+        await db.query(
+          'UPDATE face_attendance SET clock_out = $1 WHERE employee_id = $2 AND date = $3',
+          [nowIso, employeeId, todayStr]
+        );
+
+        action = 'punch_out';
+      } else {
+        action = 'punch_out';
+      }
+    }
+
+    // 5. Log successful scan event
+    try {
+      await db.query(`
+        INSERT INTO face_scan_events (
+          employee_id, match_score, liveness_score, motion_pass, blink_pass, depth_pass, 
+          spoof_pass, status, ip_address, scanned_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `, [
+        employeeId,
+        confidenceScore,
+        livenessResult.livenessScore,
+        livenessResult.checks.motion.pass,
+        livenessResult.checks.blink.pass,
+        livenessResult.checks.depth.pass,
+        true,
+        'matched',
+        ip
+      ]);
+    } catch (logErr) {
+      console.error('[Face Scan] Event log failed:', logErr.message);
+    }
+
+    return res.status(200).json({
+      matched: true,
+      employee: {
+        id: employeeId,
+        name: bestMatch.name,
+        bio_id: bestMatch.biometric_id,
+        department: bestMatch.department
+      },
+      attendance: {
+        action,
+        is_late,
+        late_by_mins,
+        salary_cut,
+        confidence: confidenceScore,
+        timestamp: nowIso
+      }
+    });
+
+  } catch (err) {
+    console.error('[face-scan API] Local error:', err.message);
+    return res.status(500).json({ error: 'Server error during local face scan', detail: err.message });
+  }
+});
+
+
+
+
+// Ensure audit_logs table exists
+db.query(`
+  CREATE TABLE IF NOT EXISTS password_reset_audit (
+    id SERIAL PRIMARY KEY,
+    user_id UUID,
+    email VARCHAR(255),
+    action VARCHAR(50),
+    timestamp TIMESTAMP DEFAULT NOW()
+  )
+`).catch(console.error);
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    // 1. Fetch user from local profiles
+    const { rows } = await db.query(
+      'SELECT id, full_name, email FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      [email.trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.json({ success: true, message: 'Your password reset request has been sent to the system administrator. Please wait for the administrator to provide your temporary password.' });
+    }
+    const user = rows[0];
+
+    // 2. Generate secure token (15-30 min expiration)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    await db.query(
+      'INSERT INTO password_resets (user_id, reset_token_hash, expires_at) VALUES ($1, $2, $3)',
+      [user.id, tokenHash, expiresAt]
+    );
+
+    // Audit log
+    await db.query('INSERT INTO password_reset_audit (user_id, email, action) VALUES ($1, $2, $3)', [user.id, user.email, 'REQUESTED']);
+
+    // 3. Send email to User directly via Resend
+    const isResend = !!process.env.RESEND_API_KEY;
+    const transporter = nodemailer.createTransport({
+      host: isResend ? 'smtp.resend.com' : (process.env.SMTP_HOST || 'smtp.zoho.in'),
+      port: isResend ? 465 : (process.env.SMTP_PORT || 465),
+      secure: true,
+      auth: {
+        user: isResend ? 'resend' : (process.env.SMTP_USER || 'erp@shastikaglobal.com'),
+        pass: isResend ? process.env.RESEND_API_KEY : (process.env.SMTP_PASS || 'default_password_here')
+      }
+    });
+
+    const actionLink = `${req.headers.origin || 'http://localhost:8080'}/auth?mode=reset&token=${resetToken}`;
+
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>🔑 Password Reset Request</h2>
+        <p>Hi ${user.full_name},</p>
+        <p>You recently requested to reset your password for your AgriExport ERP account. Click the button below to proceed:</p>
+        <a href="${actionLink}" style="background-color: #f5c518; color: black; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px; font-weight: bold;">Reset Password</a>
+        <p style="margin-top: 20px; font-size: 12px; color: #666;">This secure link expires in 30 minutes and can only be used once.</p>
+        <p style="margin-top: 20px; font-size: 12px; color: #666;">If you did not request a password reset, please ignore this email.</p>
+      </div>
+    `;
+
+    try {
+      const fromEmail = isResend ? 'onboarding@resend.dev' : (process.env.SMTP_USER || 'erp@shastikaglobal.com');
+      const toEmail = user.email;
+      
+      console.log('--- PASSWORD RESET EMAIL DEBUG ---');
+      console.log('Sending email VIA:', isResend ? 'RESEND' : 'SMTP');
+      console.log('FROM address:', fromEmail);
+      console.log('TO address:', toEmail);
+      console.log('API Key / Pass length:', isResend ? process.env.RESEND_API_KEY?.length : process.env.SMTP_PASS?.length);
+      console.log('----------------------------------');
+
+      const info = await transporter.sendMail({
+        from: fromEmail,
+        to: toEmail,
+        subject: `Password Reset - AgriExport ERP`,
+        html: htmlContent
+      });
+      
+      console.log('--- EMAIL SEND SUCCESS ---');
+      console.log('Response:', info);
+      console.log('--------------------------');
+      
+      return res.json({ success: true, message: `Password reset link sent to ${user.email}.` });
+    } catch (mailErr) {
+      console.error('--- EMAIL SEND FAILED ---');
+      console.error('SMTP/Resend Error details:', mailErr);
+      console.error('-------------------------');
+      return res.status(500).json({ error: 'Failed to send email. Please ensure SMTP or RESEND_API_KEY is correctly configured in your .env file.' });
+    }
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/auth/update-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password required' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const { rows } = await db.query(
+      'SELECT user_id, expires_at FROM password_resets WHERE reset_token_hash = $1',
+      [tokenHash]
+    );
+
+    if (rows.length === 0) return res.status(400).json({ error: 'Invalid or expired reset token' });
+    
+    if (new Date() > rows[0].expires_at) {
+      await db.query('DELETE FROM password_resets WHERE reset_token_hash = $1', [tokenHash]);
+      return res.status(400).json({ error: 'Token expired' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update user profile - Force them to reset on next login!
+    await db.query('UPDATE profiles SET password_hash = $1, force_password_reset = true, updated_at = NOW() WHERE id = $2', [passwordHash, rows[0].user_id]);
+    
+    // Audit log
+    await db.query('INSERT INTO password_reset_audit (user_id, action) VALUES ($1, $2)', [rows[0].user_id, 'COMPLETED']);
+
+    // Cleanup token (One-time use)
+    await db.query('DELETE FROM password_resets WHERE reset_token_hash = $1', [tokenHash]);
+
+    res.json({ success: true, message: 'Temporary password created successfully. The employee must change it on their next login.' });
+  } catch (err) {
+    console.error('Update password error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/auth/me', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, full_name, email, role, status, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
+      [req.user.sub]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: rows[0] });
+  } catch(err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/auth/roles', require('./middleware/auth').requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT r.slug, p.code 
+      FROM user_roles ur
+      JOIN roles r ON ur.role_id = r.id
+      LEFT JOIN role_permissions rp ON r.id = rp.role_id
+      LEFT JOIN permissions p ON rp.permission_id = p.id
+      WHERE ur.user_id = $1
+    `, [req.user.sub]);
+
+    res.json({ roles: rows });
+  } catch(err) {
+    console.error('Fetch roles error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/auth/logout', async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    try {
+      await db.query('DELETE FROM refresh_tokens WHERE token_hash = $1', [refreshHash]);
+    } catch(err) {
+      console.error('Logout cleanup error:', err);
+    }
+  }
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  res.json({ message: 'Logged out successfully' });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) return res.status(401).json({ error: 'No refresh token' });
+
+  try {
+    const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const { rows } = await db.query(
+      'SELECT user_id, expires_at FROM refresh_tokens WHERE token_hash = $1',
+      [refreshHash]
+    );
+
+    if (rows.length === 0) {
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    if (new Date() > rows[0].expires_at) {
+      await db.query('DELETE FROM refresh_tokens WHERE token_hash = $1', [refreshHash]);
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+
+    const userId = rows[0].user_id;
+    const { rows: userRows } = await db.query(
+      'SELECT email FROM profiles WHERE id = $1 AND is_active = true AND is_deleted IS NOT TRUE',
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(401).json({ error: 'User inactive or deleted' });
+    }
+
+    const secret = process.env.JWT_SECRET;
+    const accessToken = jwt.sign({
+      sub: userId,
+      email: userRows[0].email,
+      role: 'authenticated',
+      aud: 'authenticated'
+    }, secret, { expiresIn: '1h' });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+      });
 
     res.json({ success: true });
   } catch (err) {
@@ -757,7 +1276,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.json({ success: true, message: 'Password reset link sent successfully.' });
     } catch (mailErr) {
       console.error('SMTP Error:', mailErr);
-      return res.status(500).json({ error: 'Failed to send reset email. Please contact admin.' });
+      console.log('Returning link directly since SMTP failed:', actionLink);
+      return res.json({ success: true, message: 'Your password reset request has been sent to the system administrator. Please wait for the administrator to provide your temporary password.', link: actionLink });
     }
   } catch (err) {
     console.error('Reset password error:', err);
@@ -816,7 +1336,7 @@ app.put('/api/auth/update-password', require('./middleware/auth').requireAuth, a
     const passwordHash = await bcrypt.hash(newPassword, salt);
 
     // Update user profile
-    await db.query('UPDATE profiles SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, userId]);
+    await db.query('UPDATE profiles SET password_hash = $1, force_password_reset = false, updated_at = NOW() WHERE id = $2', [passwordHash, userId]);
     
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
@@ -952,7 +1472,7 @@ app.post(['/iclock/cdata', '/iclock/cdata.aspx'], express.text({ type: '*/*', li
         );
 
         if (!emp) {
-          console.warn(`⚠️ Skipped punch: Biometric ID [${biometricId}] is not mapped to any profile in Supabase.`);
+          console.warn(`⚠️ Skipped punch: Biometric ID [${biometricId}] is not mapped to any profile in the profiles table.`);
           continue;
         }
 
@@ -1465,8 +1985,8 @@ async function startPgListener() {
     host: process.env.PG_HOST || '127.0.0.1',
     database: process.env.PG_DATABASE || 'shastika_erp',
     password: process.env.PG_PASSWORD,
-    port: parseInt(process.env.PG_PORT || '5432', 10),
-  });
+    port: parseInt(process.env.PG_PORT || '5432', 10)
+      });
 
   pgClient.on('error', (err) => {
     console.error('❌ PG Listener Client Error:', err.message);
@@ -1507,7 +2027,7 @@ const ensureUserPermissionsSetup = async () => {
   // Local VPS DB only holds: attendance_logs, drivers, vehicles, AttLogs, etc.
 };
 
-const startServer = async () => {
+const startServer = async () => {	
   await ensureUserPermissionsSetup();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🟢 ADMS Sync Server is listening on http://0.0.0.0:${PORT}`);

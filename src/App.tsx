@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ForceReset = lazy(() => import("./pages/ForceReset"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const LeadActivities = lazy(() => import("./pages/crm/Activities"));
 const LeadsList = lazy(() => import("./pages/crm/LeadsList"));
@@ -158,6 +159,7 @@ const FinancialReports = lazy(() => import("./pages/payments/FinancialReports"))
 const EmployeeDirectory = lazy(() => import("./pages/employees/EmployeeDirectory"));
 const Attendance = lazy(() => import("./pages/employees/Attendance"));
 const SalaryReport = lazy(() => import("./pages/employees/SalaryReport"));
+const Payslips = lazy(() => import("./pages/employees/Payslips"));
 const LeaveManagement = lazy(() => import("./pages/employees/LeaveManagement"));
 const RolesPermissions = lazy(() => import("./pages/employees/RolesPermissions"));
 import FaceAttendanceGuard from '@/guards/FaceAttendanceGuard';
@@ -217,6 +219,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/force-reset" element={<ForceReset />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/pending" element={<Pending />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
@@ -404,6 +407,7 @@ const App = () => (
               <Route path="/employees/roles" element={<RolesPermissions />} />
               <Route path="/employees/attendance" element={<Attendance />} />
               <Route path="/employees/salary" element={<SalaryReport />} />
+              <Route path="/hr-employees/payslips" element={<Payslips />} />
               <Route path="/employees/leaves" element={<LeaveManagement />} />
               <Route path="/employees/face-attendance" element={<FaceAttendanceGuard><FaceAttendance /></FaceAttendanceGuard>} />
               <Route path="/employees/register-face" element={<RegisterFace />} />

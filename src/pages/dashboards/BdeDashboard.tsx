@@ -6,6 +6,7 @@ import { DollarSign, FileText, ClipboardList, TrendingUp, Users, Plus, Award } f
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 export default function BdeDashboard() {
@@ -139,7 +140,7 @@ export default function BdeDashboard() {
                 <p className="text-xs text-muted-foreground italic text-center py-4">No leads found</p>
               ) : (
                 leads.slice(0, 3).map((lead: any) => (
-                  <div key={lead.id} className="flex justify-between items-center p-2 border border-border rounded-lg bg-card hover:bg-muted/30 transition-colors" onClick={() => nav(`/crm/leads/${lead.id}`)}>
+                  <div key={lead.id} className="flex justify-between items-center p-2 border border-border rounded-lg bg-card hover:bg-muted/30 transition-colors" onClick={() => lead.id ? nav(`/crm/leads/${lead.id}`) : toast.error("Lead ID is missing")}>
                     <div>
                       <div className="text-xs font-bold text-foreground">{lead.company_name}</div>
                       <div className="text-[10px] text-muted-foreground">{lead.interested_product || 'General inquiry'}</div>
@@ -272,3 +273,4 @@ export default function BdeDashboard() {
     </div>
   );
 }
+

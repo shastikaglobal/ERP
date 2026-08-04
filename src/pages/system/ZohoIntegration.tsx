@@ -42,10 +42,10 @@ export default function ZohoIntegration() {
     if (!profile) return;
     
     const clientId = import.meta.env.VITE_ZOHO_CLIENT_ID;
-    const redirectUri = `${import.meta.env.VITE_VPSDB_URL}/functions/v1/zoho-oauth`;
+    const redirectUri = `${window.location.origin}/api/zoho/oauth`;
     const state = `${profile.company_id}:${profile.id}:${window.location.origin}`;
     
-    const authUrl = `https://accounts.zoho.in/oauth/v2/auth?scope=ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ&client_id=${clientId}&response_type=code&access_type=offline&redirect_uri=${redirectUri}&state=${state}&prompt=consent`;
+    const authUrl = `https://accounts.zoho.in/oauth/v2/auth?scope=ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ&client_id=${clientId}&response_type=code&access_type=offline&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&prompt=consent`;
     
     window.location.href = authUrl;
   };
@@ -189,7 +189,7 @@ export default function ZohoIntegration() {
               <h4 className="font-bold">2. Redirect URI</h4>
               <p className="text-muted-foreground">Add the following URL to your Authorized Redirect URIs:</p>
               <code className="block p-2 bg-muted rounded text-xs truncate">
-                {import.meta.env.VITE_VPSDB_URL}/functions/v1/zoho-oauth
+                {window.location.origin}/api/zoho/oauth
               </code>
             </div>
             <div className="space-y-2">

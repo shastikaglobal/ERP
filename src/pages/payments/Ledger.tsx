@@ -51,21 +51,16 @@ export default function Ledger() {
     queryKey: ["currency_ledger_live", profile?.company_id, rates],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const { data, error } = await vpsDb
-        .from("payments")
-        .select("amount, currency")
-        .neq("is_deleted", true)
-        .eq("company_id", profile.company_id)
-        .eq("status", "Completed");
-
-      if (error) throw error;
+      const res = await fetch(`/api/finance/payments?company_id=${profile.company_id}&status=Completed`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch payments');
+      const data = await res.json();
 
       // Group by currency
       const balances: Record<string, number> = {
         "USD": 0, "EUR": 0, "GBP": 0, "JPY": 0, "INR": 0, "CAD": 0
       };
 
-      (data || []).forEach(p => {
+      (data || []).forEach((p: any) => {
         if (balances[p.currency] !== undefined) {
           balances[p.currency] += Number(p.amount);
         } else {
@@ -78,7 +73,7 @@ export default function Ledger() {
         name: CURRENCY_NAMES[code] || code,
         rate: rates[code] || 1.0,
         balance: bal
-      })).filter(item => item.balance >= 0); // Show all even if 0 for professional look
+      })).filter(item => item.balance >= 0);
     }
   });
 
