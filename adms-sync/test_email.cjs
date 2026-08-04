@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 async function test() {
   const transporter = nodemailer.createTransport({
@@ -7,10 +8,9 @@ async function test() {
     secure: true,
     auth: {
       user: 'resend',
-      pass: 're_RY91qXqq_7aegaE7TAxuTMcp6xsAP9nEt' // Extracted from .env
+      pass: process.env.RESEND_API_KEY
     }
   });
-
   try {
     const info = await transporter.sendMail({
       from: 'onboarding@resend.dev',
