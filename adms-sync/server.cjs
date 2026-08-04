@@ -7,6 +7,7 @@ if (!globalThis.fetch) {
 }
 
 const express = require('express');
+const cookieParser = require('cookie-parser');
 // Supabase removed
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -38,9 +39,10 @@ const PORT = process.env.PORT || 8082;
 // Supabase init removed
 
 // Use raw text body parser to handle the tab-separated values sent by ZKTeco devices
-app.use(express.text({ type: '*/*', limit: '10mb' }));
+app.use(cookieParser());
 app.use(express.json());
-app.use(cors());
+app.use(express.text({ type: '*/*', limit: '10mb' }));
+app.use(cors({ origin: 'https://shastikaglobalexport.co.in', credentials: true }));
 
 // --- Mount API Routes ---
 const authRoutes = require('./routes/auth');
