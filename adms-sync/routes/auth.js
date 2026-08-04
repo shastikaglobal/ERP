@@ -163,7 +163,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', require('./middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT id, full_name, email, role, status, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
+      'SELECT id, company_id, full_name, email, avatar_url, status, requested_role, rejection_reason, phone, dob, joining_date, system_mode, city, biometric_id, department, employee_id, role, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
       [req.user.sub]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });

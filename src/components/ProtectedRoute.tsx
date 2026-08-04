@@ -13,6 +13,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   const hasStarted = useRef(false);
   const profileRetryCount = useRef(0);
+  const [profileLoadError, setProfileLoadError] = useState(false);
 
   // Broadcast this user's screen if requested by an admin
   useScreenBroadcaster(profile?.id, activeStream);
@@ -21,6 +22,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     let interval: NodeJS.Timeout;
     if (session && !profile && !loading) {
       if (profileRetryCount.current >= 10) {
+        setProfileLoadError(true);
         console.warn('[ProtectedRoute] Max profile load retries reached. Stopping polling.');
         return;
       }
@@ -127,7 +129,14 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-sm text-muted-foreground animate-pulse">Setting up your account...</p>
+          {profileLoadError ? (
+            <div className="mt-4 flex flex-col items-center">
+              <p className="text-sm text-red-500 font-medium">Failed to load profile data.</p>
+              <button onClick={() => window.location.reload()} className="mt-2 text-xs px-3 py-1 bg-primary text-primary-foreground rounded">Retry</button>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground animate-pulse">Setting up your account...</p>
+          )}
           <button
             onClick={async () => { await signOut(); }}
             className="mt-6 text-xs text-primary hover:underline transition-all cursor-pointer font-medium"
