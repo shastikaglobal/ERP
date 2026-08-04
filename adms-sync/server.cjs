@@ -43,6 +43,7 @@ app.use(express.json());
 app.use(cors());
 
 // --- Mount API Routes ---
+const authRoutes = require('./routes/auth');
 const attendanceRoutes = require('./routes/attendance');
 const employeesRoutes = require('./routes/employees');
 const crmRoutes = require('./routes/crm');
@@ -53,6 +54,7 @@ const zohoRoutes = require('./routes/zoho');
 const productsRoutes = require('./routes/products');
 const settingsRoutes = require('./routes/settings');
 
+app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/leads', crmRoutes);
