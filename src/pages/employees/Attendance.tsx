@@ -211,7 +211,7 @@ const getEmployeeMonthStats = (
         // Absent (log exists but no clock_in and not on_leave)
         const d = new Date(dateStr);
         const isSunday = d.getDay() === 0 || (isPreethi && d.getDay() === 6);
-        const isFuture = dateStr > format(new Date(), 'yyyy-MM-dd');
+        const isFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
         const isPenaltyFree = isSunday || isFuture;
 
         if (!isPenaltyFree) {
@@ -229,7 +229,7 @@ const getEmployeeMonthStats = (
       // Absent / No record
       const d = new Date(dateStr);
       const isSunday = d.getDay() === 0 || (isPreethi && d.getDay() === 6);
-      const isFuture = dateStr > format(new Date(), 'yyyy-MM-dd');
+      const isFuture = dateStr >= format(new Date(), 'yyyy-MM-dd');
       const isPenaltyFree = isSunday || isFuture;
 
       if (!isPenaltyFree) {
@@ -298,7 +298,7 @@ export default function Attendance() {
       const detail = stats.dailyDetails[todayStr];
 
       if (detail) {
-        totalCut += detail.cut;
+        totalCut += stats.totalCut;
         if (detail.status === 'paid_leave' || detail.status === 'present') {
           onTime++;
         } else if (detail.status === 'late_cut') {
@@ -1301,7 +1301,7 @@ export default function Attendance() {
                       cellBg = "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400";
                       statusLabel = "UNPAID LEAVE";
                     } else if (detail.status === 'absent') {
-                      if (dateStr > format(new Date(), 'yyyy-MM-dd')) {
+                      if (dateStr >= format(new Date(), 'yyyy-MM-dd')) {
                         statusLabel = ""; // Future
                       } else {
                         cellBg = "bg-rose-500/5 border-rose-500/10 text-rose-500/50";
