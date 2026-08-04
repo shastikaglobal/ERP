@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -160,7 +160,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/me', require('./middleware/auth').requireAuth, async (req, res) => {
+router.get('/me', require('../middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
       'SELECT id, full_name, email, role, status, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
@@ -173,7 +173,7 @@ router.get('/me', require('./middleware/auth').requireAuth, async (req, res) => 
   }
 });
 
-router.get('/roles', require('./middleware/auth').requireAuth, async (req, res) => {
+router.get('/roles', require('../middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT r.slug, p.code 
@@ -389,7 +389,7 @@ router.post('/update-password', async (req, res) => {
   }
 });
 
-router.get('/me', require('./middleware/auth').requireAuth, async (req, res) => {
+router.get('/me', require('../middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
       'SELECT id, full_name, email, role, status, force_password_reset FROM profiles WHERE id = $1 LIMIT 1',
@@ -402,7 +402,7 @@ router.get('/me', require('./middleware/auth').requireAuth, async (req, res) => 
   }
 });
 
-router.get('/roles', require('./middleware/auth').requireAuth, async (req, res) => {
+router.get('/roles', require('../middleware/auth').requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT r.slug, p.code 
@@ -595,7 +595,7 @@ router.post('/update-password', async (req, res) => {
   }
 });
 
-router.put('/update-password', require('./middleware/auth').requireAuth, async (req, res) => {
+router.put('/update-password', require('../middleware/auth').requireAuth, async (req, res) => {
   try {
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6) {
