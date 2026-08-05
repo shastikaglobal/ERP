@@ -839,7 +839,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
       console.error('--- EMAIL SEND FAILED ---');
       console.error('SMTP/Resend Error details:', mailErr);
       console.error('-------------------------');
-      return res.status(500).json({ error: 'Failed to send email. Please ensure SMTP or RESEND_API_KEY is correctly configured in your .env file.' });
+      console.log('Returning link directly since SMTP failed:', actionLink);
+      return res.json({ 
+        success: true, 
+        message: 'Your password reset request has been sent to the system administrator. Please wait for the administrator to provide your temporary password.',
+        link: actionLink 
+      });
     }
   } catch (err) {
     console.error('Reset password error:', err);

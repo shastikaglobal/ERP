@@ -7,7 +7,8 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/', requireAuth, async (req, res) => {
   try {
     let { company_id } = req.query;
-    if (!company_id) {
+    console.log(`[GET /api/farmers] Received company_id query parameter: '${company_id}', type: ${typeof company_id}`);
+    if (!company_id || company_id === 'undefined' || company_id === 'null') {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1 LIMIT 1', [req.user.sub]);
       if (userRes.rows.length > 0 && userRes.rows[0].company_id) {
         company_id = userRes.rows[0].company_id;

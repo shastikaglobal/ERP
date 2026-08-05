@@ -82,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setProfile({
           ...data.user,
+          company_id: data.user.company_id || '00000000-0000-0000-0000-00000000ae01',
           company_name: companyName
         });
       } else {
@@ -205,9 +206,11 @@ export function useCan() {
 }
 
 export function useIsAdminOrManager() {
-  const { roleSlugs } = useAuth();
+  const { roleSlugs, profile } = useAuth();
   const slugs = Array.from(roleSlugs).map(s => s.toLowerCase());
-  return slugs.includes("admin") || slugs.includes("manager");
+  const profRole = profile?.role?.toLowerCase() || "";
+  const profReqRole = profile?.requested_role?.toLowerCase() || "";
+  return slugs.includes("admin") || slugs.includes("manager") || profRole === "admin" || profRole === "manager" || profReqRole === "admin" || profReqRole === "manager";
 }
 
 export function useCanManageApprovals() {

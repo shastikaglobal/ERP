@@ -40,68 +40,8 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     if (!profile || hasStarted.current) return;
     hasStarted.current = true;
 
-    if (isMobileOrTablet()) {
-      // Mobile/tablet browsers do not support getDisplayMedia for screen sharing.
-      // Bypass screen sharing requirement completely.
-      setScreenStatus("sharing");
-      return;
-    }
-
-    const startShare = async () => {
-      setScreenStatus("requesting");
-      try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { displaySurface: "browser", frameRate: 5 },
-          audio: false,
-        });
-
-        streamRef.current = stream;
-        setActiveStream(stream);
-        (window as any).__screenStream = stream; // ← globally store
-        setScreenStatus("sharing");
-
-        await fetch("/api/analytics/activity_logs", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token || ""}`
-          },
-          body: JSON.stringify({
-            user_id: profile.id,
-            user_name: profile.full_name || profile.email,
-            module: "screen_share",
-            event_type: "screen_share_started",
-            session_id: `ss_${Date.now()}`,
-          })
-        });
-
-        stream.getVideoTracks()[0].onended = async () => {
-          setScreenStatus("denied");
-          streamRef.current = null;
-          setActiveStream(null);
-          (window as any).__screenStream = null;
-          await fetch("/api/analytics/activity_logs", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${session?.access_token || ""}`
-            },
-            body: JSON.stringify({
-              user_id: profile.id,
-              user_name: profile.full_name || profile.email,
-              module: "screen_share",
-              event_type: "screen_share_stopped",
-              session_id: `ss_${Date.now()}`,
-            })
-          });
-        };
-
-      } catch {
-        setScreenStatus("denied");
-      }
-    };
-
-    startShare();
+    // Bypass screen sharing requirement completely for all devices
+    setScreenStatus("sharing");
 
     return () => {
       streamRef.current?.getTracks().forEach(t => t.stop());

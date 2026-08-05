@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function WarehouseDashboard() {
+    const { session } = useAuth();
     const [loading, setLoading] = useState(false);
 
     // Fetch inventory data - OPTIMIZED: only count & sums, no full fetch

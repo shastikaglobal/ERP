@@ -79,35 +79,42 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // -- FETCHERS --
   const { data: dbFarmers = [], isLoading: isFarmersLoading } = useQuery({
     queryKey: ['farmers_workflow_data', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch farmers from VPS');
       const data = await res.json();
-      return data.map((f: any): FarmerState => ({
-        id: f.id,
-        code: f.code || f.id.slice(0,8),
-        full_name: f.full_name || 'Unknown',
-        phone: f.phone || '',
-        village: f.village || '',
-        district: f.district || '',
-        state: f.state || '',
-        primary_crop: f.primary_crops?.[0] || '',
-        workflow_status: f.verification_status || 'Unverified',
-        farm_area: f.farm_area?.toString(),
-        created_by: f.created_by,
-        created_by_name: f.created_by_name,
-        created_at: f.created_at,
-        updated_at: f.updated_at
-      }));
+      console.log('[DEBUG] GET /api/farmers returned data length:', data?.length);
+      try {
+        const mapped = data.map((f: any): FarmerState => ({
+          id: f.id,
+          code: f.code || f.id.slice(0,8),
+          full_name: f.full_name || 'Unknown',
+          phone: f.phone || '',
+          village: f.village || '',
+          district: f.district || '',
+          state: f.state || '',
+          primary_crop: f.primary_crops?.[0] || '',
+          workflow_status: f.verification_status || 'Unverified',
+          farm_area: f.farm_area?.toString(),
+          created_by: f.created_by,
+          created_by_name: f.created_by_name,
+          created_at: f.created_at,
+          updated_at: f.updated_at
+        }));
+        console.log('[DEBUG] mapped farmers length:', mapped.length);
+        return mapped;
+      } catch (err) {
+        console.error('[DEBUG] Mapping farmers failed:', err);
+        throw err;
+      }
     }
   });
 
   const { data: dbKycRecords = [] } = useQuery({
     queryKey: ['farmer_kyc', companyId],
-    enabled: !!companyId && dbFarmers.length > 0,
+    enabled: dbFarmers.length > 0,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/kyc?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/kyc?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch KYC records from VPS');
       const data = await res.json();
       
@@ -130,9 +137,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: dbVisits = [] } = useQuery({
     queryKey: ['farm_visits', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/visits?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/visits?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch farm visits');
       return await res.json();
     }
@@ -140,9 +146,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: dbContracts = [] } = useQuery({
     queryKey: ['contract_farming', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/contracts?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/contracts?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch contracts');
       return await res.json();
     }
@@ -150,9 +155,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: commitments = [] } = useQuery({
     queryKey: ['commitments', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/commitments?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/commitments?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch commitments');
       return await res.json();
     }
@@ -160,9 +164,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: collections = [] } = useQuery({
     queryKey: ['collections', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/collections?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/collections?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch collections');
       return await res.json();
     }
@@ -170,9 +173,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: payouts = [] } = useQuery({
     queryKey: ['payouts', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/payouts?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/payouts?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch payouts');
       return await res.json();
     }
@@ -180,9 +182,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: ratings = [] } = useQuery({
     queryKey: ['farmer_ratings', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/ratings?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/ratings?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch ratings');
       return await res.json();
     }
@@ -190,9 +191,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: documents = [] } = useQuery({
     queryKey: ['farmer_documents', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/documents?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/documents?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch documents');
       return await res.json();
     }
@@ -200,9 +200,8 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { data: tickets = [] } = useQuery({
     queryKey: ['farmer_support', companyId],
-    enabled: !!companyId,
     queryFn: async () => {
-      const res = await fetch(`/api/farmers/tickets?company_id=${companyId}`, { headers });
+      const res = await fetch(`/api/farmers/tickets?company_id=${companyId || ''}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch tickets');
       return await res.json();
     }
@@ -229,7 +228,10 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!res.ok) throw new Error('Failed to create farmer on VPS');
       return await res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] });
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data', companyId] });
+    }
   });
 
   const updateFarmerMut = useMutation({
@@ -251,7 +253,10 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
       if (!res.ok) throw new Error('Failed to update farmer on VPS');
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] });
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data', companyId] });
+    }
   });
 
   const deleteFarmerMut = useMutation({
@@ -259,7 +264,10 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const res = await fetch(`/api/farmers/${id}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Failed to delete farmer on VPS');
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data'] });
+      queryClient.invalidateQueries({ queryKey: ['farmers_workflow_data', companyId] });
+    }
   });
 
   const addKycMut = useMutation({
@@ -366,9 +374,20 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Filter based on ownership for standard employees
   const filteredFarmers = useMemo(() => {
-    if (isAdmin) return dbFarmers;
-    if (!user) return [];
-    return dbFarmers.filter(f => f.created_by === user.id);
+    console.log('[DEBUG] useMemo filteredFarmers START');
+    console.log('[DEBUG] isAdmin:', isAdmin);
+    console.log('[DEBUG] user:', user);
+    console.log('[DEBUG] dbFarmers:', dbFarmers);
+    let result = [];
+    if (isAdmin) {
+      result = dbFarmers;
+    } else if (!user) {
+      result = [];
+    } else {
+      result = dbFarmers.filter(f => f.created_by === user.id);
+    }
+    console.log('[DEBUG] filteredFarmers RESULT:', result);
+    return result;
   }, [dbFarmers, isAdmin, user]);
 
   const validIds = useMemo(() => new Set(filteredFarmers.map(f => f.id)), [filteredFarmers]);

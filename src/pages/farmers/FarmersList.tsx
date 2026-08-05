@@ -52,6 +52,8 @@ export default function FarmersList() {
 
   const { isLoading, farmers, updateFarmer, deleteFarmer } = useFarmerContext();
   
+  console.log('[DEBUG] FarmersList raw farmers:', farmers);
+
   // Map context farmers to the expected table format
   const data = farmers.map(f => ({
     id: f.id,
@@ -67,6 +69,8 @@ export default function FarmersList() {
     created_by: f.created_by,
     created_by_name: f.created_by_name
   }));
+
+  console.log('[DEBUG] FarmersList mapped data:', data);
 
 
 

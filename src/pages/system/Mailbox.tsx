@@ -12,7 +12,7 @@ import {
   Download, FileSpreadsheet
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -131,8 +131,9 @@ function fixEmailBodyImages(el: HTMLDivElement | null) {
 
 export default function Mailbox() {
   const { profile, refresh, roleSlugs, session } = useAuth();
+  const isAdminOrManager = useIsAdminOrManager();
 
-  const canDownloadAttachments = roleSlugs?.has("admin") || roleSlugs?.has("manager") ||
+  const canDownloadAttachments = isAdminOrManager ||
     (profile?.requested_role && ["admin", "manager"].includes(profile.requested_role.toLowerCase()));
 
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -403,7 +404,7 @@ export default function Mailbox() {
   async function fetchAccounts() {
     try {
       setLoading(true);
-      const isAdmin = roleSlugs?.has("admin") ||
+      const isAdmin = isAdminOrManager ||
         (profile?.requested_role && ["admin", "manager"].includes(profile.requested_role.toLowerCase()));
       const isBde = roleSlugs?.has("bd") ||
         roleSlugs?.has("bde") ||
@@ -500,8 +501,10 @@ export default function Mailbox() {
 
   const handleSend = async () => {
     if (sending) return;
-    if (!selectedAccount || !to || !subject || !content)
-      return toast.error("Please fill all required fields");
+    if (!selectedAccount) return toast.error("No email account selected.");
+    if (!to) return toast.error("Please fill the 'To' field.");
+    if (!subject) return toast.error("Please provide a Subject.");
+    if (!content) return toast.error("Please enter email content.");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidEmailStr = (str: string) => {
