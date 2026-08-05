@@ -200,7 +200,7 @@ export default function FarmerPayoutsPage() {
             <DialogHeader><DialogTitle>Schedule Payout</DialogTitle></DialogHeader>
             <div className="py-4 space-y-4">
                 <FormRow label="Select Farmer" required>
-                  {farmers.filter(f => ['Payout Pending', 'Completed'].includes(f.workflow_status)).length === 0 ? (
+                  {farmers.length === 0 ? (
                     <div className="flex h-10 w-full items-center rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 py-2 text-sm text-amber-500">
                       No farmers pending payout.
                     </div>
@@ -212,7 +212,7 @@ export default function FarmerPayoutsPage() {
                     >
                       <option value="">-- Choose a farmer --</option>
                       {farmers
-                        .filter(f => ['Payout Pending', 'Completed'].includes(f.workflow_status))
+                        
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
                             {f.code || f.id.substring(0,8)} - {f.full_name}

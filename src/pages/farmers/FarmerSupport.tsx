@@ -350,7 +350,7 @@ export default function FarmerSupportPage() {
                   {formErrors.farmer_id && <span className="text-xs text-red-500">{formErrors.farmer_id}</span>}
                 </FormRow>
                 <FormRow label="Mobile Number">
-                  <Input value={formData.mobile_number || ''} disabled className="bg-[#0d0d0d] border-[#2a2a2a]" />
+                  <Input value={formData.mobile_number || ''} onChange={(e) => setFormData(f => ({ ...f, mobile_number: e.target.value }))} className="bg-[#0d0d0d] border-[#2a2a2a]" />
                 </FormRow>
                 <FormRow label="Issue Category" required>
                   <select className="flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 text-sm outline-none" value={formData.issue_category || ''} onChange={(e) => setFormData(f => ({ ...f, issue_category: e.target.value }))}>
