@@ -178,20 +178,25 @@ export default function SupplyCommitments() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    addCommitment({
-      id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      crop: formData.crop_name || '',
-      qty: Number(formData.committed_quantity),
-      status: formData.status || 'Pending'
-    });
-
-    if (formData.status === 'Completed' || formData.status === 'Partial') {
-      updateFarmerStatus(formData.farmer_id || '', 'Commitment Pending');
+    try {
+      await addCommitment({
+        id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        crop: formData.crop_name || '',
+        status: formData.status || 'Pending',
+        quantity: Number(formData.committed_quantity),
+        delivery_date: formData.expected_delivery_date
+          ? new Date(formData.expected_delivery_date).toISOString()
+          : new Date().toISOString()
+      });
+      if (formData.status === 'Completed' || formData.status === 'Partial') {
+        updateFarmerStatus(formData.farmer_id || '', 'Commitment Pending');
+      }
+      toast.success("Commitment saved");
+      setModalOpen(false);
+    } catch(err: any) {
+      toast.error(err.message || 'Failed to save commitment');
     }
-
-    toast.success("Commitment saved");
-    setModalOpen(false);
   };
 
   const handleLogDelivery = (e: React.FormEvent) => {
@@ -225,13 +230,17 @@ export default function SupplyCommitments() {
       recorded_by: 'Admin User'
     };
 
-    addCommitment({
-      id: selectedRecord.id,
-      farmer_id: selectedRecord.farmer_id,
-      crop: selectedRecord.crop_name,
-      qty: selectedRecord.committed_quantity,
-      status: newStatus
-    });
+    try {
+      await addCommitment({
+        id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        crop: formData.crop_name || '',
+        status: formData.status || 'Pending',
+        quantity: Number(formData.committed_quantity),
+        delivery_date: formData.expected_delivery_date
+          ? new Date(formData.expected_delivery_date).toISOString()
+          : new Date().toISOString()
+      });
 
     if (newStatus === 'Completed') {
       updateFarmerStatus(selectedRecord.farmer_id, 'Collection Pending');

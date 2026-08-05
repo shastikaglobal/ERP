@@ -42,8 +42,7 @@ export default function FarmerPayoutsPage() {
         farmer_name: f?.full_name || 'Unknown Farmer',
         contract_id: `CNTR-2026-${d.id.slice(-3)}`,
         amount: d.amount || 0,
-        payment_date: d.payment_date || new Date().toISOString()
-        payment_date: new Date().toISOString(),
+        payment_date: d.payment_date || new Date().toISOString(),
         bank_account: f?.bank_account_no || 'XXXX-XXXX',
         ifsc: f?.ifsc_code || 'XXXX0000',
         transaction_ref: '',
@@ -94,7 +93,7 @@ export default function FarmerPayoutsPage() {
         amount: Number(formData.amount),
         status: formData.status || 'Pending',
         payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : new Date().toISOString(),
-        reference: formData.reference || '',
+        notes: formData.notes || ''
         notes: formData.notes || ''
       });
       if (formData.status === 'Completed') {

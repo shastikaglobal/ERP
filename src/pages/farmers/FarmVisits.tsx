@@ -190,7 +190,7 @@ export default function FarmVisits() {
     if (!formData.farmer_id) errors.farmer_id = "Please select a farmer";
     if (!formData.visit_date) errors.visit_date = "Visit date is required";
     else if (!selectedRecord && new Date(formData.visit_date) < new Date()) errors.visit_date = "Visit date must be in the future";
-    if (!formData.visited_by) errors.visited_by = "Please select an employee";
+    // visited_by is optional on backend
     if (!formData.purpose) errors.purpose = "Purpose is required";
     if (formData.purpose === 'Other' && !formData.custom_purpose) errors.custom_purpose = "Please specify purpose";
 
@@ -203,7 +203,6 @@ export default function FarmVisits() {
     if (!validateForm()) return;
 
     try {
-      try {
       await addVisit({
         id: selectedRecord ? selectedRecord.id : `v-${Date.now()}`,
         farmer_id: formData.farmer_id || '',
@@ -214,9 +213,6 @@ export default function FarmVisits() {
       toast.success("Visit scheduled");
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to schedule visit');
-    }
-    } catch(err: any) {
       toast.error(err.message || 'Failed to schedule visit');
     }
   };

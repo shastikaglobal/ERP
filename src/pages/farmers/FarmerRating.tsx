@@ -121,8 +121,8 @@ export default function FarmerRatingPage() {
       await addRating({
         id: selectedRecord ? selectedRecord.id : `rtg-${Date.now()}`,
         farmer_id: formData.farmer_id || '',
-        score: Number(formData.score) || 0,
-        review: formData.review || ''
+        score: computedOverall,
+        review: formData.notes || ''
       });
       toast.success("Rating saved");
       setModalOpen(false);

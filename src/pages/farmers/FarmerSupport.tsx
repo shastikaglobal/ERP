@@ -172,7 +172,7 @@ export default function FarmerSupportPage() {
       await addTicket({
         id: selectedRecord ? selectedRecord.id : `tkt-${Date.now()}`,
         farmer_id: formData.farmer_id || '',
-        issue: formData.issue || '',
+        issue: (formData.issue_category || '') + (formData.description ? ': ' + formData.description : ''),
         status: formData.status || 'Open',
         resolution: formData.resolution || ''
       });

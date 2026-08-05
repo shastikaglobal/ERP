@@ -30,7 +30,7 @@ export interface FarmerState {
 export interface KYCRecord { id: string; farmer_id: string; aadhaar: string; pan: string; status: string; }
 export interface FarmVisitRecord { id: string; farmer_id: string; date: string; status: string; notes: string; }
 export interface ContractRecord { id: string; farmer_id: string; crop: string; status: string; }
-export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; payment_date?: string; reference?: string; notes?: string; }
+export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; payment_date?: string; notes?: string; }
 export interface RatingRecord { id: string; farmer_id: string; score: number; review: string; }
 export interface DocumentRecord { id: string; farmer_id: string; doc_name: string; doc_type: string; }
 export interface TicketRecord { id: string; farmer_id: string; issue: string; status: string; }
