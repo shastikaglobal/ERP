@@ -91,19 +91,19 @@ export default function InventoryBatches() {
         const [batchesRes, productsRes, warehousesRes] = await Promise.all([
           (async () => {
             const res = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
-              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+              headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
           })(),
           (async () => {
             const res = await fetch(`/api/products`, {
-              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+              headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
           })(),
           (async () => {
             const res = await fetch(`/api/warehouse/warehouses`, {
-              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+              headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
           })(),
@@ -240,7 +240,7 @@ export default function InventoryBatches() {
         };
         const res = await fetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('Update failed');
@@ -262,7 +262,7 @@ export default function InventoryBatches() {
         };
         const res = await fetch(`/api/inventory/inventory_batches`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('Insert failed');
@@ -274,7 +274,7 @@ export default function InventoryBatches() {
       resetForm();
       // Refetch data
       const refetchRes = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (refetchRes.ok) {
         const data = await refetchRes.json();
@@ -335,7 +335,7 @@ export default function InventoryBatches() {
       };
       const res = await fetch(`/api/inventory/inventory_batches/${deleteId}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Delete failed');

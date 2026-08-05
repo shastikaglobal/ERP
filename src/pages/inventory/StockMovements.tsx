@@ -22,7 +22,7 @@ export default function StockMovements() {
     setLoading(true);
     try {
       const res = await fetch(`/api/inventory/inventory_movements?company_id=${profile.company_id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch stock movements');
       const data = await res.json();

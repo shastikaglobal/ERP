@@ -24,7 +24,7 @@ export default function ZohoIntegration() {
     setLoading(true);
     const { data: { session } } = await vpsDb.auth.getSession();
     const res = await fetch('/api/emails/accounts', {
-      headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      headers: { }
     });
     if (res.ok) {
       const data = await res.json();
@@ -58,8 +58,7 @@ export default function ZohoIntegration() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`
-        },
+          },
         body: JSON.stringify({ accountId })
       });
       
@@ -90,7 +89,7 @@ export default function ZohoIntegration() {
       const { data: { session } } = await vpsDb.auth.getSession();
       const res = await fetch(`/api/emails/accounts/${accountId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
         
       if (!res.ok) {

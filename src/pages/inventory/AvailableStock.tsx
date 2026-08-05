@@ -86,7 +86,7 @@ export default function AvailableStock() {
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
       const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -100,8 +100,7 @@ export default function AvailableStock() {
     queryFn: async () => {
       const res = await fetch('/api/inventory/warehouses', {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+          }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -115,8 +114,7 @@ export default function AvailableStock() {
     queryFn: async () => {
       const res = await fetch(`/api/inventory/available_stock`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+          }
       });
       if (!res.ok) throw new Error('Failed to fetch available stock');
       const rows = await res.json();
@@ -154,8 +152,7 @@ export default function AvailableStock() {
     queryFn: async () => {
       const res = await fetch(`/api/inventory/inventory_movements`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+          }
       });
       if (!res.ok) throw new Error('Failed to fetch history');
       const allRows = await res.json();
@@ -185,8 +182,7 @@ export default function AvailableStock() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
+            },
           body: JSON.stringify(records)
         });
         
@@ -276,7 +272,6 @@ export default function AvailableStock() {
         const __res_upd = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
@@ -286,7 +281,6 @@ export default function AvailableStock() {
         const __res_ins = await fetch(`/api/inventory/available_stock`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify([payload])
@@ -315,7 +309,6 @@ export default function AvailableStock() {
       const res = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -331,7 +324,6 @@ export default function AvailableStock() {
       const moveRes = await fetch(`/api/inventory/inventory_movements`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify([{

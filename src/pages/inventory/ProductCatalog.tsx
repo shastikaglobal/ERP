@@ -21,7 +21,7 @@ export default function ProductCatalog() {
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${session?.access_token}` },
+        headers: { },
       });
       if (!res.ok) throw new Error("Failed to delete product");
       toast.success("Product hidden successfully");
@@ -35,7 +35,7 @@ export default function ProductCatalog() {
     queryKey: ["products"],
     queryFn: async () => {
       const res = await fetch("/api/products", {
-        headers: { "Authorization": `Bearer ${session?.access_token}` },
+        headers: { },
       });
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json() as Promise<any[]>;

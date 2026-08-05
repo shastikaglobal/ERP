@@ -44,7 +44,7 @@ export default function QCApprovals() {
 
       const res = await fetch(`/api/inventory/qc_inspections/${id}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ result: decision })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }

@@ -38,8 +38,7 @@ export default function CreateProduct() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
-        },
+          },
         body: JSON.stringify({
           company_id: profile.company_id,
           sku: form.sku,

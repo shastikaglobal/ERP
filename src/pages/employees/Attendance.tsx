@@ -626,7 +626,7 @@ export default function Attendance() {
     let profiles = [];
     try {
       const empRes = await fetch('/api/employees', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!empRes.ok) {
         toast.error("Failed to load employees");

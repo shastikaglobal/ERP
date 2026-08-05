@@ -284,7 +284,7 @@ export default function Mailbox() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       fetch(`/api/emails/${email.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ is_read: true })
       }).catch(err => console.error("Failed to mark email as read:", err));
     }
@@ -298,8 +298,7 @@ export default function Mailbox() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`
-          },
+            },
           body: JSON.stringify({
             accountId: email.account_id,
             messageId: email.zoho_message_id,
@@ -348,8 +347,7 @@ export default function Mailbox() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`
-        },
+          },
         body: JSON.stringify({
           accountId: email.account_id,
           messageId: email.zoho_message_id,
@@ -412,7 +410,7 @@ export default function Mailbox() {
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/emails/accounts', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) { toast.error("Failed to fetch accounts"); return; }
       const accountsData = await res.json();
@@ -446,7 +444,7 @@ export default function Mailbox() {
   async function fetchHistory(accountId: string) {
     // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     const res = await fetch(`/api/emails?account_id=${accountId}`, {
-      headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      headers: { }
     });
     if (!res.ok) { toast.error("Failed to fetch email history"); return; }
     const emailsData = await res.json();
@@ -463,8 +461,7 @@ export default function Mailbox() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          },
         body: JSON.stringify({ accountId })
       });
       const data = await response.json();
@@ -593,7 +590,7 @@ const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
       
       const insertRes = await fetch('/api/emails', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({
           to_address: to,
           cc_address: cc || null,
@@ -618,7 +615,7 @@ const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
 
       const putRes = await fetch(`/api/emails/${emailRow.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: "pending" })
       });
       if (!putRes.ok) console.error("Failed to update status to pending");

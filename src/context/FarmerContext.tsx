@@ -210,6 +210,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // -- MUTATIONS --
   const addFarmerMut = useMutation({
     mutationFn: async (f: FarmerState) => {
+      console.log('[DEBUG] addFarmerMut starting fetch...', f);
       const res = await fetch('/api/farmers', {
         method: 'POST',
         headers,

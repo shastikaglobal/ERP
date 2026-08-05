@@ -56,7 +56,7 @@ export default function ExportReady() {
       try {
 
         const res = await fetch('/api/inventory/export_ready_inventory', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch export ready inventory');
         const rows = await res.json();
@@ -77,7 +77,7 @@ export default function ExportReady() {
     queryKey: ['products-list'],
     queryFn: async () => {
       const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -97,7 +97,7 @@ export default function ExportReady() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -124,7 +124,7 @@ export default function ExportReady() {
         // UPDATE via VPS API
         const res = await fetch(`/api/inventory/export_ready_inventory/${payload.id}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
@@ -132,7 +132,7 @@ export default function ExportReady() {
         // INSERT via VPS API
         const res = await fetch('/api/inventory/export_ready_inventory', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
@@ -152,7 +152,7 @@ export default function ExportReady() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const res = await fetch(`/api/inventory/export_ready_inventory/${id}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, updated_at: new Date().toISOString() })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Failed to update record'); }
@@ -255,7 +255,7 @@ export default function ExportReady() {
         // Soft delete via VPS API
         const res = await fetch(`/api/inventory/export_ready_inventory/${confirmTargetId}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             is_deleted: true,
             deleted_at: new Date().toISOString(),

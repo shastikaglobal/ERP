@@ -29,7 +29,7 @@ export default function ContainerLoading() {
     queryKey: ["wh_export_containers_loading"],
     queryFn: async () => {
       const res = await fetch('/api/inventory/export_containers/with-shipments', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch containers');
       const data = await res.json();
@@ -66,7 +66,7 @@ export default function ContainerLoading() {
     try {
       const res = await fetch(`/api/inventory/export_containers/${id}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "Loaded" })
       });
       if (!res.ok) throw new Error('Update failed');

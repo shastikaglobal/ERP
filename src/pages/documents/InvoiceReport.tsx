@@ -52,7 +52,7 @@ export default function InvoiceReport() {
             // Try fetching from Node API
 
             const res = await fetch(`/api/invoices/${id}`, {
-              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+              headers: { }
             });
             if (!res.ok) throw new Error('Invoice not found');
             const apiData = await res.json();

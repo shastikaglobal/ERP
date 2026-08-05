@@ -62,7 +62,7 @@ export function PackingForm({
         enabled: !!companyId,
         queryFn: async () => {
              const res = await fetch('/api/products', {
-                 headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                 headers: { }
              });
              if (!res.ok) throw new Error('Failed to fetch products');
              const data = await res.json();

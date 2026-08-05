@@ -79,7 +79,7 @@ export default function CertificatePreview() {
         console.log("Order not found, trying as standalone certificate...");
 
         const certRes = await fetch('/api/documents/certificates', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         
         if (certRes.ok) {

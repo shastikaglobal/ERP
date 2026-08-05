@@ -39,7 +39,7 @@ const { data } = {} as any; // [VPS Migration] fixed assignment
       try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const res = await fetch('/api/quotations', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");
         const data = await res.json();

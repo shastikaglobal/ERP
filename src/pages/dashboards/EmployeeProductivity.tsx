@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 async function getAuthHeaders() {
   
-  return { 'Authorization': `Bearer ${session?.access_token}` };
+  return { };
 }
 
 export default function EmployeeProductivity() {

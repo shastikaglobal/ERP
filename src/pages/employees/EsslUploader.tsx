@@ -98,7 +98,7 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
         // Upsert logic (check if exists)
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const res = await fetch(`/api/hr/attendance_logs?employee_id=${emp.id}&date=${punchDateStr}`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         const existingArr = res.ok ? await res.json() : null;
         const existing = existingArr && existingArr.length > 0 ? existingArr[0] : null;
@@ -107,7 +107,6 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
           await fetch(`/api/hr/attendance_logs/${existing.id}`, {
             method: 'PUT',
             headers: {
-              'Authorization': `Bearer ${session?.access_token}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -120,7 +119,6 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
           await fetch('/api/hr/attendance_logs', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session?.access_token}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({

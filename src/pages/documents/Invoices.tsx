@@ -45,7 +45,7 @@ export default function Invoices() {
 
       const res = await fetch(`/api/orders/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
 
       if (!res.ok) throw new Error("Delete failed on server");

@@ -36,7 +36,7 @@ export default function StockDashboard() {
     queryFn: async () => {
 
         const __res_sel = await fetch(`/api/inventory/products`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
         const error = __res_sel.ok ? null : new Error('Select failed');
@@ -50,7 +50,7 @@ export default function StockDashboard() {
     queryFn: async () => {
 
         const __res_sel = await fetch(`/api/warehouse/warehouses`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
         const error = __res_sel.ok ? null : new Error('Select failed');
@@ -64,7 +64,7 @@ export default function StockDashboard() {
     queryFn: async () => {
       try {
         const res = await fetch('/api/inventory/inventory_batches', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Fetch failed');
         const data = await res.json();
@@ -91,7 +91,7 @@ export default function StockDashboard() {
     try {
       const res = await fetch('/api/inventory/inventory_batches', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{
           company_id: profile?.company_id,
           lot_number: lotNumber,

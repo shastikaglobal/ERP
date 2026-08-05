@@ -17,7 +17,7 @@ export default function DamagedStock() {
         queryKey: ["damaged_inventory"],
         queryFn: async () => {
             const res = await fetch('/api/inventory/inventory_batches', {
-                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                headers: { }
             });
             if (!res.ok) throw new Error('Fetch failed');
             const data = await res.json();
@@ -29,7 +29,7 @@ export default function DamagedStock() {
         try {
             const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: "pending_qc" })
             });
             if (!res.ok) throw new Error('Update failed');

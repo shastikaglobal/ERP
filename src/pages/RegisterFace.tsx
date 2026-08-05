@@ -98,7 +98,7 @@ export default function RegisterFace() {
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch('/api/employees', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch from API');
       const data = await res.json();

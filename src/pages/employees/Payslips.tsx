@@ -23,7 +23,7 @@ export default function Payslips() {
     const fetchEmployees = async () => {
       try {
         const res = await fetch('/api/employees', {
-          headers: { Authorization: `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (res.ok) {
           const data = await res.json();
@@ -44,7 +44,7 @@ export default function Payslips() {
     setLoading(true);
     try {
       const res = await fetch(`/api/payslips?employee_id=${selectedEmployee}&month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (res.ok) {
         const data = await res.json();

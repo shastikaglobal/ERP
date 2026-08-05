@@ -82,7 +82,7 @@ export default function Counts() {
     const loadCounts = async () => {
       try {
         // Fetch all counts excluding soft-deleted records
-        const res = await fetch('/api/finance/counts', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+        const res = await fetch('/api/finance/counts', { headers: { } });
         if (!res.ok) throw new Error("Counts fetch failed");
         const data = await res.json();
 

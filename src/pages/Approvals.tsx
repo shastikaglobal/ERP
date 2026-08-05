@@ -114,7 +114,7 @@ export default function Approvals() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: 'approved', requested_role: role })
       });
       if (!res.ok) throw new Error("Failed to approve");
@@ -135,7 +135,7 @@ export default function Approvals() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: 'rejected', rejection_reason: reason })
       });
       if (!res.ok) throw new Error("Failed to reject");
@@ -177,7 +177,7 @@ export default function Approvals() {
       
       const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to update profile");

@@ -67,7 +67,7 @@ export default function MultiWarehouse() {
     queryFn: async () => {
       try {
         const res = await fetch('/api/warehouse/warehouses', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch warehouses');
         const rows = await res.json();
@@ -85,7 +85,7 @@ export default function MultiWarehouse() {
       if (!expandedWarehouseId) return [];
       try {
         const res = await fetch('/api/inventory/warehouse_stock', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch warehouse stock');
         const rows = await res.json();
@@ -102,7 +102,7 @@ export default function MultiWarehouse() {
     queryKey: ['products-list'],
     queryFn: async () => {
       const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -140,14 +140,14 @@ export default function MultiWarehouse() {
       if (payload.id) {
         const res = await fetch(`/api/warehouse/warehouses/${payload.id}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
         const res = await fetch('/api/warehouse/warehouses', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
@@ -178,14 +178,14 @@ export default function MultiWarehouse() {
       if (payload.id) {
         const res = await fetch(`/api/inventory/warehouse_stock/${payload.id}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
         const res = await fetch('/api/inventory/warehouse_stock', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
@@ -205,7 +205,6 @@ export default function MultiWarehouse() {
       const __res_wd = await fetch(`/api/warehouse/warehouses/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ is_deleted: true })
@@ -226,7 +225,6 @@ export default function MultiWarehouse() {
       const __res_wsd = await fetch(`/api/inventory/warehouse_stock/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ is_deleted: true })

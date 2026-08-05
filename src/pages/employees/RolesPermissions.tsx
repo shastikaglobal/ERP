@@ -69,8 +69,7 @@ export default function RolesPermissions() {
       // --- Fetching Users ---
       const usersRes = await fetch('/api/employees/all/profiles', {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+          },
       });
       if (!usersRes.ok) {
         console.error('Failed to load users:', await usersRes.text());
@@ -83,8 +82,7 @@ export default function RolesPermissions() {
       // Fetch employees to map roles
       const employeesRes = await fetch('/api/employees', {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+          },
       });
       if (!employeesRes.ok) {
          console.warn('Failed to load employees, continuing without mapping:', await employeesRes.text());
@@ -105,8 +103,7 @@ export default function RolesPermissions() {
       // --- Fetching Access ---
       const permsRes = await fetch('/api/user-permissions', {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+          },
       });
       if (!permsRes.ok) {
         console.error('Failed to load permissions:', await permsRes.text());
@@ -182,8 +179,7 @@ export default function RolesPermissions() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+          },
         body: JSON.stringify({
           user_id: userId,
           section: permKey,
@@ -245,8 +241,7 @@ export default function RolesPermissions() {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${session?.access_token}`,
-              },
+                },
               body: JSON.stringify({
                 user_id: u.id,
                 section: `${sectionName}__${sub}`,

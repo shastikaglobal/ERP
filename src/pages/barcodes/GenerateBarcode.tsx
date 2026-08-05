@@ -243,7 +243,7 @@ export default function GenerateBarcode() {
       }
       
 
-      const headers = { 'Authorization': `Bearer ${session?.access_token}` };
+      const headers = { };
 
       const [shipResData, batchRes, orderResData, barcodeRes] = await Promise.all([
         fetch(`/api/finance/export_shipments?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),

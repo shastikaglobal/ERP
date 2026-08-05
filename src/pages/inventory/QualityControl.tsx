@@ -17,7 +17,7 @@ export default function QualityControlWarehouse() {
   const { data, isLoading } = useQuery({
     queryKey: ["wh_inventory_batches_qc"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/inventory_batches', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+      const res = await fetch('/api/inventory/inventory_batches', { headers: { } });
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       

@@ -40,7 +40,7 @@ export default function InspectionsList() {
       try {
 
         const res = await fetch('/api/inventory/qc_inspections/with-batch', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch inspections');
         return await res.json();
@@ -76,8 +76,7 @@ export default function InspectionsList() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`
-        },
+          },
         body: JSON.stringify({
           moisture_pct: moisture ? Number(moisture) : null,
           foreign_matter_pct: foreign ? Number(foreign) : null,

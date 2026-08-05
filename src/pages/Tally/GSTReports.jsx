@@ -44,7 +44,7 @@ export default function GSTReports() {
     
     setLoading(true)
     try {
-      const res = await fetch('/api/finance/gst_transactions', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+      const res = await fetch('/api/finance/gst_transactions', { headers: { } });
       const records = res.ok ? await res.json() : [];
       // Optionally sort client-side
       records.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -90,7 +90,7 @@ export default function GSTReports() {
 
       const res = await fetch('/api/finance/gst_transactions', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{
           date,
           party,
@@ -135,7 +135,7 @@ export default function GSTReports() {
     try {
       const res = await fetch(`/api/finance/gst_transactions/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       const error = res.ok ? null : new Error("Hide failed");
 

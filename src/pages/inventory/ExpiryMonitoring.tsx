@@ -57,7 +57,7 @@ export default function ExpiryMonitoring() {
     queryFn: async () => {
       try {
         const res = await fetch('/api/inventory/expiry_monitoring', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch expiry monitoring');
         const rows = await res.json();
@@ -73,7 +73,7 @@ export default function ExpiryMonitoring() {
     queryKey: ['products-list'],
     queryFn: async () => {
       const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -96,7 +96,7 @@ export default function ExpiryMonitoring() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -122,14 +122,14 @@ export default function ExpiryMonitoring() {
       if (payload.id) {
         const res = await fetch(`/api/inventory/expiry_monitoring/${payload.id}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
         const res = await fetch('/api/inventory/expiry_monitoring', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
@@ -151,7 +151,7 @@ export default function ExpiryMonitoring() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/inventory/expiry_monitoring/${id}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: profile?.id || null })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Delete failed'); }

@@ -44,7 +44,7 @@ function NewEntryForm({ onSaved }) {
         if (!profile?.company_id) return;
 
         const res = await fetch(`/api/finance/chart_of_accounts?company_id=${profile.company_id}&status=Active`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         const coaData = res.ok ? await res.json() : [];
         const coaError = res.ok ? null : new Error("Failed to load chart of accounts");
@@ -112,7 +112,7 @@ function NewEntryForm({ onSaved }) {
       
       const resEntry = await fetch('/api/finance/journal_entries', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company_id: profile.company_id,
           voucher_no: voucherNo,
@@ -159,7 +159,7 @@ function NewEntryForm({ onSaved }) {
       if (rowPayload.length > 0) {
         const resRows = await fetch('/api/finance/journal_entry_rows', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(rowPayload)
         });
 
@@ -412,7 +412,7 @@ export default function JournalEntry() {
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+      const res = await fetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { } });
       let data = res.ok ? await res.json() : [];
       data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       let error = res.ok ? null : new Error("Fetch failed");

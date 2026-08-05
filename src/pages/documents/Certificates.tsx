@@ -39,7 +39,7 @@ export default function Certificates() {
         let standaloneCerts = [];
         try {
           const res = await fetch('/api/documents/certificates', {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            headers: { }
           });
           if (res.ok) {
             standaloneCerts = await res.json();
@@ -84,7 +84,7 @@ export default function Certificates() {
 
         const res = await fetch(`/api/documents/certificates/${id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error("Failed to delete from database");
       } else {

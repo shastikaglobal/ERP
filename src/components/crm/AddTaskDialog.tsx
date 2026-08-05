@@ -40,7 +40,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/employees?company_id=${profile?.company_id || ''}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (res.ok) {
         const data = await res.json();
@@ -55,7 +55,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       const res = await fetch(`/api/leads`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (res.ok) {
         const data = await res.json();
@@ -77,8 +77,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
+          },
         body: JSON.stringify({
           title,
           priority,

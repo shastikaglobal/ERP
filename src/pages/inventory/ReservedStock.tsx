@@ -54,7 +54,7 @@ export default function ReservedStock() {
     queryFn: async () => {
       try {
         const res = await fetch('/api/inventory/reserved_stock', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch reserved stock');
         const rows = await res.json();
@@ -75,7 +75,7 @@ export default function ReservedStock() {
     queryKey: ['products-list'],
     queryFn: async () => {
       const res = await fetch('/api/products', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -95,7 +95,7 @@ export default function ReservedStock() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       const res = await fetch('/api/inventory/warehouses', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -110,7 +110,6 @@ export default function ReservedStock() {
         const __res_upd = await fetch(`/api/inventory/reserved_stock/${payload.id}`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -135,7 +134,6 @@ export default function ReservedStock() {
         const __res_ins = await fetch(`/api/inventory/reserved_stock`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify([{
@@ -175,7 +173,7 @@ export default function ReservedStock() {
       if (status === "delete") {
         const res = await fetch(`/api/inventory/reserved_stock/${id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -185,7 +183,6 @@ export default function ReservedStock() {
         const res = await fetch(`/api/inventory/reserved_stock/${id}`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ status, updated_at: new Date().toISOString() })

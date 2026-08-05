@@ -62,7 +62,7 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-suppliers"],
         enabled: true,
         queryFn: async () => {
-            const res = await fetch('/api/farmers', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+            const res = await fetch('/api/farmers', { headers: { } });
             if (!res.ok) throw new Error('Failed to fetch farmers');
             const data = await res.json();
             return data || [];
@@ -73,7 +73,7 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-products"],
         enabled: true,
         queryFn: async () => {
-            const res = await fetch('/api/products', { headers: { 'Authorization': `Bearer ${session?.access_token}` } });
+            const res = await fetch('/api/products', { headers: { } });
             if (!res.ok) throw new Error('Failed to fetch products');
             const data = await res.json();
             return data || [];
@@ -87,7 +87,7 @@ export default function ReceivingGoods() {
             try {
 
                 const res = await fetch('/api/warehouse/warehouses', {
-                    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                    headers: { }
                 });
                 if (!res.ok) throw new Error('Failed to fetch warehouses');
                 const data = await res.json();
@@ -154,8 +154,7 @@ export default function ReceivingGoods() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`
-                },
+                    },
                 body: JSON.stringify({
                     quantity_kg: Number(editReceivedQty) || 0,
                     quantity_remaining_kg: Number(editReceivedQty) || 0,
@@ -372,7 +371,6 @@ export default function ReceivingGoods() {
                         const createRes = await fetch('/api/farmers', {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${session?.access_token}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -406,7 +404,6 @@ export default function ReceivingGoods() {
                         const createRes = await fetch('/api/inventory/products', {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${session?.access_token}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -439,7 +436,6 @@ export default function ReceivingGoods() {
                     const createRes = await fetch('/api/inventory/products', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${session?.access_token}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
@@ -466,7 +462,6 @@ export default function ReceivingGoods() {
                 const res = await fetch('/api/inventory/inventory_batches', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -501,7 +496,7 @@ export default function ReceivingGoods() {
                         const updatedQty = Number(existingStock.quantity || 0) + quantityValue;
                         await fetch(`/api/inventory/warehouse_stock/${existingStock.id}`, {
                             method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 quantity: updatedQty,
                                 unit: selectedProduct?.unit || 'kg',
@@ -511,7 +506,7 @@ export default function ReceivingGoods() {
                     } else {
                         await fetch(`/api/inventory/warehouse_stock`, {
                             method: 'POST',
-                            headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 warehouse_id: formData.warehouseId,
                                 product_name: productName,

@@ -59,7 +59,7 @@ export default function Warehouses() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       const res = await fetch('/api/warehouse/with-stock', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -129,7 +129,6 @@ export default function Warehouses() {
         const res = await fetch(`/api/warehouse/warehouses/${editingId}`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
@@ -140,7 +139,6 @@ export default function Warehouses() {
         const res = await fetch(`/api/warehouse/warehouses`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ ...payload, company_id: profile?.company_id, is_active: true })
@@ -164,7 +162,6 @@ export default function Warehouses() {
       const res = await fetch(`/api/warehouse/warehouses/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

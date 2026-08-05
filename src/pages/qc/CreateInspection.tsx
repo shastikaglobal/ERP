@@ -34,13 +34,13 @@ export default function CreateInspection() {
       try {
 
         const res = await fetch('/api/inventory/inventory_batches', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch batches');
         const rows = await res.json();
         // Enrich with product names
         const prodRes = await fetch('/api/inventory/products', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          headers: { }
         });
         const products = prodRes.ok ? await prodRes.json() : [];
         const prodMap: Record<string, string> = {};
@@ -66,7 +66,7 @@ export default function CreateInspection() {
 
       const res = await fetch('/api/inventory/qc_inspections', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{
           company_id: profile.company_id,
           batch_id: batchId,

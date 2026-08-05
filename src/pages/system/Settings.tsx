@@ -52,8 +52,7 @@ export default function Settings() {
       try {
         const res = await fetch("/api/settings", {
           headers: {
-            "Authorization": `Bearer ${session?.access_token}`
-          }
+            }
         });
         if (!res.ok) throw new Error("Failed to fetch settings");
         const data = await res.json();
@@ -104,7 +103,7 @@ export default function Settings() {
       formData.append('file', file);
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { },
         body: formData
       });
       if (!res.ok) throw new Error("Upload failed");
@@ -134,7 +133,7 @@ export default function Settings() {
       formData.append('file', file);
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { },
         body: formData
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
@@ -144,7 +143,6 @@ export default function Settings() {
       const res = await fetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ avatar_url: publicUrl })
@@ -207,7 +205,6 @@ export default function Settings() {
       const companyRes = await fetch("/api/settings", {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(updateData)
@@ -228,7 +225,6 @@ export default function Settings() {
         const profileRes = await fetch(`/api/employees/${profile.id}`, {
           method: "PUT",
           headers: {
-            "Authorization": `Bearer ${session?.access_token}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify(profileUpdate)

@@ -105,8 +105,7 @@ const { data: profile } = {} as any; // [VPS Migration] fixed assignment
       try {
         const empRes = await fetch('/api/employees', {
           headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
+            },
         });
         const empData = empRes.ok ? await empRes.json() : [];
         const employee = empData?.find((e: any) => e.email?.toLowerCase() === profile.email?.toLowerCase());
@@ -133,8 +132,7 @@ const { data: profile } = {} as any; // [VPS Migration] fixed assignment
       try {
         const permsRes = await fetch(`/api/user-permissions?user_id=${currentUserId}&t=${Date.now()}`, {
           headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
+            },
           cache: 'no-store'
         });
 
