@@ -1,6 +1,6 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { vpsDb } from "@/lib/vpsDb";
+
 
 import { useAuth } from "@/hooks/useAuth";
 import { X, Check, Bell } from "lucide-react";
@@ -114,15 +114,17 @@ export function FollowUpReminders() {
     const currentHHMM = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
     try {
-      const { data, error } = await vpsDb
-        .from("follow_ups")
-        .select("id, company_name, contact_name, follow_up_date, assigned_to, reminder_time")
-        .eq("follow_up_date", today)
-        .eq("is_notified", false);
-
-      if (error) throw error;
+      const token = profile ? document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] : null;
+      const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+      const res = await fetch('/api/follow-ups', { headers });
+      if (!res.ok) throw new Error('Failed to fetch follow-ups');
+      const data = await res.json();
+      
       if (data) {
         const pending = (data as FollowUp[]).filter((r) => {
+          if (r.follow_up_date !== today) return false;
+          // @ts-ignore
+          if (r.is_notified) return false;
           if (sessionDismissedIds.has(r.id)) return false;
           if (!r.reminder_time) return true;
           const [remH, remM] = r.reminder_time.split(":");
@@ -145,11 +147,15 @@ export function FollowUpReminders() {
 
   const markAsDone = async (id: string, company_name: string) => {
     try {
-      const { error } = await vpsDb
-        .from("follow_ups")
-        .update({ is_notified: true })
-        .eq("id", id);
-      if (error) throw error;
+      const token = profile ? document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] : null;
+      const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+      const res = await fetch(`/api/follow-ups/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ is_notified: true })
+      });
+      if (!res.ok) throw new Error('Failed to update reminder');
+      
       setReminders((prev) => prev.filter((r) => r.id !== id));
       setLastCount((prev) => Math.max(0, prev - 1));
       toast.success(`Follow-up for ${company_name} marked as done`);
