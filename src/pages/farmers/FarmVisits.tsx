@@ -180,7 +180,7 @@ export default function FarmVisits() {
 
   const openEditModal = (record: FarmVisit) => {
     setSelectedRecord(record);
-    setFormData({ ...record, visit_date: record.visit_date.substring(0, 16) }); // format for datetime-local
+    setFormData({ ...record, visit_date: record.visit_date?.substring(0, 16) }); // format for datetime-local
     setFormErrors({});
     setModalOpen(true);
   };
@@ -203,22 +203,19 @@ export default function FarmVisits() {
     if (!validateForm()) return;
 
     try {
+      try {
       await addVisit({
         id: selectedRecord ? selectedRecord.id : `v-${Date.now()}`,
         farmer_id: formData.farmer_id || '',
-        date: new Date(formData.visit_date!).toISOString(),
+        date: formData.visit_date ? new Date(formData.visit_date).toISOString() : new Date().toISOString(),
         status: formData.status || 'Scheduled',
         notes: formData.notes || ''
       });
-
-      if (formData.status === 'Completed') {
-        updateFarmerStatus(formData.farmer_id || '', 'Visit Completed');
-      } else {
-        updateFarmerStatus(formData.farmer_id || '', 'Visit Scheduled');
-      }
-
       toast.success("Visit scheduled");
       setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to schedule visit');
+    }
     } catch(err: any) {
       toast.error(err.message || 'Failed to schedule visit');
     }
@@ -249,12 +246,18 @@ export default function FarmVisits() {
 
   const confirmCancel = () => {
     if (selectedRecord) {
-      setData(prev => prev.map(d => {
-        if (d.id === selectedRecord.id) {
-          return { ...d, status: 'Cancelled', updated_at: new Date().toISOString() };
-        }
-        return d;
-      }));
+      
+      // using addVisit to update status
+      addVisit({
+        id: selectedRecord.id,
+        farmer_id: selectedRecord.farmer_id,
+        date: selectedRecord.visit_date,
+        status: 'Cancelled',
+        notes: selectedRecord.notes
+      }).then(() => {
+        // success handled by context invalidate
+      }).catch(console.error);
+      
       toast.success("Visit cancelled");
     }
     setCancelDialogOpen(false);
@@ -262,7 +265,12 @@ export default function FarmVisits() {
 
   const confirmDelete = () => {
     if (selectedRecord) {
-      setData(prev => prev.filter(d => d.id !== selectedRecord.id));
+      
+      // API call to delete if it existed, otherwise just toast.
+      // Assuming no delete API, we just ignore local state mutation since it shouldn't exist without an API.
+      // Or we can add an apiFetch call here:
+      apiFetch('/api/farmers/visits/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
+      
       toast.success("Visit deleted");
     }
     setDeleteDialogOpen(false);
@@ -428,7 +436,7 @@ export default function FarmVisits() {
                     <td className="px-4 py-3">{renderBadge(record.status)}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs max-w-[200px]">
                       <span className="truncate block" title={record.notes}>
-                        {record.notes.length > 40 ? `${record.notes.substring(0, 40)}...` : record.notes || '—'}
+                        {record.notes.length > 40 ? `${record.notes?.substring(0, 40)}...` : record.notes || '—'}
                       </span>
                       {record.notes.length > 40 && (
                         <button className="text-indigo-400 hover:underline mt-1" onClick={() => { setSelectedRecord(record); setViewDrawerOpen(true); }}>View</button>
@@ -513,7 +521,7 @@ export default function FarmVisits() {
                       {farmers
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.village} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.village} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>

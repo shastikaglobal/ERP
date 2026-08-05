@@ -251,7 +251,9 @@ export default function KYC() {
 
   const confirmDelete = () => {
     if (selectedRecord) {
-      setData(prev => prev.filter(d => d.id !== selectedRecord.id));
+      
+      apiFetch('/api/farmers/' + (file==='KYC.tsx'?'kyc':'commitments') + '/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
+      
       toast.success("Record deleted");
     }
     setDeleteDialogOpen(false);
@@ -509,7 +511,7 @@ export default function KYC() {
                       disabled={!!selectedRecord}
                     >
                       <option value="">-- Choose a farmer --</option>
-                      {farmers.map((f: any) => <option key={f.id} value={f.id}>{f.code || f.id.substring(0,8)} - {f.full_name}</option>)}
+                      {farmers.map((f: any) => <option key={f.id} value={f.id}>{f.code || f.id?.substring(0,8)} - {f.full_name}</option>)}
                     </select>
                     {formErrors.farmer_code && <span className="text-xs text-red-500">{formErrors.farmer_code}</span>}
                   </FormRow>

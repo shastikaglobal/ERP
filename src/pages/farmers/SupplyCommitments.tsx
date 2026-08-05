@@ -52,8 +52,8 @@ export default function SupplyCommitments() {
         farmer_id: d.farmer_id,
         farmer_name: f?.full_name || 'Unknown Farmer',
         crop_name: d.crop,
-        committed_quantity: d.qty,
-        delivered_quantity: d.status === 'Completed' ? d.qty : 0, // Mock history
+        committed_quantity: d.quantity || d.qty || 0,
+        delivered_quantity: d.status === 'Completed' ? (d.quantity || d.qty || 0) : 0, // Mock history
         unit: 'Tons',
         expected_delivery_date: new Date().toISOString(),
         status: d.status as CommitmentStatus,
@@ -157,7 +157,7 @@ export default function SupplyCommitments() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      expected_delivery_date: record.expected_delivery_date.substring(0, 10)
+      expected_delivery_date: record.expected_delivery_date?.substring(0, 10)
       });
     setFormErrors({});
     setModalOpen(true);
@@ -174,7 +174,7 @@ export default function SupplyCommitments() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -244,7 +244,9 @@ export default function SupplyCommitments() {
 
   const confirmDelete = () => {
     if (selectedRecord) {
-      setData(prev => prev.filter(d => d.id !== selectedRecord.id));
+      
+      apiFetch('/api/farmers/' + (file==='KYC.tsx'?'kyc':'commitments') + '/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
+      
       toast.success("Commitment deleted");
     }
     setDeleteDialogOpen(false);
@@ -503,7 +505,7 @@ export default function SupplyCommitments() {
                         
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>

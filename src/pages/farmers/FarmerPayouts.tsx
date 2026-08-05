@@ -41,7 +41,8 @@ export default function FarmerPayoutsPage() {
         farmer_id: d.farmer_id,
         farmer_name: f?.full_name || 'Unknown Farmer',
         contract_id: `CNTR-2026-${d.id.slice(-3)}`,
-        amount: d.amount,
+        amount: d.amount || 0,
+        payment_date: d.payment_date || new Date().toISOString()
         payment_date: new Date().toISOString(),
         bank_account: f?.bank_account_no || 'XXXX-XXXX',
         ifsc: f?.ifsc_code || 'XXXX0000',
@@ -82,23 +83,28 @@ export default function FarmerPayoutsPage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.farmer_id || !formData.amount) return;
 
-    addPayout({
-      id: `pay-${Date.now()}`,
-      farmer_id: formData.farmer_id,
-      amount: Number(formData.amount),
-      status: formData.status || 'Pending'
-    });
-
-    if (formData.status === 'Completed') {
-      updateFarmerStatus(formData.farmer_id, 'Completed');
+    try {
+      await addPayout({
+        id: `pay-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        amount: Number(formData.amount),
+        status: formData.status || 'Pending',
+        payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : new Date().toISOString(),
+        reference: formData.reference || '',
+        notes: formData.notes || ''
+      });
+      if (formData.status === 'Completed') {
+        updateFarmerStatus(formData.farmer_id, 'Completed');
+      }
+      toast.success("Payout scheduled");
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save payout');
     }
-
-    toast.success("Payout scheduled");
-    setModalOpen(false);
   };
 
   const markApproved = (id: string) => {
@@ -215,7 +221,7 @@ export default function FarmerPayoutsPage() {
                         
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name}
                           </option>
                         ))}
                     </select>

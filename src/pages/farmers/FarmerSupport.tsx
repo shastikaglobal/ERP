@@ -164,19 +164,23 @@ export default function FarmerSupportPage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    addTicket({
-      id: selectedRecord ? selectedRecord.id : `tkt-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      issue: formData.issue_category || '',
-      status: formData.status || 'Open'
-    });
-
-    toast.success("Ticket saved successfully");
-    setModalOpen(false);
+    try {
+      await addTicket({
+        id: selectedRecord ? selectedRecord.id : `tkt-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        issue: formData.issue || '',
+        status: formData.status || 'Open',
+        resolution: formData.resolution || ''
+      });
+      toast.success("Ticket saved successfully");
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save ticket');
+    }
   };
 
   const exportExcel = () => {
@@ -345,7 +349,7 @@ export default function FarmerSupportPage() {
                 <FormRow label="Farmer" required>
                   <select className="flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 text-sm outline-none" value={formData.farmer_id || ''} onChange={(e) => handleFarmerChange(e.target.value)} disabled={!!selectedRecord}>
                     <option value="">Select Farmer</option>
-                    {farmers.map(f => <option key={f.id} value={f.id}>{f.code || f.id.substring(0, 8)} - {f.full_name}</option>)}
+                    {farmers.map(f => <option key={f.id} value={f.id}>{f.code || f.id?.substring(0, 8)} - {f.full_name}</option>)}
                   </select>
                   {formErrors.farmer_id && <span className="text-xs text-red-500">{formErrors.farmer_id}</span>}
                 </FormRow>

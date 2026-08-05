@@ -35,8 +35,12 @@ export interface GoodsCollection {
 }
 
 export default function GoodsCollectionPage() {
-  const { farmers, collections, addCollection, updateFarmerStatus } = useFarmerContext();
+  const { farmers, collections, contracts, addCollection, updateFarmerStatus } = useFarmerContext();
   const loading = false;
+  
+  const validContracts = useMemo(() => {
+    return contracts.filter(c => c.status === 'Active' || c.status === 'Completed');
+  }, [contracts]);
 
   const data: GoodsCollection[] = useMemo(() => {
     return collections.map(d => {
@@ -47,7 +51,7 @@ export default function GoodsCollectionPage() {
         farmer_name: f?.full_name || 'Unknown Farmer',
         contract_id: `CNTR-2026-${d.id.slice(-3)}`,
         crop_name: f?.primary_crop || 'Mixed',
-        collected_quantity: d.qty,
+        collected_quantity: d.quantity || d.qty || 0,
         collection_date: new Date().toISOString(),
         collection_center: 'Main Hub',
         vehicle_number: 'MH-12-AB-1234',
@@ -152,7 +156,7 @@ export default function GoodsCollectionPage() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      collection_date: record.collection_date.substring(0, 16)
+      collection_date: record.collection_date?.substring(0, 16)
       });
     setFormErrors({});
     setModalOpen(true);
@@ -172,7 +176,7 @@ export default function GoodsCollectionPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -440,7 +444,7 @@ export default function GoodsCollectionPage() {
                         
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>
@@ -455,7 +459,11 @@ export default function GoodsCollectionPage() {
                       onChange={(e) => setFormData(f => ({ ...f, contract_id: e.target.value }))}
                     >
                       <option value="">-- Link Contract --</option>
-                      {/* Placeholder for contracts */}
+                      {validContracts
+      .filter(c => c.farmer_id === formData.farmer_id)
+      .map(c => (
+        <option key={c.id} value={c.id}>{c.crop} ({c.status})</option>
+      ))}
                     </select>
                     {formErrors.contract_id && <span className="text-xs text-red-500">{formErrors.contract_id}</span>}
                   </FormRow>

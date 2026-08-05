@@ -155,8 +155,8 @@ export default function ContractFarming() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      start_date: record.start_date.substring(0, 10), 
-      end_date: record.end_date.substring(0, 10) 
+      start_date: record.start_date?.substring(0, 10), 
+      end_date: record.end_date?.substring(0, 10) 
     });
     setFormErrors({});
     setContractFile(null);
@@ -199,7 +199,7 @@ export default function ContractFarming() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -467,7 +467,7 @@ export default function ContractFarming() {
                         
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>

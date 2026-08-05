@@ -30,12 +30,12 @@ export interface FarmerState {
 export interface KYCRecord { id: string; farmer_id: string; aadhaar: string; pan: string; status: string; }
 export interface FarmVisitRecord { id: string; farmer_id: string; date: string; status: string; notes: string; }
 export interface ContractRecord { id: string; farmer_id: string; crop: string; status: string; }
-export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; }
+export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; payment_date?: string; reference?: string; notes?: string; }
 export interface RatingRecord { id: string; farmer_id: string; score: number; review: string; }
 export interface DocumentRecord { id: string; farmer_id: string; doc_name: string; doc_type: string; }
 export interface TicketRecord { id: string; farmer_id: string; issue: string; status: string; }
-export interface CommitmentRecord { id: string; farmer_id: string; crop: string; status: string; }
-export interface CollectionRecord { id: string; farmer_id: string; crop: string; status: string; }
+export interface CommitmentRecord { id: string; farmer_id: string; crop: string; status: string; quantity?: number; delivery_date?: string; price_per_unit?: number; }
+export interface CollectionRecord { id: string; farmer_id: string; crop: string; status: string; quantity?: number; collection_date?: string; quality_grade?: string; contract_id?: string; }
 
 interface FarmerContextType {
   isLoading: boolean;
@@ -365,14 +365,14 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addKyc = async (r: KYCRecord) => { await addKycMut.mutateAsync(r); };
   const updateKyc = async (r: any) => { await updateKycMut.mutateAsync(r); };
-  const addVisit = (r: FarmVisitRecord) => { addVisitMut.mutate(r); };
-  const addContract = (r: ContractRecord) => { addContractMut.mutate(r); };
-  const addCommitment = (r: CommitmentRecord) => { addCommitmentMut.mutate(r); };
-  const addCollection = (r: CollectionRecord) => { addCollectionMut.mutate(r); };
-  const addPayout = (r: PayoutRecord) => { addPayoutMut.mutate(r); };
-  const addRating = (r: RatingRecord) => { addRatingMut.mutate(r); };
-  const addDocument = (r: DocumentRecord) => { addDocumentMut.mutate(r); };
-  const addTicket = (r: TicketRecord) => { addTicketMut.mutate(r); };
+  const addVisit = async (r: FarmVisitRecord) => { await addVisitMut.mutateAsync(r); };
+  const addContract = async (r: ContractRecord) => { await addContractMut.mutateAsync(r); };
+  const addCommitment = async (r: CommitmentRecord) => { await addCommitmentMut.mutateAsync(r); };
+  const addCollection = async (r: CollectionRecord) => { await addCollectionMut.mutateAsync(r); };
+  const addPayout = async (r: PayoutRecord) => { await addPayoutMut.mutateAsync(r); };
+  const addRating = async (r: RatingRecord) => { await addRatingMut.mutateAsync(r); };
+  const addDocument = async (r: DocumentRecord) => { await addDocumentMut.mutateAsync(r); };
+  const addTicket = async (r: TicketRecord) => { await addTicketMut.mutateAsync(r); };
 
   // Filter based on ownership for standard employees
   const filteredFarmers = useMemo(() => {
