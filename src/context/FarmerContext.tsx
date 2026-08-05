@@ -408,7 +408,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       documents: useMemo(() => documents.filter(r => validIds.has(r.farmer_id)), [documents, validIds]),
       tickets: useMemo(() => tickets.filter(r => validIds.has(r.farmer_id)), [tickets, validIds]),
       addFarmer, updateFarmer, updateFarmerStatus, deleteFarmer,
-      addKyc, addVisit, addContract, addCommitment, addCollection, addPayout, addRating, addDocument, addTicket
+      addKyc, updateKyc, addVisit, addContract, addCommitment, addCollection, addPayout, addRating, addDocument, addTicket
     }}>
       {children}
     </FarmerContext.Provider>
