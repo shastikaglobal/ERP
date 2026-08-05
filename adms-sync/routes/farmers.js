@@ -287,7 +287,7 @@ router.put('/kyc/:id', requireAuth, async (req, res) => {
 });
 
 // GET /api/farmers/:id
-router.get('/:id', requireAuth, async (req, res) => {
+router.get('/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -318,7 +318,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 // PUT /api/farmers/:id
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, verification_status, farm_area } = req.body;
@@ -365,7 +365,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/farmers/:id
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
