@@ -321,7 +321,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
+    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, verification_status, farm_area } = req.body;
     
     const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
     const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
@@ -352,7 +352,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         code = COALESCE($12, code),
         updated_at = NOW()
        WHERE id = $13 RETURNING *`,
-      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
+      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id, verification_status, farm_area]
     );
 
     const updatedFarmer = rows[0];

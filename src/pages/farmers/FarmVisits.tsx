@@ -198,43 +198,51 @@ export default function FarmVisits() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    addVisit({
-      id: selectedRecord ? selectedRecord.id : `v-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      date: new Date(formData.visit_date!).toISOString(),
-      status: formData.status || 'Scheduled',
-      notes: formData.notes || ''
-    });
+    try {
+      await addVisit({
+        id: selectedRecord ? selectedRecord.id : `v-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        date: new Date(formData.visit_date!).toISOString(),
+        status: formData.status || 'Scheduled',
+        notes: formData.notes || ''
+      });
 
-    if (formData.status === 'Completed') {
-      updateFarmerStatus(formData.farmer_id || '', 'Visit Completed');
-    } else {
-      updateFarmerStatus(formData.farmer_id || '', 'Visit Scheduled');
+      if (formData.status === 'Completed') {
+        updateFarmerStatus(formData.farmer_id || '', 'Visit Completed');
+      } else {
+        updateFarmerStatus(formData.farmer_id || '', 'Visit Scheduled');
+      }
+
+      toast.success("Visit scheduled");
+      setModalOpen(false);
+    } catch(err: any) {
+      toast.error(err.message || 'Failed to schedule visit');
     }
-
-    toast.success("Visit scheduled");
-    setModalOpen(false);
   };
 
-  const confirmComplete = () => {
+  const confirmComplete = async () => {
     if (!completionNotes.trim()) {
       toast.error("Completion notes are required");
       return;
     }
     if (selectedRecord) {
-      addVisit({
-        id: selectedRecord.id,
-        farmer_id: selectedRecord.farmer_id,
-        date: selectedRecord.visit_date,
-        status: 'Completed',
-        notes: completionNotes
-      });
-      updateFarmerStatus(selectedRecord.farmer_id, 'Visit Completed');
-      toast.success("Visit marked as completed");
+      try {
+        await addVisit({
+          id: selectedRecord.id,
+          farmer_id: selectedRecord.farmer_id,
+          date: selectedRecord.visit_date,
+          status: 'Completed',
+          notes: completionNotes
+        });
+        updateFarmerStatus(selectedRecord.farmer_id, 'Visit Completed');
+        toast.success("Visit marked as completed");
+      } catch(err: any) {
+        toast.error(err.message || 'Failed to complete visit');
+      }
     }
     setCompleteModalOpen(false);
   };
