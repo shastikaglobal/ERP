@@ -62,7 +62,7 @@ function pickOrderFields(body) {
 // GET /api/orders
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const conditions = ['(is_deleted = false OR is_deleted IS NULL)'];
+    const conditions = ['(deleted_at IS NULL OR is_deleted IS NULL)'];
     const values = [];
 
     if (req.query.company_id) {
@@ -93,7 +93,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM export_orders WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)`,
+      `SELECT * FROM export_orders WHERE id = $1 AND (deleted_at IS NULL OR is_deleted IS NULL)`,
       [req.params.id]
     );
 

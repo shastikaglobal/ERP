@@ -20,10 +20,7 @@ router.post('/start', requireAuth, async (req, res) => {
     if (existingCheck.rows.length > 0) {
       const existingId = existingCheck.rows[0].id;
       // Update login_time to now
-      await db.query(
-        `UPDATE user_sessions SET login_time = NOW() WHERE id = $1`,
-        [existingId]
-      );
+      await db.query(`UPDATE user_sessions SET login_time = NOW() WHERE id = \$1`, [existingId, req.user?.sub || req.user?.id]);
       return res.json({ id: existingId });
     }
 

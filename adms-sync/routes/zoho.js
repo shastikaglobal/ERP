@@ -131,7 +131,7 @@ router.get('/oauth', async (req, res) => {
         refresh_token = COALESCE(EXCLUDED.refresh_token, zoho_accounts.refresh_token),
         expiry_time = EXCLUDED.expiry_time,
         user_id = EXCLUDED.user_id,
-        is_deleted = false
+        deleted_at IS NULL
     `, [companyId, userId, accountEmail, access_token, refresh_token, expiryTime]);
 
     // 4. Redirect the user back to the application

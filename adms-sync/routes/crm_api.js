@@ -12,7 +12,7 @@ router.get('/activities', requireAuth, async (req, res) => {
               l.company_name as "leads.company_name" 
        FROM activities a
        LEFT JOIN leads l ON a.lead_id = l.id
-       WHERE a.is_deleted IS NOT TRUE 
+       WHERE a.deleted_at IS NULL 
        ORDER BY a.due_date ASC`
     );
     
@@ -63,10 +63,7 @@ router.put('/activities/:id', requireAuth, async (req, res) => {
 router.delete('/activities/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      `UPDATE activities SET is_deleted = true, deleted_at = NOW() WHERE id = $1`,
-      [id]
-    );
+    await db.query(`UPDATE activities SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -81,7 +78,7 @@ router.get('/reports', requireAuth, async (req, res) => {
     let query = `SELECT r.*, p.full_name as "profiles.full_name" 
                  FROM bde_daily_reports r
                  LEFT JOIN profiles p ON r.bde_id = p.id
-                 WHERE r.is_deleted IS NOT TRUE`;
+                 WHERE r.deleted_at IS NULL`;
     const params = [];
     
     if (bde_id) {
@@ -120,10 +117,7 @@ router.post('/reports', requireAuth, async (req, res) => {
 router.delete('/reports/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      `UPDATE bde_daily_reports SET is_deleted = true, deleted_at = NOW() WHERE id = $1`,
-      [id]
-    );
+    await db.query(`UPDATE bde_daily_reports SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -180,7 +174,7 @@ router.put('/meetings/:id', requireAuth, async (req, res) => {
 router.get('/employee-activities', requireAuth, async (req, res) => {
   try {
     const { rows: profiles } = await db.query(`SELECT id, full_name, avatar_url FROM profiles`);
-    const { rows: sessions } = await db.query(`SELECT * FROM active_sessions WHERE is_deleted IS NOT TRUE`);
+    const { rows: sessions } = await db.query(`SELECT * FROM active_sessions WHERE deleted_at IS NULL`);
     const { rows: userRoles } = await db.query(`
       SELECT ur.*, r.name as "roles.name" 
       FROM user_roles ur 

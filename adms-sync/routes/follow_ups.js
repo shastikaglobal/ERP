@@ -8,7 +8,7 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const result = await db.query(
       `SELECT * FROM follow_ups 
-       WHERE is_deleted = false 
+       WHERE deleted_at IS NULL 
        ORDER BY follow_up_date DESC`
     );
     res.json(result.rows || []);
@@ -50,10 +50,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/follow-ups/:id
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    await db.query(
-      `UPDATE follow_ups SET is_deleted = true, deleted_at = NOW() WHERE id = $1`,
-      [req.params.id]
-    );
+    await db.query(`UPDATE follow_ups SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [req.params.id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete follow-up):", err);

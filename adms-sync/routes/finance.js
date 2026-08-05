@@ -28,9 +28,9 @@ const isValidTable = (table) => FINANCE_TABLES.includes(table);
 // GET /api/finance/counts (custom endpoint for Tally counts)
 router.get('/counts', requireAuth, async (req, res) => {
   try {
-    const { rows: journalRows } = await db.query("SELECT status, count(*) as count FROM journal_entries WHERE is_deleted = false OR is_deleted IS NULL GROUP BY status");
-    const { rows: coaRows } = await db.query("SELECT count(*) as count FROM chart_of_accounts WHERE status = 'Active' AND (is_deleted = false OR is_deleted IS NULL)");
-    const { rows: partyRows } = await db.query("SELECT type, count(*) as count FROM parties WHERE is_deleted = false OR is_deleted IS NULL GROUP BY type");
+    const { rows: journalRows } = await db.query("SELECT status, count(*) as count FROM journal_entries WHERE deleted_at IS NULL OR is_deleted IS NULL GROUP BY status");
+    const { rows: coaRows } = await db.query("SELECT count(*) as count FROM chart_of_accounts WHERE status = 'Active' AND (deleted_at IS NULL OR is_deleted IS NULL)");
+    const { rows: partyRows } = await db.query("SELECT type, count(*) as count FROM parties WHERE deleted_at IS NULL OR is_deleted IS NULL GROUP BY type");
 
     res.json({
       journal_entries: journalRows,
@@ -51,7 +51,7 @@ router.get('/reports/ar_aging', requireAuth, async (req, res) => {
              json_build_object('name', c.name) as customer
       FROM sales_orders so
       LEFT JOIN customers c ON so.customer_id = c.id
-      WHERE (so.is_deleted = false OR so.is_deleted IS NULL) AND so.status = 'Pending'
+      WHERE (so.deleted_at IS NULL OR so.is_deleted IS NULL) AND so.status = 'Pending'
     `;
     const { rows } = await db.query(query);
     res.json(rows);
@@ -69,7 +69,7 @@ router.get('/reports/cash_flow', requireAuth, async (req, res) => {
              json_build_object('name', c.name) as customer
       FROM payments p
       LEFT JOIN customers c ON p.payer_id = c.id
-      WHERE (p.is_deleted = false OR p.is_deleted IS NULL) AND p.status = 'Completed'
+      WHERE (p.deleted_at IS NULL OR p.is_deleted IS NULL) AND p.status = 'Completed'
     `;
     const { rows: inflow } = await db.query(qInflow);
 
@@ -78,7 +78,7 @@ router.get('/reports/cash_flow', requireAuth, async (req, res) => {
              json_build_object('full_name', f.full_name) as farmer
       FROM purchase_orders po
       LEFT JOIN farmers f ON po.farmer_id = f.id
-      WHERE (po.is_deleted = false OR po.is_deleted IS NULL) AND po.status IN ('approved', 'received')
+      WHERE (po.deleted_at IS NULL OR po.is_deleted IS NULL) AND po.status IN ('approved', 'received')
     `;
     const { rows: outflow } = await db.query(qOutflow);
 
@@ -111,24 +111,24 @@ router.get('/reports/shipment_analytics', requireAuth, async (req, res) => {
     const statsQuery = `
       SELECT
         -- Active Shipments (status in Pending, Processing, In Transit)
-        COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'In Transit') AND (is_deleted = false OR is_deleted IS NULL)) AS active_shipments,
+        COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'In Transit') AND (deleted_at IS NULL OR is_deleted IS NULL)) AS active_shipments,
         
         -- Delayed Shipments (status is not Delivered, and eta is in the past)
         COUNT(*) FILTER (
           WHERE status IN ('Pending', 'Processing', 'In Transit')
             AND eta IS NOT NULL 
             AND eta < CURRENT_DATE
-            AND (is_deleted = false OR is_deleted IS NULL)
+            AND (deleted_at IS NULL OR is_deleted IS NULL)
         ) AS delayed_shipments,
 
         -- Total Delivered Shipments
-        COUNT(*) FILTER (WHERE status = 'Delivered' AND (is_deleted = false OR is_deleted IS NULL)) AS delivered_shipments,
+        COUNT(*) FILTER (WHERE status = 'Delivered' AND (deleted_at IS NULL OR is_deleted IS NULL)) AS delivered_shipments,
 
         -- On-time Delivered Shipments (delivered and eta was not exceeded)
         COUNT(*) FILTER (
           WHERE status = 'Delivered' 
             AND (eta IS NULL OR updated_at::date <= eta)
-            AND (is_deleted = false OR is_deleted IS NULL)
+            AND (deleted_at IS NULL OR is_deleted IS NULL)
         ) AS on_time_shipments,
 
         -- Avg Transit Days (for Delivered shipments with departure_date)
@@ -181,7 +181,7 @@ router.get('/:table', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-      conditions.push("(is_deleted = false OR is_deleted IS NULL)");
+      conditions.push("(deleted_at IS NULL OR is_deleted IS NULL)");
     }
 
     Object.keys(req.query).forEach((key) => {
@@ -265,9 +265,9 @@ router.delete('/:table/:id', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     } else {
-      await db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+      await db.query(`UPDATE \${table} SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     }
     res.json({ success: true });
   } catch (err) {

@@ -26,9 +26,9 @@ router.get('/with-stock', requireAuth, async (req, res) => {
           ) FILTER (WHERE ib.id IS NOT NULL), '[]'
         ) as inventory_batches
       FROM warehouses w
-      LEFT JOIN inventory_batches ib ON w.id = ib.warehouse_id AND (ib.is_deleted = false OR ib.is_deleted IS NULL)
+      LEFT JOIN inventory_batches ib ON w.id = ib.warehouse_id AND (ib.deleted_at IS NULL OR ib.is_deleted IS NULL)
       LEFT JOIN products p ON ib.product_id = p.id
-      WHERE (w.is_deleted = false OR w.is_deleted IS NULL)
+      WHERE (w.deleted_at IS NULL OR w.is_deleted IS NULL)
       GROUP BY w.id
       ORDER BY w.name
     `;
@@ -58,7 +58,7 @@ router.get('/:table', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-      query += " WHERE is_deleted = false OR is_deleted IS NULL";
+      query += " WHERE deleted_at IS NULL OR is_deleted IS NULL";
     }
     const { rows } = await db.query(query);
     res.json(rows);
@@ -132,9 +132,9 @@ router.delete('/:table/:id', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     } else {
-      await db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+      await db.query(`UPDATE \${table} SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     }
     res.json({ success: true });
   } catch (err) {

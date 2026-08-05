@@ -8,10 +8,10 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const companyId = req.query.company_id;
     if (companyId) {
-      const { rows } = await db.query('SELECT * FROM customers WHERE company_id = $1 AND is_deleted IS NOT TRUE ORDER BY name', [companyId]);
+      const { rows } = await db.query('SELECT * FROM customers WHERE company_id = $1 AND deleted_at IS NULL ORDER BY name', [companyId]);
       return res.json(rows);
     }
-    const { rows } = await db.query('SELECT * FROM customers WHERE is_deleted IS NOT TRUE ORDER BY name');
+    const { rows } = await db.query('SELECT * FROM customers WHERE deleted_at IS NULL ORDER BY name');
     res.json(rows);
   } catch (err) {
     console.error('DB Error (get customers):', err);

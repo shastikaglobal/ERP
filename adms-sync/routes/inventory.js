@@ -99,7 +99,7 @@ router.get('/:table', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-       query += " WHERE is_deleted = false OR is_deleted IS NULL";
+       query += " WHERE deleted_at IS NULL OR is_deleted IS NULL";
     }
     const { rows } = await db.query(query);
     res.json(rows);
@@ -174,9 +174,9 @@ router.delete('/:table/:id', requireAuth, async (req, res) => {
     }
 
     if (hasDeletedColCache[table]) {
-      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = $1`, [id]);
+      await db.query(`UPDATE ${table} SET is_deleted = true WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     } else {
-      await db.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+      await db.query(`UPDATE \${table} SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     }
     res.json({ success: true });
   } catch (err) {

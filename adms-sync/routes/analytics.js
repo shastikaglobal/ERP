@@ -11,15 +11,15 @@ router.get('/sidebar_counts', requireAuth, async (req, res) => {
   try {
     const { company_id } = req.query;
     
-    let acqQuery = `SELECT COUNT(*) as count FROM client_acquisition ca WHERE ca.is_deleted IS NOT TRUE`;
+    let acqQuery = `SELECT COUNT(*) as count FROM client_acquisition ca WHERE ca.deleted_at IS NULL`;
     let acqParams = [];
     if (company_id) {
-      acqQuery = `SELECT COUNT(*) as count FROM client_acquisition ca JOIN leads l ON ca.lead_id = l.id WHERE ca.is_deleted IS NOT TRUE AND l.company_id = $1`;
+      acqQuery = `SELECT COUNT(*) as count FROM client_acquisition ca JOIN leads l ON ca.lead_id = l.id WHERE ca.deleted_at IS NULL AND l.company_id = $1`;
       acqParams.push(company_id);
     }
 
-    let convQuery = `SELECT COUNT(*) as count FROM leads WHERE is_deleted IS NOT TRUE AND stage IN ('Won', 'Client Successfully Acquired')`;
-    let custQuery = `SELECT COUNT(*) as count FROM customers WHERE is_deleted IS NOT TRUE`;
+    let convQuery = `SELECT COUNT(*) as count FROM leads WHERE deleted_at IS NULL AND stage IN ('Won', 'Client Successfully Acquired')`;
+    let custQuery = `SELECT COUNT(*) as count FROM customers WHERE deleted_at IS NULL`;
     
     let params = [];
     if (company_id) {
@@ -52,7 +52,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const { company_id } = req.query;
     
     // 1. Total Leads
-    let leadsQuery = `SELECT COUNT(*) as total FROM leads WHERE is_deleted = false`;
+    let leadsQuery = `SELECT COUNT(*) as total FROM leads WHERE deleted_at IS NULL`;
     const leadsParams = [];
     if (company_id) {
       leadsQuery += ` AND company_id = $1`;
@@ -62,7 +62,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const totalLeads = parseInt(leadsRes.rows[0].total, 10);
 
     // 2. Closed Deals (Won Leads + Export Orders)
-    let wonLeadsQuery = `SELECT COUNT(*) as total FROM leads WHERE is_deleted = false AND stage IN ('won', 'closed_won', 'Closed Won', 'closed', 'Won')`;
+    let wonLeadsQuery = `SELECT COUNT(*) as total FROM leads WHERE deleted_at IS NULL AND stage IN ('won', 'closed_won', 'Closed Won', 'closed', 'Won')`;
     const wonLeadsParams = [];
     if (company_id) {
       wonLeadsQuery += ` AND company_id = $1`;
@@ -70,7 +70,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     }
     const wonLeadsRes = await db.query(wonLeadsQuery, wonLeadsParams);
     
-    let ordersQuery = `SELECT COUNT(*) as total FROM export_orders WHERE is_deleted = false`;
+    let ordersQuery = `SELECT COUNT(*) as total FROM export_orders WHERE deleted_at IS NULL`;
     const ordersParams = [];
     if (company_id) {
       ordersQuery += ` AND company_id = $1`;
@@ -80,7 +80,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const closedWonLeads = Math.max(parseInt(wonLeadsRes.rows[0].total, 10), parseInt(ordersRes.rows[0].total, 10));
 
     // 3. Pending Activities & Follow-ups
-    let pendingActQuery = `SELECT COUNT(*) as total FROM activities WHERE completed = false AND is_deleted = false`;
+    let pendingActQuery = `SELECT COUNT(*) as total FROM activities WHERE completed = false AND deleted_at IS NULL`;
     let pendingActParams = [];
     if (company_id) {
       pendingActQuery += ` AND company_id = $1`;
@@ -88,7 +88,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     }
     const pendingActRes = await db.query(pendingActQuery, pendingActParams);
 
-    let followUpQuery = `SELECT COUNT(*) as total FROM follow_ups WHERE is_notified = false AND is_deleted = false`;
+    let followUpQuery = `SELECT COUNT(*) as total FROM follow_ups WHERE is_notified = false AND deleted_at IS NULL`;
     // follow_ups doesn't have company_id directly, so we join leads if company_id is provided
     let followUpParams = [];
     if (company_id) {
@@ -96,7 +96,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
         SELECT COUNT(f.*) as total 
         FROM follow_ups f
         JOIN leads l ON f.lead_id = l.id
-        WHERE f.is_notified = false AND f.is_deleted = false AND l.company_id = $1
+        WHERE f.is_notified = false AND f.deleted_at IS NULL AND l.company_id = $1
       `;
       followUpParams.push(company_id);
     }
@@ -104,7 +104,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const totalPending = parseInt(pendingActRes.rows[0].total, 10) + parseInt(followUpRes.rows[0].total, 10);
 
     // 4. Overdue Activities
-    let overdueActQuery = `SELECT COUNT(*) as total FROM activities WHERE completed = false AND due_date < NOW() AND is_deleted = false`;
+    let overdueActQuery = `SELECT COUNT(*) as total FROM activities WHERE completed = false AND due_date < NOW() AND deleted_at IS NULL`;
     let overdueActParams = [];
     if (company_id) {
       overdueActQuery += ` AND company_id = $1`;
@@ -114,7 +114,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     const overdueActivities = parseInt(overdueActRes.rows[0].total, 10);
 
     // 5. Total Revenue (from approved quotations)
-    let revQuery = `SELECT COALESCE(SUM(COALESCE(total_amount, amount)), 0) as total FROM quotations WHERE status = 'Approved' AND is_deleted = false`;
+    let revQuery = `SELECT COALESCE(SUM(COALESCE(total_amount, amount)), 0) as total FROM quotations WHERE status = 'Approved' AND deleted_at IS NULL`;
     let revParams = [];
     // Currently quotes may not have company_id in all schemas, but if they do:
     if (company_id) {
@@ -123,7 +123,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
         SELECT COALESCE(SUM(COALESCE(q.total_amount, q.amount)), 0) as total 
         FROM quotations q
         LEFT JOIN leads l ON q.lead_id = l.id
-        WHERE q.status = 'Approved' AND q.is_deleted = false 
+        WHERE q.status = 'Approved' AND q.deleted_at IS NULL 
         AND (q.company_id = $1 OR l.company_id = $1)
       `;
       revParams.push(company_id);
@@ -136,7 +136,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
       SELECT a.type, a.title, a.created_at, l.company_name as lead_company_name
       FROM activities a
       LEFT JOIN leads l ON a.lead_id = l.id
-      WHERE a.is_deleted = false
+      WHERE a.deleted_at IS NULL
     `;
     let recentParams = [];
     if (company_id) {
@@ -175,7 +175,7 @@ router.get('/lead_funnel', requireAuth, async (req, res) => {
     let query = `
       SELECT stage, COUNT(*) as count 
       FROM leads 
-      WHERE is_deleted = false
+      WHERE deleted_at IS NULL
     `;
     const params = [];
     if (company_id) {
@@ -209,7 +209,7 @@ router.get('/revenue', requireAuth, async (req, res) => {
         SUM(COALESCE(q.total_amount, q.amount)) as revenue
       FROM quotations q
       LEFT JOIN leads l ON q.lead_id = l.id
-      WHERE q.status = 'Approved' AND q.is_deleted = false
+      WHERE q.status = 'Approved' AND q.deleted_at IS NULL
         AND q.created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months')
     `;
     
@@ -248,7 +248,7 @@ router.get('/performance', requireAuth, async (req, res) => {
       FROM quotations q
       JOIN leads l ON q.lead_id = l.id
       LEFT JOIN profiles p ON p.id::text = l.assigned_to OR p.full_name = l.assigned_to
-      WHERE q.status = 'Approved' AND q.is_deleted = false AND l.assigned_to IS NOT NULL
+      WHERE q.status = 'Approved' AND q.deleted_at IS NULL AND l.assigned_to IS NOT NULL
     `;
     
     const params = [];
@@ -275,7 +275,7 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
     const { company_id } = req.query;
 
     const getTable = async (table, extraWhere = '', orderBy = '') => {
-      let q = `SELECT * FROM ${table} WHERE is_deleted = false`;
+      let q = `SELECT * FROM ${table} WHERE deleted_at IS NULL`;
       const params = [];
       if (company_id) {
         // Only profiles and export_orders have company_id definitively in all schemas.
@@ -297,7 +297,7 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
       } catch (e) {
         // If table doesn't have company_id, fallback
         if (e.message.includes('company_id')) {
-           const fallbackQ = `SELECT * FROM ${table} WHERE is_deleted = false` + (orderBy ? ` ORDER BY ${orderBy}` : '');
+           const fallbackQ = `SELECT * FROM ${table} WHERE deleted_at IS NULL` + (orderBy ? ` ORDER BY ${orderBy}` : '');
            const fallbackRes = await db.query(fallbackQ);
            return fallbackRes.rows;
         }
@@ -309,7 +309,7 @@ router.get('/reports_raw', requireAuth, async (req, res) => {
     let profilesData = [];
     try {
       const { rows } = await db.query(
-        "SELECT id, full_name, avatar_url, requested_role, monthly_target, company_id FROM profiles WHERE is_deleted = false"
+        "SELECT id, full_name, avatar_url, requested_role, monthly_target, company_id FROM profiles WHERE deleted_at IS NULL"
       );
       profilesData = rows || [];
       if (company_id) profilesData = profilesData.filter(p => p.company_id === company_id);
@@ -374,7 +374,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
   try {
     // 1. Active employees count — from VPS DB
     const empDataRes = await db.query(
-      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted = false"
+      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND deleted_at IS NULL"
     );
     const empCount = parseInt(empDataRes.rows[0].count, 10);
     const activeEmployees = empCount;
@@ -389,8 +389,8 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
 
     const attRes = await db.query(
       `SELECT
-         COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR is_deleted = false)) as present_count,
-         COUNT(DISTINCT employee_id) FILTER (WHERE (is_deleted IS NULL OR is_deleted = false)) as unique_employees
+         COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR deleted_at IS NULL)) as present_count,
+         COUNT(DISTINCT employee_id) FILTER (WHERE (is_deleted IS NULL OR deleted_at IS NULL)) as unique_employees
        FROM attendance_logs
        WHERE date >= $1 AND date <= $2`,
       [weekStartStr, todayIST]
@@ -405,7 +405,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     // 3. Tasks (activities) completed this week
     const tasksRes = await db.query(
       `SELECT COUNT(*) as total FROM activities
-       WHERE completed = true AND is_deleted = false
+       WHERE completed = true AND deleted_at IS NULL
        AND updated_at >= $1`,
       [weekStart.toISOString()]
     );
@@ -415,7 +415,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     const responseRes = await db.query(
       `SELECT AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 3600.0) as avg_hours
        FROM activities
-       WHERE completed = true AND is_deleted = false
+       WHERE completed = true AND deleted_at IS NULL
        AND EXTRACT(EPOCH FROM (updated_at - created_at)) / 3600.0 BETWEEN 0 AND 72`
     );
     const avgResponseHours = parseFloat(responseRes.rows[0].avg_hours || 0);
@@ -427,13 +427,13 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
     lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
 
     const prevEmpDataRes = await db.query(
-      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND is_deleted = false AND created_at <= $1",
+      "SELECT COUNT(*) as count FROM profiles WHERE status = 'approved' AND is_active = true AND deleted_at IS NULL AND created_at <= $1",
       [lastWeekEnd.toISOString()]
     );
     const prevActiveEmployees = parseInt(prevEmpDataRes.rows[0].count, 10) || 0;
 
     const prevAttRes = await db.query(
-      `SELECT COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR is_deleted = false)) as present_count
+      `SELECT COUNT(*) FILTER (WHERE status IN ('present','on_leave') AND (is_deleted IS NULL OR deleted_at IS NULL)) as present_count
        FROM attendance_logs WHERE date >= $1 AND date <= $2`,
       [lastWeekStart.toISOString().slice(0, 10), lastWeekEnd.toISOString().slice(0, 10)]
     );
@@ -443,7 +443,7 @@ router.get('/employee_productivity', requireAuth, async (req, res) => {
 
     const prevTasksRes = await db.query(
       `SELECT COUNT(*) as total FROM activities
-       WHERE completed = true AND is_deleted = false
+       WHERE completed = true AND deleted_at IS NULL
        AND updated_at >= $1 AND updated_at < $2`,
       [lastWeekStart.toISOString(), weekStart.toISOString()]
     );

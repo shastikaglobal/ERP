@@ -10,7 +10,7 @@ const path = require('path');
 // GET /api/emails/accounts - Fetch zoho accounts
 router.get('/accounts', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM zoho_accounts WHERE is_deleted IS NOT TRUE");
+    const { rows } = await db.query("SELECT * FROM zoho_accounts WHERE deleted_at IS NULL");
     res.json(rows || []);
   } catch (err) {
     console.error("DB Error (get zoho accounts):", err);
@@ -22,7 +22,7 @@ router.get('/accounts', requireAuth, async (req, res) => {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { account_id } = req.query;
-    let queryText = "SELECT * FROM emails WHERE is_deleted IS NOT TRUE";
+    let queryText = "SELECT * FROM emails WHERE deleted_at IS NULL";
     const params = [];
     if (account_id) {
       queryText += " AND account_id = $1";
@@ -41,7 +41,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await db.query("SELECT * FROM emails WHERE id = $1 AND is_deleted IS NOT TRUE LIMIT 1", [id]);
+    const { rows } = await db.query("SELECT * FROM emails WHERE id = $1 AND deleted_at IS NULL LIMIT 1", [id]);
     if (!rows || rows.length === 0) return res.status(404).json({ error: "Email not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -133,14 +133,14 @@ router.post('/send', requireAuth, async (req, res) => {
 
     const info = await transporter.sendMail(mailOptions);
     
-    await db.query("UPDATE emails SET status = 'sent' WHERE id = $1", [record.id]);
+    await db.query(`UPDATE emails SET status = 'sent' WHERE id = \$1`, [record.id, req.user?.sub || req.user?.id]);
     
     res.json({ success: true, messageId: info.messageId });
   } catch (err) {
     console.error("Email send error:", err);
     
     if (req.body.record?.id) {
-      await db.query("UPDATE emails SET status = 'failed' WHERE id = $1", [req.body.record.id]);
+      await db.query(`UPDATE emails SET status = 'failed' WHERE id = \$1`, [req.body.record.id, req.user?.sub || req.user?.id]);
     }
     
     res.status(500).json({ success: false, error: err.message });
@@ -151,10 +151,7 @@ router.post('/send', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      "UPDATE emails SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
-      [id]
-    );
+    await db.query(`UPDATE emails SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete email):", err);
@@ -168,10 +165,7 @@ router.delete('/accounts/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     
     // Update local database
-    await db.query(
-      "UPDATE zoho_accounts SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
-      [id]
-    );
+    await db.query(`UPDATE zoho_accounts SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
 
     // (Supabase sync logic removed)
     

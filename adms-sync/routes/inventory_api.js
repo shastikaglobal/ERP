@@ -13,7 +13,7 @@ async function handleGet(req, res, tableName, defaultSort = 'created_at DESC') {
     }
     
     // Some tables might not have company_id, but the ones we care about mostly do.
-    let query = `SELECT * FROM ${tableName} WHERE is_deleted IS NOT TRUE`;
+    let query = `SELECT * FROM ${tableName} WHERE deleted_at IS NULL`;
     let params = [];
     
     const tableColumns = await db.query('SELECT column_name FROM information_schema.columns WHERE table_name = $1', [tableName]);
@@ -149,7 +149,7 @@ router.get('/inventory_batches', requireAuth, async (req, res) => {
       FROM inventory_batches b
       LEFT JOIN products p ON b.product_id = p.id
       LEFT JOIN warehouses w ON b.warehouse_id = w.id
-      WHERE b.company_id = $1 AND b.is_deleted IS NOT TRUE
+      WHERE b.company_id = $1 AND b.deleted_at IS NULL
       ORDER BY b.created_at DESC
     `, [company_id]);
     
@@ -201,7 +201,7 @@ router.put('/inventory_batches/:id', requireAuth, async (req, res) => {
 // ---------------- AVAILABLE STOCK ----------------
 router.get('/available_stock', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM available_stock WHERE is_deleted IS NOT TRUE');
+    const { rows } = await db.query('SELECT * FROM available_stock WHERE deleted_at IS NULL');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -311,7 +311,7 @@ router.put('/damaged_stock/:id', requireAuth, async (req, res) => {
 // ---------------- WAREHOUSE STOCK ----------------
 router.get('/warehouse_stock', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM warehouse_stock WHERE is_deleted IS NOT TRUE');
+    const { rows } = await db.query('SELECT * FROM warehouse_stock WHERE deleted_at IS NULL');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

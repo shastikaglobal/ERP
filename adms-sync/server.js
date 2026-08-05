@@ -39,6 +39,7 @@ if (envPath) {
 }
 
 console.log("SERVER PG_PASSWORD:", process.env.PG_PASSWORD); const app = express();
+app.set('trust proxy', 1);
 
 // PAYSLIPS ROUTE
 app.get('/api/payslips', async (req, res) => {

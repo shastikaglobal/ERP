@@ -29,7 +29,7 @@ router.get('/', requireAuth, async (req, res) => {
              CASE WHEN c.id IS NOT NULL THEN 'converted' ELSE 'active' END as conversion_status
       FROM farmers f
       LEFT JOIN customers c ON c.farmer_id = f.id
-      WHERE f.company_id = $1 AND f.is_deleted IS NOT TRUE
+      WHERE f.company_id = $1 AND f.deleted_at IS NULL
     `;
     const params = [company_id];
 
@@ -107,7 +107,7 @@ router.get('/converted', requireAuth, async (req, res) => {
     const { rows } = await db.query(
       `SELECT f.id FROM farmers f 
        JOIN customers c ON c.farmer_id = f.id 
-       WHERE f.company_id = $1 AND f.is_deleted IS NOT TRUE`,
+       WHERE f.company_id = $1 AND f.deleted_at IS NULL`,
       [company_id]
     );
     res.json(rows);
@@ -541,13 +541,17 @@ module.exports = router;
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({ error: "Invalid UUID format" });
+    }
     
     const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
     const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
     const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
 
     const { rows } = await db.query(
-      `SELECT * FROM farmers WHERE id = $1 AND is_deleted IS NOT TRUE`,
+      `SELECT * FROM farmers WHERE id = $1 AND deleted_at IS NULL`,
       [id]
     );
 
@@ -735,7 +739,7 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
       let existingLead = null;
       if (customerEmail) {
         const { rows } = await db.query(
-          `SELECT id, stage FROM leads WHERE company_id = $1 AND email = $2 AND is_deleted IS NOT TRUE LIMIT 1`,
+          `SELECT id, stage FROM leads WHERE company_id = $1 AND email = $2 AND deleted_at IS NULL LIMIT 1`,
           [company_id, customerEmail]
         );
         if (rows.length > 0) {
@@ -745,7 +749,7 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
 
       if (!existingLead) {
         const { rows } = await db.query(
-          `SELECT id, stage FROM leads WHERE company_id = $1 AND company_name = $2 AND is_deleted IS NOT TRUE LIMIT 1`,
+          `SELECT id, stage FROM leads WHERE company_id = $1 AND company_name = $2 AND deleted_at IS NULL LIMIT 1`,
           [company_id, customerRecord.name]
         );
         if (rows.length > 0) {
@@ -756,10 +760,7 @@ router.post('/:id/convert', requireAuth, async (req, res) => {
       if (existingLead) {
         console.log(`[Sync] Existing lead found for this customer: ${existingLead.id}. Updating stage to Client Successfully Acquired...`);
         // Update stage in VPS DB
-        await db.query(
-          `UPDATE leads SET stage = 'Client Successfully Acquired', updated_at = NOW() WHERE id = $1`,
-          [existingLead.id]
-        );
+        await db.query(`UPDATE leads SET stage = 'Client Successfully Acquired', updated_at = NOW() WHERE id = \$1`, [existingLead.id, req.user?.sub || req.user?.id]);
       } else {
         console.log(`[Sync] No existing lead found. Creating a corresponding lead record for CRM Customer Database...`);
         

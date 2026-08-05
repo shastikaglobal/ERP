@@ -15,7 +15,7 @@ router.get('/', requireAuth, async (req, res) => {
       FROM crm_tasks t
       LEFT JOIN profiles p ON t.assigned_to = p.id::text
       LEFT JOIN leads l ON t.lead_id = l.id
-      WHERE t.is_deleted = false
+      WHERE t.deleted_at IS NULL
     `;
     const params = [];
     
@@ -97,10 +97,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/crm-tasks/:id
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    await db.query(
-      `UPDATE crm_tasks SET is_deleted = true, deleted_at = NOW() WHERE id = $1`,
-      [req.params.id]
-    );
+    await db.query(`UPDATE crm_tasks SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [req.params.id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete task):", err);

@@ -30,7 +30,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     try {
       const { rows: localProfiles } = await db.query(
-        "SELECT id, full_name, email, requested_role FROM profiles WHERE is_deleted IS NOT TRUE ORDER BY full_name"
+        "SELECT id, full_name, email, requested_role FROM profiles WHERE deleted_at IS NULL ORDER BY full_name"
       );
       const { rows: localPerms } = await db.query(
         "SELECT user_id, section, has_access FROM user_permissions"

@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/certificates', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM certificates_of_origin WHERE is_deleted = false ORDER BY created_at DESC`
+      `SELECT * FROM certificates_of_origin WHERE deleted_at IS NULL ORDER BY created_at DESC`
     );
     res.json(rows);
   } catch (err) {
@@ -52,7 +52,7 @@ router.post('/certificates', requireAuth, async (req, res) => {
 // DELETE /api/documents/certificates/:id
 router.delete('/certificates/:id', requireAuth, async (req, res) => {
   try {
-    await db.query(`UPDATE certificates_of_origin SET is_deleted = true WHERE id = $1`, [req.params.id]);
+    await db.query(`UPDATE certificates_of_origin SET is_deleted = true WHERE id = \$1`, [req.params.id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("Error DELETE /api/documents/certificates:", err.message);

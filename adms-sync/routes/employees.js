@@ -49,7 +49,7 @@ router.get('/', requireAuth, async (req, res) => {
                avatar_url, biometric_id, dob, joining_date, system_mode, city, 
                monthly_salary, punch_deadline, department 
         FROM profiles 
-        WHERE status = 'approved' AND (is_deleted IS NOT TRUE)
+        WHERE status = 'approved' AND (deleted_at IS NULL)
         ORDER BY full_name
       `);
       return res.json(rows);
@@ -71,7 +71,7 @@ router.get('/all/profiles', requireAuth, async (req, res) => {
         SELECT id, company_id, full_name, email, phone, role, requested_role, status, rejection_reason, 
                created_at, department, is_active, biometric_id, monthly_salary, joining_date 
         FROM profiles 
-        WHERE is_deleted IS NOT TRUE 
+        WHERE deleted_at IS NULL 
         ORDER BY created_at DESC
       `);
       return res.json(rows);
@@ -92,7 +92,7 @@ router.get('/lookup-id/:id', async (req, res) => {
     console.log(`[Lookup ID] Checking local database for ID: ${id}`);
     
     const { rows } = await db.query(
-      `SELECT email, full_name, role FROM profiles WHERE (employee_id = $1 OR biometric_id = $2) AND is_deleted IS NOT TRUE LIMIT 1`,
+      `SELECT email, full_name, role FROM profiles WHERE (employee_id = $1 OR biometric_id = $2) AND deleted_at IS NULL LIMIT 1`,
       [id, id]
     );
 
@@ -119,7 +119,7 @@ router.get('/:id/roles-permissions', async (req, res) => {
       `SELECT r.slug 
        FROM user_roles ur
        JOIN roles r ON ur.role_id = r.id
-       WHERE ur.user_id = $1 AND ur.is_deleted IS NOT TRUE`,
+       WHERE ur.user_id = $1 AND ur.deleted_at IS NULL`,
       [id]
     );
 
@@ -129,7 +129,7 @@ router.get('/:id/roles-permissions', async (req, res) => {
        FROM user_roles ur
        JOIN role_permissions rp ON ur.role_id = rp.role_id
        JOIN permissions p ON rp.permission_id = p.id
-       WHERE ur.user_id = $1 AND ur.is_deleted IS NOT TRUE`,
+       WHERE ur.user_id = $1 AND ur.deleted_at IS NULL`,
       [id]
     );
 
@@ -371,7 +371,7 @@ router.put('/all/profiles/:id', requireAuth, async (req, res) => {
             INSERT INTO user_roles (user_id, role_id) 
             VALUES ($1, $2) 
             ON CONFLICT (user_id) 
-            DO UPDATE SET role_id = EXCLUDED.role_id, is_deleted = false, deleted_at = NULL, deleted_by = NULL
+            DO UPDATE SET role_id = EXCLUDED.role_id, deleted_at IS NULL, deleted_at = NULL, deleted_by = NULL
           `, [id, roleId]);
           console.log(`[ROLE SYNC] User ${id} assigned role '${requested_role}' in local DB`);
         } catch (localUrErr) {

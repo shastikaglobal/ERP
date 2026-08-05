@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/subnets', requireAuth, async (req, res) => {
   try {
     const { company_id } = req.query;
-    let query = 'SELECT * FROM corporate_subnets WHERE is_deleted = false';
+    let query = 'SELECT * FROM corporate_subnets WHERE deleted_at IS NULL';
     let params = [];
     if (company_id) {
       query += ' AND company_id = $1';
@@ -46,7 +46,7 @@ router.post('/subnets', requireAuth, async (req, res) => {
 router.delete('/subnets/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('UPDATE corporate_subnets SET is_deleted = true, deleted_at = NOW() WHERE id = $1', [id]);
+    await db.query(`UPDATE corporate_subnets SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete subnet):", err);
@@ -61,7 +61,7 @@ router.get('/logs', requireAuth, async (req, res) => {
     let query = `
       SELECT id, action, resource_type, user_agent, timestamp, status 
       FROM audit_logs 
-      WHERE resource_type = 'security' AND is_deleted = false 
+      WHERE resource_type = 'security' AND deleted_at IS NULL 
       ORDER BY timestamp DESC LIMIT 20
     `;
     const { rows } = await db.query(query);

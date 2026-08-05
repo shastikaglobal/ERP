@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
 
     // Look up in the local VPS profiles table
     const { rows } = await db.query(
-      'SELECT id, full_name, email, role, status, password_hash, force_password_reset FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      'SELECT id, full_name, email, role, status, password_hash, force_password_reset FROM profiles WHERE email = $1 AND deleted_at IS NULL LIMIT 1',
       [email.trim()]
     );
 
@@ -232,7 +232,7 @@ router.post('/refresh', async (req, res) => {
 
     const userId = rows[0].user_id;
     const { rows: userRows } = await db.query(
-      'SELECT email FROM profiles WHERE id = $1 AND is_active = true AND is_deleted IS NOT TRUE',
+      'SELECT email FROM profiles WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
       [userId]
     );
 
@@ -268,7 +268,7 @@ router.post('/reset-password', async (req, res) => {
 
     // 1. Fetch user from local profiles
     const { rows } = await db.query(
-      'SELECT id, full_name, email FROM profiles WHERE email = $1 AND is_deleted IS NOT TRUE LIMIT 1',
+      'SELECT id, full_name, email FROM profiles WHERE email = $1 AND deleted_at IS NULL LIMIT 1',
       [email.trim()]
     );
 

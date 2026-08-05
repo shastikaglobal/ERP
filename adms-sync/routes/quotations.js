@@ -53,7 +53,7 @@ router.get('/public/:id', async (req, res) => {
               p.name as product_name, p.sku as product_sku, p.unit as product_unit, p.hs_code as product_hs_code
        FROM quotation_items qi
        LEFT JOIN products p ON qi.product_id = p.id
-       WHERE qi.quotation_id = $1 AND qi.is_deleted = false
+       WHERE qi.quotation_id = $1 AND qi.deleted_at IS NULL
        ORDER BY qi.created_at`,
       [req.params.id]
     );
@@ -93,7 +93,7 @@ router.get('/approved', requireAuth, async (req, res) => {
       SELECT q.*, c.name as customer_name, c.country as customer_country
       FROM quotations q
       LEFT JOIN customers c ON q.customer_id = c.id
-      WHERE q.status = 'Approved' AND q.is_deleted = false
+      WHERE q.status = 'Approved' AND q.deleted_at IS NULL
       ORDER BY q.created_at DESC
     `);
     
@@ -108,7 +108,7 @@ router.get('/approved', requireAuth, async (req, res) => {
       SELECT qi.*, p.name as product_name, p.unit as product_unit
       FROM quotation_items qi
       LEFT JOIN products p ON qi.product_id = p.id
-      WHERE qi.quotation_id IN (${placeholders}) AND qi.is_deleted = false
+      WHERE qi.quotation_id IN (${placeholders}) AND qi.deleted_at IS NULL
     `, qIds);
 
     const formattedRows = qResult.rows.map(row => {
@@ -175,7 +175,7 @@ router.get('/:id/items', requireAuth, async (req, res) => {
               p.name as product_name, p.sku as product_sku, p.unit as product_unit, p.hs_code as product_hs_code
        FROM quotation_items qi
        LEFT JOIN products p ON qi.product_id = p.id
-       WHERE qi.quotation_id = $1 AND qi.is_deleted = false
+       WHERE qi.quotation_id = $1 AND qi.deleted_at IS NULL
        ORDER BY qi.created_at`,
       [req.params.id]
     );
@@ -345,10 +345,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 // DELETE /api/quotations/:id
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    await db.query(
-      `UPDATE quotations SET is_deleted = true, deleted_at = NOW() WHERE id = $1`,
-      [req.params.id]
-    );
+    await db.query(`UPDATE quotations SET is_deleted = true, deleted_at = NOW() WHERE id = \$1`, [req.params.id, req.user?.sub || req.user?.id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete quotation):", err);

@@ -10,11 +10,11 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const companyId = req.query.company_id;
     if (companyId) {
-      const { rows } = await db.query('SELECT * FROM leads WHERE company_id = $1 AND is_deleted IS NOT TRUE ORDER BY created_at DESC', [companyId]);
+      const { rows } = await db.query('SELECT * FROM leads WHERE company_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC', [companyId]);
       return res.json(rows);
     }
 
-    const { rows } = await db.query('SELECT * FROM leads WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC');
+    const { rows } = await db.query('SELECT * FROM leads WHERE deleted_at IS NULL ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get leads):", err);
@@ -53,7 +53,7 @@ router.get('/converted', requireAuth, async (req, res) => {
       LEFT JOIN acquisition_channels ac
         ON ac.id = l.source_id
       WHERE l.company_id = $1
-        AND l.is_deleted IS NOT TRUE
+        AND l.deleted_at IS NULL
         AND (
           l.stage ILIKE '%client%'
           OR l.stage ILIKE '%convert%'
@@ -94,7 +94,7 @@ router.get('/converted/debug', async (req, res) => {
       FROM leads l
       LEFT JOIN acquisition_channels ac ON ac.id = l.source_id
       WHERE l.company_id = $1
-        AND l.is_deleted IS NOT TRUE
+        AND l.deleted_at IS NULL
         AND (
           l.stage ILIKE '%client%'
           OR l.stage ILIKE '%convert%'
@@ -215,7 +215,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid lead id" });
     }
 
-    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND is_deleted IS NOT TRUE', [id]);
+    const { rows } = await db.query('SELECT * FROM leads WHERE id = $1 AND deleted_at IS NULL', [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -326,7 +326,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('UPDATE leads SET is_deleted = true, deleted_at = $1 WHERE id = $2', [new Date().toISOString(), id]);
+    await db.query('UPDATE leads SET deleted_at = NOW(), deleted_by = \$2 WHERE id = $2', [new Date().toISOString(), id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete lead):", err);
@@ -342,7 +342,7 @@ router.get('/meta/sources', requireAuth, async (req, res) => {
       const { rows } = await db.query(`
         SELECT DISTINCT ac.* FROM acquisition_channels ac
         INNER JOIN leads l ON ac.id = l.source_id
-        WHERE ac.company_id = $1 AND l.is_deleted IS NOT TRUE
+        WHERE ac.company_id = $1 AND l.deleted_at IS NULL
         ORDER BY ac.channel_name
       `, [companyId]);
       return res.json(rows);
@@ -350,7 +350,7 @@ router.get('/meta/sources', requireAuth, async (req, res) => {
     const { rows } = await db.query(`
       SELECT DISTINCT ac.* FROM acquisition_channels ac
       INNER JOIN leads l ON ac.id = l.source_id
-      WHERE l.is_deleted IS NOT TRUE
+      WHERE l.deleted_at IS NULL
       ORDER BY ac.channel_name
     `);
     res.json(rows);
@@ -386,7 +386,7 @@ router.post('/meta/sources', requireAuth, async (req, res) => {
 router.delete('/meta/sources/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('DELETE FROM acquisition_channels WHERE id = $1', [id]);
+    await db.query('UPDATE acquisition_channels SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \acquisition_channels', [id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete source):", err);

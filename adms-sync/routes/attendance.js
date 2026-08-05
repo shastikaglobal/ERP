@@ -11,7 +11,7 @@ router.get('/', requireAuth, async (req, res) => {
       SELECT a.id, a.employee_id, a.date::text as date, a.clock_in, a.clock_out, a.status, a.is_manual, a.is_excused, a.is_deleted, a.notes, p.full_name as name 
       FROM attendance_logs a 
       LEFT JOIN profiles p ON a.employee_id::text = p.id::text 
-      WHERE (a.is_deleted IS NULL OR a.is_deleted = false)
+      WHERE (a.is_deleted IS NULL OR a.deleted_at IS NULL)
     `;
     const params = [];
     
@@ -43,7 +43,7 @@ router.put('/manual-time', requireAuth, async (req, res) => {
 
     if (rows.length > 0) {
       await db.query(
-        'UPDATE attendance_logs SET clock_in = $1, clock_out = $2, is_manual = true, status = $3, is_deleted = false, deleted_at = null, deleted_by = null WHERE employee_id = $4 AND date = $5',
+        'UPDATE attendance_logs SET clock_in = $1, clock_out = $2, is_manual = true, status = $3, deleted_at IS NULL, deleted_at = null, deleted_by = null WHERE employee_id = $4 AND date = $5',
         [check_in, check_out || null, 'present', employee_id, date]
       );
     } else {
@@ -72,7 +72,7 @@ router.put('/mark-od', requireAuth, async (req, res) => {
     
     if (rows.length > 0) {
       await db.query(
-        'UPDATE attendance_logs SET status = $1, is_manual = true, clock_in = $2, notes = $3, is_deleted = false, deleted_at = null, deleted_by = null WHERE employee_id = $4 AND date = $5',
+        'UPDATE attendance_logs SET status = $1, is_manual = true, clock_in = $2, notes = $3, deleted_at IS NULL, deleted_at = null, deleted_by = null WHERE employee_id = $4 AND date = $5',
         ['present', check_in, od_reason || 'Field Trip (OD)', employee_id, date]
       );
     } else {
@@ -100,7 +100,7 @@ router.put('/mark-leave', requireAuth, async (req, res) => {
 
     if (rows.length > 0) {
       await db.query(
-        'UPDATE attendance_logs SET status = $1, is_manual = true, is_deleted = false, deleted_at = null, deleted_by = null WHERE employee_id = $2 AND date = $3',
+        'UPDATE attendance_logs SET status = $1, is_manual = true, deleted_at IS NULL, deleted_at = null, deleted_by = null WHERE employee_id = $2 AND date = $3',
         ['on_leave', employee_id, date]
       );
     } else {
@@ -138,7 +138,7 @@ router.put('/delete-log', requireAuth, async (req, res) => {
     const deletedBy = req.user.sub;
     const deletedAt = new Date().toISOString();
     await db.query(
-      'UPDATE attendance_logs SET is_deleted = true, deleted_at = $1, deleted_by = $2 WHERE id = $3',
+      'UPDATE attendance_logs SET deleted_at = NOW(), deleted_by = \$2 WHERE id = $3',
       [deletedAt, deletedBy, id]
     );
     res.json({ success: true });
@@ -162,7 +162,7 @@ router.post('/face-sync', requireAuth, async (req, res) => {
       // Update check_out if it exists, else check_in
       if (check_out) {
         await db.query(
-          'UPDATE attendance_logs SET clock_out = $1, is_deleted = false, deleted_at = null, deleted_by = null WHERE employee_id = $2 AND date = $3',
+          'UPDATE attendance_logs SET clock_out = $1, deleted_at IS NULL, deleted_at = null, deleted_by = null WHERE employee_id = $2 AND date = $3',
           [check_out, employee_id, date]
         );
         await db.query(
@@ -171,7 +171,7 @@ router.post('/face-sync', requireAuth, async (req, res) => {
         );
       } else if (check_in) {
         await db.query(
-          'UPDATE attendance_logs SET clock_in = $1, status = $2, is_deleted = false, deleted_at = null, deleted_by = null WHERE employee_id = $3 AND date = $4',
+          'UPDATE attendance_logs SET clock_in = $1, status = $2, deleted_at IS NULL, deleted_at = null, deleted_by = null WHERE employee_id = $3 AND date = $4',
           [check_in, status, employee_id, date]
         );
         await db.query(

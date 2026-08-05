@@ -118,7 +118,7 @@ router.put('/invoices/:id', requireAuth, async (req, res) => {
 router.delete('/invoices/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('DELETE FROM invoices WHERE id = $1', [id]);
+    await db.query('UPDATE invoices SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \invoices', [id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete invoice):", err);
@@ -146,7 +146,7 @@ router.get('/quotations', requireAuth, async (req, res) => {
               WHERE qi.quotation_id = q.id) as items
       FROM quotations q
       LEFT JOIN customers c ON q.customer_id = c.id
-      WHERE q.is_deleted IS NOT TRUE
+      WHERE q.deleted_at IS NULL
       ORDER BY q.created_at DESC
     `);
     
@@ -259,7 +259,7 @@ router.put('/quotations/:id', requireAuth, async (req, res) => {
 router.delete('/quotations/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('UPDATE quotations SET is_deleted = true, deleted_at = $1 WHERE id = $2', [new Date().toISOString(), id]);
+    await db.query('UPDATE quotations SET deleted_at = NOW(), deleted_by = \$2 WHERE id = $2', [new Date().toISOString(), id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete quotation):", err);

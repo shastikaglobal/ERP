@@ -10,7 +10,7 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/products - Fetch all products
 router.get('/products', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM products WHERE is_deleted IS NOT TRUE ORDER BY name ASC');
+    const { rows } = await db.query('SELECT * FROM products WHERE deleted_at IS NULL ORDER BY name ASC');
     res.json(rows);
   } catch (err) {
     console.error("DB Error (get products):", err);
@@ -77,7 +77,7 @@ router.delete('/products/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const deletedBy = req.user?.sub || null;
     await db.query(
-      'UPDATE products SET is_deleted = true, is_active = false, deleted_at = $1, deleted_by = $2 WHERE id = $3',
+      'UPDATE products SET deleted_at = NOW(), deleted_by = \$2 WHERE id = $3',
       [new Date().toISOString(), deletedBy, id]
     );
     res.json({ success: true });
@@ -147,7 +147,7 @@ router.put('/categories/:id', requireAuth, async (req, res) => {
 router.delete('/categories/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query('DELETE FROM categories WHERE id = $1', [id]);
+    await db.query('UPDATE categories SET deleted_at = NOW(), deleted_by = \$2 WHERE id = \categories', [id]);
     res.json({ success: true });
   } catch (err) {
     console.error("DB Error (delete category):", err);
