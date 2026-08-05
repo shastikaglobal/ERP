@@ -22,28 +22,8 @@ export function useActivityTracker(moduleName: string) {
     const userId = user.id;
 
     const updateActiveSession = async (isIdle: boolean = false) => {
-      try {
-        const role = profile?.requested_role || "BDE";
-        const device = navigator.userAgent;
-        const lastActiveTime = isIdle 
-          ? new Date(Date.now() - 5 * 60 * 1000).toISOString()
-          : new Date().toISOString();
-
-        await fetch('/api/analytics/active_sessions', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            profile_name: userName,
-            profile_role: role,
-            device_info: device,
-            last_active: lastActiveTime
-          })
-        });
-      } catch (err) {
-        console.error("[ActivityTracker] Exception updating active session:", err);
-      }
+      // Stubbed out because /api/analytics/active_sessions does not exist on backend
+      // and it was flooding the console with 404 errors.
     };
 
     // Log page_visit on mount
