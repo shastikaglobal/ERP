@@ -29,7 +29,7 @@ router.get('/', requireAuth, async (req, res) => {
              CASE WHEN c.id IS NOT NULL THEN 'converted' ELSE 'active' END as conversion_status
       FROM farmers f
       LEFT JOIN customers c ON c.farmer_id = f.id
-      WHERE f.company_id = $1 AND f.deleted_at IS NULL
+      WHERE f.company_id = $1 AND f.is_deleted IS NOT TRUE
     `;
     const params = [company_id];
 
@@ -107,7 +107,7 @@ router.get('/converted', requireAuth, async (req, res) => {
     const { rows } = await db.query(
       `SELECT f.id FROM farmers f 
        JOIN customers c ON c.farmer_id = f.id 
-       WHERE f.company_id = $1 AND f.deleted_at IS NULL`,
+       WHERE f.company_id = $1 AND f.is_deleted IS NOT TRUE`,
       [company_id]
     );
     res.json(rows);
@@ -285,6 +285,263 @@ router.put('/kyc/:id', requireAuth, async (req, res) => {
     res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });
+
+// GET /api/farmers/:id
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(id)) { return res.status(400).json({ error: "Invalid ID format" }); }
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    const { rows } = await db.query(
+      `SELECT * FROM farmers WHERE id = $1 AND is_deleted IS NOT TRUE`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+
+    if (!isAdmin && rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('DB Error (get farmer by id):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// PUT /api/farmers/:id
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
+    
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE farmers SET 
+        full_name = COALESCE($1, full_name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        country = COALESCE($4, country),
+        district = COALESCE($5, district),
+        primary_crops = COALESCE($6, primary_crops),
+        is_active = COALESCE($7, is_active),
+        notes = COALESCE($8, notes),
+        bank_account = COALESCE($9, bank_account),
+        state = COALESCE($10, state),
+        village = COALESCE($11, village),
+        code = COALESCE($12, code),
+        updated_at = NOW()
+       WHERE id = $13 RETURNING *`,
+      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
+    );
+
+    const updatedFarmer = rows[0];
+
+    res.json(updatedFarmer);
+  } catch (err) {
+    console.error('DB Error (update farmer):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// DELETE /api/farmers/:id
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
+      [req.user.sub, id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (delete farmer):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// POST /api/farmers/:id/convert - Convert a farmer record into a customer
+router.post('/:id/convert', requireAuth, async (req, res) => {
+  const farmerId = req.params.id;
+  const { company_id, name, email, country, phone, notes } = req.body;
+
+  if (!company_id) {
+    return res.status(400).json({ error: 'company_id is required' });
+  }
+
+  try {
+    let { rows: farmerRows } = await db.query(
+      `SELECT id, company_id, full_name, email, phone, country, notes, is_deleted FROM farmers WHERE id = $1`,
+      [farmerId]
+    );
+
+    if (farmerRows.length === 0 || farmerRows[0].is_deleted) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+
+    const farmer = farmerRows[0];
+    const customerEmail = (email || farmer.email || '').trim();
+
+    // Check if customer with this farmer_id already exists (most reliable)
+    const { rows: existingByFarmer } = await db.query(
+      `SELECT * FROM customers WHERE company_id = $1 AND farmer_id = $2 LIMIT 1`,
+      [company_id, farmerId]
+    );
+
+    let customerRecord = null;
+
+    if (existingByFarmer.length > 0) {
+      customerRecord = existingByFarmer[0];
+      console.log(`[Sync] Farmer ${farmerId} already converted to customer ${customerRecord.id}. Linking to CRM leads...`);
+    } else {
+      // Check if a customer with the same email exists in VPS DB
+      let existingVpsCust = null;
+      if (customerEmail) {
+        const { rows } = await db.query(
+          `SELECT * FROM customers WHERE company_id = $1 AND email = $2 LIMIT 1`,
+          [company_id, customerEmail]
+        );
+        if (rows.length > 0) {
+          existingVpsCust = rows[0];
+        }
+      }
+
+      const hasOtherFarmer = existingVpsCust && existingVpsCust.farmer_id;
+
+      if (existingVpsCust && !hasOtherFarmer) {
+        console.log(`[Sync] Customer with email ${customerEmail} already exists and is not linked to another farmer. Connecting farmer ${farmerId} to this customer...`);
+        
+        // Use existing ID
+        const targetId = existingVpsCust.id;
+
+        // Update local VPS customer to set farmer_id
+        const { rows } = await db.query(
+          `UPDATE customers SET farmer_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+          [farmerId, targetId]
+        );
+        existingVpsCust = rows[0];
+
+        customerRecord = existingVpsCust;
+      } else {
+        // Create new customer record
+        // If a customer with this email already exists in the company, set email to null to avoid unique key violation
+        const insertEmail = existingVpsCust ? null : customerEmail;
+
+        // Insert into local VPS database
+        const { rows: insertedRows } = await db.query(
+          `INSERT INTO customers (company_id, name, email, country, phone, notes, farmer_id) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [
+            company_id,
+            name || farmer.full_name,
+            insertEmail || null,
+            country || farmer.country || null,
+            phone || farmer.phone || null,
+            notes || farmer.notes || null,
+            farmerId,
+          ]
+        );
+
+        customerRecord = insertedRows[0];
+      }
+    }
+
+    // Now, also connect/upsert this converted customer to the CRM leads database so it shows up in Customer Database page!
+    if (customerRecord) {
+      // Check if a lead with same email or company name exists
+      let existingLead = null;
+      if (customerEmail) {
+        const { rows } = await db.query(
+          `SELECT id, stage FROM leads WHERE company_id = $1 AND email = $2 AND is_deleted IS NOT TRUE LIMIT 1`,
+          [company_id, customerEmail]
+        );
+        if (rows.length > 0) {
+          existingLead = rows[0];
+        }
+      }
+
+      if (!existingLead) {
+        const { rows } = await db.query(
+          `SELECT id, stage FROM leads WHERE company_id = $1 AND company_name = $2 AND is_deleted IS NOT TRUE LIMIT 1`,
+          [company_id, customerRecord.name]
+        );
+        if (rows.length > 0) {
+          existingLead = rows[0];
+        }
+      }
+
+      if (existingLead) {
+        console.log(`[Sync] Existing lead found for this customer: ${existingLead.id}. Updating stage to Client Successfully Acquired...`);
+        // Update stage in VPS DB
+        await db.query(
+          `UPDATE leads SET stage = 'Client Successfully Acquired', updated_at = NOW() WHERE id = $1`,
+          [existingLead.id]
+        );
+      } else {
+        console.log(`[Sync] No existing lead found. Creating a corresponding lead record for CRM Customer Database...`);
+        
+        // Insert into leads in VPS DB
+        const leadId = customerRecord.id; // Sync the IDs to keep them aligned
+        await db.query(
+          `INSERT INTO leads (id, company_id, company_name, contact_name, country, email, mobile, phone, stage, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Client Successfully Acquired', NOW(), NOW())
+           ON CONFLICT (id) DO UPDATE SET stage = 'Client Successfully Acquired', updated_at = NOW()`,
+          [
+            leadId,
+            company_id,
+            customerRecord.name,
+            customerRecord.name,
+            customerRecord.country || null,
+            customerRecord.email || null,
+            customerRecord.phone || null,
+            customerRecord.phone || null,
+          ]
+        );
+      }
+    }
+
+    return res.status(200).json(customerRecord);
+  } catch (err) {
+    console.error('DB Error (convert farmer):', err);
+    return res.status(500).json({ error: err.message || 'Failed to convert farmer to customer' });
+  }
+});
+
+
 
 // --- FARM VISITS ---
 router.get('/visits', requireAuth, async (req, res) => {
@@ -535,262 +792,5 @@ router.post('/tickets', requireAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-module.exports = router;
-// GET /api/farmers/:id
-router.get('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({ error: "Invalid UUID format" });
-    }
-    
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    const { rows } = await db.query(
-      `SELECT * FROM farmers WHERE id = $1 AND deleted_at IS NULL`,
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-
-    if (!isAdmin && rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('DB Error (get farmer by id):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// PUT /api/farmers/:id
-router.put('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
-    
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    const { rows } = await db.query(
-      `UPDATE farmers SET 
-        full_name = COALESCE($1, full_name),
-        email = COALESCE($2, email),
-        phone = COALESCE($3, phone),
-        country = COALESCE($4, country),
-        district = COALESCE($5, district),
-        primary_crops = COALESCE($6, primary_crops),
-        is_active = COALESCE($7, is_active),
-        notes = COALESCE($8, notes),
-        bank_account = COALESCE($9, bank_account),
-        state = COALESCE($10, state),
-        village = COALESCE($11, village),
-        code = COALESCE($12, code),
-        updated_at = NOW()
-       WHERE id = $13 RETURNING *`,
-      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
-    );
-
-    const updatedFarmer = rows[0];
-
-    res.json(updatedFarmer);
-  } catch (err) {
-    console.error('DB Error (update farmer):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// DELETE /api/farmers/:id
-router.delete('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    const { rows } = await db.query(
-      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
-      [req.user.sub, id]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error('DB Error (delete farmer):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// POST /api/farmers/:id/convert - Convert a farmer record into a customer
-router.post('/:id/convert', requireAuth, async (req, res) => {
-  const farmerId = req.params.id;
-  const { company_id, name, email, country, phone, notes } = req.body;
-
-  if (!company_id) {
-    return res.status(400).json({ error: 'company_id is required' });
-  }
-
-  try {
-    let { rows: farmerRows } = await db.query(
-      `SELECT id, company_id, full_name, email, phone, country, notes, is_deleted FROM farmers WHERE id = $1`,
-      [farmerId]
-    );
-
-    if (farmerRows.length === 0 || farmerRows[0].is_deleted) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-
-    const farmer = farmerRows[0];
-    const customerEmail = (email || farmer.email || '').trim();
-
-    // Check if customer with this farmer_id already exists (most reliable)
-    const { rows: existingByFarmer } = await db.query(
-      `SELECT * FROM customers WHERE company_id = $1 AND farmer_id = $2 LIMIT 1`,
-      [company_id, farmerId]
-    );
-
-    let customerRecord = null;
-
-    if (existingByFarmer.length > 0) {
-      customerRecord = existingByFarmer[0];
-      console.log(`[Sync] Farmer ${farmerId} already converted to customer ${customerRecord.id}. Linking to CRM leads...`);
-    } else {
-      // Check if a customer with the same email exists in VPS DB
-      let existingVpsCust = null;
-      if (customerEmail) {
-        const { rows } = await db.query(
-          `SELECT * FROM customers WHERE company_id = $1 AND email = $2 LIMIT 1`,
-          [company_id, customerEmail]
-        );
-        if (rows.length > 0) {
-          existingVpsCust = rows[0];
-        }
-      }
-
-      const hasOtherFarmer = existingVpsCust && existingVpsCust.farmer_id;
-
-      if (existingVpsCust && !hasOtherFarmer) {
-        console.log(`[Sync] Customer with email ${customerEmail} already exists and is not linked to another farmer. Connecting farmer ${farmerId} to this customer...`);
-        
-        // Use existing ID
-        const targetId = existingVpsCust.id;
-
-        // Update local VPS customer to set farmer_id
-        const { rows } = await db.query(
-          `UPDATE customers SET farmer_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-          [farmerId, targetId]
-        );
-        existingVpsCust = rows[0];
-
-        customerRecord = existingVpsCust;
-      } else {
-        // Create new customer record
-        // If a customer with this email already exists in the company, set email to null to avoid unique key violation
-        const insertEmail = existingVpsCust ? null : customerEmail;
-
-        // Insert into local VPS database
-        const { rows: insertedRows } = await db.query(
-          `INSERT INTO customers (company_id, name, email, country, phone, notes, farmer_id) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          [
-            company_id,
-            name || farmer.full_name,
-            insertEmail || null,
-            country || farmer.country || null,
-            phone || farmer.phone || null,
-            notes || farmer.notes || null,
-            farmerId,
-          ]
-        );
-
-        customerRecord = insertedRows[0];
-      }
-    }
-
-    // Now, also connect/upsert this converted customer to the CRM leads database so it shows up in Customer Database page!
-    if (customerRecord) {
-      // Check if a lead with same email or company name exists
-      let existingLead = null;
-      if (customerEmail) {
-        const { rows } = await db.query(
-          `SELECT id, stage FROM leads WHERE company_id = $1 AND email = $2 AND deleted_at IS NULL LIMIT 1`,
-          [company_id, customerEmail]
-        );
-        if (rows.length > 0) {
-          existingLead = rows[0];
-        }
-      }
-
-      if (!existingLead) {
-        const { rows } = await db.query(
-          `SELECT id, stage FROM leads WHERE company_id = $1 AND company_name = $2 AND deleted_at IS NULL LIMIT 1`,
-          [company_id, customerRecord.name]
-        );
-        if (rows.length > 0) {
-          existingLead = rows[0];
-        }
-      }
-
-      if (existingLead) {
-        console.log(`[Sync] Existing lead found for this customer: ${existingLead.id}. Updating stage to Client Successfully Acquired...`);
-        // Update stage in VPS DB
-        await db.query(`UPDATE leads SET stage = 'Client Successfully Acquired', updated_at = NOW() WHERE id = \$1`, [existingLead.id, req.user?.sub || req.user?.id]);
-      } else {
-        console.log(`[Sync] No existing lead found. Creating a corresponding lead record for CRM Customer Database...`);
-        
-        // Insert into leads in VPS DB
-        const leadId = customerRecord.id; // Sync the IDs to keep them aligned
-        await db.query(
-          `INSERT INTO leads (id, company_id, company_name, contact_name, country, email, mobile, phone, stage, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Client Successfully Acquired', NOW(), NOW())
-           ON CONFLICT (id) DO UPDATE SET stage = 'Client Successfully Acquired', updated_at = NOW()`,
-          [
-            leadId,
-            company_id,
-            customerRecord.name,
-            customerRecord.name,
-            customerRecord.country || null,
-            customerRecord.email || null,
-            customerRecord.phone || null,
-            customerRecord.phone || null,
-          ]
-        );
-      }
-    }
-
-    return res.status(200).json(customerRecord);
-  } catch (err) {
-    console.error('DB Error (convert farmer):', err);
-    return res.status(500).json({ error: err.message || 'Failed to convert farmer to customer' });
-  }
-});
-
-
 
 module.exports = router;

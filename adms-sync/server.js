@@ -1,12 +1,3 @@
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
-});
-
 const WebSocket = require('ws');
 globalThis.WebSocket = WebSocket;
 
@@ -49,12 +40,6 @@ if (envPath) {
 
 console.log("SERVER PG_PASSWORD:", process.env.PG_PASSWORD); const app = express();
 app.set('trust proxy', 1);
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
-});
-
-
 
 // PAYSLIPS ROUTE
 app.get('/api/payslips', async (req, res) => {
@@ -855,12 +840,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
       console.error('--- EMAIL SEND FAILED ---');
       console.error('SMTP/Resend Error details:', mailErr);
       console.error('-------------------------');
-      console.log('Returning link directly since SMTP failed:', actionLink);
-      return res.json({ 
-        success: true, 
-        message: 'Your password reset request has been sent to the system administrator. Please wait for the administrator to provide your temporary password.',
-        link: actionLink 
-      });
+      return res.json({ success: true, message: 'Your password reset request has been sent to the system administrator. Please wait for the administrator to provide your temporary password.', link: actionLink });
     }
   } catch (err) {
     console.error('Reset password error:', err);
