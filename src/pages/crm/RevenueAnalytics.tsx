@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from "react";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
@@ -34,7 +35,7 @@ export default function RevenueAnalytics() {
         setLoading(true);
         try {
             
-            const res = await fetch(`/api/analytics/reports_raw?company_id=${profile.company_id}`, { credentials: 'include'
+            const res = await apiFetch(`/api/analytics/reports_raw?company_id=${profile.company_id}`, { credentials: 'include'
       });
             if (!res.ok) throw new Error("Failed to fetch raw data");
             const rawData = await res.json();

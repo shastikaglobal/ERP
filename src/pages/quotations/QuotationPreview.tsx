@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Download, Edit, Send, Mail, Loader2, Copy, FileText, Printer, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -20,12 +21,12 @@ export default function QuotationPreview() {
     queryFn: async () => {
       
       
-      const qRes = await fetch(`/api/quotations/${id}`, { credentials: 'include'
+      const qRes = await apiFetch(`/api/quotations/${id}`, { credentials: 'include'
       });
       if (!qRes.ok) throw new Error("Failed to load quotation");
       const quotation = await qRes.json();
 
-      const itemsRes = await fetch(`/api/quotations/${id}/items`, { credentials: 'include'
+      const itemsRes = await apiFetch(`/api/quotations/${id}/items`, { credentials: 'include'
       });
       if (!itemsRes.ok) throw new Error("Failed to load quotation items");
       const items = await itemsRes.json();
@@ -42,7 +43,7 @@ export default function QuotationPreview() {
   const sendMutation = useMutation({
     mutationFn: async () => {
       
-      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -62,7 +63,7 @@ export default function QuotationPreview() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       
-      const res = await fetch(`/api/quotations/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/quotations/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete quotation");
     },

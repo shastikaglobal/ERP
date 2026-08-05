@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -85,7 +86,7 @@ export default function AvailableStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -98,7 +99,7 @@ export default function AvailableStock() {
     queryKey: ['warehouses-list', profile?.company_id],
     enabled: !!profile?.company_id,
     queryFn: async () => {
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         headers: {
           }
       });
@@ -112,7 +113,7 @@ export default function AvailableStock() {
     queryKey: ['available-stock', products.length, warehouses.length],
     enabled: true,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory/available_stock`, {
+      const res = await apiFetch(`/api/inventory/available_stock`, {
         headers: {
           }
       });
@@ -150,7 +151,7 @@ export default function AvailableStock() {
     queryKey: ['stock-history', selectedStock?.id],
     enabled: !!selectedStock && isHistoryModalOpen,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory/inventory_movements`, {
+      const res = await apiFetch(`/api/inventory/inventory_movements`, {
         headers: {
           }
       });
@@ -178,7 +179,7 @@ export default function AvailableStock() {
         
         // Remove duplicates checking logic if upsert is supported with unique constraint,
         // or just insert since most likely it's handled.
-        await fetch('/api/products', {
+        await apiFetch('/api/products', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -269,7 +270,7 @@ export default function AvailableStock() {
 
 
       if (selectedStock?.id) {
-        const __res_upd = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
+        const __res_upd = await apiFetch(`/api/inventory/available_stock/${selectedStock.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -278,7 +279,7 @@ export default function AvailableStock() {
         });
         if (!__res_upd.ok) throw new Error('Update failed');
       } else {
-        const __res_ins = await fetch(`/api/inventory/available_stock`, {
+        const __res_ins = await apiFetch(`/api/inventory/available_stock`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -306,7 +307,7 @@ export default function AvailableStock() {
       if (newQty < 0) throw new Error("Quantity cannot be negative.");
 
 
-      const res = await fetch(`/api/inventory/available_stock/${selectedStock.id}`, {
+      const res = await apiFetch(`/api/inventory/available_stock/${selectedStock.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -321,7 +322,7 @@ export default function AvailableStock() {
       // Also log to inventory_movements
       const prodName = selectedStock?.products?.name || selectedStock?.product_name || "Unknown";
       const whName = selectedStock?.warehouses?.name || selectedStock?.warehouse || "Unknown";
-      const moveRes = await fetch(`/api/inventory/inventory_movements`, {
+      const moveRes = await apiFetch(`/api/inventory/inventory_movements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

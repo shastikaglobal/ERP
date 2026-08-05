@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 
 export interface TransactionalEmailParams {
@@ -27,7 +28,7 @@ export const sendTransactionalEmail = async (params: TransactionalEmailParams) =
       }
     }
 
-    const res = await fetch('/api/emails/send', {
+    const res = await apiFetch('/api/emails/send', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

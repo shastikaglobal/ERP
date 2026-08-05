@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useMemo, useEffect } from "react";
 import SectionHeader from "../../components/SectionHeader";
 import {
@@ -72,7 +73,7 @@ export default function Performance() {
     try {
       setLoading(true);
       
-      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser.company_id}`, { credentials: 'include'
+      const res = await apiFetch(`/api/analytics/reports_raw?company_id=${currentUser.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch performance data");
       const rawData = await res.json();
@@ -302,7 +303,7 @@ export default function Performance() {
 
     try {
       
-      const res = await fetch(`/api/employees/${employeeId}`, { method: 'PUT',
+      const res = await apiFetch(`/api/employees/${employeeId}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

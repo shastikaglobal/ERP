@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -23,7 +24,7 @@ export default function AdvancedSecurity() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       
-      const res = await fetch(`/api/security/subnets?company_id=${profile.company_id}`, { credentials: 'include'
+      const res = await apiFetch(`/api/security/subnets?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch subnets");
       return await res.json();
@@ -41,7 +42,7 @@ export default function AdvancedSecurity() {
       // Let's assume we fetch recent security logs (we can filter on client side if needed, or if we can't join)
       // Since audit_logs is RLS protected, we will only get what we are allowed to see.
       
-      const res = await fetch(`/api/security/logs?company_id=${profile.company_id}`, { credentials: 'include'
+      const res = await apiFetch(`/api/security/logs?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch threat logs");
       return await res.json();
@@ -61,7 +62,7 @@ export default function AdvancedSecurity() {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch('/api/security/subnets', { method: 'POST',
+      const res = await apiFetch('/api/security/subnets', { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -88,7 +89,7 @@ export default function AdvancedSecurity() {
   const handleDeleteSubnet = async (id: string) => {
     try {
       
-      const res = await fetch(`/api/security/subnets/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/security/subnets/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to archive subnet");
       toast.success("Subnet archived (soft delete)");

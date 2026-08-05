@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from 'react';
 
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +29,7 @@ const SuccessfulConversions = () => {
       
 
       const url = profile?.company_id ? `/api/leads/converted?company_id=${profile.company_id}` : `/api/leads/converted`;
-      const res = await fetch(url, { credentials: 'include'
+      const res = await apiFetch(url, { credentials: 'include'
       });
 
       if (!res.ok) {

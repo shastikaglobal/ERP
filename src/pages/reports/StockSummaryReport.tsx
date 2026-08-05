@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -25,7 +26,7 @@ export default function StockSummaryReport() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -47,7 +48,7 @@ export default function StockSummaryReport() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch('/api/warehouse_inventory', { credentials: 'include' });
+      const res = await apiFetch('/api/warehouse_inventory', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for warehouse_inventory');
       const data = await res.json();
       const error = null;

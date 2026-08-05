@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
@@ -101,7 +102,7 @@ export default function AccountSettings() {
     if (activeTab === 'security') {
       const fetchLoginHistory = async () => {
         try {
-          const res = await fetch(`/api/analytics/activity_logs?user_id=${profile.id}&action=login`, {
+          const res = await apiFetch(`/api/analytics/activity_logs?user_id=${profile.id}&action=login`, {
             headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
           });
           if (res.ok) {
@@ -118,7 +119,7 @@ export default function AccountSettings() {
     if (activeTab === 'activity') {
       const fetchActivities = async () => {
         try {
-          const res = await fetch(`/api/analytics/activity_logs?user_id=${profile.id}`, {
+          const res = await apiFetch(`/api/analytics/activity_logs?user_id=${profile.id}`, {
             headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
           });
           if (res.ok) {
@@ -135,7 +136,7 @@ export default function AccountSettings() {
     if (activeTab === 'preferences') {
       const fetchPreferences = async () => {
         try {
-          const res = await fetch(`/api/employees/${profile.id}/preferences`, {
+          const res = await apiFetch(`/api/employees/${profile.id}/preferences`, {
             headers: { 'Authorization': `Bearer ${user?.access_token || ''}` }
           });
           if (res.ok) {
@@ -168,7 +169,7 @@ export default function AccountSettings() {
 
       const formData = new FormData();
       formData.append('file', file);
-      const _uploadRes = await fetch('/api/upload', {
+      const _uploadRes = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session?.access_token || user?.access_token || ''}` },
         body: formData
@@ -176,7 +177,7 @@ export default function AccountSettings() {
       if (!_uploadRes.ok) throw new Error("Upload failed");
       const { publicUrl } = await _uploadRes.json();
 
-      const res = await fetch(`/api/employees/${profile.id}`, {
+      const res = await apiFetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user?.access_token || ''}`,
@@ -212,7 +213,7 @@ export default function AccountSettings() {
     };
 
     try {
-      const res = await fetch(`/api/employees/${profile.id}`, {
+      const res = await apiFetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user?.access_token || ''}`,
@@ -246,7 +247,7 @@ export default function AccountSettings() {
     setSaving(true);
     
     try {
-      const res = await fetch("/api/auth/update-password", {
+      const res = await apiFetch("/api/auth/update-password", {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user?.access_token || ''}`,
@@ -275,7 +276,7 @@ export default function AccountSettings() {
     if (!profile?.id) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/employees/${profile.id}`, {
+      const res = await apiFetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user?.access_token || ''}`,
@@ -310,7 +311,7 @@ export default function AccountSettings() {
       updated_at: new Date().toISOString()
     };
     try {
-      const res = await fetch(`/api/employees/${profile.id}/preferences`, {
+      const res = await apiFetch(`/api/employees/${profile.id}/preferences`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user?.access_token || ''}`,

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
@@ -202,7 +203,7 @@ export default function Reports() {
     setLoading(true);
     try {
       
-      const res = await fetch(`/api/analytics/reports_raw?company_id=${currentUser?.company_id || ''}`, { credentials: 'include'
+      const res = await apiFetch(`/api/analytics/reports_raw?company_id=${currentUser?.company_id || ''}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch raw data");
       const data = await res.json();
@@ -263,7 +264,7 @@ export default function Reports() {
     try {
       
       const promises = Object.entries(targetsToUpdate).map(([id, target]) => {
-        return fetch(`/api/employees/${id}`, { method: 'PUT',
+        return apiFetch(`/api/employees/${id}`, { method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
       },
@@ -1957,7 +1958,7 @@ export default function Reports() {
               }
 
               
-              const res = await fetch('/api/analytics/daily_reports', { method: 'POST',
+              const res = await apiFetch('/api/analytics/daily_reports', { method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'
       },

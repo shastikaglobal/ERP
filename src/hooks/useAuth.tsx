@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export type User = { id: string; email: string; user_metadata?: any };
@@ -52,14 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async () => {
     try {
-      const res = await fetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
+      const res = await apiFetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
       if (res.ok) {
         const data = await res.json();
         
         let companyName = null;
         if (data.user?.company_id) {
           try {
-            const compRes = await fetch('/api/vps-fallback', {
+            const compRes = await apiFetch('/api/vps-fallback', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
@@ -89,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
 
-      const rolesRes = await fetch(`/api/auth/roles?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
+      const rolesRes = await apiFetch(`/api/auth/roles?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
       const codes = new Set<string>();
       const slugs = new Set<string>();
       if (rolesRes.ok) {
@@ -122,21 +123,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                          (performance.navigation && performance.navigation.type === 1);
 
         if (isReload) {
-          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+          await apiFetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
           setSession(null);
           setLoading(false);
           return;
         }
 
-        const res = await fetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
+        const res = await apiFetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
         if (res.ok) {
           const { user } = await res.json();
           setSession({ user });
           await loadUserData();
         } else if (res.status === 401) {
-          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+          const refreshRes = await apiFetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
           if (refreshRes.ok) {
-            const retryRes = await fetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
+            const retryRes = await apiFetch(`/api/auth/me?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } });
             if (retryRes.ok) {
               const { user } = await retryRes.json();
               setSession({ user });
@@ -163,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await apiFetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setSession(null);
     setProfile(null);
     setPermissions(new Set());

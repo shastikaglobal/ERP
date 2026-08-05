@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export default function Maintenance() {
 
     setIsWiping(true);
     try {
-      const res = await fetch("/api/settings/wipe", {
+      const res = await apiFetch("/api/settings/wipe", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session?.access_token || ""}`

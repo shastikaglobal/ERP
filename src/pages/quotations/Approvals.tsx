@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { Check, X, Loader2, AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -17,7 +18,7 @@ export default function QuotationApprovals() {
   const fetchPending = async () => {
     try {
       
-      const res = await fetch('/api/quotations', { credentials: 'include'
+      const res = await apiFetch('/api/quotations', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch quotations");
       
@@ -47,7 +48,7 @@ export default function QuotationApprovals() {
     setActionId(id);
     try {
       
-      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

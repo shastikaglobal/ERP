@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
@@ -24,7 +25,7 @@ export default function EmployeeProductivity() {
     queryKey: ['employee_productivity_data'],
     queryFn: async () => {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/employees', { headers });
+      const res = await apiFetch('/api/employees', { headers });
       if (!res.ok) return [];
       const data = await res.json();
       return data.map((p: any) => ({
@@ -42,7 +43,7 @@ export default function EmployeeProductivity() {
     queryKey: ['employee_productivity_stats'],
     queryFn: async () => {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/analytics/employee_productivity', { headers });
+      const res = await apiFetch('/api/analytics/employee_productivity', { headers });
       if (!res.ok) return null;
       return res.json();
     },

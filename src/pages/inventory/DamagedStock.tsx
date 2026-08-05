@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -16,7 +17,7 @@ export default function DamagedStock() {
     const { data, isLoading, refetch } = useQuery<any[]>({
         queryKey: ["damaged_inventory"],
         queryFn: async () => {
-            const res = await fetch('/api/inventory/inventory_batches', {
+            const res = await apiFetch('/api/inventory/inventory_batches', {
                 headers: { }
             });
             if (!res.ok) throw new Error('Fetch failed');
@@ -27,7 +28,7 @@ export default function DamagedStock() {
 
     const handleRestore = async (id: string) => {
         try {
-            const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
+            const res = await apiFetch(`/api/inventory/inventory_batches/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: "pending_qc" })

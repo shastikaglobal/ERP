@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -18,7 +19,7 @@ export default function OrderReport() {
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const res = await fetch(`/api/finance/export_orders?id=${id}`, { headers });
+        const res = await apiFetch(`/api/finance/export_orders?id=${id}`, { headers });
         if (!res.ok) throw new Error(await res.text() || "Failed to load order");
 
         const data = await res.json();

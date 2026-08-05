@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +18,7 @@ export default function BarcodeDetail() {
   const { data, isLoading } = useQuery({
     queryKey: ["barcode", id],
     queryFn: async () => {
-      const res = await fetch("/api/vps-fallback", {
+      const res = await apiFetch("/api/vps-fallback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

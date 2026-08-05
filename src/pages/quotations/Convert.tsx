@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, FileCheck, AlertCircle } from "lucide-react";
@@ -21,7 +22,7 @@ export default function ConvertQuotation() {
       if (!profile?.company_id) return [];
       
       
-      const res = await fetch('/api/quotations/approved', { credentials: 'include'
+      const res = await apiFetch('/api/quotations/approved', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch approved quotations");
       
@@ -56,7 +57,7 @@ export default function ConvertQuotation() {
       
 
       // 1. Create Order via VPS API
-      const orderRes = await fetch('/api/orders', { method: 'POST',
+      const orderRes = await apiFetch('/api/orders', { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -86,7 +87,7 @@ export default function ConvertQuotation() {
       const order = await orderRes.json();
 
       // 2. Update Quotation Status
-      const res = await fetch(`/api/quotations/${quote.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/quotations/${quote.id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

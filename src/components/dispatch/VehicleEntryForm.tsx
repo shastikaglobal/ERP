@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -27,7 +28,7 @@ const VehicleEntryForm: React.FC<Props> = ({ onSelect }) => {
   const fetchVehicles = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/vehicles');
+      const res = await apiFetch('/api/vehicles');
       if (!res.ok) throw new Error(`Fetch vehicles failed: ${res.status}`);
       const data = await res.json();
       setVehicles(data || []);
@@ -57,7 +58,7 @@ const VehicleEntryForm: React.FC<Props> = ({ onSelect }) => {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/vehicles', {
+      const res = await apiFetch('/api/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

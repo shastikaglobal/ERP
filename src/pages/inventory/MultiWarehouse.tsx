@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,7 +67,7 @@ export default function MultiWarehouse() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/warehouse/warehouses', {
+        const res = await apiFetch('/api/warehouse/warehouses', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -84,7 +85,7 @@ export default function MultiWarehouse() {
     queryFn: async () => {
       if (!expandedWarehouseId) return [];
       try {
-        const res = await fetch('/api/inventory/warehouse_stock', {
+        const res = await apiFetch('/api/inventory/warehouse_stock', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch warehouse stock');
@@ -101,7 +102,7 @@ export default function MultiWarehouse() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -138,14 +139,14 @@ export default function MultiWarehouse() {
         updated_at: new Date().toISOString(),
       };
       if (payload.id) {
-        const res = await fetch(`/api/warehouse/warehouses/${payload.id}`, {
+        const res = await apiFetch(`/api/warehouse/warehouses/${payload.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
-        const res = await fetch('/api/warehouse/warehouses', {
+        const res = await apiFetch('/api/warehouse/warehouses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
@@ -176,14 +177,14 @@ export default function MultiWarehouse() {
         updated_at: new Date().toISOString(),
       };
       if (payload.id) {
-        const res = await fetch(`/api/inventory/warehouse_stock/${payload.id}`, {
+        const res = await apiFetch(`/api/inventory/warehouse_stock/${payload.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
-        const res = await fetch('/api/inventory/warehouse_stock', {
+        const res = await apiFetch('/api/inventory/warehouse_stock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
@@ -202,7 +203,7 @@ export default function MultiWarehouse() {
 
   const deleteWarehouseMutation = useMutation({
     mutationFn: async (id: string) => {
-      const __res_wd = await fetch(`/api/warehouse/warehouses/${id}`, {
+      const __res_wd = await apiFetch(`/api/warehouse/warehouses/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -222,7 +223,7 @@ export default function MultiWarehouse() {
 
   const deleteStockMutation = useMutation({
     mutationFn: async (id: string) => {
-      const __res_wsd = await fetch(`/api/inventory/warehouse_stock/${id}`, {
+      const __res_wsd = await apiFetch(`/api/inventory/warehouse_stock/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

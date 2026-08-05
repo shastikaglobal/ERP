@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   MoreVertical, Calendar as CalendarIcon, Video, Phone, Users,
@@ -103,7 +104,7 @@ function Communication() {
   // ── Fetch Zoho account & personal room ──────────────────────────────────
   useEffect(() => {
     if (!profile?.id) return;
-    fetch(`/api/crm/zoho-accounts?user_id=${profile.id}`, { credentials: "include" })
+    apiFetch(`/api/crm/zoho-accounts?user_id=${profile.id}`, { credentials: "include" })
       .then(res => res.json())
       .then(async (data) => {
         if (data && data.length > 0) {
@@ -113,17 +114,17 @@ function Communication() {
           // Fetch personal room from Zoho API
           setPersonalRoomLoading(true);
           try {
-            const rRes = await fetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
+            const rRes = await apiFetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
             const roomData = await rRes.json().catch(() => null);
             if (roomData?.success && roomData.join_url) {
               setPersonalRoom(roomData.join_url);
               setPersonalRoomInput(roomData.join_url);
               setPersonalRoomStartUrl(roomData.start_url || roomData.join_url);
               // Also save to profiles for future use
-              await fetch(`/api/employees/${profile.id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ zoho_meeting_link: roomData.join_url }) });
+              await apiFetch(`/api/employees/${profile.id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ zoho_meeting_link: roomData.join_url }) });
             } else {
               // Fall back to locally saved link
-              const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+              const pRes = await apiFetch(`/api/employees/${profile.id}`, { credentials: 'include' });
               const prof = await pRes.json().catch(() => null);
               if (prof?.zoho_meeting_link) {
                 setPersonalRoom(prof.zoho_meeting_link);
@@ -131,7 +132,7 @@ function Communication() {
               }
             }
           } catch {
-            const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+            const pRes = await apiFetch(`/api/employees/${profile.id}`, { credentials: 'include' });
               const prof = await pRes.json().catch(() => null);
             if (prof?.zoho_meeting_link) {
               setPersonalRoom(prof.zoho_meeting_link);
@@ -142,7 +143,7 @@ function Communication() {
           }
         } else {
           // No Zoho account — fall back to profile link
-          const pRes = await fetch(`/api/employees/${profile.id}`, { credentials: 'include' });
+          const pRes = await apiFetch(`/api/employees/${profile.id}`, { credentials: 'include' });
               const prof = await pRes.json().catch(() => null);
           if (prof?.zoho_meeting_link) {
             setPersonalRoom(prof.zoho_meeting_link);
@@ -156,7 +157,7 @@ function Communication() {
   const fetchMeetings = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoadingMeetings(true);
-    const res = await fetch(`/api/crm/meetings?company_id=${profile.company_id}`, { credentials: "include" });
+    const res = await apiFetch(`/api/crm/meetings?company_id=${profile.company_id}`, { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       setMeetings(data || []);
@@ -236,7 +237,7 @@ function Communication() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/crm/meetings/${id}`, { method: "PUT",
+    await apiFetch(`/api/crm/meetings/${id}`, { method: "PUT",
       headers: { "Content-Type": "application/json"  },
       credentials: "include",
       body: JSON.stringify({ status })
@@ -247,7 +248,7 @@ function Communication() {
 
   const savePersonalRoom = async () => {
     if (!personalRoomInput || !profile?.id) return;
-    await fetch("/api/vps-fallback", { method: "POST",
+    await apiFetch("/api/vps-fallback", { method: "POST",
       headers: { "Content-Type": "application/json"  },
       credentials: "include",
       body: JSON.stringify({
@@ -273,7 +274,7 @@ function Communication() {
 
       if (zohoConnected) {
         // Create real Zoho meeting via edge function
-        const rRes2 = await fetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
+        const rRes2 = await apiFetch('/api/crm/zoho-meeting', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "create" }) });
         const zohoRes = await rRes2.json().catch(() => null);
         if (zohoRes?.success && zohoRes.join_url) {
           joinUrl = zohoRes.join_url;
@@ -293,7 +294,7 @@ function Communication() {
       window.open(startUrl || joinUrl, "_blank");
 
       // Save to meetings table
-      await fetch("/api/crm/meetings", { method: "POST",
+      await apiFetch("/api/crm/meetings", { method: "POST",
         headers: { "Content-Type": "application/json"  },
         credentials: "include",
         body: JSON.stringify({

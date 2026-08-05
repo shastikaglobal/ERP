@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -96,7 +97,7 @@ function CustomerDatabase() {
     try {
       
       
-      const res = await fetch('/api/leads', { credentials: 'include'
+      const res = await apiFetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       const data = await res.json();
@@ -120,7 +121,7 @@ function CustomerDatabase() {
         
         if (!session?.user?.id) return;
         
-        const res = await fetch('/api/employees', { credentials: 'include'
+        const res = await apiFetch('/api/employees', { credentials: 'include'
       });
         if (!res.ok) throw new Error("Failed to fetch team members");
         const profiles = await res.json();
@@ -150,23 +151,23 @@ function CustomerDatabase() {
         const authHeader = {  };
 
         // Inquiries (filter all active leads of same company)
-        const leadsRes = await fetch('/api/leads', { headers: authHeader  });
+        const leadsRes = await apiFetch('/api/leads', { headers: authHeader  });
         const allLeads = leadsRes.ok ? await leadsRes.json() : [];
         const inqData = allLeads.filter((l: any) => l.company_name === selected.company_name && !l.is_deleted);
         setInquiries(inqData);
 
         // Quotations
-        const qRes = await fetch(`/api/leads/${selected.id}/quotations`, { headers: authHeader  });
+        const qRes = await apiFetch(`/api/leads/${selected.id}/quotations`, { headers: authHeader  });
         const qData = qRes.ok ? await qRes.json() : [];
         setQuotations(qData);
 
         // Follow Ups
-        const followRes = await fetch(`/api/leads/${selected.id}/follow-ups`, { headers: authHeader  });
+        const followRes = await apiFetch(`/api/leads/${selected.id}/follow-ups`, { headers: authHeader  });
         const followData = followRes.ok ? await followRes.json() : [];
         setFollowUps(followData);
 
         // Activity Logs
-        const actRes = await fetch(`/api/leads/${selected.id}/activities`, { headers: authHeader  });
+        const actRes = await apiFetch(`/api/leads/${selected.id}/activities`, { headers: authHeader  });
         const actData = actRes.ok ? await actRes.json() : [];
         setActivities(actData);
       } catch (err: any) {
@@ -184,7 +185,7 @@ function CustomerDatabase() {
     try {
       
       
-      const res = await fetch(`/api/leads/${selected.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/leads/${selected.id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

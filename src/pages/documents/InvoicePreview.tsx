@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -102,7 +103,7 @@ const { data } = {} as any; // [VPS Migration] fixed assignment
         if (session?.access_token) {
           headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl(`/api/orders/${id}`), { headers });
+        const res = await apiFetch(getApiUrl(`/api/orders/${id}`), { headers });
         if (!res.ok) throw new Error("Failed to fetch invoice details");
         const order = await res.json();
 

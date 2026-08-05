@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +23,7 @@ export default function Invoices() {
       try {
 
 
-        const res = await fetch('/api/orders', {
+        const res = await apiFetch('/api/orders', {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
         if (!res.ok) throw new Error("Failed to fetch invoices");
@@ -43,7 +44,7 @@ export default function Invoices() {
 
     try {
 
-      const res = await fetch(`/api/orders/${id}`, {
+      const res = await apiFetch(`/api/orders/${id}`, {
         method: 'DELETE',
         headers: { }
       });

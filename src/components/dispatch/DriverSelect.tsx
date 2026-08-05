@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from 'react';
 // Using server-side API instead of VpsDb client to avoid schema cache issues
 import { Plus } from 'lucide-react';
@@ -28,7 +29,7 @@ const DriverSelect: React.FC<Props> = ({ onSelect }) => {
   const fetchDrivers = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/drivers')
+      const res = await apiFetch('/api/drivers')
       if (!res.ok) throw new Error('Failed to load drivers')
       const data = await res.json()
       setDrivers(data as Driver[])
@@ -59,7 +60,7 @@ const DriverSelect: React.FC<Props> = ({ onSelect }) => {
     
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/drivers', {
+      const res = await apiFetch('/api/drivers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driver_name: newDriver.driver_name, license_number: newDriver.license_number || null })

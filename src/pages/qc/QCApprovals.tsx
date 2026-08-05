@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +26,7 @@ export default function QCApprovals() {
       try {
 
         if (!session?.access_token) throw new Error('No auth token');
-        const res = await fetch(`/api/inventory/qc_inspections/with-batch?company_id=${encodeURIComponent(profile.company_id)}&result=pending`, {
+        const res = await apiFetch(`/api/inventory/qc_inspections/with-batch?company_id=${encodeURIComponent(profile.company_id)}&result=pending`, {
           headers: { 'Authorization': `Bearer ${session.access_token}`, 'Accept': 'application/json' }
         });
         if (!res.ok) throw new Error('Failed to fetch QC inspections');
@@ -42,7 +43,7 @@ export default function QCApprovals() {
     setBusy(id);
     try {
 
-      const res = await fetch(`/api/inventory/qc_inspections/${id}`, {
+      const res = await apiFetch(`/api/inventory/qc_inspections/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ result: decision })

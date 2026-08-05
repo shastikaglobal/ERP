@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section } from "@/components/shared/FormShell";
 import { useEffect, useState, useMemo } from "react";
@@ -339,7 +340,7 @@ export default function Attendance() {
       if (!session) throw new Error("No active session");
 
       // Save to VPS database (source of truth for attendance)
-      const response = await fetch(`/api/employees/${settingsEmp.id}`, {
+      const response = await apiFetch(`/api/employees/${settingsEmp.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -357,7 +358,7 @@ export default function Attendance() {
       }
 
       try {
-        await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "update", data: { monthly_salary: Number(settingsSalary) || 0, punch_deadline: settingsDeadline + ":00" }, filters: [{ column: "id", type: "eq", value: settingsEmp.id }] }) });
+        await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "update", data: { monthly_salary: Number(settingsSalary) || 0, punch_deadline: settingsDeadline + ":00" }, filters: [{ column: "id", type: "eq", value: settingsEmp.id }] }) });
       } catch { /* ignore vpsDb sync error */ }
 
       toast.success("Settings updated successfully!");
@@ -394,7 +395,7 @@ export default function Attendance() {
         payload.check_out = existingLog?.clock_out || null;
       }
 
-      const response = await fetch('/api/attendance/manual-time', {
+      const response = await apiFetch('/api/attendance/manual-time', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -424,7 +425,7 @@ export default function Attendance() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
-      const response = await fetch('/api/attendance/mark-leave', {
+      const response = await apiFetch('/api/attendance/mark-leave', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -456,7 +457,7 @@ export default function Attendance() {
       
       if (!session) throw new Error("No active session found");
 
-      const response = await fetch('/api/attendance/mark-od', {
+      const response = await apiFetch('/api/attendance/mark-od', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -487,7 +488,7 @@ export default function Attendance() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
-      const response = await fetch('/api/attendance/toggle-excused', {
+      const response = await apiFetch('/api/attendance/toggle-excused', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -516,7 +517,7 @@ export default function Attendance() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
-      const response = await fetch('/api/attendance/delete-log', {
+      const response = await apiFetch('/api/attendance/delete-log', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -625,7 +626,7 @@ export default function Attendance() {
     // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     let profiles = [];
     try {
-      const empRes = await fetch('/api/employees', {
+      const empRes = await apiFetch('/api/employees', {
         headers: { }
       });
       if (!empRes.ok) {
@@ -677,7 +678,7 @@ export default function Attendance() {
 
     if (session) {
       try {
-        const response = await fetch(`/api/attendance?start=${firstDayOfMonth}&end=${lastDayOfMonth}`, {
+        const response = await apiFetch(`/api/attendance?start=${firstDayOfMonth}&end=${lastDayOfMonth}`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
         if (!response.ok) throw new Error('Network response was not ok');
@@ -811,7 +812,7 @@ export default function Attendance() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No active session found");
 
-      const response = await fetch('/api/attendance/punch', {
+      const response = await apiFetch('/api/attendance/punch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

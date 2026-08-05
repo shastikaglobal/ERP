@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Warehouse, MapPin, Plus, Loader2, Save, Trash2, Pencil, Phone, ShieldCheck, Thermometer, User, Package } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -58,7 +59,7 @@ export default function Warehouses() {
     queryKey: ["warehouses_live", profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch('/api/warehouse/with-stock', {
+      const res = await apiFetch('/api/warehouse/with-stock', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -126,7 +127,7 @@ export default function Warehouses() {
       };
 
       if (editingId) {
-        const res = await fetch(`/api/warehouse/warehouses/${editingId}`, {
+        const res = await apiFetch(`/api/warehouse/warehouses/${editingId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -136,7 +137,7 @@ export default function Warehouses() {
         if (!res.ok) throw new Error('Failed to update warehouse');
         toast.success("Warehouse updated");
       } else {
-        const res = await fetch(`/api/warehouse/warehouses`, {
+        const res = await apiFetch(`/api/warehouse/warehouses`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -159,7 +160,7 @@ export default function Warehouses() {
   const handleDelete = async (id: string, warehouseName: string) => {
     if (!confirm(`Delete "${warehouseName}"? This will hide the warehouse from the app.`)) return;
     try {
-      const res = await fetch(`/api/warehouse/warehouses/${id}`, {
+      const res = await apiFetch(`/api/warehouse/warehouses/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

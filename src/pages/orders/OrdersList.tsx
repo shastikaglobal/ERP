@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -40,7 +41,7 @@ export default function OrdersList() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_orders/${id}`, {
+      const res = await apiFetch(`/api/finance/export_orders/${id}`, {
         method: 'DELETE',
         headers
       });
@@ -66,7 +67,7 @@ export default function OrdersList() {
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
+        const res = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
         if (!res.ok) throw new Error(await res.text() || "Failed to load orders");
 
         const data = await res.json();

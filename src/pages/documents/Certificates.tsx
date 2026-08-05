@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +25,7 @@ export default function Certificates() {
 
         
         // 1. Fetch from VpsDb (automated export orders)
-        const res = await fetch("/api/vps-fallback", {
+        const res = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_certificates", action: "select", select: "*, shipment:export_shipments(shipment_number)",
@@ -38,7 +39,7 @@ export default function Certificates() {
         // 2. Fetch from VPS DB (standalone certificates)
         let standaloneCerts = [];
         try {
-          const res = await fetch('/api/documents/certificates', {
+          const res = await apiFetch('/api/documents/certificates', {
             headers: { }
           });
           if (res.ok) {
@@ -82,13 +83,13 @@ export default function Certificates() {
       
       if (isStandalone) {
 
-        const res = await fetch(`/api/documents/certificates/${id}`, {
+        const res = await apiFetch(`/api/documents/certificates/${id}`, {
           method: 'DELETE',
           headers: { }
         });
         if (!res.ok) throw new Error("Failed to delete from database");
       } else {
-        const resDel = await fetch("/api/vps-fallback", {
+        const resDel = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_certificates", action: "delete",

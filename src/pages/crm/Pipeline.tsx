@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
@@ -40,7 +41,7 @@ export default function LeadPipeline() {
     try {
       
       
-      const res = await fetch('/api/leads', { credentials: 'include'
+      const res = await apiFetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch pipeline data");
       const data = await res.json();
@@ -70,7 +71,7 @@ export default function LeadPipeline() {
     try {
       
       
-      const res = await fetch(`/api/leads/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/leads/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

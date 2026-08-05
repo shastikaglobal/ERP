@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -23,7 +24,7 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_invoiced', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const res = await fetch('/api/orders', { credentials: 'include' });
+      const res = await apiFetch('/api/orders', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for export_orders');
       const data = await res.json();
       const error = null;
@@ -38,7 +39,7 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_received', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const res = await fetch('/api/payments', { credentials: 'include' });
+      const res = await apiFetch('/api/payments', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for payments');
       const data = await res.json();
       const error = null;
@@ -53,7 +54,7 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_total_pending', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return 0;
-      const res = await fetch('/api/payments', { credentials: 'include' });
+      const res = await apiFetch('/api/payments', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for payments');
       const data = await res.json();
       const error = null;
@@ -67,7 +68,7 @@ export default function FinanceTallyDashboard() {
   const { data: journalCount = 0 } = useQuery({
     queryKey: ['exec_journal_count'],
     queryFn: async () => {
-      const res = await fetch('/api/journal_entries', { credentials: 'include' });
+      const res = await apiFetch('/api/journal_entries', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for journal_entries');
       const data = await res.json();
       const count = data.length || 0;
@@ -82,7 +83,7 @@ export default function FinanceTallyDashboard() {
     queryKey: ['exec_recent_payments', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch('/api/payments', { credentials: 'include' });
+      const res = await apiFetch('/api/payments', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for payments');
       const data = await res.json();
       const error = null;
@@ -96,7 +97,7 @@ export default function FinanceTallyDashboard() {
   const { data: recentJournals = [] } = useQuery({
     queryKey: ['exec_recent_journals'],
     queryFn: async () => {
-      const res = await fetch('/api/journal_entries', { credentials: 'include' });
+      const res = await apiFetch('/api/journal_entries', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for journal_entries');
       const data = await res.json();
       const error = null;

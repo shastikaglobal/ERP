@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Loader2, Boxes, Plus, Save } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -35,7 +36,7 @@ export default function StockDashboard() {
     queryKey: ["products"],
     queryFn: async () => {
 
-        const __res_sel = await fetch(`/api/inventory/products`, {
+        const __res_sel = await apiFetch(`/api/inventory/products`, {
           headers: { }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
@@ -49,7 +50,7 @@ export default function StockDashboard() {
     queryKey: ["warehouses"],
     queryFn: async () => {
 
-        const __res_sel = await fetch(`/api/warehouse/warehouses`, {
+        const __res_sel = await apiFetch(`/api/warehouse/warehouses`, {
           headers: { }
         });
         const data = __res_sel.ok ? await __res_sel.json() : null;
@@ -63,7 +64,7 @@ export default function StockDashboard() {
     queryKey: ["inventory_batches"],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/inventory/inventory_batches', {
+        const res = await apiFetch('/api/inventory/inventory_batches', {
           headers: { }
         });
         if (!res.ok) throw new Error('Fetch failed');
@@ -89,7 +90,7 @@ export default function StockDashboard() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/inventory/inventory_batches', {
+      const res = await apiFetch('/api/inventory/inventory_batches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{

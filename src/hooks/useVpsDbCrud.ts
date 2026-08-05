@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 // import { vpsDb } from '@/lib/vpsDb'; // Removed
@@ -8,7 +9,7 @@ export function useVpsDbCrud(tableName: string) {
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/${tableName}`);
+      const res = await apiFetch(`/api/${tableName}`);
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       return { data, error: null };
@@ -23,7 +24,7 @@ export function useVpsDbCrud(tableName: string) {
   const addRecord = async (newData: any) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/${tableName}`, {
+      const res = await apiFetch(`/api/${tableName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newData)
@@ -42,7 +43,7 @@ export function useVpsDbCrud(tableName: string) {
   const updateRecord = async (id: string, updateData: any) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/${tableName}/${id}`, {
+      const res = await apiFetch(`/api/${tableName}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
@@ -61,7 +62,7 @@ export function useVpsDbCrud(tableName: string) {
   const deleteRecord = async (id: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/${tableName}/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/${tableName}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       return { error: null };
     } catch (err: any) {

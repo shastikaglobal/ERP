@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -13,7 +14,7 @@ export default function DeliveryStatus() {
 
   const fetchShipments = async () => {
     try {
-      const res = await fetch('/api/finance/export_shipments', { credentials: 'include' });
+      const res = await apiFetch('/api/finance/export_shipments', { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch shipments");
       const data = await res.json();
       setShipments(data || []);
@@ -30,7 +31,7 @@ export default function DeliveryStatus() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/shipments/${id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+      const res = await apiFetch(`/api/shipments/${id}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
       const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       

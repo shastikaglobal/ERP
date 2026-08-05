@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { Plus, Download, Loader2, FileText, Printer, Trash2, Bell } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -56,7 +57,7 @@ export default function QuotationsList() {
       if (!profile?.company_id) return [];
       
       
-      const res = await fetch('/api/quotations', { credentials: 'include'
+      const res = await apiFetch('/api/quotations', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch quotations");
       
@@ -128,7 +129,7 @@ export default function QuotationsList() {
     try {
       // Soft-delete the quotation via API
       
-      const res = await fetch(`/api/quotations/${quotation.id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/quotations/${quotation.id}`, { method: 'DELETE'
       });
 
       if (!res.ok) throw new Error("Failed to delete quotation");

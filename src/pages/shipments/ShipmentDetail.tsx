@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -125,11 +126,11 @@ export default function ShipmentDetail() {
       } = useQuery<Shipment>({
     queryKey: ["shipment", id],
     queryFn: async () => {
-      const res = await fetch(`/api/finance/export_shipments/${id}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/finance/export_shipments/${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch shipment");
       const shipmentData = await res.json();
       if (shipmentData && shipmentData.order_id) {
-        const orderRes = await fetch(`/api/finance/export_orders/${shipmentData.order_id}`, { credentials: 'include' });
+        const orderRes = await apiFetch(`/api/finance/export_orders/${shipmentData.order_id}`, { credentials: 'include' });
         if (orderRes.ok) {
           shipmentData.export_orders = await orderRes.json();
         }
@@ -143,7 +144,7 @@ export default function ShipmentDetail() {
   const { data: containers = [] } = useQuery<Container[]>({
     queryKey: ["shipment_containers", id],
     queryFn: async () => {
-      const res = await fetch(`/api/finance/export_containers?shipment_id=${id}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/finance/export_containers?shipment_id=${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch containers");
       const data = await res.json();
       return (data ?? []) as Container[];
@@ -156,7 +157,7 @@ export default function ShipmentDetail() {
     queryKey: ["shipment_barcodes", id],
     queryFn: async () => {
       try {
-        const res = await fetch(`/api/barcodes?shipment_id=${id}`, { credentials: 'include' });
+        const res = await apiFetch(`/api/barcodes?shipment_id=${id}`, { credentials: 'include' });
         if (!res.ok) return [];
         const data = await res.json();
         return (data ?? []) as any[];
@@ -171,7 +172,7 @@ export default function ShipmentDetail() {
     queryKey: ["shipment_events", id],
     queryFn: async () => {
       try {
-        const res = await fetch(`/api/shipments/events?shipment_id=${id}`, { credentials: 'include' });
+        const res = await apiFetch(`/api/shipments/events?shipment_id=${id}`, { credentials: 'include' });
         if (!res.ok) return [];
         const data = await res.json();
         return (data ?? []) as ShipmentEvent[];
@@ -188,7 +189,7 @@ export default function ShipmentDetail() {
       // if (error) throw error;
 
       // Log automatic status-change event
-      await fetch(`/api/shipment_events`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shipment_id: id, event_type: "status_change", title: "Shipment status updated", description: "Updated to " + (formData?.status || "new status"), location: formData?.vessel_name || "", date: new Date().toISOString().split('T')[0] }) });
+      await apiFetch(`/api/shipment_events`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shipment_id: id, event_type: "status_change", title: "Shipment status updated", description: "Updated to " + (formData?.status || "new status"), location: formData?.vessel_name || "", date: new Date().toISOString().split('T')[0] }) });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shipment", id] });
@@ -201,7 +202,7 @@ export default function ShipmentDetail() {
   /* ── Update container status ── */
   const updateContainer = useMutation({
     mutationFn: async ({ cid, status }: { cid: string; status: string }) => {
-      const res = await fetch(`/api/finance/export_containers/${cid}`, {
+      const res = await apiFetch(`/api/finance/export_containers/${cid}`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -583,7 +584,7 @@ function AddEventDialog({
     if (!title.trim()) { toast.error("Title is required"); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/shipment_events`, { 
+      const res = await apiFetch(`/api/shipment_events`, { 
         method: 'POST', 
         credentials: 'include', 
         headers: { 'Content-Type': 'application/json' }, 

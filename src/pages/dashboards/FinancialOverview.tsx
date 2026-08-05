@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
@@ -11,7 +12,7 @@ export default function FinancialOverview() {
     queryKey: ['financial_export_orders'],
     queryFn: async () => {
       
-      const res = await fetch('/api/finance/export_orders', {
+      const res = await apiFetch('/api/finance/export_orders', {
         credentials: 'include'
       });
       if (!res.ok) return [];
@@ -23,7 +24,7 @@ export default function FinancialOverview() {
     queryKey: ['financial_purchase_orders'],
     queryFn: async () => {
       
-      const res = await fetch('/api/finance/purchase_orders', {
+      const res = await apiFetch('/api/finance/purchase_orders', {
         credentials: 'include'
       });
       if (!res.ok) return [];

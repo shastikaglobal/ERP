@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 
 import { Loader2, Monitor, Globe, Clock, User, Shield, ChevronRight } from "lucide-react";
@@ -51,7 +52,7 @@ export default function EmployeeActivity({ hideHeader = false }: { hideHeader?: 
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/crm/employee-activities", { credentials: "include" });
+      const res = await apiFetch("/api/crm/employee-activities", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch employee activities");
       
       const { profiles = [], sessions = [], userRoles = [] } = await res.json();

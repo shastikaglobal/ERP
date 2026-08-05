@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +33,7 @@ export default function ProcurementDashboard() {
           return;
         }
 
-        const res = await fetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, { credentials: 'include' });
+        const res = await apiFetch(`/api/procurement/dashboard?company_id=${profile.company_id}`, { credentials: 'include' });
         if (!res.ok) throw new Error("Failed to load analytics");
         const data = await res.json();
 

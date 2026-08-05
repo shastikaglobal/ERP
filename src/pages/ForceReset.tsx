@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,7 +31,7 @@ export default function ForceReset() {
     }
     setBusy(true);
     try {
-      const res = await fetch('/api/auth/update-password', {
+      const res = await apiFetch('/api/auth/update-password', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

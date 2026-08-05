@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Badge } from '../../components/ui/badge'
@@ -43,7 +44,7 @@ function NewEntryForm({ onSaved }) {
       try {
         if (!profile?.company_id) return;
 
-        const res = await fetch(`/api/finance/chart_of_accounts?company_id=${profile.company_id}&status=Active`, {
+        const res = await apiFetch(`/api/finance/chart_of_accounts?company_id=${profile.company_id}&status=Active`, {
           headers: { }
         });
         const coaData = res.ok ? await res.json() : [];
@@ -110,7 +111,7 @@ function NewEntryForm({ onSaved }) {
     try {
       const voucherNo = `JV-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
       
-      const resEntry = await fetch('/api/finance/journal_entries', {
+      const resEntry = await apiFetch('/api/finance/journal_entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,7 +158,7 @@ function NewEntryForm({ onSaved }) {
         })
 
       if (rowPayload.length > 0) {
-        const resRows = await fetch('/api/finance/journal_entry_rows', {
+        const resRows = await apiFetch('/api/finance/journal_entry_rows', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(rowPayload)
@@ -412,7 +413,7 @@ export default function JournalEntry() {
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { } });
+      const res = await apiFetch(`/api/finance/journal_entries?company_id=${profile.company_id}`, { headers: { } });
       let data = res.ok ? await res.json() : [];
       data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       let error = res.ok ? null : new Error("Fetch failed");

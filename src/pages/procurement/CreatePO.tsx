@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
@@ -22,7 +23,7 @@ export default function CreatePO() {
   });
 
   useEffect(() => {
-    fetch('/api/farmers', { credentials: 'include' })
+    apiFetch('/api/farmers', { credentials: 'include' })
       .then(res => res.json())
       .then(data => setFarmers(data || []))
       .catch(err => console.error("Failed to fetch farmers", err));
@@ -42,7 +43,7 @@ export default function CreatePO() {
         // Handled by profile context or backend
       }
 
-      const res = await fetch('/api/purchase_orders', { method: 'POST',
+      const res = await apiFetch('/api/purchase_orders', { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },

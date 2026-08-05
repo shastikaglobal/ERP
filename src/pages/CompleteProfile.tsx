@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Sprout, Loader2 } from "lucide-react";
@@ -82,7 +83,7 @@ export default function CompleteProfile() {
 
     try {
       // Check if biometric_id is already taken by another user
-      const checkRes = await fetch(
+      const checkRes = await apiFetch(
         `/api/employees/check-employee-id?employee_id=${encodeURIComponent(employeeId.trim())}&exclude_id=${session.user.id}`,
         { credentials: 'include' }
       );
@@ -94,7 +95,7 @@ export default function CompleteProfile() {
         return;
       }
 
-      const res = await fetch(`/api/employees/${session.user.id}`, {
+      const res = await apiFetch(`/api/employees/${session.user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

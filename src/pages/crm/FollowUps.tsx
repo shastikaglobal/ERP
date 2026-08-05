@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 
 import { fetchBdeProfiles } from "@/lib/bde";
@@ -87,7 +88,7 @@ export default function FollowUps() {
   const fetchLeads = async () => {
     try {
       
-      const res = await fetch('/api/leads', { credentials: 'include'
+      const res = await apiFetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       
@@ -102,7 +103,7 @@ export default function FollowUps() {
     setLoading(true);
     try {
       
-      const res = await fetch('/api/follow-ups', { credentials: 'include'
+      const res = await apiFetch('/api/follow-ups', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch follow-ups");
       const data = await res.json();
@@ -252,7 +253,7 @@ export default function FollowUps() {
       
       
       if (isEditing && selectedFollowUp) {
-        const res = await fetch(`/api/follow-ups/${selectedFollowUp.id}`, { method: 'PUT',
+        const res = await apiFetch(`/api/follow-ups/${selectedFollowUp.id}`, { method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
       },
@@ -261,7 +262,7 @@ export default function FollowUps() {
         if (!res.ok) throw new Error("Failed to update follow-up");
         toast.success("Follow-up updated successfully");
       } else {
-        const res = await fetch(`/api/leads/${selectedLeadId}/follow-ups`, { method: 'POST',
+        const res = await apiFetch(`/api/leads/${selectedLeadId}/follow-ups`, { method: 'POST',
           headers: {
             'Content-Type': 'application/json'
       },
@@ -331,7 +332,7 @@ export default function FollowUps() {
   const handleAcknowledge = async (id: string) => {
     try {
       
-      const res = await fetch(`/api/follow-ups/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/follow-ups/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -348,7 +349,7 @@ export default function FollowUps() {
   const handleDelete = async (id: string) => {
     try {
       
-      const res = await fetch(`/api/follow-ups/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/follow-ups/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete follow-up");
       toast.success("Follow-up removed from view (soft-deleted)");

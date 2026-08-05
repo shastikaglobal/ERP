@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -84,14 +85,14 @@ export default function ActivityLogs() {
   
   const fetchLogs = async () => {
     try {
-      const res = await fetch("/api/analytics/activity_logs", {
+      const res = await apiFetch("/api/analytics/activity_logs", {
         headers: { "Authorization": `Bearer ${session?.access_token || ""}` }
       });
       if (!res.ok) throw new Error("Failed to fetch activity logs");
       
       const rawLogs = await res.json();
 
-      const profilesRes = await fetch("/api/employees", {
+      const profilesRes = await apiFetch("/api/employees", {
         headers: { "Authorization": `Bearer ${session?.access_token || ""}` }
       });
       const profiles = profilesRes.ok ? await profilesRes.json() : [];

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/shared/PageHeader'
@@ -69,7 +70,7 @@ export default function Parties() {
   const fetchParties = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/finance/parties', {
+      const res = await apiFetch('/api/finance/parties', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -115,7 +116,7 @@ export default function Parties() {
     setConfirm(c => ({ ...c, loading: true }))
     setDeleting(id)
     try {
-      const res = await fetch(`/api/finance/parties/${id}`, {
+      const res = await apiFetch(`/api/finance/parties/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -171,7 +172,7 @@ export default function Parties() {
         outstanding: Number(form.outstanding) || 0,
         status: form.status
       }
-      const res = await fetch(`/api/finance/parties/${editingParty.id}`, {
+      const res = await apiFetch(`/api/finance/parties/${editingParty.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

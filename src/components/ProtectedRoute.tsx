@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useRef, useState } from "react";
@@ -141,7 +142,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
                 setActiveStream(stream);
                 (window as any).__screenStream = stream; // ← globally store
                 setScreenStatus("sharing");
-                await fetch("/api/analytics/activity_logs", {
+                await apiFetch("/api/analytics/activity_logs", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",

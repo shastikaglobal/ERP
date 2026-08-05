@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
@@ -25,7 +26,7 @@ export default function WarehouseDashboard() {
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const res = await fetch('/api/inventory/inventory_batches', { headers });
+            const res = await apiFetch('/api/inventory/inventory_batches', { headers });
             if (!res.ok) throw new Error('Failed to fetch inventory');
             const data = await res.json();
             return data || [];
@@ -43,7 +44,7 @@ export default function WarehouseDashboard() {
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const res = await fetch('/api/inventory/available_stock', { headers });
+            const res = await apiFetch('/api/inventory/available_stock', { headers });
             if (!res.ok) throw new Error('Failed to fetch available stock');
             const data = await res.json();
             const lowStock = (data || []).filter((item: any) => 
@@ -70,7 +71,7 @@ export default function WarehouseDashboard() {
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const res = await fetch('/api/finance/export_shipments', { headers });
+            const res = await apiFetch('/api/finance/export_shipments', { headers });
             if (!res.ok) throw new Error('Failed to fetch shipments');
             const data = await res.json();
             return (data || []).filter((s: any) => {
@@ -92,7 +93,7 @@ export default function WarehouseDashboard() {
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const res = await fetch('/api/analytics/activity_logs', { headers });
+            const res = await apiFetch('/api/analytics/activity_logs', { headers });
             if (!res.ok) throw new Error('Failed to fetch activity logs');
             const data = await res.json();
             return (data || []).filter((log: any) => {
@@ -113,7 +114,7 @@ export default function WarehouseDashboard() {
             if (session?.access_token) {
                 headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const res = await fetch('/api/warehouse/packing_protocols', { headers });
+            const res = await apiFetch('/api/warehouse/packing_protocols', { headers });
             if (!res.ok) throw new Error('Failed to fetch packing protocols');
             return await res.json() || [];
         },

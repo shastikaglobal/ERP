@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export default function LeaveManagement() {
   const { data: leaves = [], isLoading: loadingLeaves } = useQuery({
     queryKey: ['leaves'],
     queryFn: async () => {
-      const res = await fetch('/api/leaves', { headers: { 'Authorization': `Bearer ${token}` }});
+      const res = await apiFetch('/api/leaves', { headers: { 'Authorization': `Bearer ${token}` }});
       if (!res.ok) throw new Error('Failed to fetch leaves');
       return res.json();
     },
@@ -31,7 +32,7 @@ export default function LeaveManagement() {
   const { data: balances = [] } = useQuery({
     queryKey: ['leave_balances'],
     queryFn: async () => {
-      const res = await fetch('/api/leaves/balances', { headers: { 'Authorization': `Bearer ${token}` }});
+      const res = await apiFetch('/api/leaves/balances', { headers: { 'Authorization': `Bearer ${token}` }});
       if (!res.ok) throw new Error('Failed to fetch balances');
       return res.json();
     },
@@ -40,7 +41,7 @@ export default function LeaveManagement() {
 
   const applyMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await fetch('/api/leaves', {
+      const res = await apiFetch('/api/leaves', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -57,7 +58,7 @@ export default function LeaveManagement() {
 
   const approveMutation = useMutation({
     mutationFn: async (payload: { id: string, action: string, stage: string }) => {
-      const res = await fetch(`/api/leaves/${payload.id}/approve`, {
+      const res = await apiFetch(`/api/leaves/${payload.id}/approve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)

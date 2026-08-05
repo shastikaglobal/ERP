@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useAuth, useCanManageApprovals } from "@/hooks/useAuth";
 import { Loader2, Check, X, ShieldAlert } from "lucide-react";
@@ -76,7 +77,7 @@ export default function Approvals() {
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No session");
-      const res = await fetch('/api/employees/all/profiles', {
+      const res = await apiFetch('/api/employees/all/profiles', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       if (!res.ok) throw new Error("Failed to fetch profiles");
@@ -112,7 +113,7 @@ export default function Approvals() {
     setBusyId(r.id);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+      const res = await apiFetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: 'approved', requested_role: role })
@@ -133,7 +134,7 @@ export default function Approvals() {
     setBusyId(r.id);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+      const res = await apiFetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: 'rejected', rejection_reason: reason })
@@ -175,7 +176,7 @@ export default function Approvals() {
         return;
       }
       
-      const res = await fetch(`/api/employees/all/profiles/${r.id}`, {
+      const res = await apiFetch(`/api/employees/all/profiles/${r.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify(payload)

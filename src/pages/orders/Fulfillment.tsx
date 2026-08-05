@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export default function Fulfillment() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
+      const res = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
       if (!res.ok) throw new Error(await res.text() || "Failed to load fulfillments");
 
       const data = await res.json();
@@ -48,7 +49,7 @@ export default function Fulfillment() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_orders/${id}`, {
+      const res = await apiFetch(`/api/finance/export_orders/${id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ status: 'shipped' })

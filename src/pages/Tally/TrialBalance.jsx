@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
@@ -34,7 +35,7 @@ export default function TrialBalance() {
   useEffect(() => {
     const loadTrialBalance = async () => {
       try {
-        const res = await fetch('/api/finance/trial_balance', {
+        const res = await apiFetch('/api/finance/trial_balance', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

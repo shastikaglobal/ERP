@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -223,7 +224,7 @@ export default function GenerateBarcode() {
   const { data: targets = [], isLoading } = useQuery<LogisticsTarget[]>({
     queryKey: ["logistics_targets"],
     queryFn: async () => {
-      const profRes = await fetch("/api/vps-fallback", {
+      const profRes = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "profiles", action: "select", select: "company_id", single: true
@@ -232,7 +233,7 @@ export default function GenerateBarcode() {
       const { data: prof } = await profRes.json();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const cosRes = await fetch("/api/vps-fallback", {
+        const cosRes = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "companies", action: "select", select: "id", limit: 1
@@ -246,8 +247,8 @@ export default function GenerateBarcode() {
       const headers = { };
 
       const [shipResData, batchRes, orderResData, barcodeRes] = await Promise.all([
-        fetch(`/api/finance/export_shipments?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        fetch("/api/vps-fallback", {
+        apiFetch(`/api/finance/export_shipments?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
+        apiFetch("/api/vps-fallback", {
           method: "POST", headers,
           body: JSON.stringify({
             table: "inventory_batches", action: "select",
@@ -255,8 +256,8 @@ export default function GenerateBarcode() {
             order: { column: "created_at", options: { ascending: false } }, limit: 30
           })
         }).then(r => r.json()),
-        fetch(`/api/finance/export_orders?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
-        fetch("/api/vps-fallback", {
+        apiFetch(`/api/finance/export_orders?company_id=${companyId}`, { headers }).then(res => res.json()).catch(() => []),
+        apiFetch("/api/vps-fallback", {
           method: "POST", headers,
           body: JSON.stringify({ table: "batch_barcodes", action: "select", select: "shipment_id, batch_id" })
         }).then(r => r.json()), // ignore order_id to prevent errors if it doesn't exist
@@ -363,7 +364,7 @@ export default function GenerateBarcode() {
     mutationFn: async () => {
       if (!selected) throw new Error("Select a shipment or cargo lot");
 
-      const profRes = await fetch("/api/vps-fallback", {
+      const profRes = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "profiles", action: "select", select: "company_id", single: true
@@ -372,7 +373,7 @@ export default function GenerateBarcode() {
       const { data: prof } = await profRes.json();
       let companyId: string | null = prof?.company_id ?? null;
       if (!companyId) {
-        const cosRes = await fetch("/api/vps-fallback", {
+        const cosRes = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "companies", action: "select", select: "id", limit: 1
@@ -392,7 +393,7 @@ export default function GenerateBarcode() {
       if (selected.type === 'shipment') {
         const shipmentNumber = selected.ref;
         // 1. Check if batch exists for this shipment
-        const resEB = await fetch("/api/vps-fallback", {
+        const resEB = await apiFetch("/api/vps-fallback", {
           method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
           body: JSON.stringify({
             table: "shipment_batches", action: "select", select: "id",
@@ -406,7 +407,7 @@ export default function GenerateBarcode() {
         } else {
           // 2. If batch NOT found -> automatically CREATE a new batch record
           console.log("Attempting to auto-create batch for shipment:", shipmentNumber, "UUID was:", selected.id);
-          const resNB = await fetch("/api/vps-fallback", {
+          const resNB = await apiFetch("/api/vps-fallback", {
             method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
             body: JSON.stringify({
               table: "shipment_batches", action: "insert",
@@ -444,7 +445,7 @@ export default function GenerateBarcode() {
       });
 
       const codes = rows.map((r) => r.code);
-      const resBC = await fetch("/api/vps-fallback", {
+      const resBC = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ table: "batch_barcodes", action: "insert", data: rows })
       });

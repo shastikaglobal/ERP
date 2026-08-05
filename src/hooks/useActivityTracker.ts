@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -28,7 +29,7 @@ export function useActivityTracker(moduleName: string) {
 
     // Log page_visit on mount
     const logPageVisit = async () => {
-      await fetch('/api/analytics/activity_logs', {
+      await apiFetch('/api/analytics/activity_logs', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -48,7 +49,7 @@ export function useActivityTracker(moduleName: string) {
     // Throttled logging function
     const logEvent = async (eventType: string) => {
       try {
-        const res = await fetch('/api/analytics/activity_logs', {
+        const res = await apiFetch('/api/analytics/activity_logs', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },

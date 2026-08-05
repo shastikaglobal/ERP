@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Loader2, History } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -21,7 +22,7 @@ export default function StockMovements() {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/inventory/inventory_movements?company_id=${profile.company_id}`, {
+      const res = await apiFetch(`/api/inventory/inventory_movements?company_id=${profile.company_id}`, {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch stock movements');

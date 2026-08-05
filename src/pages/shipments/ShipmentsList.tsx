@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, Package, Trash2, Edit } from "lucide-react";
@@ -59,7 +60,7 @@ export default function ShipmentsList() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_shipments/${editingShipment.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/finance/export_shipments/${editingShipment.id}`, { method: 'PUT',
         headers,
         body: JSON.stringify({
           carrier,
@@ -90,8 +91,8 @@ export default function ShipmentsList() {
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const [shipmentsRes, containersRes] = await Promise.all([
-        fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  }),
-        fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  })
+        apiFetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  }),
+        apiFetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  })
       ]);
 
       if (shipmentsRes.ok && containersRes.ok) {
@@ -135,7 +136,7 @@ export default function ShipmentsList() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_shipments/${id}`, { method: 'DELETE',
+      const res = await apiFetch(`/api/finance/export_shipments/${id}`, { method: 'DELETE',
         headers
        });
       if (!res.ok) throw new Error(await res.text() || "Failed to delete shipment");

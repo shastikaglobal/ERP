@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Plus, Mail, Phone, Loader2, Search, Copy, CheckCircle2, MapPin, Calendar, Briefcase, Monitor } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -55,7 +56,7 @@ export default function EmployeeDirectory() {
       const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
-      const response = await fetch('/api/employees', {
+      const response = await apiFetch('/api/employees', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -70,7 +71,7 @@ export default function EmployeeDirectory() {
         const todayStartsAt = new Date();
         todayStartsAt.setHours(0, 0, 0, 0);
         
-        const res = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "user_sessions", action: "select", select: "*", order: { column: "login_time", options: { ascending: false } }, or: `login_time.gte.${todayStartsAt.toISOString()},logout_time.is.null` }) });
+        const res = await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "user_sessions", action: "select", select: "*", order: { column: "login_time", options: { ascending: false } }, or: `login_time.gte.${todayStartsAt.toISOString()},logout_time.is.null` }) });
         const { data: sessData } = await res.json();
         
         if (sessData) setSessions(sessData);
@@ -164,7 +165,7 @@ export default function EmployeeDirectory() {
     const openSession = sessions.find(s => s.user_id === userId && !s.logout_time);
     
     try {
-      const response = await fetch('http://127.0.0.1:8082/force-logout', {
+      const response = await apiFetch('http://127.0.0.1:8082/force-logout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, sessionId: openSession?.id })
@@ -196,7 +197,7 @@ export default function EmployeeDirectory() {
       const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
-      const response = await fetch(`/api/employees/${id}/reset-password`, {
+      const response = await apiFetch(`/api/employees/${id}/reset-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -229,7 +230,7 @@ export default function EmployeeDirectory() {
       const session = user ? { access_token: "dummy" } : null; // Temp workaround
       if (!session) throw new Error("No active session");
 
-      const response = await fetch(`/api/employees/${userId}`, {
+      const response = await apiFetch(`/api/employees/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
@@ -524,7 +525,7 @@ export default function EmployeeDirectory() {
                                 const session = user ? { access_token: "dummy" } : null; // Temp workaround
                                 if (!session) throw new Error("No active session");
                                 
-                                const response = await fetch(`/api/employees/${e.id}`, {
+                                const response = await apiFetch(`/api/employees/${e.id}`, {
                                   method: 'PUT',
                                   headers: {
                                     'Content-Type': 'application/json',

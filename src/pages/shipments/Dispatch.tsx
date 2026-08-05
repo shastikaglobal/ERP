@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth, useCan } from "@/hooks/useAuth";
 
@@ -35,7 +36,7 @@ const Dispatch = () => {
     const checkShipments = async () => {
       try {
         if (!session?.access_token) return;
-        const res = await fetch('/api/dispatch/shipment_dispatches/count', { credentials: 'include'
+        const res = await apiFetch('/api/dispatch/shipment_dispatches/count', { credentials: 'include'
       });
         if (res.ok) {
           const { count } = await res.json();
@@ -70,7 +71,7 @@ const Dispatch = () => {
     setIsCreating(true);
     try {
       if (!session?.access_token) throw new Error("Authentication session missing");
-      const res = await fetch('/api/dispatch/shipment_dispatches', { method: 'POST',
+      const res = await apiFetch('/api/dispatch/shipment_dispatches', { method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
       },

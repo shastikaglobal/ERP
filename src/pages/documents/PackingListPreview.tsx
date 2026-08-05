@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
@@ -18,7 +19,7 @@ export default function PackingListPreview() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "export_orders", action: "select", select: "*, export_shipments(*)", filters: [{ column: "id", type: "eq", value: id }], single: true }) });
+        const res = await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "export_orders", action: "select", select: "*, export_shipments(*)", filters: [{ column: "id", type: "eq", value: id }], single: true }) });
         const { data: order, error } = await res.json();
 
         if (error) throw error;

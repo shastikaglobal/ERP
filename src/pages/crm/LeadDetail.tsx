@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Edit, Mail, Phone, Building, Calendar, Package, UserCheck, Loader2, Globe } from "lucide-react";
@@ -91,7 +92,7 @@ export default function LeadDetail() {
       try {
         
         
-        const leadRes = await fetch(`/api/leads/${id}`, { credentials: 'include'
+        const leadRes = await apiFetch(`/api/leads/${id}`, { credentials: 'include'
       });
         if (!leadRes.ok) throw new Error("Failed to fetch lead");
         const leadData = await leadRes.json();
@@ -99,27 +100,27 @@ export default function LeadDetail() {
         setLead(leadData as unknown as Lead);
         setNewProduct(leadData.product_type || "");
 
-        const actsRes = await fetch(`/api/leads/${id}/activities`, { credentials: 'include'
+        const actsRes = await apiFetch(`/api/leads/${id}/activities`, { credentials: 'include'
       });
         if (!actsRes.ok) throw new Error("Failed to fetch activities");
         const acts = await actsRes.json();
         
         setActivities(acts as unknown as Activity[]);
 
-        const quotesRes = await fetch(`/api/leads/${id}/quotations`, { credentials: 'include'
+        const quotesRes = await apiFetch(`/api/leads/${id}/quotations`, { credentials: 'include'
       });
         if (!quotesRes.ok) throw new Error("Failed to fetch quotations");
         const quotes = await quotesRes.json();
         
         setQuotations(quotes as unknown as Quotation[]);
 
-        const followUpsRes = await fetch(`/api/leads/${id}/follow-ups`, { credentials: 'include'
+        const followUpsRes = await apiFetch(`/api/leads/${id}/follow-ups`, { credentials: 'include'
       });
         if (!followUpsRes.ok) throw new Error("Failed to fetch follow-ups");
         const followUpsData = await followUpsRes.json();
         setFollowUps(followUpsData as unknown as FollowUp[]);
 
-        const tasksRes = await fetch(`/api/leads/${id}/tasks`, { credentials: 'include'
+        const tasksRes = await apiFetch(`/api/leads/${id}/tasks`, { credentials: 'include'
       });
         if (tasksRes.ok) {
           const tasksData = await tasksRes.json();
@@ -140,7 +141,7 @@ export default function LeadDetail() {
     setSavingProduct(true);
     try {
       
-      const res = await fetch(`/api/leads/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/leads/${id}`, { method: 'PUT',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({ product_type: newProduct })
       });

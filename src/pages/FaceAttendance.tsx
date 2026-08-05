@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FaceScanner from '../components/FaceScanner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -25,7 +26,7 @@ async function fetchTodayFromVPS(employeeId: string, session: any) {
   try {
     if (!session) return null;
     const today = getTodayIST();
-    const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
+    const res = await apiFetch(`/api/attendance?start=${today}&end=${today}`, {
       headers: { 'Authorization': `Bearer ${session.access_token}` }
     });
     if (!res.ok) return null;
@@ -43,7 +44,7 @@ async function syncCheckIn(employeeId: string, confidence: number, session: any)
   const status = Number(hour) >= 8 ? 'late' : 'present';
 
   // VPS first (source of truth)
-  const res = await fetch('/api/attendance/face-sync', {
+  const res = await apiFetch('/api/attendance/face-sync', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ employee_id: employeeId, date: today, check_in: now, status })
@@ -52,7 +53,7 @@ async function syncCheckIn(employeeId: string, confidence: number, session: any)
 
   // Also sync to VpsDb (best effort)
   try {
-    // [VPS Migration] TODO: Replace DB.from("attendance_logs").upsert() with fetch("/api/attendance_logs", { method: "POST" })
+    // [VPS Migration] TODO: Replace DB.from("attendance_logs").upsert() with apiFetch("/api/attendance_logs", { method: "POST" })
   } catch { /* ignore */ }
 
   return { check_in: now, check_out: null, status };
@@ -65,7 +66,7 @@ async function syncCheckOut(employeeId: string, session: any) {
   const today = getTodayIST();
 
   // VPS first (source of truth)
-  const res = await fetch('/api/attendance/face-sync', {
+  const res = await apiFetch('/api/attendance/face-sync', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ employee_id: employeeId, date: today, check_out: now })
@@ -74,7 +75,7 @@ async function syncCheckOut(employeeId: string, session: any) {
 
   // Also sync to VpsDb (best effort)
   try {
-    // [VPS Migration] vpsDb query removed - use fetch() API instead
+    // [VPS Migration] vpsDb query removed - use apiFetch() API instead
   } catch { /* ignore */ }
 
   return now;
@@ -85,7 +86,7 @@ async function fetchTodaySummaryFromVPS(session: any) {
   try {
     if (!session) return [];
     const today = getTodayIST();
-    const res = await fetch(`/api/attendance?start=${today}&end=${today}`, {
+    const res = await apiFetch(`/api/attendance?start=${today}&end=${today}`, {
       headers: { 'Authorization': `Bearer ${session.access_token}` }
     });
     if (!res.ok) return [];

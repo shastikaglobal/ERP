@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
@@ -18,7 +19,7 @@ export default function BdeDashboard() {
     queryKey: ['bde_leads', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch('/api/crm/leads', { credentials: 'include' });
+      const res = await apiFetch('/api/crm/leads', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for leads');
       const data = await res.json();
       const error = null;
@@ -35,7 +36,7 @@ export default function BdeDashboard() {
       if (!profile?.company_id) return [];
       try {
         
-        const res = await fetch('/api/quotations', {
+        const res = await apiFetch('/api/quotations', {
           credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");
@@ -54,7 +55,7 @@ export default function BdeDashboard() {
     queryKey: ['bde_orders', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch('/api/orders', { credentials: 'include' });
+      const res = await apiFetch('/api/orders', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for export_orders');
       const data = await res.json();
       const error = null;

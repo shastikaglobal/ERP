@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 
 import { inferTeamFromActorName } from "@/lib/teamMapping";
@@ -78,7 +79,7 @@ const { user } = {} as any; // [VPS Migration] fixed assignment
     // Get IP address (best effort - may be undefined in some environments)
     let ipAddress: string | undefined;
     try {
-      const response = await fetch("https://api.ipify.org?format=json");
+      const response = await apiFetch("https://api.ipify.org?format=json");
       const data = await response.json();
       ipAddress = data.ip;
     } catch (error) {
@@ -155,7 +156,7 @@ const { user } = {} as any; // [VPS Migration] fixed assignment
           };
 
     try {
-      const res = await fetch("/api/analytics/audit_logs", {
+      const res = await apiFetch("/api/analytics/audit_logs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

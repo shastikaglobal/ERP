@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -45,7 +46,7 @@ export default function AuthCallback() {
         if (isRecovery) {
           console.log("[AuthCallback] Recovery flow detected. Clearing any existing session...");
           // Explicitly sign out of any existing session (like admin) to avoid session cross-talk
-          await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); // [VPS Migration]
+          await apiFetch("/api/auth/logout", { method: "POST", credentials: "include" }); // [VPS Migration]
           
           if (code) {
             console.log("[AuthCallback] Exchanging recovery code for session...");

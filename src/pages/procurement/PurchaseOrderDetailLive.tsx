@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -39,7 +40,7 @@ export default function PurchaseOrderDetailLive() {
     const fetchDetail = async () => {
       try {
         
-        const res = await fetch(`/api/purchase_orders/${id}`, { credentials: 'include'
+        const res = await apiFetch(`/api/purchase_orders/${id}`, { credentials: 'include'
       });
         if (!res.ok) throw new Error("Failed to load order details");
         const po = await res.json();

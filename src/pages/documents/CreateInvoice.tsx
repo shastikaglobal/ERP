@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -31,11 +32,11 @@ export default function CreateInvoice() {
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const [leadsRes, productsRes] = await Promise.all([
-          fetch('/api/leads', { headers }).catch(err => {
+          apiFetch('/api/leads', { headers }).catch(err => {
             console.warn("Leads fetch failed:", err);
             return { ok: false, status: 500, text: () => Promise.resolve(err.message) } as Response;
           }),
-          fetch('/api/products', { headers }).catch(err => {
+          apiFetch('/api/products', { headers }).catch(err => {
             console.warn("Products fetch failed:", err);
             return { ok: false, status: 500, text: () => Promise.resolve(err.message) } as Response;
           })
@@ -46,7 +47,7 @@ export default function CreateInvoice() {
           leadsData = await leadsRes.json();
         } else {
           console.warn("Failed to load leads from sync API, trying VpsDb fallback...");
-          const res = await fetch("/api/vps-fallback", {
+          const res = await apiFetch("/api/vps-fallback", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               table: "leads", action: "select", select: "*", order: { column: "created_at", options: { ascending: false } }
@@ -67,7 +68,7 @@ export default function CreateInvoice() {
           productsData = await productsRes.json();
         } else {
           console.warn("Failed to load products from sync API, trying VpsDb fallback...");
-          const res = await fetch("/api/vps-fallback", {
+          const res = await apiFetch("/api/vps-fallback", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               table: "products", action: "select", select: "*", filters: [{ column: "company_id", type: "eq", value: profile.company_id }]
@@ -360,7 +361,7 @@ export default function CreateInvoice() {
       const existingProduct = productsList.find(p => p.name.trim().toLowerCase() === resolvedProductName.toLowerCase());
       if (!existingProduct && resolvedProductName) {
         try {
-          await fetch('/api/products', {
+          await apiFetch('/api/products', {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -381,7 +382,7 @@ export default function CreateInvoice() {
       const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const orderNumber = `EXP-${year}-${rand}`;
 
-      const res = await fetch('/api/orders', {
+      const res = await apiFetch('/api/orders', {
         method: 'POST',
         headers,
         body: JSON.stringify({

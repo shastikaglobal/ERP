@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,7 +65,7 @@ export default function DamagedStockManagement() {
     queryKey: ["damaged-stock"],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/inventory/damaged_stock', {
+        const res = await apiFetch('/api/inventory/damaged_stock', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch damaged stock');
@@ -80,7 +81,7 @@ export default function DamagedStockManagement() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -103,7 +104,7 @@ export default function DamagedStockManagement() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -130,14 +131,14 @@ export default function DamagedStockManagement() {
         updated_at: new Date().toISOString(),
       };
       if (payload.id) {
-        const res = await fetch(`/api/inventory/damaged_stock/${payload.id}`, {
+        const res = await apiFetch(`/api/inventory/damaged_stock/${payload.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
-        const res = await fetch('/api/inventory/damaged_stock', {
+        const res = await apiFetch('/api/inventory/damaged_stock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
@@ -159,7 +160,7 @@ export default function DamagedStockManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/inventory/damaged_stock/${id}`, {
+      const res = await apiFetch(`/api/inventory/damaged_stock/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: profile?.id || null })

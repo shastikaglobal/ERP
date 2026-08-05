@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +29,7 @@ export default function ContainerLoading() {
   const { data, isLoading } = useQuery({
     queryKey: ["wh_export_containers_loading"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/export_containers/with-shipments', {
+      const res = await apiFetch('/api/inventory/export_containers/with-shipments', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch containers');
@@ -64,7 +65,7 @@ export default function ContainerLoading() {
     setDialogOpen(false);
     setUpdatingId(id);
     try {
-      const res = await fetch(`/api/inventory/export_containers/${id}`, {
+      const res = await apiFetch(`/api/inventory/export_containers/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "Loaded" })

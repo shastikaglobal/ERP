@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +26,7 @@ export default function CertificatePreview() {
         console.log("Loading certificate for ID:", id);
         
         // 1. Try finding as a Shipment
-        const res = await fetch("/api/vps-fallback", {
+        const res = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_shipments", action: "select", select: "*, export_orders(*)",
@@ -48,7 +49,7 @@ export default function CertificatePreview() {
 
         // 2. If not found, try finding as an Order
         console.log("Shipment not found, trying as order...");
-        const resOrd = await fetch("/api/vps-fallback", {
+        const resOrd = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_orders", action: "select", select: "*, export_shipments(*)",
@@ -78,7 +79,7 @@ export default function CertificatePreview() {
         // 3. Try finding as Standalone Certificate from VPS DB
         console.log("Order not found, trying as standalone certificate...");
 
-        const certRes = await fetch('/api/documents/certificates', {
+        const certRes = await apiFetch('/api/documents/certificates', {
           headers: { }
         });
         
@@ -132,12 +133,12 @@ export default function CertificatePreview() {
 
     const fetchExtraDetails = async (orderData: any) => {
       if (orderData?.company_id) {
-        const resComp = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: orderData.company_id }], single: true }) }); const { data: compData } = await resComp.json();
+        const resComp = await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: orderData.company_id }], single: true }) }); const { data: compData } = await resComp.json();
         setCompany(compData);
       }
       
       if (orderData?.created_by) {
-        const resUser = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "select", select: "full_name", filters: [{ column: "id", type: "eq", value: orderData.created_by }], single: true }) }); const { data: userData } = await resUser.json();
+        const resUser = await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "profiles", action: "select", select: "full_name", filters: [{ column: "id", type: "eq", value: orderData.created_by }], single: true }) }); const { data: userData } = await resUser.json();
         if (userData) {
           orderData.creator_name = userData.full_name;
         }

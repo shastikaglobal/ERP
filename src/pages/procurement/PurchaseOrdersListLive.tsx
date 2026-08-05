@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -39,7 +40,7 @@ export default function PurchaseOrdersListLive() {
     const fetchOrders = async () => {
       try {
         
-        const res = await fetch(`/api/purchase_orders`, { credentials: 'include'
+        const res = await apiFetch(`/api/purchase_orders`, { credentials: 'include'
       });
         if (!res.ok) throw new Error("Failed to fetch purchase orders");
         const poData = await res.json();
@@ -60,7 +61,7 @@ export default function PurchaseOrdersListLive() {
     if (!window.confirm("Delete this purchase order? This will hide the order from the app, but keep it in the database.")) return;
     try {
       
-      const res = await fetch(`/api/purchase_orders/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/purchase_orders/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete purchase order");
 

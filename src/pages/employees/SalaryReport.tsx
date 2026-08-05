@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { format, startOfMonth, endOfMonth, addDays, parseISO } from "date-fns";
@@ -182,7 +183,7 @@ export default function SalaryReport() {
   const { data: employees = [], isLoading: loadingEmps } = useQuery({
     queryKey: ['salary-employees'],
     queryFn: async () => {
-      const res = await fetch('/api/employees', { credentials: 'include' });
+      const res = await apiFetch('/api/employees', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch employees');
       const data = await res.json();
       return (data || []).filter((p: any) =>
@@ -199,7 +200,7 @@ export default function SalaryReport() {
       const [year, month] = selectedMonth.split('-').map(Number);
       const start = format(new Date(year, month - 1, 1), 'yyyy-MM-dd');
       const end = format(new Date(year, month, 0), 'yyyy-MM-dd');
-      const res = await fetch(`/api/attendance?start=${start}&end=${end}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/attendance?start=${start}&end=${end}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch attendance');
       const data = await res.json();
       const grouped: Record<string, Record<string, any>> = {};

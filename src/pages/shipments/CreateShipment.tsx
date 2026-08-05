@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Loader2, Plus } from "lucide-react";
@@ -54,10 +55,10 @@ export default function CreateShipment() {
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
       const [ordersRes, carriersRes, portsRes, containersRes] = await Promise.all([
-        fetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers  }),
-        fetch('/api/finance/shipping_carriers', { headers  }),
-        fetch('/api/finance/shipping_ports', { headers  }),
-        fetch('/api/finance/container_types', { headers  })
+        apiFetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers  }),
+        apiFetch('/api/finance/shipping_carriers', { headers  }),
+        apiFetch('/api/finance/shipping_ports', { headers  }),
+        apiFetch('/api/finance/container_types', { headers  })
       ]);
 
       if (ordersRes.ok) {
@@ -107,7 +108,7 @@ export default function CreateShipment() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch('/api/finance/shipping_ports', { method: 'POST',
+      const res = await apiFetch('/api/finance/shipping_ports', { method: 'POST',
         headers,
         body: JSON.stringify({
           name: newPortName,
@@ -140,7 +141,7 @@ export default function CreateShipment() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch('/api/finance/container_types', { method: 'POST',
+      const res = await apiFetch('/api/finance/container_types', { method: 'POST',
         headers,
         body: JSON.stringify({
           name: newContainerName,
@@ -177,7 +178,7 @@ export default function CreateShipment() {
       const existingCarrier = carriersList.find(c => c.name.toLowerCase() === trimmedCarrier.toLowerCase());
       if (!existingCarrier) {
         const newCode = trimmedCarrier.substring(0, 3).toUpperCase();
-        await fetch('/api/finance/shipping_carriers', { method: 'POST',
+        await apiFetch('/api/finance/shipping_carriers', { method: 'POST',
           headers,
           body: JSON.stringify({ name: trimmedCarrier, code: newCode  })
         });
@@ -189,7 +190,7 @@ export default function CreateShipment() {
       if (!existingOrigin) {
         const rand = Math.floor(Math.random() * 9000 + 1000);
         const newCode = `PRT-${rand}`;
-        await fetch('/api/finance/shipping_ports', { method: 'POST',
+        await apiFetch('/api/finance/shipping_ports', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedOrigin,
@@ -205,7 +206,7 @@ export default function CreateShipment() {
       if (!existingDest && trimmedDest.toLowerCase() !== trimmedOrigin.toLowerCase()) {
         const rand = Math.floor(Math.random() * 9000 + 1000);
         const newCode = `PRT-${rand}`;
-        await fetch('/api/finance/shipping_ports', { method: 'POST',
+        await apiFetch('/api/finance/shipping_ports', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedDest,
@@ -219,7 +220,7 @@ export default function CreateShipment() {
       const trimmedType = containerType.trim();
       const existingType = containerTypesList.find(c => c.name.toLowerCase() === trimmedType.toLowerCase());
       if (!existingType) {
-        await fetch('/api/finance/container_types', { method: 'POST',
+        await apiFetch('/api/finance/container_types', { method: 'POST',
           headers,
           body: JSON.stringify({
             name: trimmedType,
@@ -237,7 +238,7 @@ export default function CreateShipment() {
       const weightPerContainer = totalWeight / count;
 
       // Insert shipment
-      const shipRes = await fetch('/api/finance/export_shipments', { method: 'POST',
+      const shipRes = await apiFetch('/api/finance/export_shipments', { method: 'POST',
         headers,
         body: JSON.stringify({
           company_id: profile!.company_id,
@@ -269,14 +270,14 @@ export default function CreateShipment() {
         status: 'Pending'
       }));
 
-      const contRes = await fetch('/api/finance/export_containers', { method: 'POST',
+      const contRes = await apiFetch('/api/finance/export_containers', { method: 'POST',
         headers,
         body: JSON.stringify(containersToInsert)
        });
       if (!contRes.ok) throw new Error(await contRes.text() || "Failed to create containers");
 
       // Auto-generate a tracking entry (cargo/barcode) for this shipment
-      const bRes = await fetch('/api/barcodes', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_number: b.batch_number, barcode_data: b.batch_number, created_by: profile?.id }) });
+      const bRes = await apiFetch('/api/barcodes', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_number: b.batch_number, barcode_data: b.batch_number, created_by: profile?.id }) });
       const barcodeError = bRes.ok ? null : new Error('Failed');
       
       if (barcodeError) {

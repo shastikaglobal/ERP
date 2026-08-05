@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 
@@ -116,7 +117,7 @@ export function FollowUpReminders() {
     try {
       const token = profile ? document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] : null;
       const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-      const res = await fetch('/api/follow-ups', { headers });
+      const res = await apiFetch('/api/follow-ups', { headers });
       if (!res.ok) throw new Error('Failed to fetch follow-ups');
       const data = await res.json();
       
@@ -149,7 +150,7 @@ export function FollowUpReminders() {
     try {
       const token = profile ? document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] : null;
       const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-      const res = await fetch(`/api/follow-ups/${id}`, {
+      const res = await apiFetch(`/api/follow-ups/${id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ is_notified: true })

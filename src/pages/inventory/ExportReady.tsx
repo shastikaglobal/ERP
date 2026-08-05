@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -55,7 +56,7 @@ export default function ExportReady() {
     queryFn: async () => {
       try {
 
-        const res = await fetch('/api/inventory/export_ready_inventory', {
+        const res = await apiFetch('/api/inventory/export_ready_inventory', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch export ready inventory');
@@ -76,7 +77,7 @@ export default function ExportReady() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -96,7 +97,7 @@ export default function ExportReady() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -122,7 +123,7 @@ export default function ExportReady() {
       };
       if (payload.id) {
         // UPDATE via VPS API
-        const res = await fetch(`/api/inventory/export_ready_inventory/${payload.id}`, {
+        const res = await apiFetch(`/api/inventory/export_ready_inventory/${payload.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -130,7 +131,7 @@ export default function ExportReady() {
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
         // INSERT via VPS API
-        const res = await fetch('/api/inventory/export_ready_inventory', {
+        const res = await apiFetch('/api/inventory/export_ready_inventory', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
@@ -150,7 +151,7 @@ export default function ExportReady() {
 
   const actionMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await fetch(`/api/inventory/export_ready_inventory/${id}`, {
+      const res = await apiFetch(`/api/inventory/export_ready_inventory/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, updated_at: new Date().toISOString() })
@@ -253,7 +254,7 @@ export default function ExportReady() {
       try {
 
         // Soft delete via VPS API
-        const res = await fetch(`/api/inventory/export_ready_inventory/${confirmTargetId}`, {
+        const res = await apiFetch(`/api/inventory/export_ready_inventory/${confirmTargetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

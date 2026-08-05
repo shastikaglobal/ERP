@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -32,8 +33,8 @@ export default function SupplierDetail() {
         const headers: any = { 'Content-Type': 'application/json' };
 
         const [supRes, poRes] = await Promise.all([
-          fetch(`/api/farmers/${id}`, { headers  }),
-          fetch(`/api/purchase_orders?farmer_id=${id}`, { headers  })
+          apiFetch(`/api/farmers/${id}`, { headers  }),
+          apiFetch(`/api/purchase_orders?farmer_id=${id}`, { headers  })
         ]);
 
         if (!supRes.ok) throw new Error(await supRes.text() || "Failed to load supplier");
@@ -61,7 +62,7 @@ export default function SupplierDetail() {
     setSaving(true);
     try {
       
-      const res = await fetch(`/api/farmers/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/farmers/${id}`, { method: 'PUT',
         headers: {'Content-Type': 'application/json'
          },
         body: JSON.stringify({

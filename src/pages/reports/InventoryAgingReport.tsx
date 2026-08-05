@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
@@ -17,7 +18,7 @@ export default function InventoryAgingReport() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -51,7 +52,7 @@ export default function Ledger() {
     queryKey: ["currency_ledger_live", profile?.company_id, rates],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch(`/api/finance/payments?company_id=${profile.company_id}&status=Completed`, { credentials: 'include' });
+      const res = await apiFetch(`/api/finance/payments?company_id=${profile.company_id}&status=Completed`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch payments');
       const data = await res.json();
 

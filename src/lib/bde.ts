@@ -1,7 +1,8 @@
+import { apiFetch } from "@/lib/api";
 
 export async function fetchBdeProfiles() {
   try {
-    const res = await fetch('/api/crm/bde-profiles', {
+    const res = await apiFetch('/api/crm/bde-profiles', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include'

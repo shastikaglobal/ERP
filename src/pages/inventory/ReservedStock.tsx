@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -53,7 +54,7 @@ export default function ReservedStock() {
     queryKey: ["reserved-stock"],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/inventory/reserved_stock', {
+        const res = await apiFetch('/api/inventory/reserved_stock', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch reserved stock');
@@ -74,7 +75,7 @@ export default function ReservedStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -94,7 +95,7 @@ export default function ReservedStock() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -107,7 +108,7 @@ export default function ReservedStock() {
     mutationFn: async (payload: any) => {
       if (payload.id) {
         // UPDATE via VPS API
-        const __res_upd = await fetch(`/api/inventory/reserved_stock/${payload.id}`, {
+        const __res_upd = await apiFetch(`/api/inventory/reserved_stock/${payload.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -131,7 +132,7 @@ export default function ReservedStock() {
         }
       } else {
         const company_id = profile?.company_id;
-        const __res_ins = await fetch(`/api/inventory/reserved_stock`, {
+        const __res_ins = await apiFetch(`/api/inventory/reserved_stock`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -171,7 +172,7 @@ export default function ReservedStock() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       
       if (status === "delete") {
-        const res = await fetch(`/api/inventory/reserved_stock/${id}`, {
+        const res = await apiFetch(`/api/inventory/reserved_stock/${id}`, {
           method: 'DELETE',
           headers: { }
         });
@@ -180,7 +181,7 @@ export default function ReservedStock() {
           throw new Error(errData.error || 'Failed to delete reservation');
         }
       } else {
-        const res = await fetch(`/api/inventory/reserved_stock/${id}`, {
+        const res = await apiFetch(`/api/inventory/reserved_stock/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'

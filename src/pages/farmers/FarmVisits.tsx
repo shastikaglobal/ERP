@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export default function FarmVisits() {
     async function loadEmployees() {
       try {
         const token = session?.access_token;
-        const res = await fetch('/api/employees', { headers: token ? { 'Authorization': `Bearer ${token }` } : {}
+        const res = await apiFetch('/api/employees', { headers: token ? { 'Authorization': `Bearer ${token }` } : {}
         });
         if (res.ok) {
           const data = await res.json();

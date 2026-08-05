@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -22,7 +23,7 @@ export default function ExportReadyStockReport() {
     queryKey: ["warehouses"],
     queryFn: async () => {
       
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -34,7 +35,7 @@ export default function ExportReadyStockReport() {
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await fetch('/api/products', { credentials: 'include' }); 
+      const { data } = await apiFetch('/api/products', { credentials: 'include' }); 
       return data || [];
     }
   });

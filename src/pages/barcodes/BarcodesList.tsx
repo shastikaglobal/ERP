@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, QrCode, Plus, ScanLine, Printer, Ship, Package, Globe } from "lucide-react";
@@ -21,7 +22,7 @@ export default function BarcodesList() {
     queryKey: ["batch_barcodes"],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/vps-fallback", {
+        const res = await apiFetch("/api/vps-fallback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

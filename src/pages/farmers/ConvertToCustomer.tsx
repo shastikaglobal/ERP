@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,12 +41,12 @@ export default function ConvertToCustomer() {
     queryKey: ["farmers-convert"],
     queryFn: async () => {
       // 1. Get all non-deleted farmers
-      const res = await fetch('/api/farmers', { credentials: 'include' });
+      const res = await apiFetch('/api/farmers', { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch farmers");
       const farmersData = await res.json();
       if (!farmersData || farmersData.length === 0) return [] as Farmer[];
 
-      const custRes = await fetch('/api/customers', { credentials: 'include' });
+      const custRes = await apiFetch('/api/customers', { credentials: 'include' });
       const custData = await custRes.json().catch(() => []);
       const convertedData = custData.filter((c: any) => c.farmer_id);
 
@@ -80,7 +81,7 @@ export default function ConvertToCustomer() {
     const farmer = farmers.find((f) => f.id === farmerId);
     setConvertingIds((prev) => new Set(prev).add(farmerId));
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_API_URL || ""}/api/farmers/${farmerId}/convert`,
         { method: "POST",
           headers: {

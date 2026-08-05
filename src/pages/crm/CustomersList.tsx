@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ const ClientSuccess = () => {
     try {
       setLoading(true);
       
-      const res = await fetch(`/api/customers?company_id=${profile.company_id}`, { credentials: 'include'
+      const res = await apiFetch(`/api/customers?company_id=${profile.company_id}`, { credentials: 'include'
       });
 
       if (!res.ok) {
@@ -110,7 +111,7 @@ const ClientSuccess = () => {
     if (!selectedClient) return;
     try {
       
-      const res = await fetch(`/api/customers/${selectedClient.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/customers/${selectedClient.id}`, { method: 'PUT',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           name: editForm.name,
@@ -150,7 +151,7 @@ const ClientSuccess = () => {
     setIsSavingFeedback(true);
     try {
       
-      const res = await fetch(`/api/customers/${selectedClient.id}`, { method: 'PATCH',
+      const res = await apiFetch(`/api/customers/${selectedClient.id}`, { method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
       },

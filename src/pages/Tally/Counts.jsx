@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from '../../components/shared/PageHeader'
 import { StatCard } from '../../components/shared/StatCard'
 import { Badge } from '../../components/ui/badge'
@@ -82,7 +83,7 @@ export default function Counts() {
     const loadCounts = async () => {
       try {
         // Fetch all counts excluding soft-deleted records
-        const res = await fetch('/api/finance/counts', { headers: { } });
+        const res = await apiFetch('/api/finance/counts', { headers: { } });
         if (!res.ok) throw new Error("Counts fetch failed");
         const data = await res.json();
 

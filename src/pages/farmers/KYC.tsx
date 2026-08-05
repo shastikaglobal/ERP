@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -160,7 +161,7 @@ export default function KYC() {
   const openEditModal = async (record: FarmerKYC) => {
     try {
       setBusy(true);
-      const res = await fetch(`/api/farmers/kyc/${record.farmer_code}`);
+      const res = await apiFetch(`/api/farmers/kyc/${record.farmer_code}`);
       if (res.ok) {
         const fullData = await res.json();
         const updatedRecord = { ...record, ...fullData };

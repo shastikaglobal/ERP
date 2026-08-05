@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { Plus, Loader2, FlaskConical } from "lucide-react";
@@ -17,7 +18,7 @@ export default function QualityControlWarehouse() {
   const { data, isLoading } = useQuery({
     queryKey: ["wh_inventory_batches_qc"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/inventory_batches', { headers: { } });
+      const res = await apiFetch('/api/inventory/inventory_batches', { headers: { } });
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       

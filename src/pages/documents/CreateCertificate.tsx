@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import React, { useState, useRef, useEffect } from "react";
 import { Loader2, Download, Printer, ArrowLeft, Save } from "lucide-react";
@@ -40,7 +41,7 @@ export default function CreateCertificate() {
   useEffect(() => {
     const fetchCompany = async () => {
       if (profile?.company_id) {
-        const resComp = await fetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: profile.company_id }], single: true }) }); const { data: compData } = await resComp.json();
+        const resComp = await apiFetch("/api/vps-fallback", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ table: "companies", action: "select", select: "*", filters: [{ column: "id", type: "eq", value: profile.company_id }], single: true }) }); const { data: compData } = await resComp.json();
         setCompany(compData);
       }
     };
@@ -74,7 +75,7 @@ export default function CreateCertificate() {
         gross_weight: formData.grossWeight
       };
 
-      const res = await fetch('/api/documents/certificates', {
+      const res = await apiFetch('/api/documents/certificates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

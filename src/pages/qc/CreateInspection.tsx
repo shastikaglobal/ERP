@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -33,13 +34,13 @@ export default function CreateInspection() {
       if (!profile?.company_id) return [];
       try {
 
-        const res = await fetch('/api/inventory/inventory_batches', {
+        const res = await apiFetch('/api/inventory/inventory_batches', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch batches');
         const rows = await res.json();
         // Enrich with product names
-        const prodRes = await fetch('/api/inventory/products', {
+        const prodRes = await apiFetch('/api/inventory/products', {
           headers: { }
         });
         const products = prodRes.ok ? await prodRes.json() : [];
@@ -64,7 +65,7 @@ export default function CreateInspection() {
     setBusy(true);
     try {
 
-      const res = await fetch('/api/inventory/qc_inspections', {
+      const res = await apiFetch('/api/inventory/qc_inspections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{

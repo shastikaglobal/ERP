@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +57,7 @@ export default function ScanBarcode() {
   const { data: activeShipments = [], isLoading: shipsLoading } = useQuery<ActiveShipment[]>({
     queryKey: ["active_shipments_scan"],
     queryFn: async () => {
-      const res = await fetch("/api/vps-fallback", {
+      const res = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_shipments", action: "select",
@@ -77,7 +78,7 @@ export default function ScanBarcode() {
     queryKey: ["scan_containers", shipmentId],
     enabled: shipmentId !== "none",
     queryFn: async () => {
-      const res = await fetch("/api/vps-fallback", {
+      const res = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "export_containers", action: "select",
@@ -101,7 +102,7 @@ export default function ScanBarcode() {
     setScanError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/vps-fallback", {
+      const res = await apiFetch("/api/vps-fallback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           table: "batch_barcodes", action: "select", select: "*",
@@ -122,7 +123,7 @@ export default function ScanBarcode() {
          const updates: any = {};
          if (updateLoc !== "none") updates.current_location = updateLoc;
          if (shipmentId !== "none") updates.shipment_id = shipmentId;
-         await fetch("/api/vps-fallback", {
+         await apiFetch("/api/vps-fallback", {
            method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
            body: JSON.stringify({
              table: "batch_barcodes", action: "update", data: updates,

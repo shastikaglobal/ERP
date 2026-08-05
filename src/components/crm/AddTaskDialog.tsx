@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
   const fetchBdes = async () => {
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch(`/api/employees?company_id=${profile?.company_id || ''}`, {
+      const res = await apiFetch(`/api/employees?company_id=${profile?.company_id || ''}`, {
         headers: { }
       });
       if (res.ok) {
@@ -54,7 +55,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
   const fetchLeads = async () => {
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch(`/api/leads`, {
+      const res = await apiFetch(`/api/leads`, {
         headers: { }
       });
       if (res.ok) {
@@ -73,7 +74,7 @@ export function AddTaskDialog({ open, onOpenChange, onSuccess }: AddTaskDialogPr
     setLoading(true);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch('/api/crm-tasks', {
+      const res = await apiFetch('/api/crm-tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

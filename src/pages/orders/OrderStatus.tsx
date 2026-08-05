@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ export default function OrderStatus() {
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const res = await fetch('/api/finance/export_orders', { headers });
+        const res = await apiFetch('/api/finance/export_orders', { headers });
         if (!res.ok) throw new Error(await res.text() || "Failed to load orders");
 
         const data = await res.json();
@@ -53,7 +54,7 @@ export default function OrderStatus() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch(`/api/finance/export_orders/${id}`, {
+      const res = await apiFetch(`/api/finance/export_orders/${id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ status: newStatus })

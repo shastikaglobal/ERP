@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import Card from "@/components/Card";
 import { useNavigate } from "react-router-dom";
@@ -88,10 +89,10 @@ export default function ReportsHub() {
       if (!companyId) return null;
 
       const [batchRes, shipmentRes, damageRes, exportReadyRes] = await Promise.all([
-        fetch('/api/inventory?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
-        fetch('/api/shipments?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
-        fetch('/api/inventory?status=damaged,rejected,quarantine&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
-        fetch('/api/inventory?status=qc_passed&is_export_ready=true&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
+        apiFetch('/api/inventory?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        apiFetch('/api/shipments?company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        apiFetch('/api/inventory?status=damaged,rejected,quarantine&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+        apiFetch('/api/inventory?status=qc_passed&is_export_ready=true&company_id=' + companyId, { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
       ]);
 
       const batches = batchRes.data || [];

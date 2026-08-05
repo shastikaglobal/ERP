@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState, useMemo } from "react";
 
 import { fetchBdeProfiles } from "@/lib/bde";
@@ -144,8 +145,8 @@ export default function LeadActivities() {
   const fetchData = async () => {
     try {
       const [activitiesRes, leadsRes] = await Promise.all([
-        fetch("/api/crm/activities", { credentials: "include" }),
-        fetch("/api/crm/leads", { credentials: "include" })
+        apiFetch("/api/crm/activities", { credentials: "include" }),
+        apiFetch("/api/crm/leads", { credentials: "include" })
       ]);
 
       if (!activitiesRes.ok) throw new Error("Failed to fetch activities");
@@ -173,7 +174,7 @@ export default function LeadActivities() {
   const handleDeleteReport = async () => {
     if (!reportToDelete) return;
     try {
-      const res = await fetch(`/api/crm/reports/${reportToDelete}`, {
+      const res = await apiFetch(`/api/crm/reports/${reportToDelete}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -201,7 +202,7 @@ export default function LeadActivities() {
       if (!isAdminOrManager && isBDE) {
         url += `?bde_id=${currentUser.id}`;
       }
-      const res = await fetch(url, { credentials: "include" });
+      const res = await apiFetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data = await res.json();
       setDailyReports(data);
@@ -221,7 +222,7 @@ export default function LeadActivities() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/crm/activities", { method: "POST",
+      const res = await apiFetch("/api/crm/activities", { method: "POST",
         headers: { "Content-Type": "application/json"  },
         credentials: "include",
         body: JSON.stringify({
@@ -254,7 +255,7 @@ export default function LeadActivities() {
 
   const toggleComplete = async (id: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`/api/crm/activities/${id}`, { method: "PUT",
+      const res = await apiFetch(`/api/crm/activities/${id}`, { method: "PUT",
         headers: { "Content-Type": "application/json"  },
         credentials: "include",
         body: JSON.stringify({ completed: !currentStatus })
@@ -277,7 +278,7 @@ export default function LeadActivities() {
     if (!deleteId) return;
     try {
       // Soft-delete activity instead of permanent removal
-      const res = await fetch(`/api/crm/activities/${deleteId}`, {
+      const res = await apiFetch(`/api/crm/activities/${deleteId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -427,7 +428,7 @@ export default function LeadActivities() {
                     return;
                   }
 
-                  const res = await fetch("/api/crm/reports", { method: "POST",
+                  const res = await apiFetch("/api/crm/reports", { method: "POST",
                     headers: { "Content-Type": "application/json"  },
                     credentials: "include",
                     body: JSON.stringify(payload)

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Section } from "@/components/shared/FormShell";
@@ -16,7 +17,7 @@ export default function SalesAnalytics() {
     queryKey: ['sales_analytics_leads', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await fetch('/api/crm/leads', { credentials: 'include' });
+      const res = await apiFetch('/api/crm/leads', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for leads');
       const data = await res.json();
       const error = null;
@@ -38,7 +39,7 @@ export default function SalesAnalytics() {
       if (!profile?.company_id) return [];
       try {
         
-        const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}`, {
+        const res = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}`, {
           credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export orders from VPS");
@@ -61,7 +62,7 @@ export default function SalesAnalytics() {
       if (!profile?.company_id) return [];
       try {
         
-        const res = await fetch('/api/quotations', {
+        const res = await apiFetch('/api/quotations', {
           credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");

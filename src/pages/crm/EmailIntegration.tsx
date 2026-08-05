@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -76,7 +77,7 @@ export default function EmailIntegration() {
 
     // 1. Fetch Company Config
     try {
-      const res = await fetch(`/api/settings`, { credentials: 'include' });
+      const res = await apiFetch(`/api/settings`, { credentials: 'include' });
       const comp = await res.json().catch(() => null);
       if (res.ok && comp) {
         setSmtpHost(comp.smtp_host || "smtppro.zoho.in");
@@ -94,7 +95,7 @@ export default function EmailIntegration() {
 
     // 2. Fetch Recent Email Activities
     try {
-      const emRes = await fetch('/api/emails', { credentials: 'include' });
+      const emRes = await apiFetch('/api/emails', { credentials: 'include' });
       const emailData = await emRes.json().catch(() => []);
       if (Array.isArray(emailData)) setEmails(emailData as unknown as EmailActivity[]);
     } catch (err: any) {
@@ -121,7 +122,7 @@ export default function EmailIntegration() {
     if (!profile?.company_id) return;
     if (!silent) setSyncing(true);
     try {
-      const res = await fetch('/api/emails/sync', { method: 'POST', credentials: 'include' });
+      const res = await apiFetch('/api/emails/sync', { method: 'POST', credentials: 'include' });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error('Sync failed');
       if (!silent) {
@@ -150,7 +151,7 @@ export default function EmailIntegration() {
     if (smtpPass) updateData.smtp_pass = smtpPass;
     if (imapPass) updateData.imap_pass = imapPass;
 
-    const res = await fetch(`/api/settings`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
+    const res = await apiFetch(`/api/settings`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
     setSaving(false);
     if (!res.ok) {
       toast.error("Failed to save configuration.");

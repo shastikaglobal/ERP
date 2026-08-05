@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "./vpsDb";
 
 export interface PackingProtocol {
@@ -47,7 +48,7 @@ export async function createPackingProtocol(
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl('/api/warehouse/packing_protocols'), {
+        const res = await apiFetch(getApiUrl('/api/warehouse/packing_protocols'), {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -90,7 +91,7 @@ export async function getPackingProtocols(
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl('/api/warehouse/packing_protocols'), { headers });
+        const res = await apiFetch(getApiUrl('/api/warehouse/packing_protocols'), { headers });
         if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
         const data = await res.json();
         
@@ -122,7 +123,7 @@ export async function getPackingProtocolById(
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl(`/api/warehouse/packing_protocols`), { headers });
+        const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols`), { headers });
         if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
         const data = await res.json();
         const found = (data || []).find((p: any) => p.id === id);
@@ -148,7 +149,7 @@ export async function updatePackingProtocol(
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
+        const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
             method: 'PUT',
             headers,
             body: JSON.stringify({
@@ -172,7 +173,7 @@ export async function deletePackingProtocol(id: string): Promise<void> {
         if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
+        const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
             method: 'DELETE',
             headers
         });
@@ -217,7 +218,7 @@ export async function getPackingListPDF(packingId: string) {
         }
         
         // Fetch batches from VPS
-        const resBatches = await fetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
+        const resBatches = await apiFetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
         if (resBatches.ok) {
             const batches = await resBatches.json();
             const foundBatch = (batches || []).find((b: any) => 
@@ -238,7 +239,7 @@ export async function getPackingListPDF(packingId: string) {
     if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
     }
-    const resCompany = await fetch(getApiUrl('/api/settings'), { headers });
+    const resCompany = await apiFetch(getApiUrl('/api/settings'), { headers });
     if (!resCompany.ok) throw new Error('Failed to fetch company settings');
     const company = await resCompany.json();
 
@@ -261,12 +262,12 @@ export async function getUnpackedReceivings(
         }
         
         // Fetch batches from VPS
-        const resBatches = await fetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
+        const resBatches = await apiFetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
         if (!resBatches.ok) throw new Error('Failed to fetch inventory batches');
         const batches = await resBatches.json();
         
         // Fetch products from VPS to map product name
-        const resProducts = await fetch(getApiUrl('/api/products'), { headers });
+        const resProducts = await apiFetch(getApiUrl('/api/products'), { headers });
         if (!resProducts.ok) throw new Error('Failed to fetch products');
         const products = await resProducts.json();
         

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useMemo } from "react";
 import { useAuth, useCan } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +40,7 @@ export default function InspectionsList() {
     queryFn: async () => {
       try {
 
-        const res = await fetch('/api/inventory/qc_inspections/with-batch', {
+        const res = await apiFetch('/api/inventory/qc_inspections/with-batch', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch inspections');
@@ -72,7 +73,7 @@ export default function InspectionsList() {
     setIsSaving(true);
     try {
 
-      const res = await fetch(`/api/inventory/qc_inspections/${editingInspection.id}`, {
+      const res = await apiFetch(`/api/inventory/qc_inspections/${editingInspection.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -168,7 +169,7 @@ export default function LeadsList() {
     try {
       
       
-      const res = await fetch('/api/leads', { credentials: 'include'
+      const res = await apiFetch('/api/leads', { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch leads");
       const data = await res.json();
@@ -183,7 +184,7 @@ export default function LeadsList() {
   const fetchTeam = async () => {
     
     
-    const res = await fetch('/api/employees', { credentials: 'include'
+    const res = await apiFetch('/api/employees', { credentials: 'include'
       });
     if (res.ok) {
       const profiles = await res.json();
@@ -194,7 +195,7 @@ export default function LeadsList() {
   const fetchSources = async () => {
     
     
-    const res = await fetch('/api/leads/meta/sources', { credentials: 'include'
+    const res = await apiFetch('/api/leads/meta/sources', { credentials: 'include'
       });
     if (res.ok) {
       const data = await res.json();
@@ -256,7 +257,7 @@ export default function LeadsList() {
         throw new Error("You must be logged in to create a lead");
       }
 
-      const res = await fetch('/api/leads', { method: 'POST',
+      const res = await apiFetch('/api/leads', { method: 'POST',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           date: date || null,
@@ -291,14 +292,14 @@ export default function LeadsList() {
     try {
       
       
-      const empRes = await fetch(`/api/employees/${session?.user?.id}`, { credentials: 'include'
+      const empRes = await apiFetch(`/api/employees/${session?.user?.id}`, { credentials: 'include'
       });
       const empData = await empRes.json();
       const companyId = empData?.company_id;
 
       if (!companyId) throw new Error("Could not identify your company");
 
-      const res = await fetch(`/api/leads/${lead.id}/convert`, { method: 'POST',
+      const res = await apiFetch(`/api/leads/${lead.id}/convert`, { method: 'POST',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           company_id: companyId,
@@ -334,7 +335,7 @@ export default function LeadsList() {
     const assignee = followUpAssignedTo;
     try {
       
-      const res = await fetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, { method: 'POST',
+      const res = await apiFetch(`/api/leads/${selectedFollowUpLead.id}/follow-ups`, { method: 'POST',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({
           company_name: selectedFollowUpLead.company_name,
@@ -389,7 +390,7 @@ export default function LeadsList() {
       const formattedRemark = trimmedText ? `[${remarkMethod}]: ${trimmedText}` : "";
 
       
-      const res = await fetch(`/api/leads/${selectedRemarkLead.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/leads/${selectedRemarkLead.id}`, { method: 'PUT',
         headers: { 'Content-Type': 'application/json',   },
         body: JSON.stringify({ remark: formattedRemark })
       });
@@ -416,7 +417,7 @@ export default function LeadsList() {
     if (!deleteId) return;
     try {
       
-      const res = await fetch(`/api/leads/${deleteId}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/leads/${deleteId}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete lead");
       toast.success("Lead removed from view (soft-deleted)");
@@ -433,7 +434,7 @@ export default function LeadsList() {
   const toggleLeadStatus = async (lead: Lead, newStage: string) => {
     try {
       
-      const res = await fetch(`/api/leads/${lead.id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/leads/${lead.id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -969,7 +970,7 @@ export default function LeadsList() {
                         onValueChange={async (newStage) => {
                           try {
                             
-                            const res = await fetch(`/api/leads/${lead.id}`, { method: 'PUT',
+                            const res = await apiFetch(`/api/leads/${lead.id}`, { method: 'PUT',
                               headers: {
                                 'Content-Type': 'application/json'
       },

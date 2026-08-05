@@ -1,3 +1,12 @@
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
 const WebSocket = require('ws');
 globalThis.WebSocket = WebSocket;
 
@@ -40,6 +49,12 @@ if (envPath) {
 
 console.log("SERVER PG_PASSWORD:", process.env.PG_PASSWORD); const app = express();
 app.set('trust proxy', 1);
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
+
 
 // PAYSLIPS ROUTE
 app.get('/api/payslips', async (req, res) => {

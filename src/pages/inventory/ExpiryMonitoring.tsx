@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +57,7 @@ export default function ExpiryMonitoring() {
     queryKey: ["expiry-monitoring"],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/inventory/expiry_monitoring', {
+        const res = await apiFetch('/api/inventory/expiry_monitoring', {
           headers: { }
         });
         if (!res.ok) throw new Error('Failed to fetch expiry monitoring');
@@ -72,7 +73,7 @@ export default function ExpiryMonitoring() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list'],
     queryFn: async () => {
-      const res = await fetch('/api/products', {
+      const res = await apiFetch('/api/products', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -95,7 +96,7 @@ export default function ExpiryMonitoring() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: async () => {
-      const res = await fetch('/api/inventory/warehouses', {
+      const res = await apiFetch('/api/inventory/warehouses', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -120,14 +121,14 @@ export default function ExpiryMonitoring() {
         updated_at: new Date().toISOString(),
       };
       if (payload.id) {
-        const res = await fetch(`/api/inventory/expiry_monitoring/${payload.id}`, {
+        const res = await apiFetch(`/api/inventory/expiry_monitoring/${payload.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Update failed'); }
       } else {
-        const res = await fetch('/api/inventory/expiry_monitoring', {
+        const res = await apiFetch('/api/inventory/expiry_monitoring', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify([body])
@@ -149,7 +150,7 @@ export default function ExpiryMonitoring() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/inventory/expiry_monitoring/${id}`, {
+      const res = await apiFetch(`/api/inventory/expiry_monitoring/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: profile?.id || null })

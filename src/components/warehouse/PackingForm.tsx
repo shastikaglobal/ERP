@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,7 +62,7 @@ export function PackingForm({
         queryKey: ["products-list", companyId],
         enabled: !!companyId,
         queryFn: async () => {
-             const res = await fetch('/api/products', {
+             const res = await apiFetch('/api/products', {
                  headers: { }
              });
              if (!res.ok) throw new Error('Failed to fetch products');

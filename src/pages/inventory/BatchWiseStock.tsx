@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +57,7 @@ export default function BatchWiseStock() {
     queryKey: ['warehouses-list', profile?.company_id],
     queryFn: async () => {
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
-      const res = await fetch('/api/warehouse/warehouses', { headers });
+      const res = await apiFetch('/api/warehouse/warehouses', { headers });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
       return (data || []).filter((w: any) => !w.is_deleted && (!profile?.company_id || w.company_id === profile.company_id));
@@ -67,7 +68,7 @@ export default function BatchWiseStock() {
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
-      const res = await fetch('/api/products', { headers });
+      const res = await apiFetch('/api/products', { headers });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
       return (data || []).filter((p: any) => p.is_active && !p.is_deleted && (!profile?.company_id || p.company_id === profile.company_id));
@@ -78,7 +79,7 @@ export default function BatchWiseStock() {
     queryKey: ["inventory-batches", profile?.company_id],
     queryFn: async () => {
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
-      const res = await fetch('/api/inventory/inventory_batches', { headers });
+      const res = await apiFetch('/api/inventory/inventory_batches', { headers });
       if (!res.ok) throw new Error('Failed to fetch batches');
       const data = await res.json();
       return (data || []).filter((b: any) => !b.is_deleted && (!profile?.company_id || b.company_id === profile.company_id));
@@ -137,7 +138,7 @@ export default function BatchWiseStock() {
       };
 
       if (payload.id) {
-        const res = await fetch(`/api/inventory/inventory_batches/${payload.id}`, {
+        const res = await apiFetch(`/api/inventory/inventory_batches/${payload.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(body)
@@ -147,7 +148,7 @@ export default function BatchWiseStock() {
            throw new Error(errData.error || 'Update failed');
         }
       } else {
-        const res = await fetch(`/api/inventory/inventory_batches`, {
+        const res = await apiFetch(`/api/inventory/inventory_batches`, {
           method: 'POST',
           headers,
           body: JSON.stringify(body)
@@ -171,7 +172,7 @@ export default function BatchWiseStock() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
-      const res = await fetch(`/api/inventory/inventory_batches/${id}`, {
+      const res = await apiFetch(`/api/inventory/inventory_batches/${id}`, {
         method: 'DELETE',
         headers
       });

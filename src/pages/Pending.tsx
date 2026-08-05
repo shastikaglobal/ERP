@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Sprout, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { vpsDb } from "@/lib/vpsDb";
@@ -7,7 +8,7 @@ export default function Pending() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); // [VPS Migration]
+    await apiFetch("/api/auth/logout", { method: "POST", credentials: "include" }); // [VPS Migration]
     navigate("/auth");
   };
 

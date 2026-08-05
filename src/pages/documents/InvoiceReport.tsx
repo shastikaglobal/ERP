@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +19,7 @@ export default function InvoiceReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/vps-fallback", {
+        const res = await apiFetch("/api/vps-fallback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -34,7 +35,7 @@ export default function InvoiceReport() {
 
         if (error || !data) {
           // If not found in shipments, try export_orders directly
-          const res2 = await fetch("/api/vps-fallback", {
+          const res2 = await apiFetch("/api/vps-fallback", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -51,7 +52,7 @@ export default function InvoiceReport() {
           if (orderErr || !orderOnly) {
             // Try fetching from Node API
 
-            const res = await fetch(`/api/invoices/${id}`, {
+            const res = await apiFetch(`/api/invoices/${id}`, {
               headers: { }
             });
             if (!res.ok) throw new Error('Invoice not found');

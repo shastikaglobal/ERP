@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
@@ -46,7 +47,7 @@ export default function EditLead() {
   useEffect(() => {
     async function fetchLead() {
       if (!id) return;
-      const res = await fetch(`/api/crm/leads/${id}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/crm/leads/${id}`, { credentials: 'include' });
       const data = await res.json().catch(() => null);
       const error = res.ok ? null : new Error('Failed');
 
@@ -82,7 +83,7 @@ export default function EditLead() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/crm/leads/${id}`, {
+      const res = await apiFetch(`/api/crm/leads/${id}`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

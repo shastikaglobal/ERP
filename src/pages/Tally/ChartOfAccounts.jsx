@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Badge } from '../../components/ui/badge'
@@ -80,7 +81,7 @@ export default function ChartOfAccounts() {
   const fetchAccounts = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/finance/chart_of_accounts', {
+      const res = await apiFetch('/api/finance/chart_of_accounts', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -132,7 +133,7 @@ export default function ChartOfAccounts() {
     setDeleting(id)
     
     try {
-      const res = await fetch(`/api/finance/chart_of_accounts/${id}`, {
+      const res = await apiFetch(`/api/finance/chart_of_accounts/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -187,7 +188,7 @@ export default function ChartOfAccounts() {
         gst: !!form.gst,
         status: form.status
       }
-      const res = await fetch(`/api/finance/chart_of_accounts/${editingAccount.id}`, {
+      const res = await apiFetch(`/api/finance/chart_of_accounts/${editingAccount.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

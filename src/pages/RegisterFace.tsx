@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import FaceScanner from '../components/FaceScanner';
 import { vpsDb } from "@/lib/vpsDb";
@@ -97,7 +98,7 @@ export default function RegisterFace() {
     setLoadingEmployees(true);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch('/api/employees', {
+      const res = await apiFetch('/api/employees', {
         headers: { }
       });
       if (!res.ok) throw new Error('Failed to fetch from API');

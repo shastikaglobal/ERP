@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export default function Payslips() {
     // Fetch employees for dropdown
     const fetchEmployees = async () => {
       try {
-        const res = await fetch('/api/employees', {
+        const res = await apiFetch('/api/employees', {
           headers: { }
         });
         if (res.ok) {
@@ -43,7 +44,7 @@ export default function Payslips() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`/api/payslips?employee_id=${selectedEmployee}&month=${selectedMonth}`, {
+      const res = await apiFetch(`/api/payslips?employee_id=${selectedEmployee}&month=${selectedMonth}`, {
         headers: { }
       });
       if (res.ok) {

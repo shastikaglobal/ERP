@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -183,7 +184,7 @@ export default function Mailbox() {
     }
 
     try {
-      const res = await fetch("/api/zoho/office-integrator", {
+      const res = await apiFetch("/api/zoho/office-integrator", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -239,7 +240,7 @@ export default function Mailbox() {
     if (!profile?.id) return;
     setSavingSignature(true);
     try {
-      const res = await fetch(`/api/employees/${profile.id}`, {
+      const res = await apiFetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -282,7 +283,7 @@ export default function Mailbox() {
       setSelectedEmail((prev: any) => prev?.id === email.id ? { ...prev, is_read: true } : prev);
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      fetch(`/api/emails/${email.id}`, {
+      apiFetch(`/api/emails/${email.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ is_read: true })
@@ -294,7 +295,7 @@ export default function Mailbox() {
       setLoadingBody(true);
       try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-        const response = await fetch("/api/emails/get-zoho-body", {
+        const response = await apiFetch("/api/emails/get-zoho-body", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -343,7 +344,7 @@ export default function Mailbox() {
     setLoadingBody(true);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const response = await fetch("/api/emails/get-zoho-body", {
+      const response = await apiFetch("/api/emails/get-zoho-body", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -409,7 +410,7 @@ export default function Mailbox() {
         (profile?.requested_role && ["bd", "bde"].includes(profile.requested_role.toLowerCase()));
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch('/api/emails/accounts', {
+      const res = await apiFetch('/api/emails/accounts', {
         headers: { }
       });
       if (!res.ok) { toast.error("Failed to fetch accounts"); return; }
@@ -443,7 +444,7 @@ export default function Mailbox() {
 
   async function fetchHistory(accountId: string) {
     // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-    const res = await fetch(`/api/emails?account_id=${accountId}`, {
+    const res = await apiFetch(`/api/emails?account_id=${accountId}`, {
       headers: { }
     });
     if (!res.ok) { toast.error("Failed to fetch email history"); return; }
@@ -457,7 +458,7 @@ export default function Mailbox() {
     setIsSyncing(true);
     try {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const response = await fetch('/api/emails/sync', {
+      const response = await apiFetch('/api/emails/sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -588,7 +589,7 @@ const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       
-      const insertRes = await fetch('/api/emails', {
+      const insertRes = await apiFetch('/api/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({
@@ -613,7 +614,7 @@ const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
       }
       const emailRow = await insertRes.json();
 
-      const putRes = await fetch(`/api/emails/${emailRow.id}`, {
+      const putRes = await apiFetch(`/api/emails/${emailRow.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ status: "pending" })
@@ -622,7 +623,7 @@ const { publicUrl } = {} as any; // [VPS Migration] fixed assignment
 
       toast.info("Sending email...", { id: `sending-${emailRow.id}`, duration: 10000 });
 
-      fetch("/api/emails/send", {
+      apiFetch("/api/emails/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

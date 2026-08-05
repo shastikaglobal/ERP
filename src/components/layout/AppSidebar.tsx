@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useState, useEffect } from "react";
 import { useAuth, useCan } from "@/hooks/useAuth";
@@ -68,7 +69,7 @@ const { data: profile } = {} as any; // [VPS Migration] fixed assignment
           }
         }
 
-        const res = await fetch(`/api/analytics/sidebar_counts${companyFilter}`, {
+        const res = await apiFetch(`/api/analytics/sidebar_counts${companyFilter}`, {
           credentials: 'include'
         });
         
@@ -103,7 +104,7 @@ const { data: profile } = {} as any; // [VPS Migration] fixed assignment
 
       let isEmpAdmin = false;
       try {
-        const empRes = await fetch('/api/employees', {
+        const empRes = await apiFetch('/api/employees', {
           headers: {
             },
         });
@@ -130,7 +131,7 @@ const { data: profile } = {} as any; // [VPS Migration] fixed assignment
       }
 
       try {
-        const permsRes = await fetch(`/api/user-permissions?user_id=${currentUserId}&t=${Date.now()}`, {
+        const permsRes = await apiFetch(`/api/user-permissions?user_id=${currentUserId}&t=${Date.now()}`, {
           headers: {
             },
           cache: 'no-store'

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ export default function ZohoIntegration() {
     if (!profile?.id) return;
     setLoading(true);
     const { data: { session } } = await vpsDb.auth.getSession();
-    const res = await fetch('/api/emails/accounts', {
+    const res = await apiFetch('/api/emails/accounts', {
       headers: { }
     });
     if (res.ok) {
@@ -54,7 +55,7 @@ export default function ZohoIntegration() {
     setSyncing(accountId);
     try {
       const { data: { session } } = await vpsDb.auth.getSession();
-      const res = await fetch("/api/emails/sync", {
+      const res = await apiFetch("/api/emails/sync", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +88,7 @@ export default function ZohoIntegration() {
       const currentUserId = profile?.id || null;
 
       const { data: { session } } = await vpsDb.auth.getSession();
-      const res = await fetch(`/api/emails/accounts/${accountId}`, {
+      const res = await apiFetch(`/api/emails/accounts/${accountId}`, {
         method: 'DELETE',
         headers: { }
       });

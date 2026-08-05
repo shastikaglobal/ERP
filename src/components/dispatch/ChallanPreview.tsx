@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from 'react';
 import { vpsDb } from "@/lib/vpsDb";
 
@@ -26,7 +27,7 @@ const ChallanPreview: React.FC<Props> = ({ shipmentId }) => {
         .maybeSingle();
       if (data) setChallan(data as ChallanData);
     };
-    fetch();
+    apiFetch();
   }, [shipmentId]);
 
   if (!challan) {

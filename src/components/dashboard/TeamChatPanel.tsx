@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useEffect, useState, useRef } from "react";
 
@@ -460,7 +461,7 @@ const { error } = {} as any; // [VPS Migration] fixed assignment
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      const response = await fetch(fileUrl);
+      const response = await apiFetch(fileUrl);
       if (!response.ok) throw new Error('Network response was not ok');
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -62,7 +63,7 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-suppliers"],
         enabled: true,
         queryFn: async () => {
-            const res = await fetch('/api/farmers', { headers: { } });
+            const res = await apiFetch('/api/farmers', { headers: { } });
             if (!res.ok) throw new Error('Failed to fetch farmers');
             const data = await res.json();
             return data || [];
@@ -73,7 +74,7 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-products"],
         enabled: true,
         queryFn: async () => {
-            const res = await fetch('/api/products', { headers: { } });
+            const res = await apiFetch('/api/products', { headers: { } });
             if (!res.ok) throw new Error('Failed to fetch products');
             const data = await res.json();
             return data || [];
@@ -86,7 +87,7 @@ export default function ReceivingGoods() {
         queryFn: async () => {
             try {
 
-                const res = await fetch('/api/warehouse/warehouses', {
+                const res = await apiFetch('/api/warehouse/warehouses', {
                     headers: { }
                 });
                 if (!res.ok) throw new Error('Failed to fetch warehouses');
@@ -105,7 +106,7 @@ export default function ReceivingGoods() {
         queryFn: async () => {
 
             const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
-            const res = await fetch('/api/inventory/inventory_batches', { headers });
+            const res = await apiFetch('/api/inventory/inventory_batches', { headers });
             if (!res.ok) throw new Error('Failed to fetch batches');
             const data = await res.json();
             return (data || []).filter((b: any) => !b.is_deleted && (!profile?.company_id || b.company_id === profile.company_id));
@@ -150,7 +151,7 @@ export default function ReceivingGoods() {
         setIsSavingEdit(true);
         try {
 
-            const res = await fetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
+            const res = await apiFetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -368,7 +369,7 @@ export default function ReceivingGoods() {
                         resolvedFarmerId = existingSupplier.id;
                     } else {
 
-                        const createRes = await fetch('/api/farmers', {
+                        const createRes = await apiFetch('/api/farmers', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -401,7 +402,7 @@ export default function ReceivingGoods() {
                         resolvedProductId = existingProduct.id;
                     } else {
 
-                        const createRes = await fetch('/api/inventory/products', {
+                        const createRes = await apiFetch('/api/inventory/products', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -433,7 +434,7 @@ export default function ReceivingGoods() {
                         return;
                     }
 
-                    const createRes = await fetch('/api/inventory/products', {
+                    const createRes = await apiFetch('/api/inventory/products', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -459,7 +460,7 @@ export default function ReceivingGoods() {
                 }
 
 
-                const res = await fetch('/api/inventory/inventory_batches', {
+                const res = await apiFetch('/api/inventory/inventory_batches', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -488,13 +489,13 @@ export default function ReceivingGoods() {
                 // Update warehouse stock summary if the table exists
                 try {
                     const productName = formData.productName || selectedProduct?.name || '';
-                    const fetchRes = await fetch(`/api/inventory/warehouse_stock`);
+                    const fetchRes = await apiFetch(`/api/inventory/warehouse_stock`);
                     const allStock = fetchRes.ok ? await fetchRes.json() : [];
                     const existingStock = allStock.find((s: any) => s.warehouse_id === formData.warehouseId && s.product_name === productName);
 
                     if (existingStock) {
                         const updatedQty = Number(existingStock.quantity || 0) + quantityValue;
-                        await fetch(`/api/inventory/warehouse_stock/${existingStock.id}`, {
+                        await apiFetch(`/api/inventory/warehouse_stock/${existingStock.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -504,7 +505,7 @@ export default function ReceivingGoods() {
                             })
                         });
                     } else {
-                        await fetch(`/api/inventory/warehouse_stock`, {
+                        await apiFetch(`/api/inventory/warehouse_stock`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

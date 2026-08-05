@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -97,14 +98,14 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
 
         // Upsert logic (check if exists)
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-        const res = await fetch(`/api/hr/attendance_logs?employee_id=${emp.id}&date=${punchDateStr}`, {
+        const res = await apiFetch(`/api/hr/attendance_logs?employee_id=${emp.id}&date=${punchDateStr}`, {
           headers: { }
         });
         const existingArr = res.ok ? await res.json() : null;
         const existing = existingArr && existingArr.length > 0 ? existingArr[0] : null;
 
         if (existing) {
-          await fetch(`/api/hr/attendance_logs/${existing.id}`, {
+          await apiFetch(`/api/hr/attendance_logs/${existing.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
@@ -116,7 +117,7 @@ export function EsslUploader({ employees, onUploadComplete }: EsslUploaderProps)
             })
           });
         } else {
-          await fetch('/api/hr/attendance_logs', {
+          await apiFetch('/api/hr/attendance_logs', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

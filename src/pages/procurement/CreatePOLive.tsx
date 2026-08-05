@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -135,8 +136,8 @@ export default function CreatePOLive() {
         const headers = {  };
 
         const [supRes, prodRes] = await Promise.all([
-          fetch(`/api/farmers?company_id=${profile.company_id}`, { headers  }),
-          fetch(`/api/products`, { headers  })
+          apiFetch(`/api/farmers?company_id=${profile.company_id}`, { headers  }),
+          apiFetch(`/api/products`, { headers  })
         ]);
 
         if (!supRes.ok) throw new Error("Failed to fetch suppliers");
@@ -215,7 +216,7 @@ export default function CreatePOLive() {
         if (existingSupplier) {
           resolvedSupplierId = existingSupplier.id;
         } else {
-          const createRes = await fetch('/api/farmers', { method: 'POST',
+          const createRes = await apiFetch('/api/farmers', { method: 'POST',
             headers: {'Content-Type': 'application/json'
              },
             body: JSON.stringify({
@@ -244,7 +245,7 @@ export default function CreatePOLive() {
           if (existingProduct) {
             resolvedProductId = existingProduct.id;
           } else {
-            const createRes = await fetch('/api/products', { method: 'POST',
+            const createRes = await apiFetch('/api/products', { method: 'POST',
               headers: {'Content-Type': 'application/json'
                },
               body: JSON.stringify({
@@ -275,7 +276,7 @@ export default function CreatePOLive() {
       const generatedPoNumber = `PO-${year}-${timestamp}`;
 
       // Step 4: Create the PO header and items via POST
-      const res = await fetch('/api/purchase_orders', { method: 'POST',
+      const res = await apiFetch('/api/purchase_orders', { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },

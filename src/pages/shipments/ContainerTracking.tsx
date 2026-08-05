@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -23,8 +24,8 @@ export default function ContainerTracking() {
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const [containersRes, shipmentsRes] = await Promise.all([
-          fetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  }),
-          fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  })
+          apiFetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  }),
+          apiFetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  })
         ]);
 
         if (!containersRes.ok || !shipmentsRes.ok) {
@@ -70,7 +71,7 @@ export default function ContainerTracking() {
         'Content-Type': 'application/json'
       };
       
-      const res = await fetch(`/api/finance/export_containers/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/finance/export_containers/${id}`, { method: 'PUT',
         headers,
         body: JSON.stringify({ [field]: value  })
       });

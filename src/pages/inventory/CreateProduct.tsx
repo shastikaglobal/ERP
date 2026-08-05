@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
@@ -34,7 +35,7 @@ export default function CreateProduct() {
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/products", {
+      const res = await apiFetch("/api/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

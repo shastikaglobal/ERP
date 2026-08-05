@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useMemo } from "react";
 import { Target, Bell, CheckCircle2, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -87,7 +88,7 @@ function Dashboard() {
 
   const fetcher = async (url: string) => {
     
-    const res = await fetch(url, { credentials: 'include'
+    const res = await apiFetch(url, { credentials: 'include'
       });
     if (!res.ok) throw new Error("Failed to fetch analytics");
     return res.json();

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 /**
  * supabase.js - src/services/supabase.js
  * Fixed: removed process.env (Vite only uses import.meta.env)
@@ -72,7 +73,7 @@ export async function saveFaceEmbedding(employeeId, embeddingArray, sampleIndex 
         quality_score: qualityScore,
         model_version: 'face-api-ssd-mobilenetv1',
     };
-    const res = await fetch('/api/employees/bio-data', {
+    const res = await apiFetch('/api/employees/bio-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify(payload)
@@ -84,7 +85,7 @@ export async function saveFaceEmbedding(employeeId, embeddingArray, sampleIndex 
 export async function getEmployeeFaceEmbeddings(employeeId) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('No session');
-    const res = await fetch(`/api/employees/${employeeId}/bio-data`, {
+    const res = await apiFetch(`/api/employees/${employeeId}/bio-data`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch face embeddings from VPS DB');
@@ -94,7 +95,7 @@ export async function getEmployeeFaceEmbeddings(employeeId) {
 export async function getAllFaceEmbeddings() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('No session');
-    const res = await fetch('/api/employees/bio-data/all', {
+    const res = await apiFetch('/api/employees/bio-data/all', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch all face embeddings from VPS DB');
@@ -104,7 +105,7 @@ export async function getAllFaceEmbeddings() {
 export async function deleteFaceEmbeddings(employeeId) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('No session');
-    const res = await fetch(`/api/employees/${employeeId}/bio-data`, {
+    const res = await apiFetch(`/api/employees/${employeeId}/bio-data`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` }
     });
@@ -145,7 +146,7 @@ export async function recordCheckIn(employeeId, confidenceScore) {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-            await fetch('/api/attendance/face-sync', {
+            await apiFetch('/api/attendance/face-sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({
@@ -193,7 +194,7 @@ export async function recordCheckOut(employeeId) {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-            await fetch('/api/attendance/face-sync', {
+            await apiFetch('/api/attendance/face-sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({

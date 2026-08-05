@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 // =========================================
 // E:\ERP\src\components\layout\AIChatPanel.tsx
 // =========================================
@@ -58,7 +59,7 @@ export function AIChatPanel({
 
     try {
 
-      const res = await fetch(
+      const res = await apiFetch(
         "/api/ai-chat",
         {
           method: "POST",

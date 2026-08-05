@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Save, Trash2, Loader2 } from "lucide-react";
@@ -274,10 +275,10 @@ export default function CreateQuotation() {
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const leadsReq = fetch('/api/leads', { headers  });
-        const productsReq = fetch('/api/products', { headers  });
-        const containersReq = fetch('/api/meta/container_types', { headers  });
-        const pkgsReq = fetch('/api/meta/packaging_types', { headers  });
+        const leadsReq = apiFetch('/api/leads', { headers  });
+        const productsReq = apiFetch('/api/products', { headers  });
+        const containersReq = apiFetch('/api/meta/container_types', { headers  });
+        const pkgsReq = apiFetch('/api/meta/packaging_types', { headers  });
 
         const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([leadsReq, productsReq, containersReq, pkgsReq]);
 
@@ -316,7 +317,7 @@ export default function CreateQuotation() {
   }, [profile?.company_id]);
 
   const loadPackagingTypes = async () => {
-    const res = await fetch('/api/settings/packaging_types', { credentials: 'include' });
+    const res = await apiFetch('/api/settings/packaging_types', { credentials: 'include' });
     const data = await res.json().catch(() => null);
     if (data) setPackagingTypesList(data);
   };
@@ -327,7 +328,7 @@ export default function CreateQuotation() {
     
     setSavingPkg(true);
     try {
-      const res = await fetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
+      const res = await apiFetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
       const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       toast.success("New packaging type added successfully");
@@ -367,7 +368,7 @@ export default function CreateQuotation() {
         const headers: any = { 'Content-Type': 'application/json' };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const custRes = await fetch('/api/customers/find-or-create', { method: 'POST',
+        const custRes = await apiFetch('/api/customers/find-or-create', { method: 'POST',
           headers,
           body: JSON.stringify({ company_id: profile!.company_id, name: customerName, address: customerAddress || null, phone: customerPhone || null  })
         });
@@ -421,7 +422,7 @@ export default function CreateQuotation() {
       }));
 
       
-      const res = await fetch('/api/quotations', { method: 'POST',
+      const res = await apiFetch('/api/quotations', { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -433,7 +434,7 @@ export default function CreateQuotation() {
       const finalQuoteNumber = quoteData.quotation_number;
 
       if (selectedLeadId) {
-        await fetch(`/api/crm/leads/${selectedLeadId}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: "negotiation" }) });
+        await apiFetch(`/api/crm/leads/${selectedLeadId}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: "negotiation" }) });
       }
 
       toast.success("Quotation created successfully!");

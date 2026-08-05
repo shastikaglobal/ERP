@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -34,7 +35,7 @@ export default function BatchTrackingReport() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch('/api/inventory_batches', { credentials: 'include' });
+      const res = await apiFetch('/api/inventory_batches', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for inventory_batches');
       const data = await res.json();
       const error = null;

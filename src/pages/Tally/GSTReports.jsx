@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { PageHeader } from '../../components/shared/PageHeader'
@@ -44,7 +45,7 @@ export default function GSTReports() {
     
     setLoading(true)
     try {
-      const res = await fetch('/api/finance/gst_transactions', { headers: { } });
+      const res = await apiFetch('/api/finance/gst_transactions', { headers: { } });
       const records = res.ok ? await res.json() : [];
       // Optionally sort client-side
       records.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -88,7 +89,7 @@ export default function GSTReports() {
       const iAmt = parseFloat(igst) || 0
       const total = tAmt + cAmt + sAmt + iAmt
 
-      const res = await fetch('/api/finance/gst_transactions', {
+      const res = await apiFetch('/api/finance/gst_transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{
@@ -133,7 +134,7 @@ export default function GSTReports() {
     if (!window.confirm('Hide this GST record from the report? The record will remain in the database for audit and recovery.')) return
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/finance/gst_transactions/${id}`, {
+      const res = await apiFetch(`/api/finance/gst_transactions/${id}`, {
         method: 'DELETE',
         headers: { }
       });

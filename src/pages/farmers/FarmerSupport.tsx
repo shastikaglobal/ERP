@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export default function FarmerSupportPage() {
 
   useEffect(() => {
     async function loadEmployees() {
-      const res = await fetch('/api/employees', { credentials: 'include' });
+      const res = await apiFetch('/api/employees', { credentials: 'include' });
       const data = await res.json();
       if (data) {
         setEmployees(data.map(d => ({ id: d.id, name: d.full_name || 'Unknown User' })));

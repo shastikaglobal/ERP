@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Save, Trash2, Loader2 } from "lucide-react";
@@ -103,8 +104,8 @@ export default function EditQuotation() {
 
       try {
         setLoading(true);
-        const leadsQuery = fetch('/api/crm/leads', { credentials: 'include' }).then(r => r.json());
-        let productsQuery = fetch('/api/products', { credentials: 'include' }).then(r => r.json());
+        const leadsQuery = apiFetch('/api/crm/leads', { credentials: 'include' }).then(r => r.json());
+        let productsQuery = apiFetch('/api/products', { credentials: 'include' }).then(r => r.json());
 
         if (profile?.company_id) {
           productsQuery = productsQuery.eq('company_id', profile.company_id);
@@ -114,8 +115,8 @@ export default function EditQuotation() {
         const [leadsRes, productsRes, containersRes, pkgsRes] = await Promise.all([
           leadsQuery,
           productsQuery,
-          fetch('/api/settings/container_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
-          fetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
+          apiFetch('/api/settings/container_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data })),
+          apiFetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }))
         ]);
 
         if (leadsRes.data) setLeadsList(leadsRes.data);
@@ -136,7 +137,7 @@ export default function EditQuotation() {
 
         // Load quotation via API
         
-        const quoteRes = await fetch(`/api/quotations/${id}`, { credentials: 'include'
+        const quoteRes = await apiFetch(`/api/quotations/${id}`, { credentials: 'include'
       });
         if (!quoteRes.ok) throw new Error("Failed to load quotation");
         const q = await quoteRes.json();
@@ -167,7 +168,7 @@ export default function EditQuotation() {
         }
 
         // Load items via API
-        const itemsRes = await fetch(`/api/quotations/${id}/items`, { credentials: 'include'
+        const itemsRes = await apiFetch(`/api/quotations/${id}/items`, { credentials: 'include'
       });
         if (itemsRes.ok) {
           const itemsData = await itemsRes.json();
@@ -193,7 +194,7 @@ export default function EditQuotation() {
   }, [profile?.company_id, id]);
 
   const loadPackagingTypes = async () => {
-    const { data } = await fetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }));
+    const { data } = await apiFetch('/api/settings/packaging_types', { credentials: 'include' }).then(r => r.json()).then(data => ({ data }));
     if (data) setPackagingTypesList(data);
   };
 
@@ -203,7 +204,7 @@ export default function EditQuotation() {
 
     setSavingPkg(true);
     try {
-      const res = await fetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
+      const res = await apiFetch('/api/settings/packaging_types', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newPkgName }) });
       const error = res.ok ? null : new Error('Failed');
       if (error) throw error;
       toast.success("New packaging type added successfully");
@@ -241,7 +242,7 @@ export default function EditQuotation() {
     try {
       // 1. Find or Create Customer
       let customerId = null;
-      const existingCustRes = await fetch(`/api/customers?lead_id=${quotationData.lead_id}`, { credentials: 'include' });
+      const existingCustRes = await apiFetch(`/api/customers?lead_id=${quotationData.lead_id}`, { credentials: 'include' });
       const existingCustArr = await existingCustRes.json().catch(() => []);
       const existingCust = existingCustArr[0];
 
@@ -296,7 +297,7 @@ export default function EditQuotation() {
       }));
 
       
-      const res = await fetch(`/api/quotations/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/quotations/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },

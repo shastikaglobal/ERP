@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -90,19 +91,19 @@ export default function InventoryBatches() {
         setLoading(true);
         const [batchesRes, productsRes, warehousesRes] = await Promise.all([
           (async () => {
-            const res = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
+            const res = await apiFetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
               headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
           })(),
           (async () => {
-            const res = await fetch(`/api/products`, {
+            const res = await apiFetch(`/api/products`, {
               headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
           })(),
           (async () => {
-            const res = await fetch(`/api/warehouse/warehouses`, {
+            const res = await apiFetch(`/api/warehouse/warehouses`, {
               headers: { }
             });
             return { data: res.ok ? await res.json() : null, error: res.ok ? null : new Error('Fetch failed') };
@@ -238,7 +239,7 @@ export default function InventoryBatches() {
           received_date: formData.received_date,
           expiry_date: formData.expiry_date || null,
         };
-        const res = await fetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
+        const res = await apiFetch(`/api/inventory/inventory_batches/${editingBatch.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -260,7 +261,7 @@ export default function InventoryBatches() {
           expiry_date: formData.expiry_date || null,
           status: "available",
         };
-        const res = await fetch(`/api/inventory/inventory_batches`, {
+        const res = await apiFetch(`/api/inventory/inventory_batches`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -273,7 +274,7 @@ export default function InventoryBatches() {
       setIsEditDialogOpen(false);
       resetForm();
       // Refetch data
-      const refetchRes = await fetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
+      const refetchRes = await apiFetch(`/api/inventory/inventory_batches?company_id=${profile.company_id}`, {
         headers: { }
       });
       if (refetchRes.ok) {
@@ -333,7 +334,7 @@ export default function InventoryBatches() {
         deleted_at: new Date().toISOString(),
         deleted_by: profile?.id || null,
       };
-      const res = await fetch(`/api/inventory/inventory_batches/${deleteId}`, {
+      const res = await apiFetch(`/api/inventory/inventory_batches/${deleteId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -45,7 +46,7 @@ export default function SuppliersList() {
     if (!profile?.company_id) return;
     try {
       
-      const res = await fetch(`/api/farmers?company_id=${profile.company_id}`, { credentials: 'include'
+      const res = await apiFetch(`/api/farmers?company_id=${profile.company_id}`, { credentials: 'include'
       });
       if (!res.ok) throw new Error("Failed to fetch suppliers");
       const data = await res.json();
@@ -82,7 +83,7 @@ export default function SuppliersList() {
       const prodCategories = categories.split(",").map(c => c.trim()).filter(Boolean);
 
       
-      const res = await fetch(`/api/farmers`, { method: 'POST',
+      const res = await apiFetch(`/api/farmers`, { method: 'POST',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -120,7 +121,7 @@ export default function SuppliersList() {
   const handleDelete = async (id: string) => {
     try {
       
-      const res = await fetch(`/api/farmers/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/farmers/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to delete supplier");
       toast.success("Supplier hidden from the app");

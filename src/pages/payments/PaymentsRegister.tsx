@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -35,13 +36,13 @@ export default function PaymentsRegister() {
       if (!profile?.company_id) return [];
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const pRes = await fetch(`/api/finance/payments?company_id=${profile.company_id}`, {
+      const pRes = await apiFetch(`/api/finance/payments?company_id=${profile.company_id}`, {
         headers: { 'Authorization': `Bearer ${__session_1?.access_token}` }
       });
       const pData = pRes.ok ? await pRes.json() : [];
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const eRes = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
+      const eRes = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
         headers: { 'Authorization': `Bearer ${__session_2?.access_token}` }
       });
       const eData = eRes.ok ? await eRes.json() : [];
@@ -78,7 +79,7 @@ export default function PaymentsRegister() {
     queryFn: async () => {
       if (!profile?.company_id) return [];
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
+      const res = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}&payment_status=unpaid`, {
         headers: { 'Authorization': `Bearer ${__session_3?.access_token}` }
       });
       if (!res.ok) throw new Error("Fetch export orders failed");
@@ -98,7 +99,7 @@ export default function PaymentsRegister() {
       const payNum = `PAY-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
 
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-      const res = await fetch('/api/finance/payments', {
+      const res = await apiFetch('/api/finance/payments', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${__session_4?.access_token}`,
@@ -122,7 +123,7 @@ export default function PaymentsRegister() {
       if (!res.ok) throw new Error("Insert payment failed");
 
       if (orderId) {
-        await fetch(`/api/finance/export_orders/${orderId}`, {
+        await apiFetch(`/api/finance/export_orders/${orderId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${__session_4?.access_token}`,

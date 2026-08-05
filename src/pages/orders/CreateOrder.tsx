@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -33,9 +34,9 @@ export default function CreateOrder() {
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const [leadsRes, productsRes, customersRes] = await Promise.all([
-          fetch('/api/leads', { headers }),
-          fetch('/api/products', { headers }),
-          fetch(`/api/customers?company_id=${profile.company_id}`, { headers })
+          apiFetch('/api/leads', { headers }),
+          apiFetch('/api/products', { headers }),
+          apiFetch(`/api/customers?company_id=${profile.company_id}`, { headers })
         ]);
 
         if (leadsRes.ok) {
@@ -347,7 +348,7 @@ export default function CreateOrder() {
       const existingProduct = productsList.find(p => p.name.trim().toLowerCase() === resolvedProductName.toLowerCase());
       if (!existingProduct && resolvedProductName) {
         try {
-          await fetch('/api/products', {
+          await apiFetch('/api/products', {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -368,7 +369,7 @@ export default function CreateOrder() {
       const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const orderNumber = `EXP-${year}-${rand}`;
 
-      const res = await fetch('/api/orders', {
+      const res = await apiFetch('/api/orders', {
         method: 'POST',
         headers,
         body: JSON.stringify({

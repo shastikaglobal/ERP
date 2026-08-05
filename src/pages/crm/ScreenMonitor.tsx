@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect, useRef } from "react";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
@@ -302,14 +303,14 @@ export default function ScreenMonitor() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const pRes = await fetch('/api/employees', { credentials: 'include' });
+      const pRes = await apiFetch('/api/employees', { credentials: 'include' });
       const profilesData = await pRes.json().catch(() => []);
       const allProfiles = profilesData || [];
 
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      const lRes = await fetch('/api/analytics/activity_logs', { credentials: 'include' });
+      const lRes = await apiFetch('/api/analytics/activity_logs', { credentials: 'include' });
       const logsData = await lRes.json().catch(() => []);
 
       const allLogs = (logsData || []) as ActivityLog[];
@@ -365,7 +366,7 @@ export default function ScreenMonitor() {
 
     // Real-time via polling
     const logsSubscription = setInterval(async () => {
-      const res = await fetch('/api/analytics/activity_logs', { credentials: 'include' });
+      const res = await apiFetch('/api/analytics/activity_logs', { credentials: 'include' });
       if (res.ok) {
         const newLogs = await res.json();
         // Just re-fetch initial data to sync everything instead of complex delta logic

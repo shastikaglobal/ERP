@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -67,7 +68,7 @@ export default function RolesPermissions() {
     try {
       console.log('Fetching users from /api/employees/all/profiles...');
       // --- Fetching Users ---
-      const usersRes = await fetch('/api/employees/all/profiles', {
+      const usersRes = await apiFetch('/api/employees/all/profiles', {
         headers: {
           },
       });
@@ -80,7 +81,7 @@ export default function RolesPermissions() {
 
       console.log('Fetching employees for role mapping...');
       // Fetch employees to map roles
-      const employeesRes = await fetch('/api/employees', {
+      const employeesRes = await apiFetch('/api/employees', {
         headers: {
           },
       });
@@ -101,7 +102,7 @@ export default function RolesPermissions() {
 
       console.log('Fetching permissions from /api/user-permissions...');
       // --- Fetching Access ---
-      const permsRes = await fetch('/api/user-permissions', {
+      const permsRes = await apiFetch('/api/user-permissions', {
         headers: {
           },
       });
@@ -175,7 +176,7 @@ export default function RolesPermissions() {
     }));
 
     try {
-      const saveRes = await fetch('/api/user-permissions', {
+      const saveRes = await apiFetch('/api/user-permissions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,7 +238,7 @@ export default function RolesPermissions() {
       users.forEach(u => {
         subs.forEach(sub => {
           promises.push(
-            fetch('/api/user-permissions', {
+            apiFetch('/api/user-permissions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

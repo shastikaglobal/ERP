@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SectionHeader from "../../components/SectionHeader";
@@ -71,8 +72,8 @@ export default function ClientAcquisition() {
 
       const authHeader = {  };
       const [leadsRes, convertedRes] = await Promise.all([
-        fetch(`/api/leads?company_id=${companyId}`, { headers: authHeader  }),
-        fetch(`/api/leads/converted?company_id=${companyId}`, { headers: authHeader  })
+        apiFetch(`/api/leads?company_id=${companyId}`, { headers: authHeader  }),
+        apiFetch(`/api/leads/converted?company_id=${companyId}`, { headers: authHeader  })
       ]);
 
       if (!leadsRes.ok) {
@@ -250,7 +251,7 @@ export default function ClientAcquisition() {
                 
                 if (!session?.access_token) throw new Error('Authentication required');
 
-                const res = await fetch('/api/crm/leads/add-client', { method: 'POST',
+                const res = await apiFetch('/api/crm/leads/add-client', { method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
       },

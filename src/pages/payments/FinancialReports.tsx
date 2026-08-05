@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { vpsDb } from "@/lib/vpsDb";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +33,7 @@ export default function FinancialReports() {
       if (isLive) {
         if (name === "Accounts Receivable Aging") {
           // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-          const arRes = await fetch(`/api/finance/reports/ar_aging`, {
+          const arRes = await apiFetch(`/api/finance/reports/ar_aging`, {
             headers: { 'Authorization': `Bearer ${__session_5?.access_token}` }
           });
           const data = arRes.ok ? await arRes.json() : [];
@@ -58,15 +59,15 @@ export default function FinancialReports() {
           });
         } else if (name === "Profit & Loss Statement") {
           // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-          const pRes = await fetch('/api/finance/payments?status=Completed', {
+          const pRes = await apiFetch('/api/finance/payments?status=Completed', {
             headers: { 'Authorization': `Bearer ${__session_6?.access_token}` }
           });
           const revenue = pRes.ok ? await pRes.json() : [];
 
-          const poRes1 = await fetch('/api/finance/purchase_orders?status=approved', {
+          const poRes1 = await apiFetch('/api/finance/purchase_orders?status=approved', {
             headers: { 'Authorization': `Bearer ${__session_6?.access_token}` }
           });
-          const poRes2 = await fetch('/api/finance/purchase_orders?status=received', {
+          const poRes2 = await apiFetch('/api/finance/purchase_orders?status=received', {
             headers: { 'Authorization': `Bearer ${__session_6?.access_token}` }
           });
           const expenses = [...(poRes1.ok ? await poRes1.json() : []), ...(poRes2.ok ? await poRes2.json() : [])];
@@ -109,17 +110,17 @@ export default function FinancialReports() {
         } else if (name === "Balance Sheet") {
           // [VPS Migration] Session now comes from useAuth hook, not vpsDb
           
-          const payRes = await fetch('/api/finance/payments?status=Completed', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
+          const payRes = await apiFetch('/api/finance/payments?status=Completed', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
           const payments = payRes.ok ? await payRes.json() : [];
           
-          const invRes = await fetch('/api/inventory/inventory_batches', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
+          const invRes = await apiFetch('/api/inventory/inventory_batches', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
           const inventory = invRes.ok ? await invRes.json() : [];
           
-          const soRes = await fetch('/api/finance/sales_orders?status=Pending', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
+          const soRes = await apiFetch('/api/finance/sales_orders?status=Pending', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
           const receivables = soRes.ok ? await soRes.json() : [];
           
-          const poRes1 = await fetch('/api/finance/purchase_orders?status=approved', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
-          const poRes2 = await fetch('/api/finance/purchase_orders?status=received', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
+          const poRes1 = await apiFetch('/api/finance/purchase_orders?status=approved', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
+          const poRes2 = await apiFetch('/api/finance/purchase_orders?status=received', { headers: { 'Authorization': `Bearer ${__session_7?.access_token}` } });
           const payables = [...(poRes1.ok ? await poRes1.json() : []), ...(poRes2.ok ? await poRes2.json() : [])];
 
           const cashTotal = (payments || []).reduce((s, p) => s + Number(p.amount), 0);
@@ -146,7 +147,7 @@ export default function FinancialReports() {
           });
         } else if (name === "Cash Flow Statement") {
           // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-          const cfRes = await fetch(`/api/finance/reports/cash_flow`, {
+          const cfRes = await apiFetch(`/api/finance/reports/cash_flow`, {
             headers: { 'Authorization': `Bearer ${__session_8?.access_token}` }
           });
           const { inflow = [], outflow = [] } = cfRes.ok ? await cfRes.json() : {};

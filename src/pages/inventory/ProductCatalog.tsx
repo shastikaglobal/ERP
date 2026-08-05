@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, PackageOpen, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,7 @@ export default function ProductCatalog() {
     e.stopPropagation();
     if (!window.confirm("Delete this product? This will hide it from the app.")) return;
     try {
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await apiFetch(`/api/products/${id}`, {
         method: "DELETE",
         headers: { },
       });
@@ -34,7 +35,7 @@ export default function ProductCatalog() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const res = await fetch("/api/products", {
+      const res = await apiFetch("/api/products", {
         headers: { },
       });
       if (!res.ok) throw new Error("Failed to fetch products");

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAuth, useIsAdminOrManager } from "@/hooks/useAuth";
 import { StatCard } from "@/components/shared/StatCard";
@@ -28,7 +29,7 @@ export default function ShipmentAnalytics() {
       
       try {
         
-        const res = await fetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, {
+        const res = await apiFetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, {
           credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export shipments from VPS");
@@ -55,7 +56,7 @@ export default function ShipmentAnalytics() {
       
       try {
         
-        const res = await fetch(`/api/finance/reports/shipment_analytics?company_id=${profile.company_id}`, {
+        const res = await apiFetch(`/api/finance/reports/shipment_analytics?company_id=${profile.company_id}`, {
           credentials: 'include'
         });
         if (!res.ok) throw new Error("Failed to fetch export shipments stats from VPS");
@@ -74,7 +75,7 @@ export default function ShipmentAnalytics() {
     if (!editingShipment || !newStatus) return;
     setIsUpdating(true);
     try {
-      const { error } = await fetch('/api/shipments', { credentials: 'include' }); 
+      const { error } = await apiFetch('/api/shipments', { credentials: 'include' }); 
 
       if (error) throw error;
 

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertCircle, Loader2, Send } from "lucide-react";
@@ -18,7 +19,7 @@ export default function OverduePayments() {
   const { data: overdue, isLoading } = useQuery({
     queryKey: ["overdue_payments_live"],
     queryFn: async () => {
-      const res = await fetch('/api/finance/reports/ar_aging', { credentials: 'include' });
+      const res = await apiFetch('/api/finance/reports/ar_aging', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch overdue payments');
       const data = await res.json();
 

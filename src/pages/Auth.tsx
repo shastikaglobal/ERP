@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useSearchParams, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { Sprout, Loader2 } from "lucide-react";
@@ -39,7 +40,7 @@ export default function Auth() {
       if (!loginEmail.includes('@')) {
         let resolvedEmail = "";
         try {
-          const res = await fetch(`/api/employees/lookup-id/${loginEmail}`);
+          const res = await apiFetch(`/api/employees/lookup-id/${loginEmail}`);
           if (res.ok) {
             const resData = await res.json();
             resolvedEmail = resData?.email || "";
@@ -60,7 +61,7 @@ export default function Auth() {
 
       console.log(`Attempting login for email: ${loginEmail}`);
       
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password })
@@ -109,7 +110,7 @@ export default function Auth() {
       payload.password = password;
 
       // Call public backend registration endpoint
-      const response = await fetch('/api/employees/register', {
+      const response = await apiFetch('/api/employees/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -123,7 +124,7 @@ export default function Auth() {
       toast.success("Account registered! Logging you in...");
 
       // Automatically sign in the user
-      const signInRes = await fetch('/api/auth/login', {
+      const signInRes = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: result.email, password })
@@ -159,7 +160,7 @@ export default function Auth() {
     setBusyReset(true);
     try {
       const token = searchParams.get('token');
-      const res = await fetch('/api/auth/update-password', {
+      const res = await apiFetch('/api/auth/update-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword })

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Section, FormGrid, FormRow } from "@/components/shared/FormShell";
@@ -50,7 +51,7 @@ export default function Settings() {
     if (!profile?.company_id) return;
     const fetchCompany = async () => {
       try {
-        const res = await fetch("/api/settings", {
+        const res = await apiFetch("/api/settings", {
           headers: {
             }
         });
@@ -101,7 +102,7 @@ export default function Settings() {
 
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/upload', {
+      const res = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { },
         body: formData
@@ -131,7 +132,7 @@ export default function Settings() {
 
       const formData = new FormData();
       formData.append('file', file);
-      const uploadRes = await fetch('/api/upload', {
+      const uploadRes = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { },
         body: formData
@@ -140,7 +141,7 @@ export default function Settings() {
       const { publicUrl } = await uploadRes.json();
 
       // Save to profile
-      const res = await fetch(`/api/employees/${profile.id}`, {
+      const res = await apiFetch(`/api/employees/${profile.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -202,7 +203,7 @@ export default function Settings() {
 
     try {
       
-      const companyRes = await fetch("/api/settings", {
+      const companyRes = await apiFetch("/api/settings", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -222,7 +223,7 @@ export default function Settings() {
       if (city) profileUpdate.city = city;
       
       if (Object.keys(profileUpdate).length > 0) {
-        const profileRes = await fetch(`/api/employees/${profile.id}`, {
+        const profileRes = await apiFetch(`/api/employees/${profile.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json"

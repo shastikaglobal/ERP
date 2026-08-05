@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, CircleDashed, PlayCircle, ChevronLeft, ChevronRight, FileCheck } from "lucide-react";
@@ -38,7 +39,7 @@ const { data } = {} as any; // [VPS Migration] fixed assignment
       if (!companyId) return [];
       try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
-        const res = await fetch('/api/quotations', {
+        const res = await apiFetch('/api/quotations', {
           headers: { }
         });
         if (!res.ok) throw new Error("Failed to fetch quotations");

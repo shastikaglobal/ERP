@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Phone, Mail, MapPin, Sprout } from "lucide-react";
@@ -34,7 +35,7 @@ export default function FarmerDetail() {
     queryKey: ["farmer-pos", id],
     enabled: !!id,
     queryFn: async () => {
-      const res = await fetch(`/api/finance/purchase_orders?farmer_id=${id}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/finance/purchase_orders?farmer_id=${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch purchase orders");
       return res.json();
     }

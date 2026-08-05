@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import SectionHeader from "../../components/SectionHeader";
 import Card from "@/components/Card";
@@ -34,7 +35,7 @@ export default function Tasks() {
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
-      const res = await fetch(`/api/crm-tasks?company_id=${profile?.company_id || ''}`, { headers  });
+      const res = await apiFetch(`/api/crm-tasks?company_id=${profile?.company_id || ''}`, { headers  });
       if (!res.ok) throw new Error("Failed to fetch tasks");
       const data = await res.json();
       setTasks(data);
@@ -51,7 +52,7 @@ export default function Tasks() {
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
       
       
-      const res = await fetch(`/api/crm-tasks/${id}`, { method: 'PUT',
+      const res = await apiFetch(`/api/crm-tasks/${id}`, { method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
       },
@@ -69,7 +70,7 @@ export default function Tasks() {
     if (!confirm("Are you sure you want to delete this task?")) return;
     try {
       
-      const res = await fetch(`/api/crm-tasks/${id}`, { method: 'DELETE'
+      const res = await apiFetch(`/api/crm-tasks/${id}`, { method: 'DELETE'
       });
       if (!res.ok) throw new Error("Failed to archive task");
       setTasks(prev => prev.filter((task) => task.id !== id));

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useCRMPermissions } from "@/hooks/useCRMPermissions";
@@ -65,7 +66,7 @@ export const CRMSecurityProvider = ({ children }: { children: React.ReactNode })
 
         const fetchSettings = async () => {
             try {
-                const res = await fetch(`/api/meta/security_settings?company_id=${profile.company_id}`);
+                const res = await apiFetch(`/api/meta/security_settings?company_id=${profile.company_id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setProtectionEnabled(!!data.screenshot_protection);
