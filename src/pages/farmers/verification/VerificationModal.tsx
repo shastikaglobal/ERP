@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { FarmerVerificationData } from '../FarmerVerificationTypes';
-import { CheckCircle2, FileText, MapPin, Map, CreditCard, User } from 'lucide-react';
+import { CheckCircle2, FileText, MapPin, Map, CreditCard, User, XCircle } from 'lucide-react';
 
 interface VerificationModalProps {
   isOpen: boolean;
