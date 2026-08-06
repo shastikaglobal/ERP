@@ -166,7 +166,12 @@ export default function ExpiryMonitoring() {
   });
 
   const calculateDaysRemaining = (expiryDateStr: string) => {
-    return differenceInDays(parseISO(expiryDateStr), today);
+    if (!expiryDateStr) return 9999;
+    try {
+      return differenceInDays(parseISO(expiryDateStr), today);
+    } catch {
+      return 9999;
+    }
   };
 
   const calculateStatus = (daysRemaining: number, storedStatus: string) => {
@@ -190,7 +195,7 @@ export default function ExpiryMonitoring() {
         computedStatus === statusFilter;
 
       let dateMatch = true;
-      if (startDate || endDate) {
+      if ((startDate || endDate) && item.expiry_date) {
         const itemDate = parseISO(item.expiry_date);
         if (startDate && itemDate < parseISO(startDate)) dateMatch = false;
         if (endDate && itemDate > parseISO(endDate)) dateMatch = false;
@@ -447,7 +452,7 @@ export default function ExpiryMonitoring() {
                         {item.manufacture_date ? format(parseISO(item.manufacture_date), "MMM d, yyyy") : "-"}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {format(parseISO(item.expiry_date), "MMM d, yyyy")}
+                        {item.expiry_date ? format(parseISO(item.expiry_date), "MMM d, yyyy") : "-"}
                       </TableCell>
                       <TableCell>{getDaysRemainingBadge(daysRemaining)}</TableCell>
                       <TableCell className="text-sm">{item.warehouse || "-"}</TableCell>
