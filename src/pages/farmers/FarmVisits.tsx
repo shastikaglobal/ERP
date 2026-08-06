@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ import { useAuth } from '@/hooks/useAuth';
 export default function FarmVisits() {
   const { farmers, farmVisits, addVisit, deleteVisit, updateFarmerStatus } = useFarmerContext();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const loading = false;
   const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
 
@@ -212,6 +214,7 @@ export default function FarmVisits() {
         purpose: formData.purpose === 'Other' ? formData.custom_purpose : formData.purpose,
         visited_by: formData.visited_by || ''
       });
+      await queryClient.invalidateQueries({ queryKey: ['farm_visits'] });
       toast.success("Visit scheduled");
       setModalOpen(false);
     } catch (err: any) {
@@ -236,6 +239,7 @@ export default function FarmVisits() {
           visited_by: selectedRecord.visited_by
         });
         updateFarmerStatus(selectedRecord.farmer_id, 'Visit Completed');
+        await queryClient.invalidateQueries({ queryKey: ['farm_visits'] });
         toast.success("Visit marked as completed");
       } catch(err: any) {
         toast.error(err.message || 'Failed to complete visit');
@@ -244,29 +248,31 @@ export default function FarmVisits() {
     setCompleteModalOpen(false);
   };
 
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (selectedRecord) {
-      
-      addVisit({
-        id: selectedRecord.id,
-        farmer_id: selectedRecord.farmer_id,
-        date: selectedRecord.visit_date,
-        status: 'Cancelled',
-        notes: selectedRecord.notes,
-        purpose: selectedRecord.purpose,
-        visited_by: selectedRecord.visited_by
-      }).then(() => {
-        // success handled by context invalidate
-      }).catch(console.error);
-      
-      toast.success("Visit cancelled");
+      try {
+        await addVisit({
+          id: selectedRecord.id,
+          farmer_id: selectedRecord.farmer_id,
+          date: selectedRecord.visit_date,
+          status: 'Cancelled',
+          notes: selectedRecord.notes,
+          purpose: selectedRecord.purpose,
+          visited_by: selectedRecord.visited_by
+        });
+        await queryClient.invalidateQueries({ queryKey: ['farm_visits'] });
+        toast.success("Visit cancelled");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to cancel visit");
+      }
     }
     setCancelDialogOpen(false);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedRecord) {
       deleteVisit(selectedRecord.id);
+      await queryClient.invalidateQueries({ queryKey: ['farm_visits'] });
       toast.success("Visit deleted");
     }
     setDeleteDialogOpen(false);

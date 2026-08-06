@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export interface FarmerContract {
 
 export default function ContractFarming() {
   const { farmers, contracts, addContract, updateFarmerStatus } = useFarmerContext();
+  const queryClient = useQueryClient();
   const loading = false;
 
   // Map raw data to UI model using farmers list
@@ -196,19 +198,24 @@ export default function ContractFarming() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    addContract({
-      id: selectedRecord ? selectedRecord.id : `c-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      crop: formData.crop_name || '',
-      status: formData.status || 'Draft'
-    });
+    try {
+      await addContract({
+        id: selectedRecord ? selectedRecord.id : `c-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        crop: formData.crop_name || '',
+        status: formData.status || 'Draft'
+      });
 
-    if (formData.status === 'Active') {
-      updateFarmerStatus(formData.farmer_id || '', 'Contract Active');
+      if (formData.status === 'Active') {
+        updateFarmerStatus(formData.farmer_id || '', 'Contract Active');
+      }
+      await queryClient.invalidateQueries({ queryKey: ['contract_farming'] });
+
+      toast.success("Contract saved");
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save contract");
     }
-
-    toast.success("Contract saved");
-    setModalOpen(false);
   };
 
   const confirmDelete = () => {
