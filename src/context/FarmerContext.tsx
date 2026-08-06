@@ -28,7 +28,7 @@ export interface FarmerState {
 }
 
 export interface KYCRecord { id: string; farmer_id: string; aadhaar: string; pan: string; status: string; }
-export interface FarmVisitRecord { id: string; farmer_id: string; date: string; status: string; notes: string; }
+export interface FarmVisitRecord { id?: string; farmer_id: string; date?: string; visit_date?: string; status: string; notes: string; purpose?: string; visited_by?: string; created_at?: string; updated_at?: string; }
 export interface ContractRecord { id: string; farmer_id: string; crop: string; status: string; }
 export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; payment_date?: string; notes?: string; }
 export interface RatingRecord { id: string; farmer_id: string; score: number; review: string; }
@@ -245,7 +245,21 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (updates.district) payload.district = updates.district;
       if (updates.state) payload.state = updates.state;
       if (updates.primary_crop) payload.primary_crops = [updates.primary_crop];
-      if (updates.workflow_status) payload.verification_status = updates.workflow_status;
+      if (updates.workflow_status) {
+  const statusMap: Record<string,string> = {
+    "KYC Pending":"Pending",
+    "KYC Verified":"Verified",
+    "Visit Scheduled":"Visit Scheduled",
+    "Visit Completed":"Approved",
+    "Contract Active":"Approved",
+    "Commitment Pending":"Approved",
+    "Collection Pending":"Approved",
+    "Payout Pending":"Approved",
+    "Completed":"Approved",
+    "Unverified":"Unverified"
+  };
+  payload.verification_status = statusMap[updates.workflow_status] || "Pending";
+}
       if (updates.farm_area) payload.farm_area = parseFloat(updates.farm_area);
       
       const res = await apiFetch(`/api/farmers/${id}`, {
@@ -420,3 +434,4 @@ export const useFarmerContext = () => {
   if (!context) throw new Error('useFarmerContext must be used within a FarmerProvider');
   return context;
 };
+

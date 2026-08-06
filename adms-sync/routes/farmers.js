@@ -548,7 +548,13 @@ router.get('/visits', requireAuth, async (req, res) => {
   try {
     const { company_id } = req.query;
     if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM farm_visits WHERE company_id = $1 ORDER BY date DESC', [company_id]);
+    const { rows } = await db.query(
+      `SELECT v.* FROM farm_visits v 
+       JOIN farmers f ON f.id = v.farmer_id 
+       WHERE f.company_id = $1 
+       ORDER BY v.visit_date DESC`, 
+      [company_id]
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -557,20 +563,40 @@ router.get('/visits', requireAuth, async (req, res) => {
 
 router.post('/visits', requireAuth, async (req, res) => {
   try {
-    const { id, farmer_id, company_id, date, status, purpose, notes } = req.body;
-    let compId = company_id;
-    if (!compId) {
-      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
-      compId = userRes.rows[0]?.company_id;
+    const { id, farmer_id, date, visit_date, status, purpose, notes, visited_by } = req.body;
+    
+    // Support both date and visit_date from frontend
+    const finalDate = visit_date || date || new Date().toISOString();
+    const finalPurpose = purpose || 'Quality Check';
+    
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    let isUpdate = id && uuidRegex.test(id);
+
+    if (isUpdate) {
+      const { rows } = await db.query(
+        `UPDATE farm_visits 
+         SET status = $1, notes = $2, purpose = $3, visit_date = $4, visited_by = $5, updated_at = NOW()
+         WHERE id = $6 RETURNING *`,
+        [status, notes, finalPurpose, finalDate, visited_by, id]
+      );
+      if (rows.length === 0) {
+          // In case the ID was a valid UUID but didn't exist in DB (e.g. from a different system or deleted)
+          const insertRes = await db.query(
+            `INSERT INTO farm_visits (id, farmer_id, visit_date, status, purpose, notes, visited_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [id, farmer_id, finalDate, status, finalPurpose, notes, visited_by]
+          );
+          return res.json(insertRes.rows[0]);
+      }
+      res.json(rows[0]);
+    } else {
+      const { rows } = await db.query(
+        `INSERT INTO farm_visits (farmer_id, visit_date, status, purpose, notes, visited_by)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [farmer_id, finalDate, status, finalPurpose, notes, visited_by]
+      );
+      res.json(rows[0]);
     }
-    const { rows } = await db.query(
-      `INSERT INTO farm_visits (id, farmer_id, company_id, date, status, purpose, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, notes = EXCLUDED.notes, updated_at = NOW()
-       RETURNING *`,
-      [id, farmer_id, compId, date, status, purpose, notes, req.user.sub]
-    );
-    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -683,16 +709,17 @@ router.get('/payouts', requireAuth, async (req, res) => {
 
 router.post('/payouts', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, amount, status, payout_date, reference_number, notes } = req.body;
+    const { farmer_id, company_id, amount, status, payout_date, payment_date, notes } = req.body;
     let compId = company_id;
     if (!compId) {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
       compId = userRes.rows[0]?.company_id;
     }
+    const finalDate = payment_date || payout_date || new Date().toISOString();
     const { rows } = await db.query(
-      `INSERT INTO payouts (farmer_id, company_id, amount, status, payout_date, reference_number, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [farmer_id, compId, amount, status, payout_date, reference_number, notes, req.user.sub]
+      `INSERT INTO payouts (farmer_id, company_id, amount, status, payment_date, notes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [farmer_id, compId, amount, status || 'Pending', finalDate, notes || null]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -723,7 +750,7 @@ router.post('/ratings', requireAuth, async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO farmer_ratings (farmer_id, company_id, score, review, created_by)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [farmer_id, compId, score, review, req.user.sub]
+      [farmer_id, compId, score, review || null, req.user.sub]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -776,16 +803,19 @@ router.get('/tickets', requireAuth, async (req, res) => {
 
 router.post('/tickets', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, issue, status, resolution } = req.body;
+    const { farmer_id, company_id, issue, issue_category, description, status, resolution, priority } = req.body;
     let compId = company_id;
     if (!compId) {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
       compId = userRes.rows[0]?.company_id;
     }
+    // Support both legacy 'issue' field and new issue_category+description format
+    const finalCategory = issue_category || issue?.split(':')[0]?.trim() || 'General Inquiry';
+    const finalDesc = description || issue?.split(':').slice(1).join(':').trim() || issue || '';
     const { rows } = await db.query(
-      `INSERT INTO farmer_support (farmer_id, company_id, issue, status, resolution, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [farmer_id, compId, issue, status, resolution, req.user.sub]
+      `INSERT INTO farmer_support (farmer_id, company_id, issue_category, description, issue, status, resolution, priority)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [farmer_id, compId, finalCategory, finalDesc, issue || finalCategory, status || 'Open', resolution || null, priority || 'Medium']
     );
     res.json(rows[0]);
   } catch (err) {

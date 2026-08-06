@@ -62,16 +62,16 @@ export default function FarmVisits() {
     return farmVisits.map(v => {
       const f = farmers.find(fm => fm.id === v.farmer_id);
       return {
-        id: v.id,
+        id: v.id || '',
         farmer_id: v.farmer_id,
         farmer_name: f?.full_name || 'Unknown Farmer',
-        visit_date: v.date,
-        visited_by: 'Admin User',
-        purpose: 'Quality Check',
+        visit_date: v.visit_date || v.date || '',
+        visited_by: v.visited_by || 'Admin User',
+        purpose: (v.purpose || 'Quality Check') as VisitPurpose,
         status: v.status as VisitStatus,
         notes: v.notes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: v.created_at || new Date().toISOString(),
+        updated_at: v.updated_at || new Date().toISOString(),
         updated_by: 'System'
       };
     });
@@ -180,7 +180,7 @@ export default function FarmVisits() {
 
   const openEditModal = (record: FarmVisit) => {
     setSelectedRecord(record);
-    setFormData({ ...record, visit_date: record.visit_date?.substring(0, 16) }); // format for datetime-local
+    setFormData({ ...record, visit_date: record.visit_date ? record.visit_date.substring(0, 16) : '' }); // format for datetime-local
     setFormErrors({});
     setModalOpen(true);
   };
@@ -204,11 +204,13 @@ export default function FarmVisits() {
 
     try {
       await addVisit({
-        id: selectedRecord ? selectedRecord.id : `v-${Date.now()}`,
+        ...(selectedRecord ? { id: selectedRecord.id } : {}),
         farmer_id: formData.farmer_id || '',
         date: formData.visit_date ? new Date(formData.visit_date).toISOString() : new Date().toISOString(),
         status: formData.status || 'Scheduled',
-        notes: formData.notes || ''
+        notes: formData.notes || '',
+        purpose: formData.purpose === 'Other' ? formData.custom_purpose : formData.purpose,
+        visited_by: formData.visited_by || ''
       });
       toast.success("Visit scheduled");
       setModalOpen(false);
@@ -229,7 +231,9 @@ export default function FarmVisits() {
           farmer_id: selectedRecord.farmer_id,
           date: selectedRecord.visit_date,
           status: 'Completed',
-          notes: completionNotes
+          notes: completionNotes,
+          purpose: selectedRecord.purpose,
+          visited_by: selectedRecord.visited_by
         });
         updateFarmerStatus(selectedRecord.farmer_id, 'Visit Completed');
         toast.success("Visit marked as completed");
@@ -243,13 +247,14 @@ export default function FarmVisits() {
   const confirmCancel = () => {
     if (selectedRecord) {
       
-      // using addVisit to update status
       addVisit({
         id: selectedRecord.id,
         farmer_id: selectedRecord.farmer_id,
         date: selectedRecord.visit_date,
         status: 'Cancelled',
-        notes: selectedRecord.notes
+        notes: selectedRecord.notes,
+        purpose: selectedRecord.purpose,
+        visited_by: selectedRecord.visited_by
       }).then(() => {
         // success handled by context invalidate
       }).catch(console.error);

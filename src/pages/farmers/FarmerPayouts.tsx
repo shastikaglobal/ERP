@@ -94,7 +94,6 @@ export default function FarmerPayoutsPage() {
         status: formData.status || 'Pending',
         payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : new Date().toISOString(),
         notes: formData.notes || ''
-        notes: formData.notes || ''
       });
       if (formData.status === 'Completed') {
         updateFarmerStatus(formData.farmer_id, 'Completed');

@@ -199,7 +199,7 @@ export default function SupplyCommitments() {
     }
   };
 
-  const handleLogDelivery = (e: React.FormEvent) => {
+  const handleLogDelivery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRecord) return;
     
@@ -249,6 +249,10 @@ export default function SupplyCommitments() {
     toast.success("Delivery logged successfully");
     setDeliveryModalOpen(false);
     setViewDrawerOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to log delivery");
+    }
   };
 
   const confirmDelete = () => {
