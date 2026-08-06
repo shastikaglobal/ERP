@@ -50,7 +50,7 @@ export default function FarmerRatingPage() {
         id: d.id,
         farmer_id: d.farmer_id,
         score: d.score || d.rating || 0,
-        review: d.review || d.notes || ''
+        review: d.review || d.notes || '',
         farmer_name: f?.full_name || 'Unknown Farmer',
         quality_score: d.score,
         delivery_score: d.score,

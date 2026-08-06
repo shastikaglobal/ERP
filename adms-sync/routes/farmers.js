@@ -548,7 +548,7 @@ router.get('/visits', requireAuth, async (req, res) => {
   try {
     const { company_id } = req.query;
     if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM farm_visits WHERE company_id = $1 ORDER BY date DESC', [company_id]);
+    const { rows } = await db.query('SELECT * FROM farm_visits ORDER BY visit_date DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
