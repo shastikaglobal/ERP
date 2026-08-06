@@ -67,7 +67,7 @@ export default function FarmerRatingPage() {
   }, [ratings, farmers]);
 
   const stats = useMemo(() => {
-    const avgScore = data.length ? (data.reduce((acc, curr) => acc + curr.overall_rating, 0) / data.length).toFixed(1) : 0;
+    const avgScore = data.length ? (data.reduce((acc, curr) => acc + (Number(curr.overall_rating) || 0), 0) / data.length).toFixed(1) : 0;
     return {
       totalEvaluated: data.length,
       averageRating: avgScore,
@@ -157,7 +157,7 @@ export default function FarmerRatingPage() {
     return (
       <div className="flex items-center gap-1 text-amber-400">
         <Star className="w-4 h-4 fill-current" />
-        <span className="text-sm font-semibold text-slate-200">{score.toFixed(1)}</span>
+        <span className="text-sm font-semibold text-slate-200">{(score || 0).toFixed(1)}</span>
       </div>
     );
   };
