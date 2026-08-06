@@ -570,6 +570,17 @@ router.post('/visits', requireAuth, async (req, res) => {
   }
 });
 
+router.delete('/visits/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query(`DELETE FROM farm_visits WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting farm visit:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- CONTRACT FARMING ---
 router.get('/contracts', requireAuth, async (req, res) => {
   try {

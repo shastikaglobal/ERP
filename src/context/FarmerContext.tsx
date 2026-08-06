@@ -58,6 +58,7 @@ interface FarmerContextType {
   addKyc: (r: KYCRecord) => Promise<void>;
   updateKyc: (r: any) => Promise<void>;
   addVisit: (r: FarmVisitRecord) => void;
+  deleteVisit: (id: string) => void;
   addContract: (r: ContractRecord) => void;
   addCommitment: (r: CommitmentRecord) => void;
   addCollection: (r: CollectionRecord) => void;
@@ -315,6 +316,14 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farm_visits'] })
   });
 
+  const deleteVisitMut = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiFetch(`/api/farmers/visits/${id}`, { method: 'DELETE', headers });
+      if (!res.ok) throw new Error('Failed to delete visit');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['farm_visits'] })
+  });
+
   const addContractMut = useMutation({
     mutationFn: async (r: ContractRecord) => {
       const res = await apiFetch('/api/farmers/contracts', { method: 'POST', headers, body: JSON.stringify({ company_id: companyId, ...r }) });
@@ -380,6 +389,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addKyc = async (r: KYCRecord) => { await addKycMut.mutateAsync(r); };
   const updateKyc = async (r: any) => { await updateKycMut.mutateAsync(r); };
   const addVisit = async (r: FarmVisitRecord) => { await addVisitMut.mutateAsync(r); };
+  const deleteVisit = (id: string) => { deleteVisitMut.mutate(id); };
   const addContract = async (r: ContractRecord) => { await addContractMut.mutateAsync(r); };
   const addCommitment = async (r: CommitmentRecord) => { await addCommitmentMut.mutateAsync(r); };
   const addCollection = async (r: CollectionRecord) => { await addCollectionMut.mutateAsync(r); };
@@ -422,7 +432,7 @@ export const FarmerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       documents: useMemo(() => documents.filter(r => validIds.has(r.farmer_id)), [documents, validIds]),
       tickets: useMemo(() => tickets.filter(r => validIds.has(r.farmer_id)), [tickets, validIds]),
       addFarmer, updateFarmer, updateFarmerStatus, deleteFarmer,
-      addKyc, updateKyc, addVisit, addContract, addCommitment, addCollection, addPayout, addRating, addDocument, addTicket
+      addKyc, updateKyc, addVisit, deleteVisit, addContract, addCommitment, addCollection, addPayout, addRating, addDocument, addTicket
     }}>
       {children}
     </FarmerContext.Provider>

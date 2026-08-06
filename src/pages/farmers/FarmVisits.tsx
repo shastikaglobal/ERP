@@ -36,7 +36,7 @@ export interface FarmVisit {
 import { useAuth } from '@/hooks/useAuth';
 
 export default function FarmVisits() {
-  const { farmers, farmVisits, addVisit, updateFarmerStatus } = useFarmerContext();
+  const { farmers, farmVisits, addVisit, deleteVisit, updateFarmerStatus } = useFarmerContext();
   const { session } = useAuth();
   const loading = false;
   const [employees, setEmployees] = useState<{id: string, name: string}[]>([]);
@@ -266,12 +266,7 @@ export default function FarmVisits() {
 
   const confirmDelete = () => {
     if (selectedRecord) {
-      
-      // API call to delete if it existed, otherwise just toast.
-      // Assuming no delete API, we just ignore local state mutation since it shouldn't exist without an API.
-      // Or we can add an apiFetch call here:
-      apiFetch('/api/farmers/visits/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
-      
+      deleteVisit(selectedRecord.id);
       toast.success("Visit deleted");
     }
     setDeleteDialogOpen(false);
