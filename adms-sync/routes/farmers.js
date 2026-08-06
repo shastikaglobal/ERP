@@ -579,9 +579,7 @@ router.post('/visits', requireAuth, async (req, res) => {
 // --- CONTRACT FARMING ---
 router.get('/contracts', requireAuth, async (req, res) => {
   try {
-    const { company_id } = req.query;
-    if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM contract_farming WHERE company_id = $1 ORDER BY created_at DESC', [company_id]);
+    const { rows } = await db.query('SELECT * FROM contract_farming ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -734,9 +732,7 @@ router.post('/ratings', requireAuth, async (req, res) => {
 // --- DOCUMENTS ---
 router.get('/documents', requireAuth, async (req, res) => {
   try {
-    const { company_id } = req.query;
-    if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM farmer_documents WHERE company_id = $1 ORDER BY created_at DESC', [company_id]);
+    const { rows } = await db.query('SELECT * FROM farmer_documents ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
