@@ -453,18 +453,12 @@ export default function GoodsCollectionPage() {
                   </FormRow>
 
                   <FormRow label="Contract ID" required>
-                    <select 
-                      className="flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm ring-offset-background outline-none"
+                    <Input 
+                      className="bg-[#1a1a1a] border-[#2a2a2a] h-10 w-full rounded-md px-3 py-2 text-sm"
+                      placeholder="Enter Contract ID manually..."
                       value={formData.contract_id || ''}
                       onChange={(e) => setFormData(f => ({ ...f, contract_id: e.target.value }))}
-                    >
-                      <option value="">-- Link Contract --</option>
-                      {validContracts
-      .filter(c => c.farmer_id === formData.farmer_id)
-      .map(c => (
-        <option key={c.id} value={c.id}>{c.crop} ({c.status})</option>
-      ))}
-                    </select>
+                    />
                     {formErrors.contract_id && <span className="text-xs text-red-500">{formErrors.contract_id}</span>}
                   </FormRow>
                 </FormGrid>

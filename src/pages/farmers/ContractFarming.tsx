@@ -202,8 +202,14 @@ export default function ContractFarming() {
       await addContract({
         id: selectedRecord ? selectedRecord.id : `c-${Date.now()}`,
         farmer_id: formData.farmer_id || '',
-        crop: formData.crop_name || '',
-        status: formData.status || 'Draft'
+        contract_number: formData.contract_number || `CNTR-${Date.now()}`,
+        crop_name: formData.crop_name || '',
+        agreed_quantity: formData.agreed_quantity || 0,
+        agreed_price: formData.agreed_price || 0,
+        start_date: formData.start_date || new Date().toISOString(),
+        end_date: formData.end_date || new Date().toISOString(),
+        status: formData.status || 'Draft',
+        document_url: formData.document_name || ''
       });
 
       if (formData.status === 'Active') {
