@@ -256,11 +256,11 @@ export default function AvailableStock() {
   const saveStockMutation = useMutation({
     mutationFn: async (data: any) => {
       const prod = products.find((p: any) => p.id === data.product_id);
-      const wh = warehouses.find((w: any) => w.id === data.warehouse_id);
+      const wh = warehouses.find((w: any) => w.id === data.warehouse_id || w.name === data.warehouse_id);
       
       const payload = {
         product_name: prod?.name || "",
-        warehouse: wh?.name || "",
+        warehouse: wh?.name || data.warehouse_id,
         available_quantity: Number(data.available_quantity),
         minimum_level: Number(data.minimum_stock_level),
         notes: data.notes || "",
@@ -352,7 +352,7 @@ export default function AvailableStock() {
     if (item) {
       setEditForm({
         product_id: item.product_id || "",
-        warehouse_id: item.warehouse_id || "",
+        warehouse_id: item.warehouses?.name || item.warehouse || item.warehouse_id || "",
         available_quantity: item.available_quantity || 0,
         minimum_stock_level: item.minimum_stock_level || 0,
         notes: item.notes || ""
@@ -594,15 +594,21 @@ export default function AvailableStock() {
 
             <div className="space-y-2">
               <Label>Warehouse</Label>
-              <Select
-                value={editForm.warehouse_id || undefined}
-                onValueChange={(val) => setEditForm(p => ({ ...p, warehouse_id: val }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select Warehouse" /></SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name} - {[w.location, w.city].filter(Boolean).join(", ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <Input
+                  placeholder="Type or select warehouse..."
+                  value={editForm.warehouse_id}
+                  onChange={(e) => setEditForm(p => ({ ...p, warehouse_id: e.target.value }))}
+                  list="avail-warehouse-options"
+                />
+                <datalist id="avail-warehouse-options">
+                  {warehouses.map((w: any) => (
+                    <option key={w.id} value={w.name}>
+                      {[w.location, w.city].filter(Boolean).join(", ")}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -317,7 +317,7 @@ export default function ReservedStock() {
     setFormState({
       id: reservation.id,
       product_id: reservation.product_id || "",
-      warehouse_id: reservation.warehouse_id || "",
+      warehouse_id: reservation.warehouses?.name || reservation.warehouse_name || reservation.warehouse_id || "",
       reserved_quantity: String(reservation.reserved_quantity || ""),
       order_reference: reservation.order_reference || "",
       reserved_date: reservation.reserved_date || new Date().toISOString().slice(0, 10),
@@ -336,13 +336,13 @@ export default function ReservedStock() {
 
     // Resolve product/warehouse UUIDs to names for the VPS table
     const selectedProduct = products.find((p: any) => p.id === formState.product_id);
-    const selectedWarehouse = warehouses.find((w: any) => w.id === formState.warehouse_id);
+    const selectedWarehouse = warehouses.find((w: any) => w.id === formState.warehouse_id || w.name === formState.warehouse_id);
 
     mutation.mutate({
       ...formState,
       product_name: selectedProduct?.name || "",
       grade: selectedProduct?.grade || null,
-      warehouse_name: selectedWarehouse?.name || "",
+      warehouse_name: selectedWarehouse?.name || formState.warehouse_id,
       reserved_quantity: Number(formState.reserved_quantity),
       expected_release_date: formState.expected_release_date || null,
       notes: formState.notes || null,
@@ -625,22 +625,21 @@ export default function ReservedStock() {
 
               <div className="space-y-2">
                 <Label>Warehouse</Label>
-                <Select value={formState.warehouse_id || undefined} onValueChange={(value) => setFormState((prev) => ({ ...prev, warehouse_id: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Warehouse" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouses.length === 0 ? (
-                      <div className="p-3 text-sm text-muted-foreground">No warehouses available.</div>
-                    ) : (
-                      warehouses.map((warehouse: any) => (
-                        <SelectItem key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name} - {[warehouse.location, warehouse.city].filter(Boolean).join(", ")}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    placeholder="Type or select warehouse..."
+                    value={formState.warehouse_id}
+                    onChange={(e) => setFormState((prev) => ({ ...prev, warehouse_id: e.target.value }))}
+                    list="warehouse-options"
+                  />
+                  <datalist id="warehouse-options">
+                    {warehouses.map((warehouse: any) => (
+                      <option key={warehouse.id} value={warehouse.name}>
+                        {[warehouse.location, warehouse.city].filter(Boolean).join(", ")}
+                      </option>
+                    ))}
+                  </datalist>
+                </div>
               </div>
             </div>
 
