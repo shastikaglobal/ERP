@@ -12,6 +12,18 @@ export async function apiFetch(url: string, options: RequestInit = {}, retries =
       });
       
       clearTimeout(id);
+      
+      if (!response.ok) {
+        let errorMsg = `HTTP Error: ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) {
+            errorMsg = errData.error;
+          }
+        } catch(e) {}
+        throw new Error(errorMsg);
+      }
+      
       return response;
     } catch (error: any) {
       attempt++;

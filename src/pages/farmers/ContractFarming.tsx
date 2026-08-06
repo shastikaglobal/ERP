@@ -155,8 +155,8 @@ export default function ContractFarming() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      start_date: record.start_date.substring(0, 10), 
-      end_date: record.end_date.substring(0, 10) 
+      start_date: record.start_date?.substring(0, 10), 
+      end_date: record.end_date?.substring(0, 10) 
     });
     setFormErrors({});
     setContractFile(null);
@@ -199,7 +199,7 @@ export default function ContractFarming() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -451,7 +451,7 @@ export default function ContractFarming() {
             <div className="py-4 space-y-6">
               <FormGrid cols={2}>
                 <FormRow label="Select Farmer" required>
-                  {farmers.filter(f => ['Visit Completed', 'Contract Active', 'Commitment Pending', 'Collection Pending', 'Payout Pending', 'Completed'].includes(f.workflow_status)).length === 0 ? (
+                  {farmers.length === 0 ? (
                     <div className="flex h-10 w-full items-center rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 py-2 text-sm text-amber-500">
                       No visited farmers available.
                     </div>
@@ -464,10 +464,10 @@ export default function ContractFarming() {
                     >
                       <option value="">-- Choose a farmer --</option>
                       {farmers
-                        .filter(f => ['Visit Completed', 'Contract Active', 'Commitment Pending', 'Collection Pending', 'Payout Pending', 'Completed'].includes(f.workflow_status))
+                        
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>

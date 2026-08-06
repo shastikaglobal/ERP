@@ -19,7 +19,7 @@ export const FarmerVerification: React.FC = () => {
     if (farmers.length > 0) {
       const mapped: FarmerVerificationData[] = farmers.map(f => ({
         id: f.id,
-        farmerId: f.code || f.id.substring(0, 8),
+        farmerId: f.code || f.id?.substring(0, 8),
         farmerName: f.full_name,
         mobile: f.phone || '-',
         village: f.village || '-',

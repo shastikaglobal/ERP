@@ -41,8 +41,8 @@ export default function FarmerPayoutsPage() {
         farmer_id: d.farmer_id,
         farmer_name: f?.full_name || 'Unknown Farmer',
         contract_id: `CNTR-2026-${d.id.slice(-3)}`,
-        amount: d.amount,
-        payment_date: new Date().toISOString(),
+        amount: d.amount || 0,
+        payment_date: d.payment_date || new Date().toISOString(),
         bank_account: f?.bank_account_no || 'XXXX-XXXX',
         ifsc: f?.ifsc_code || 'XXXX0000',
         transaction_ref: '',
@@ -82,23 +82,28 @@ export default function FarmerPayoutsPage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.farmer_id || !formData.amount) return;
 
-    addPayout({
-      id: `pay-${Date.now()}`,
-      farmer_id: formData.farmer_id,
-      amount: Number(formData.amount),
-      status: formData.status || 'Pending'
-    });
-
-    if (formData.status === 'Completed') {
-      updateFarmerStatus(formData.farmer_id, 'Completed');
+    try {
+      await addPayout({
+        id: `pay-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        amount: Number(formData.amount),
+        status: formData.status || 'Pending',
+        payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : new Date().toISOString(),
+        notes: formData.notes || ''
+        notes: formData.notes || ''
+      });
+      if (formData.status === 'Completed') {
+        updateFarmerStatus(formData.farmer_id, 'Completed');
+      }
+      toast.success("Payout scheduled");
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save payout');
     }
-
-    toast.success("Payout scheduled");
-    setModalOpen(false);
   };
 
   const markApproved = (id: string) => {
@@ -200,7 +205,7 @@ export default function FarmerPayoutsPage() {
             <DialogHeader><DialogTitle>Schedule Payout</DialogTitle></DialogHeader>
             <div className="py-4 space-y-4">
                 <FormRow label="Select Farmer" required>
-                  {farmers.filter(f => ['Payout Pending', 'Completed'].includes(f.workflow_status)).length === 0 ? (
+                  {farmers.length === 0 ? (
                     <div className="flex h-10 w-full items-center rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 py-2 text-sm text-amber-500">
                       No farmers pending payout.
                     </div>
@@ -212,10 +217,10 @@ export default function FarmerPayoutsPage() {
                     >
                       <option value="">-- Choose a farmer --</option>
                       {farmers
-                        .filter(f => ['Payout Pending', 'Completed'].includes(f.workflow_status))
+                        
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name}
                           </option>
                         ))}
                     </select>

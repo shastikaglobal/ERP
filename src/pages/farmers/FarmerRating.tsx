@@ -49,6 +49,8 @@ export default function FarmerRatingPage() {
       return {
         id: d.id,
         farmer_id: d.farmer_id,
+        score: d.score || d.rating || 0,
+        review: d.review || d.notes || ''
         farmer_name: f?.full_name || 'Unknown Farmer',
         quality_score: d.score,
         delivery_score: d.score,
@@ -105,7 +107,7 @@ export default function FarmerRatingPage() {
     return 'Poor';
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
     if (!formData.farmer_id) errors.farmer_id = "Farmer is required";
@@ -115,15 +117,18 @@ export default function FarmerRatingPage() {
 
     const computedOverall = Number(((Number(formData.quality_score) + Number(formData.delivery_score) + Number(formData.reliability_score)) / 3).toFixed(1));
 
-    addRating({
-      id: selectedRecord ? selectedRecord.id : `rating-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      score: computedOverall,
-      review: formData.notes || ''
-    });
-
-    toast.success("Rating saved");
-    setModalOpen(false);
+    try {
+      await addRating({
+        id: selectedRecord ? selectedRecord.id : `rtg-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        score: computedOverall,
+        review: formData.notes || ''
+      });
+      toast.success("Rating saved");
+      setModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save rating');
+    }
   };
 
   const confirmDelete = () => {
@@ -269,7 +274,7 @@ export default function FarmerRatingPage() {
             </DialogHeader>
             <div className="py-4 space-y-4">
               <FormRow label="Select Farmer" required>
-                  {farmers.filter(f => ['Completed'].includes(f.workflow_status)).length === 0 ? (
+                  {farmers.length === 0 ? (
                     <div className="flex h-10 w-full items-center rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 py-2 text-sm text-amber-500">
                       No eligible farmers to rate.
                     </div>
@@ -282,10 +287,10 @@ export default function FarmerRatingPage() {
                     >
                       <option value="">-- Choose a farmer --</option>
                       {farmers
-                        .filter(f => ['Completed'].includes(f.workflow_status))
+                        
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name}
                           </option>
                         ))}
                     </select>

@@ -52,8 +52,8 @@ export default function SupplyCommitments() {
         farmer_id: d.farmer_id,
         farmer_name: f?.full_name || 'Unknown Farmer',
         crop_name: d.crop,
-        committed_quantity: d.qty,
-        delivered_quantity: d.status === 'Completed' ? d.qty : 0, // Mock history
+        committed_quantity: d.quantity || d.qty || 0,
+        delivered_quantity: d.status === 'Completed' ? (d.quantity || d.qty || 0) : 0, // Mock history
         unit: 'Tons',
         expected_delivery_date: new Date().toISOString(),
         status: d.status as CommitmentStatus,
@@ -157,7 +157,7 @@ export default function SupplyCommitments() {
     setSelectedRecord(record);
     setFormData({ 
       ...record, 
-      expected_delivery_date: record.expected_delivery_date.substring(0, 10)
+      expected_delivery_date: record.expected_delivery_date?.substring(0, 10)
       });
     setFormErrors({});
     setModalOpen(true);
@@ -174,24 +174,29 @@ export default function SupplyCommitments() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    addCommitment({
-      id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
-      farmer_id: formData.farmer_id || '',
-      crop: formData.crop_name || '',
-      qty: Number(formData.committed_quantity),
-      status: formData.status || 'Pending'
-    });
-
-    if (formData.status === 'Completed' || formData.status === 'Partial') {
-      updateFarmerStatus(formData.farmer_id || '', 'Commitment Pending');
+    try {
+      await addCommitment({
+        id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        crop: formData.crop_name || '',
+        status: formData.status || 'Pending',
+        quantity: Number(formData.committed_quantity),
+        delivery_date: formData.expected_delivery_date
+          ? new Date(formData.expected_delivery_date).toISOString()
+          : new Date().toISOString()
+      });
+      if (formData.status === 'Completed' || formData.status === 'Partial') {
+        updateFarmerStatus(formData.farmer_id || '', 'Commitment Pending');
+      }
+      toast.success("Commitment saved");
+      setModalOpen(false);
+    } catch(err: any) {
+      toast.error(err.message || 'Failed to save commitment');
     }
-
-    toast.success("Commitment saved");
-    setModalOpen(false);
   };
 
   const handleLogDelivery = (e: React.FormEvent) => {
@@ -225,13 +230,17 @@ export default function SupplyCommitments() {
       recorded_by: 'Admin User'
     };
 
-    addCommitment({
-      id: selectedRecord.id,
-      farmer_id: selectedRecord.farmer_id,
-      crop: selectedRecord.crop_name,
-      qty: selectedRecord.committed_quantity,
-      status: newStatus
-    });
+    try {
+      await addCommitment({
+        id: selectedRecord ? selectedRecord.id : `scm-${Date.now()}`,
+        farmer_id: formData.farmer_id || '',
+        crop: formData.crop_name || '',
+        status: formData.status || 'Pending',
+        quantity: Number(formData.committed_quantity),
+        delivery_date: formData.expected_delivery_date
+          ? new Date(formData.expected_delivery_date).toISOString()
+          : new Date().toISOString()
+      });
 
     if (newStatus === 'Completed') {
       updateFarmerStatus(selectedRecord.farmer_id, 'Collection Pending');
@@ -244,7 +253,9 @@ export default function SupplyCommitments() {
 
   const confirmDelete = () => {
     if (selectedRecord) {
-      setData(prev => prev.filter(d => d.id !== selectedRecord.id));
+      
+      apiFetch('/api/farmers/' + (file==='KYC.tsx'?'kyc':'commitments') + '/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
+      
       toast.success("Commitment deleted");
     }
     setDeleteDialogOpen(false);
@@ -487,7 +498,7 @@ export default function SupplyCommitments() {
             <div className="py-4 space-y-6">
               <FormGrid cols={2}>
                 <FormRow label="Select Farmer" required>
-                  {farmers.filter(f => ['Contract Active', 'Commitment Pending', 'Collection Pending', 'Payout Pending', 'Completed'].includes(f.workflow_status)).length === 0 ? (
+                  {farmers.length === 0 ? (
                     <div className="flex h-10 w-full items-center rounded-md border border-[#2a2a2a] bg-[#0d0d0d] px-3 py-2 text-sm text-amber-500">
                       No contracted farmers available.
                     </div>
@@ -500,10 +511,10 @@ export default function SupplyCommitments() {
                     >
                       <option value="">-- Choose a farmer --</option>
                       {farmers
-                        .filter(f => ['Contract Active', 'Commitment Pending', 'Collection Pending', 'Payout Pending', 'Completed'].includes(f.workflow_status))
+                        
                         .map((f: any) => (
                           <option key={f.id} value={f.id}>
-                            {f.code || f.id.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
+                            {f.code || f.id?.substring(0,8)} - {f.full_name} | {f.primary_crop || 'Mixed'}
                           </option>
                         ))}
                     </select>
