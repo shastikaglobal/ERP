@@ -258,7 +258,7 @@ export default function SupplyCommitments() {
   const confirmDelete = () => {
     if (selectedRecord) {
       
-      fetch('/api/farmers/commitments/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
+      apiFetch('/api/farmers/' + (file==='KYC.tsx'?'kyc':'commitments') + '/' + selectedRecord.id, { method: 'DELETE' }).catch(console.error);
       
       toast.success("Commitment deleted");
     }

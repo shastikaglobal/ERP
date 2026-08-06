@@ -167,13 +167,6 @@ export default function ContractFarming() {
     const errors: Record<string, string> = {};
     if (!formData.farmer_id) {
       errors.farmer_id = "Please select a farmer";
-    } else {
-      // WORKFLOW VALIDATION: Check if farm visit completed
-      const selectedFarmer = farmers.find(f => f.id === formData.farmer_id);
-      const eligibleStatuses = ['Visit Completed', 'Contract Active', 'Commitment Pending', 'Collection Pending', 'Payout Pending', 'Completed'];
-      if (!selectedFarmer || !eligibleStatuses.includes(selectedFarmer.workflow_status)) {
-        errors.farmer_id = "Workflow Error: Farmer must have a Completed Farm Visit before creating a Contract.";
-      }
     }
     
     if (!formData.contract_number) errors.contract_number = "Contract number is required";
