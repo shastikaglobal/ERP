@@ -576,7 +576,6 @@ router.delete('/visits/:id', requireAuth, async (req, res) => {
     await db.query(`DELETE FROM farm_visits WHERE id = $1`, [id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting farm visit:', err);
     res.status(500).json({ error: err.message });
   }
 });
