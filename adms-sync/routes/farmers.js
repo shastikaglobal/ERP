@@ -287,114 +287,6 @@ router.put('/kyc/:id', requireAuth, async (req, res) => {
 });
 
 // GET /api/farmers/:id
-router.get('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    if (!uuidRegex.test(id)) { return res.status(400).json({ error: "Invalid ID format" }); }
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    const { rows } = await db.query(
-      `SELECT * FROM farmers WHERE id = $1 AND is_deleted IS NOT TRUE`,
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-
-    if (!isAdmin && rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('DB Error (get farmer by id):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// PUT /api/farmers/:id
-router.put('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
-    
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    const { rows } = await db.query(
-      `UPDATE farmers SET 
-        full_name = COALESCE($1, full_name),
-        email = COALESCE($2, email),
-        phone = COALESCE($3, phone),
-        country = COALESCE($4, country),
-        district = COALESCE($5, district),
-        primary_crops = COALESCE($6, primary_crops),
-        is_active = COALESCE($7, is_active),
-        notes = COALESCE($8, notes),
-        bank_account = COALESCE($9, bank_account),
-        state = COALESCE($10, state),
-        village = COALESCE($11, village),
-        code = COALESCE($12, code),
-        updated_at = NOW()
-       WHERE id = $13 RETURNING *`,
-      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
-    );
-
-    const updatedFarmer = rows[0];
-
-    res.json(updatedFarmer);
-  } catch (err) {
-    console.error('DB Error (update farmer):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// DELETE /api/farmers/:id
-router.delete('/:id', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
-    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
-    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
-
-    // Check ownership
-    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
-    if (checkOwner.rows.length === 0) {
-      return res.status(404).json({ error: 'Farmer not found' });
-    }
-    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
-    }
-
-    const { rows } = await db.query(
-      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
-      [req.user.sub, id]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error('DB Error (delete farmer):', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
-  }
-});
-
-// POST /api/farmers/:id/convert - Convert a farmer record into a customer
 router.post('/:id/convert', requireAuth, async (req, res) => {
   const farmerId = req.params.id;
   const { company_id, name, email, country, phone, notes } = req.body;
@@ -579,9 +471,7 @@ router.post('/visits', requireAuth, async (req, res) => {
 // --- CONTRACT FARMING ---
 router.get('/contracts', requireAuth, async (req, res) => {
   try {
-    const { company_id } = req.query;
-    if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM contract_farming WHERE company_id = $1 ORDER BY created_at DESC', [company_id]);
+    const { rows } = await db.query('SELECT * FROM contract_farming ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -590,16 +480,11 @@ router.get('/contracts', requireAuth, async (req, res) => {
 
 router.post('/contracts', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, crop, status, start_date, end_date, terms } = req.body;
-    let compId = company_id;
-    if (!compId) {
-      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
-      compId = userRes.rows[0]?.company_id;
-    }
+    const { farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status, document_url } = req.body;
     const { rows } = await db.query(
-      `INSERT INTO contract_farming (farmer_id, company_id, crop, status, start_date, end_date, terms, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [farmer_id, compId, crop, status, start_date, end_date, terms, req.user.sub]
+      `INSERT INTO contract_farming (farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status, document_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status || 'Draft', document_url]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -683,16 +568,16 @@ router.get('/payouts', requireAuth, async (req, res) => {
 
 router.post('/payouts', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, amount, status, payout_date, reference_number, notes } = req.body;
+    const { farmer_id, company_id, contract_id, collection_id, amount, status, payment_date, bank_account, ifsc, transaction_ref, notes } = req.body;
     let compId = company_id;
     if (!compId) {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
       compId = userRes.rows[0]?.company_id;
     }
     const { rows } = await db.query(
-      `INSERT INTO payouts (farmer_id, company_id, amount, status, payout_date, reference_number, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [farmer_id, compId, amount, status, payout_date, reference_number, notes, req.user.sub]
+      `INSERT INTO payouts (farmer_id, company_id, contract_id, collection_id, amount, status, payment_date, bank_account, ifsc, transaction_ref, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [farmer_id, compId, contract_id || null, collection_id || null, amount, status || 'Pending', payment_date || null, bank_account, ifsc, transaction_ref, notes]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -720,10 +605,11 @@ router.post('/ratings', requireAuth, async (req, res) => {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
       compId = userRes.rows[0]?.company_id;
     }
+    const s = score || 0;
     const { rows } = await db.query(
-      `INSERT INTO farmer_ratings (farmer_id, company_id, score, review, created_by)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [farmer_id, compId, score, review, req.user.sub]
+      `INSERT INTO farmer_ratings (farmer_id, company_id, score, review, quality_score, delivery_score, reliability_score, overall_rating, evaluated_date, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9) RETURNING *`,
+      [farmer_id, compId, s, review, s, s, s, s, req.user.sub]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -734,9 +620,7 @@ router.post('/ratings', requireAuth, async (req, res) => {
 // --- DOCUMENTS ---
 router.get('/documents', requireAuth, async (req, res) => {
   try {
-    const { company_id } = req.query;
-    if (!company_id) return res.status(400).json({ error: 'company_id required' });
-    const { rows } = await db.query('SELECT * FROM farmer_documents WHERE company_id = $1 ORDER BY created_at DESC', [company_id]);
+    const { rows } = await db.query('SELECT * FROM farmer_documents ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -745,16 +629,11 @@ router.get('/documents', requireAuth, async (req, res) => {
 
 router.post('/documents', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, doc_name, doc_type, url } = req.body;
-    let compId = company_id;
-    if (!compId) {
-      const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
-      compId = userRes.rows[0]?.company_id;
-    }
+    const { farmer_id, doc_type, document_type, url, file_url, notes } = req.body;
     const { rows } = await db.query(
-      `INSERT INTO farmer_documents (farmer_id, company_id, doc_name, doc_type, url, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [farmer_id, compId, doc_name, doc_type, url, req.user.sub]
+      `INSERT INTO farmer_documents (farmer_id, document_type, file_url, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [farmer_id, document_type || doc_type, file_url || url, notes, req.user.email || req.user.sub]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -776,21 +655,130 @@ router.get('/tickets', requireAuth, async (req, res) => {
 
 router.post('/tickets', requireAuth, async (req, res) => {
   try {
-    const { farmer_id, company_id, issue, status, resolution } = req.body;
+    const { farmer_id, company_id, issue, issue_category, description, priority, status, resolution } = req.body;
     let compId = company_id;
     if (!compId) {
       const userRes = await db.query('SELECT company_id FROM profiles WHERE id = $1', [req.user.sub]);
       compId = userRes.rows[0]?.company_id;
     }
     const { rows } = await db.query(
-      `INSERT INTO farmer_support (farmer_id, company_id, issue, status, resolution, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [farmer_id, compId, issue, status, resolution, req.user.sub]
+      `INSERT INTO farmer_support (farmer_id, company_id, issue, issue_category, description, priority, status, resolution)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [farmer_id, compId, issue, issue_category || 'General', description || issue, priority || 'Low', status || 'Open', resolution]
     );
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(id)) { return res.status(400).json({ error: "Invalid ID format" }); }
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    const { rows } = await db.query(
+      `SELECT * FROM farmers WHERE id = $1 AND is_deleted IS NOT TRUE`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+
+    if (!isAdmin && rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('DB Error (get farmer by id):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// PUT /api/farmers/:id
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code } = req.body;
+    
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE farmers SET 
+        full_name = COALESCE($1, full_name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        country = COALESCE($4, country),
+        district = COALESCE($5, district),
+        primary_crops = COALESCE($6, primary_crops),
+        is_active = COALESCE($7, is_active),
+        notes = COALESCE($8, notes),
+        bank_account = COALESCE($9, bank_account),
+        state = COALESCE($10, state),
+        village = COALESCE($11, village),
+        code = COALESCE($12, code),
+        updated_at = NOW()
+       WHERE id = $13 RETURNING *`,
+      [full_name, email, phone, country, district, primary_crops, is_active, notes, bank_account, state, village, code, id]
+    );
+
+    const updatedFarmer = rows[0];
+
+    res.json(updatedFarmer);
+  } catch (err) {
+    console.error('DB Error (update farmer):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// DELETE /api/farmers/:id
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const userProfRes = await db.query('SELECT role FROM profiles WHERE id = $1', [req.user.sub]);
+    const userRole = userProfRes.rows.length > 0 ? userProfRes.rows[0].role : 'employee';
+    const isAdmin = ['admin', 'manager', 'director'].includes(userRole?.toLowerCase());
+
+    // Check ownership
+    const checkOwner = await db.query('SELECT created_by FROM farmers WHERE id = $1', [id]);
+    if (checkOwner.rows.length === 0) {
+      return res.status(404).json({ error: 'Farmer not found' });
+    }
+    if (!isAdmin && checkOwner.rows[0].created_by !== req.user.sub) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this record' });
+    }
+
+    const { rows } = await db.query(
+      `UPDATE farmers SET is_deleted = true, is_active = false, deleted_at = NOW(), deleted_by = $1 WHERE id = $2 RETURNING id`,
+      [req.user.sub, id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DB Error (delete farmer):', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// POST /api/farmers/:id/convert - Convert a farmer record into a customer
 
 module.exports = router;
