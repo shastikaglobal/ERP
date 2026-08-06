@@ -25,4 +25,23 @@ router.get('/packaging_types', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/meta/security_settings
+router.get('/security_settings', requireAuth, async (req, res) => {
+  try {
+    // Return mock or default settings, since the table might not exist
+    res.json({ screenshot_protection: false });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/meta/security
+router.get('/security', requireAuth, async (req, res) => {
+  try {
+    res.json({ screenshot_protection: false });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

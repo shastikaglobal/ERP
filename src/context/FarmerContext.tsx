@@ -29,7 +29,7 @@ export interface FarmerState {
 
 export interface KYCRecord { id: string; farmer_id: string; aadhaar: string; pan: string; status: string; }
 export interface FarmVisitRecord { id?: string; farmer_id: string; date?: string; visit_date?: string; status: string; notes: string; purpose?: string; visited_by?: string; created_at?: string; updated_at?: string; }
-export interface ContractRecord { id: string; farmer_id: string; crop: string; status: string; }
+export interface ContractRecord { id: string; farmer_id: string; contract_number: string; crop_name: string; agreed_quantity: number; agreed_price: number; start_date: string; end_date: string; status: string; document_url?: string; }
 export interface PayoutRecord { id: string; farmer_id: string; amount: number; status: string; payment_date?: string; notes?: string; }
 export interface RatingRecord { id: string; farmer_id: string; score: number; review: string; }
 export interface DocumentRecord { id: string; farmer_id: string; doc_name: string; doc_type: string; }

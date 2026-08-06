@@ -1,13 +1,16 @@
 export async function apiFetch(url: string, options: RequestInit = {}, retries = 2, timeoutMs = 15000): Promise<Response> {
   let attempt = 0;
   
+  const finalUrl = url.startsWith('/api') ? `https://shastikaglobalexport.co.in${url}` : url;
+  
   while (attempt <= retries) {
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       
-      const response = await fetch(url, {
+      const response = await fetch(finalUrl, {
         ...options,
+        credentials: options.credentials || 'include',
         signal: controller.signal
       });
       

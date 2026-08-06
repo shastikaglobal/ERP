@@ -1,19 +1,21 @@
 const fs = require('fs');
-let f = fs.readFileSync('src/App.tsx', 'utf8');
+let text = fs.readFileSync('adms-sync/routes/farmers.js', 'utf8');
 
-if (!f.includes('const Payslips')) {
-  f = f.replace(
-    'const SalaryReport = lazy(() => import("./pages/employees/SalaryReport"));',
-    'const SalaryReport = lazy(() => import("./pages/employees/SalaryReport"));\nconst Payslips = lazy(() => import("./pages/employees/Payslips"));'
-  );
-}
+const replacement = `router.post('/contracts', requireAuth, async (req, res) => {
+  try {
+    const { id, farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status, document_url } = req.body;
+    const { rows } = await db.query(
+      \`INSERT INTO contract_farming (id, farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status, document_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *\`,
+      [id, farmer_id, contract_number, crop_name, agreed_quantity, agreed_price, start_date, end_date, status, document_url]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});`;
 
-if (!f.includes('<Route path="/hr-employees/payslips"')) {
-  f = f.replace(
-    '<Route path="/employees/salary" element={<SalaryReport />} />',
-    '<Route path="/employees/salary" element={<SalaryReport />} />\n              <Route path="/hr-employees/payslips" element={<Payslips />} />'
-  );
-}
+text = text.replace(/router\.post\('\/contracts', requireAuth, async \(req, res\) => \{[\s\S]*?res\.json\(rows\[0\]\);\n  \} catch \(err\) \{\n    res\.status\(500\)\.json\(\{ error: err\.message \}\);\n  \}\n\}\);/, replacement);
 
-fs.writeFileSync('src/App.tsx', f);
-console.log('App.tsx patched.');
+fs.writeFileSync('adms-sync/routes/farmers.js', text);
+console.log('Done!');
