@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -6,6 +7,7 @@ import { OrderDocument } from "@/components/orders/OrderDocument";
 import { Loader2 } from "lucide-react";
 
 export default function OrderReport() {
+  const { session } = useAuth();
   const { id } = useParams();
   const nav = useNavigate();
   const [order, setOrder] = useState<any>(null);

@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -28,6 +29,7 @@ const PAYMENT_COLORS: Record<string, string> = {
 };
 
 export default function OrderDetail() {
+  const { session } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);

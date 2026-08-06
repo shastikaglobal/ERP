@@ -157,7 +157,7 @@ export default function FarmerRatingPage() {
     return (
       <div className="flex items-center gap-1 text-amber-400">
         <Star className="w-4 h-4 fill-current" />
-        <span className="text-sm font-semibold text-slate-200">{(score || 0).toFixed(1)}</span>
+        <span className="text-sm font-semibold text-slate-200">{(Number(score) || 0).toFixed(1)}</span>
       </div>
     );
   };

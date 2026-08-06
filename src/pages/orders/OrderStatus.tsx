@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function OrderStatus() {
+  const { session } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
