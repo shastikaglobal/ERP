@@ -277,7 +277,8 @@ export default function CreateShipment() {
       if (!contRes.ok) throw new Error(await contRes.text() || "Failed to create containers");
 
       // Auto-generate a tracking entry (cargo/barcode) for this shipment
-      const bRes = await apiFetch('/api/barcodes', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_number: b.batch_number, barcode_data: b.batch_number, created_by: profile?.id }) });
+      const barcodeValue = shipment.shipment_number || `SHP-${shipment.id}`;
+      const bRes = await apiFetch('/api/barcodes', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batch_number: barcodeValue, barcode_data: barcodeValue, shipment_id: shipment.id, created_by: profile?.id }) });
       const barcodeError = bRes.ok ? null : new Error('Failed');
       
       if (barcodeError) {
