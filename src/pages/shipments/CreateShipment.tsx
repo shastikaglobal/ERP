@@ -52,7 +52,7 @@ export default function CreateShipment() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const [ordersRes, carriersRes, portsRes, containersRes] = await Promise.all([
         apiFetch(`/api/finance/export_orders?company_id=${profile?.company_id}`, { headers  }),
@@ -106,7 +106,7 @@ export default function CreateShipment() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch('/api/finance/shipping_ports', { method: 'POST',
         headers,
@@ -139,7 +139,7 @@ export default function CreateShipment() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch('/api/finance/container_types', { method: 'POST',
         headers,
@@ -171,7 +171,7 @@ export default function CreateShipment() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       // 1. Check and create Carrier on-the-fly
       const trimmedCarrier = carrier.trim();

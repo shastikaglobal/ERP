@@ -101,7 +101,7 @@ const { data } = {} as any; // [VPS Migration] fixed assignment
 
         const headers: Record<string, string> = {};
         if (session?.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
+          headers['Authorization'] = `Bearer ${session?.access_token}`;
         }
         const res = await apiFetch(getApiUrl(`/api/orders/${id}`), { headers });
         if (!res.ok) throw new Error("Failed to fetch invoice details");

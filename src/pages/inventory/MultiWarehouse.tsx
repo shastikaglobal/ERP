@@ -109,7 +109,6 @@ export default function MultiWarehouse() {
       const data = await res.json();
       return (data || []).filter((p: any) => p.is_active);
     },
-    enabled: !!session?.access_token,
   });
 
   const uniqueProducts = useMemo(() => {

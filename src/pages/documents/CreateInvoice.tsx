@@ -29,7 +29,7 @@ export default function CreateInvoice() {
       try {
 
         const headers: any = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
         const [leadsRes, productsRes] = await Promise.all([
           apiFetch('/api/leads', { headers }).catch(err => {
@@ -354,7 +354,7 @@ export default function CreateInvoice() {
       if (!userId) throw new Error("Authentication required to create orders");
 
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       // Auto-create product if typed manually and doesn't exist
       const resolvedProductName = product.trim();

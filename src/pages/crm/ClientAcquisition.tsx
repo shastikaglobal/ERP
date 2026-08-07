@@ -249,8 +249,6 @@ export default function ClientAcquisition() {
               setIsSavingClient(true);
               try {
                 
-                if (!session?.access_token) throw new Error('Authentication required');
-
                 const res = await apiFetch('/api/crm/leads/add-client', { method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'

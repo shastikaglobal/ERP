@@ -35,7 +35,6 @@ const Dispatch = () => {
   useEffect(() => {
     const checkShipments = async () => {
       try {
-        if (!session?.access_token) return;
         const res = await apiFetch('/api/dispatch/shipment_dispatches/count', { credentials: 'include'
       });
         if (res.ok) {
@@ -70,7 +69,6 @@ const Dispatch = () => {
 
     setIsCreating(true);
     try {
-      if (!session?.access_token) throw new Error("Authentication session missing");
       const res = await apiFetch('/api/dispatch/shipment_dispatches', { method: 'POST',
         headers: { 
           'Content-Type': 'application/json'

@@ -41,7 +41,6 @@ export default function ProductCatalog() {
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json() as Promise<any[]>;
     },
-    enabled: !!session?.access_token,
   });
   return (
     <div>

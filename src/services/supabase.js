@@ -75,7 +75,7 @@ export async function saveFaceEmbedding(employeeId, embeddingArray, sampleIndex 
     };
     const res = await apiFetch('/api/employees/bio-data', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Failed to save face embedding to VPS DB');
@@ -86,7 +86,7 @@ export async function getEmployeeFaceEmbeddings(employeeId) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('No session');
     const res = await apiFetch(`/api/employees/${employeeId}/bio-data`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch face embeddings from VPS DB');
     return await res.json();
@@ -96,7 +96,7 @@ export async function getAllFaceEmbeddings() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('No session');
     const res = await apiFetch('/api/employees/bio-data/all', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch all face embeddings from VPS DB');
     return await res.json();
@@ -107,7 +107,7 @@ export async function deleteFaceEmbeddings(employeeId) {
     if (!session) throw new Error('No session');
     const res = await apiFetch(`/api/employees/${employeeId}/bio-data`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
     if (!res.ok) throw new Error('Failed to delete face embeddings from VPS DB');
     return await res.json();
@@ -148,7 +148,7 @@ export async function recordCheckIn(employeeId, confidenceScore) {
         if (session) {
             await apiFetch('/api/attendance/face-sync', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
                 body: JSON.stringify({
                     employee_id: employeeId,
                     date: today,
@@ -196,7 +196,7 @@ export async function recordCheckOut(employeeId) {
         if (session) {
             await apiFetch('/api/attendance/face-sync', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
                 body: JSON.stringify({
                     employee_id: employeeId,
                     date: today,

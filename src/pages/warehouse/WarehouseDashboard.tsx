@@ -24,7 +24,7 @@ export default function WarehouseDashboard() {
             // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
+                headers['Authorization'] = `Bearer ${session?.access_token}`;
             }
             const res = await apiFetch('/api/inventory/inventory_batches', { headers });
             if (!res.ok) throw new Error('Failed to fetch inventory');
@@ -42,7 +42,7 @@ export default function WarehouseDashboard() {
             // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
+                headers['Authorization'] = `Bearer ${session?.access_token}`;
             }
             const res = await apiFetch('/api/inventory/available_stock', { headers });
             if (!res.ok) throw new Error('Failed to fetch available stock');
@@ -69,7 +69,7 @@ export default function WarehouseDashboard() {
             // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
+                headers['Authorization'] = `Bearer ${session?.access_token}`;
             }
             const res = await apiFetch('/api/finance/export_shipments', { headers });
             if (!res.ok) throw new Error('Failed to fetch shipments');
@@ -91,7 +91,7 @@ export default function WarehouseDashboard() {
             // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
+                headers['Authorization'] = `Bearer ${session?.access_token}`;
             }
             const res = await apiFetch('/api/analytics/activity_logs', { headers });
             if (!res.ok) throw new Error('Failed to fetch activity logs');
@@ -112,7 +112,7 @@ export default function WarehouseDashboard() {
             // [VPS Migration] Session now comes from useAuth hook, not vpsDb
             const headers: Record<string, string> = {};
             if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
+                headers['Authorization'] = `Bearer ${session?.access_token}`;
             }
             const res = await apiFetch('/api/warehouse/packing_protocols', { headers });
             if (!res.ok) throw new Error('Failed to fetch packing protocols');

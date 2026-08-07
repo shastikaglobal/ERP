@@ -273,7 +273,7 @@ export default function CreateQuotation() {
       try {
         
         const headers: any = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
         const leadsReq = apiFetch('/api/leads', { headers  });
         const productsReq = apiFetch('/api/products', { headers  });
@@ -366,7 +366,7 @@ export default function CreateQuotation() {
       try {
         
         const headers: any = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
         const custRes = await apiFetch('/api/customers/find-or-create', { method: 'POST',
           headers,

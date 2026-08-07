@@ -20,7 +20,7 @@ export default function Fulfillment() {
       if (!profile?.company_id) return;
 
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch(`/api/finance/export_orders?company_id=${profile.company_id}`, { headers });
       if (!res.ok) throw new Error(await res.text() || "Failed to load fulfillments");
@@ -47,7 +47,7 @@ export default function Fulfillment() {
     try {
 
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch(`/api/finance/export_orders/${id}`, {
         method: 'PUT',

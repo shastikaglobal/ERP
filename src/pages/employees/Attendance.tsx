@@ -344,7 +344,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           monthly_salary: Number(settingsSalary) || 0,
@@ -399,7 +399,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify(payload)
       });
@@ -429,7 +429,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           employee_id: emp.id,
@@ -461,7 +461,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           employee_id: emp.id,
@@ -492,7 +492,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           id: logId,
@@ -521,7 +521,7 @@ export default function Attendance() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           id: logId
@@ -679,7 +679,7 @@ export default function Attendance() {
     if (session) {
       try {
         const response = await apiFetch(`/api/attendance?start=${firstDayOfMonth}&end=${lastDayOfMonth}`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         if (!response.ok) throw new Error('Network response was not ok');
         logs = await response.json();
@@ -816,7 +816,7 @@ export default function Attendance() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         }
       });
 

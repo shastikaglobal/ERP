@@ -58,7 +58,7 @@ export default function EmployeeDirectory() {
 
       const response = await apiFetch('/api/employees', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         }
       });
       
@@ -200,7 +200,7 @@ export default function EmployeeDirectory() {
       const response = await apiFetch(`/api/employees/${id}/reset-password`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -232,7 +232,7 @@ export default function EmployeeDirectory() {
 
       const response = await apiFetch(`/api/employees/${userId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
 
       if (!response.ok) throw new Error("Failed to archive user");
@@ -529,7 +529,7 @@ export default function EmployeeDirectory() {
                                   method: 'PUT',
                                   headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`
+                                    'Authorization': `Bearer ${session?.access_token}`
                                   },
                                   body: JSON.stringify({ biometric_id: val || null })
                                 });

@@ -33,7 +33,7 @@ export default function Tasks() {
       
       const headers: HeadersInit = {};
       if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
+        headers['Authorization'] = `Bearer ${session?.access_token}`;
       }
       const res = await apiFetch(`/api/crm-tasks?company_id=${profile?.company_id || ''}`, { headers  });
       if (!res.ok) throw new Error("Failed to fetch tasks");

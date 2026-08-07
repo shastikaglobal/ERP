@@ -27,7 +27,7 @@ async function fetchTodayFromVPS(employeeId: string, session: any) {
     if (!session) return null;
     const today = getTodayIST();
     const res = await apiFetch(`/api/attendance?start=${today}&end=${today}`, {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
+      headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
     if (!res.ok) return null;
     const logs = await res.json();
@@ -46,7 +46,7 @@ async function syncCheckIn(employeeId: string, confidence: number, session: any)
   // VPS first (source of truth)
   const res = await apiFetch('/api/attendance/face-sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
     body: JSON.stringify({ employee_id: employeeId, date: today, check_in: now, status })
   });
   if (!res.ok) throw new Error('Failed to record check-in');
@@ -68,7 +68,7 @@ async function syncCheckOut(employeeId: string, session: any) {
   // VPS first (source of truth)
   const res = await apiFetch('/api/attendance/face-sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
     body: JSON.stringify({ employee_id: employeeId, date: today, check_out: now })
   });
   if (!res.ok) throw new Error('Failed to record check-out');
@@ -87,7 +87,7 @@ async function fetchTodaySummaryFromVPS(session: any) {
     if (!session) return [];
     const today = getTodayIST();
     const res = await apiFetch(`/api/attendance?start=${today}&end=${today}`, {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
+      headers: { 'Authorization': `Bearer ${session?.access_token}` }
     });
     if (!res.ok) return [];
     return await res.json();

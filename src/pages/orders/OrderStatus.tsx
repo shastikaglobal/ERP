@@ -31,7 +31,7 @@ export default function OrderStatus() {
       try {
 
         const headers: any = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
         const res = await apiFetch('/api/finance/export_orders', { headers });
         if (!res.ok) throw new Error(await res.text() || "Failed to load orders");
@@ -54,7 +54,7 @@ export default function OrderStatus() {
     try {
 
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch(`/api/finance/export_orders/${id}`, {
         method: 'PUT',

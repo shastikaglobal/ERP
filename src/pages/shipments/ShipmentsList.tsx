@@ -58,7 +58,7 @@ export default function ShipmentsList() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch(`/api/finance/export_shipments/${editingShipment.id}`, { method: 'PUT',
         headers,
@@ -88,7 +88,7 @@ export default function ShipmentsList() {
       if (!profile?.company_id) return;
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const [shipmentsRes, containersRes] = await Promise.all([
         apiFetch(`/api/finance/export_shipments?company_id=${profile.company_id}`, { headers  }),
@@ -134,7 +134,7 @@ export default function ShipmentsList() {
     try {
       
       const headers: any = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
       const res = await apiFetch(`/api/finance/export_shipments/${id}`, { method: 'DELETE',
         headers

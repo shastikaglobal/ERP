@@ -24,7 +24,7 @@ export default function Invoices() {
 
 
         const res = await apiFetch('/api/orders', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         if (!res.ok) throw new Error("Failed to fetch invoices");
         const data = await res.json();

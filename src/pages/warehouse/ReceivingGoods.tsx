@@ -105,7 +105,7 @@ export default function ReceivingGoods() {
         queryKey: ["warehouse-received-batches", profile?.company_id],
         queryFn: async () => {
 
-            const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+            const headers = session?.access_token ? { 'Authorization': `Bearer ${session?.access_token}` } : undefined;
             const res = await apiFetch('/api/inventory/inventory_batches', { headers });
             if (!res.ok) throw new Error('Failed to fetch batches');
             const data = await res.json();

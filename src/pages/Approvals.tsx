@@ -78,7 +78,7 @@ export default function Approvals() {
       // [VPS Migration] Session now comes from useAuth hook, not vpsDb
       if (!session) throw new Error("No session");
       const res = await apiFetch('/api/employees/all/profiles', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (!res.ok) throw new Error("Failed to fetch profiles");
       const data = await res.json();

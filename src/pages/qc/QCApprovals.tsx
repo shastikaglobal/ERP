@@ -25,9 +25,8 @@ export default function QCApprovals() {
       if (!profile?.company_id) return [];
       try {
 
-        if (!session?.access_token) throw new Error('No auth token');
         const res = await apiFetch(`/api/inventory/qc_inspections/with-batch?company_id=${encodeURIComponent(profile.company_id)}&result=pending`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Accept': 'application/json' }
+          headers: { 'Accept': 'application/json' }
         });
         if (!res.ok) throw new Error('Failed to fetch QC inspections');
         return await res.json();

@@ -21,7 +21,7 @@ export default function ContainerTracking() {
       try {
         
         const headers: any = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session?.access_token}`;
 
         const [containersRes, shipmentsRes] = await Promise.all([
           apiFetch(`/api/finance/export_containers?company_id=${profile.company_id}`, { headers  }),

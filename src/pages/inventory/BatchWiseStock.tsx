@@ -56,7 +56,7 @@ export default function BatchWiseStock() {
   const { data: warehouses = [] } = useQuery({
     queryKey: ['warehouses-list', profile?.company_id],
     queryFn: async () => {
-      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session?.access_token}` } : undefined;
       const res = await apiFetch('/api/warehouse/warehouses', { headers });
       if (!res.ok) throw new Error('Failed to fetch warehouses');
       const data = await res.json();
@@ -67,7 +67,7 @@ export default function BatchWiseStock() {
   const { data: products = [] } = useQuery({
     queryKey: ['products-list', profile?.company_id],
     queryFn: async () => {
-      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session?.access_token}` } : undefined;
       const res = await apiFetch('/api/products', { headers });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -78,7 +78,7 @@ export default function BatchWiseStock() {
   const { data: rawBatches = [], isLoading: isBatchesLoading } = useQuery({
     queryKey: ["inventory-batches", profile?.company_id],
     queryFn: async () => {
-      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session?.access_token}` } : undefined;
       const res = await apiFetch('/api/inventory/inventory_batches', { headers });
       if (!res.ok) throw new Error('Failed to fetch batches');
       const data = await res.json();
@@ -117,7 +117,7 @@ export default function BatchWiseStock() {
   const mutation = useMutation({
     mutationFn: async (payload: any) => {
       const headers = session?.access_token ? {
-        'Authorization': `Bearer ${session.access_token}`,
+        'Authorization': `Bearer ${session?.access_token}`,
         'Content-Type': 'application/json'
       } : { 'Content-Type': 'application/json' };
 
@@ -171,7 +171,7 @@ export default function BatchWiseStock() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : undefined;
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session?.access_token}` } : undefined;
       const res = await apiFetch(`/api/inventory/inventory_batches/${id}`, {
         method: 'DELETE',
         headers
