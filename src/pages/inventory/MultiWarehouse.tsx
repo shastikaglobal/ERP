@@ -149,7 +149,7 @@ export default function MultiWarehouse() {
         const res = await apiFetch('/api/warehouse/warehouses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([body])
+          body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
       }
@@ -187,7 +187,7 @@ export default function MultiWarehouse() {
         const res = await apiFetch('/api/inventory/warehouse_stock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([body])
+          body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
       }

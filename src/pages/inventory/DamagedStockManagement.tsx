@@ -141,7 +141,7 @@ export default function DamagedStockManagement() {
         const res = await apiFetch('/api/inventory/damaged_stock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([body])
+          body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
       }
