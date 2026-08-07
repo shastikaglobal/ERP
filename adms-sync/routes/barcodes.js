@@ -45,4 +45,23 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Create a new barcode
+router.post('/', async (req, res) => {
+  try {
+    const { batch_number, barcode_data, shipment_id, batch_id, order_id } = req.body;
+    const code = barcode_data || batch_number;
+    if (!code) return res.status(400).json({ error: "code (barcode_data/batch_number) is required" });
+
+    const result = await query(
+      `INSERT INTO batch_barcodes (code, shipment_id, batch_id, order_id, status)
+       VALUES ($1, $2, $3, $4, 'Active') RETURNING *`,
+      [code, shipment_id || null, batch_id || null, order_id || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error("Error creating barcode:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
