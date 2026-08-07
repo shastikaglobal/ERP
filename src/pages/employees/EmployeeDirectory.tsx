@@ -165,7 +165,7 @@ export default function EmployeeDirectory() {
     const openSession = sessions.find(s => s.user_id === userId && !s.logout_time);
     
     try {
-      const response = await apiFetch('http://127.0.0.1:8082/force-logout', {
+      const response = await apiFetch('/api/force-logout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, sessionId: openSession?.id })

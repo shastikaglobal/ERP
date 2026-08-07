@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { vpsDb } from "@/lib/vpsDb";
+import { apiFetch } from "@/lib/api";
 
 import { toast } from "sonner";
 
@@ -55,21 +55,16 @@ export function ScheduleMeetingModal({ open, onOpenChange, meetingToEdit, defaul
   useEffect(() => {
     if (open && profile?.company_id) {
       // Fetch leads for dropdown
-      vpsDb
-        .from("leads")
-        .select("id, company, name")
-        .eq("company_id", profile.company_id)
-        .not('is_deleted', 'eq', true)
-        .order("company")
-        .then(({ data }) => setLeads(data || []));
+      apiFetch(`/api/leads?company_id=${profile.company_id}`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => setLeads(Array.isArray(data) ? data : []))
+        .catch(() => setLeads([]));
 
       // Check zoho connection
-      vpsDb
-        .from("zoho_accounts")
-        .select("id")
-        .eq("user_id", profile.id)
-        .limit(1)
-        .then(({ data }) => setZohoConnected((data?.length ?? 0) > 0));
+      apiFetch(`/api/crm/zoho-accounts?user_id=${profile.id}`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => setZohoConnected((Array.isArray(data) ? data.length : 0) > 0))
+        .catch(() => setZohoConnected(false));
 
       // Pre-fill if editing
       if (meetingToEdit) {

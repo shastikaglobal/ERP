@@ -31,7 +31,7 @@ export default function PackingLists() {
         // [VPS Migration] Session from useAuth
     const token = session?.access_token;
 
-        const res = await apiFetch("http://127.0.0.1:8082/api/warehouse/packing_protocols", {
+        const res = await apiFetch("/api/warehouse/packing_protocols", {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -61,7 +61,7 @@ export default function PackingLists() {
       // [VPS Migration] Session from useAuth
     const token = session?.access_token;
 
-      const res = await apiFetch(`http://127.0.0.1:8082/api/warehouse/packing_protocols/${id}`, {
+      const res = await apiFetch(`/api/warehouse/packing_protocols/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
