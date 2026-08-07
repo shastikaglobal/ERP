@@ -22,24 +22,16 @@ export default function BarcodesList() {
     queryKey: ["batch_barcodes"],
     queryFn: async () => {
       try {
-        const res = await apiFetch("/api/vps-fallback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            table: "batch_barcodes",
-            action: "select",
-            select: "id, code, level, box_number, current_location, status, scan_count, last_scanned_at, created_at, batch:inventory_batches(lot_number, grade, product:products(name), farmer:farmers(full_name)), shipment:export_shipments(id, shipment_number, destination_port, status), order:export_orders(id, order_number, destination, status)",
-            order: { column: "created_at", options: { ascending: false } }
-          })
+        const res = await apiFetch("/api/inventory/batch_barcodes/with-details", {
+          method: "GET",
+          credentials: "include"
         });
-        const { data, error } = await res.json();
-        
-        if (error) {
-          console.error("Database query failed:", error);
+
+        if (!res.ok) {
+          console.error("Database query failed: HTTP", res.status);
           return [];
         }
-        return data as any[];
+        return (await res.json()) as any[];
       } catch (err) {
         console.error("Unexpected error:", err);
         return [];

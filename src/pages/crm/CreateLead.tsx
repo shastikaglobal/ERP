@@ -47,7 +47,7 @@ export default function CreateLead() {
 
     setSubmitting(true);
     try {
-      const res = await apiFetch("/api/crm/leads", { method: "POST",
+      const res = await apiFetch("/api/leads", { method: "POST",
         headers: { "Content-Type": "application/json"  },
         credentials: "include",
         body: JSON.stringify({

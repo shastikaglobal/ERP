@@ -19,7 +19,7 @@ export default function BdeDashboard() {
     queryKey: ['bde_leads', profile?.company_id],
     queryFn: async () => {
       if (!profile?.company_id) return [];
-      const res = await apiFetch('/api/crm/leads', { credentials: 'include' });
+      const res = await apiFetch('/api/leads', { credentials: 'include' });
       if (!res.ok) throw new Error('Fetch failed for leads');
       const data = await res.json();
       const error = null;

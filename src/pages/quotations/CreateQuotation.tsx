@@ -434,7 +434,7 @@ export default function CreateQuotation() {
       const finalQuoteNumber = quoteData.quotation_number;
 
       if (selectedLeadId) {
-        await apiFetch(`/api/crm/leads/${selectedLeadId}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: "negotiation" }) });
+        await apiFetch(`/api/leads/${selectedLeadId}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: "negotiation" }) });
       }
 
       toast.success("Quotation created successfully!");

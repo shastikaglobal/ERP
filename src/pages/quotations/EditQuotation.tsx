@@ -104,7 +104,7 @@ export default function EditQuotation() {
 
       try {
         setLoading(true);
-        const leadsQuery = apiFetch('/api/crm/leads', { credentials: 'include' }).then(r => r.json());
+        const leadsQuery = apiFetch('/api/leads', { credentials: 'include' }).then(r => r.json());
         let productsQuery = apiFetch('/api/products', { credentials: 'include' }).then(r => r.json());
 
         if (profile?.company_id) {

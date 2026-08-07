@@ -249,7 +249,7 @@ export default function ClientAcquisition() {
               setIsSavingClient(true);
               try {
                 
-                const res = await apiFetch('/api/crm/leads/add-client', { method: 'POST',
+                const res = await apiFetch('/api/leads/add-client', { method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
       },

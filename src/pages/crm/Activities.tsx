@@ -146,7 +146,7 @@ export default function LeadActivities() {
     try {
       const [activitiesRes, leadsRes] = await Promise.all([
         apiFetch("/api/crm/activities", { credentials: "include" }),
-        apiFetch("/api/crm/leads", { credentials: "include" })
+        apiFetch("/api/leads", { credentials: "include" })
       ]);
 
       if (!activitiesRes.ok) throw new Error("Failed to fetch activities");

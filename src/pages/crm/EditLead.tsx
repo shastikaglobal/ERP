@@ -47,7 +47,7 @@ export default function EditLead() {
   useEffect(() => {
     async function fetchLead() {
       if (!id) return;
-      const res = await apiFetch(`/api/crm/leads/${id}`, { credentials: 'include' });
+      const res = await apiFetch(`/api/leads/${id}`, { credentials: 'include' });
       const data = await res.json().catch(() => null);
       const error = res.ok ? null : new Error('Failed');
 
@@ -83,7 +83,7 @@ export default function EditLead() {
 
     setSubmitting(true);
     try {
-      const res = await apiFetch(`/api/crm/leads/${id}`, {
+      const res = await apiFetch(`/api/leads/${id}`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
