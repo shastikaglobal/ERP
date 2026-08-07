@@ -1,7 +1,7 @@
 export async function apiFetch(url: string, options: RequestInit = {}, retries = 2, timeoutMs = 15000): Promise<Response> {
   let attempt = 0;
   
-  const finalUrl = url.startsWith('/api') ? `https://shastikaglobalexport.co.in${url}` : url;
+  const finalUrl = url;
   
   while (attempt <= retries) {
     try {
