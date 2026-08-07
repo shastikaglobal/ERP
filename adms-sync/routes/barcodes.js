@@ -5,6 +5,14 @@ const { query } = require('../db');
 // Get all barcodes
 router.get('/', async (req, res) => {
   try {
+    const { shipment_id, batch_id, order_id } = req.query;
+    const conditions = [];
+    const values = [];
+    if (shipment_id) { values.push(shipment_id); conditions.push(`b.shipment_id = $${values.length}`); }
+    if (batch_id) { values.push(batch_id); conditions.push(`b.batch_id = $${values.length}`); }
+    if (order_id) { values.push(order_id); conditions.push(`b.order_id = $${values.length}`); }
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const result = await query(`
       SELECT b.id, b.code, b.level, b.box_number, b.current_location, b.status, b.scan_count, b.last_scanned_at, b.created_at,
              ib.lot_number, ib.grade, p.name as product_name, f.full_name as farmer_name,
@@ -16,8 +24,9 @@ router.get('/', async (req, res) => {
       LEFT JOIN farmers f ON ib.farmer_id = f.id
       LEFT JOIN export_shipments es ON b.shipment_id = es.id
       LEFT JOIN export_orders eo ON b.order_id = eo.id
+      ${whereClause}
       ORDER BY b.created_at DESC
-    `);
+    `, values);
     
     // Transform flat result to nested objects expected by UI
     const mappedData = result.rows.map(r => ({
