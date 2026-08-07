@@ -131,7 +131,7 @@ export default function ExpiryMonitoring() {
         const res = await apiFetch('/api/inventory/expiry_monitoring', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([body])
+          body: JSON.stringify(body)
         });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Insert failed'); }
       }
