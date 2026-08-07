@@ -196,9 +196,9 @@ export default function ExpiryMonitoring() {
 
       let dateMatch = true;
       if ((startDate || endDate) && item.expiry_date) {
-        const itemDate = parseISO(item.expiry_date);
-        if (startDate && itemDate < parseISO(startDate)) dateMatch = false;
-        if (endDate && itemDate > parseISO(endDate)) dateMatch = false;
+        const itemDate = item.expiry_date ? parseISO(item.expiry_date) : null;
+        if (itemDate && startDate && itemDate < parseISO(startDate)) dateMatch = false;
+        if (itemDate && endDate && itemDate > parseISO(endDate)) dateMatch = false;
       }
 
       return (productMatch || batchMatch) && statusMatch && dateMatch;
