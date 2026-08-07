@@ -159,8 +159,8 @@ export default function ShipmentDetail() {
       try {
         const res = await apiFetch(`/api/barcodes?shipment_id=${id}`, { credentials: 'include' });
         if (!res.ok) return [];
-        const data = await res.json();
-        return (data ?? []) as any[];
+        const json = await res.json();
+        return (json?.data ?? []) as any[];
       } catch { return []; }
     },
     enabled: !!id,
