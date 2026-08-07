@@ -45,9 +45,6 @@ export async function createPackingProtocol(
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const res = await apiFetch(getApiUrl('/api/warehouse/packing_protocols'), {
             method: 'POST',
             headers,
@@ -88,9 +85,6 @@ export async function getPackingProtocols(
     try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const res = await apiFetch(getApiUrl('/api/warehouse/packing_protocols'), { headers });
         if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
         const data = await res.json();
@@ -120,9 +114,6 @@ export async function getPackingProtocolById(
     try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols`), { headers });
         if (!res.ok) throw new Error(`Failed to fetch packing protocols: ${res.status}`);
         const data = await res.json();
@@ -146,9 +137,6 @@ export async function updatePackingProtocol(
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
             method: 'PUT',
             headers,
@@ -170,9 +158,6 @@ export async function deletePackingProtocol(id: string): Promise<void> {
     try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const res = await apiFetch(getApiUrl(`/api/warehouse/packing_protocols/${id}`), {
             method: 'DELETE',
             headers
@@ -213,9 +198,6 @@ export async function getPackingListPDF(packingId: string) {
     try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         
         // Fetch batches from VPS
         const resBatches = await apiFetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
@@ -236,9 +218,6 @@ export async function getPackingListPDF(packingId: string) {
     // Get company details
     // [VPS Migration] Session now comes from useAuth hook, not vpsDb
     const headers: Record<string, string> = {};
-    if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
     const resCompany = await apiFetch(getApiUrl('/api/settings'), { headers });
     if (!resCompany.ok) throw new Error('Failed to fetch company settings');
     const company = await resCompany.json();
@@ -257,9 +236,6 @@ export async function getUnpackedReceivings(
     try {
         // [VPS Migration] Session now comes from useAuth hook, not vpsDb
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         
         // Fetch batches from VPS
         const resBatches = await apiFetch(getApiUrl('/api/inventory/inventory_batches'), { headers });
